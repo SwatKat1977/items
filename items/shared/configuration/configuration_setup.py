@@ -36,7 +36,7 @@ class ConfigurationSetupItem:
                  valid_values : typing.Optional[list] = None,
                  is_required : bool = False,
                  default_value : typing.Optional[object] = None) -> None:
-            # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments
         object.__setattr__(self, "item_name", item_name)
         object.__setattr__(self, "item_type", item_type)
         object.__setattr__(self, "valid_values",
