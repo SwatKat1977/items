@@ -32,9 +32,9 @@ jobs:
       # Step 4: Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:items/unittests_shared
+          PYTHONPATH: items
         run: |
-          coverage run -m unittest -v unittests_shared/main.py
+          coverage run -m unittest -v unittests_shared.main
           coverage report -m --fail-under=80
 
       # Step 5: Upload coverage results as artifact
