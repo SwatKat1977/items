@@ -1,0 +1,14 @@
+# -----------------
+# Python GIT ignore
+# -----------------
+*.pyc
+
+# -----------------
+# Mac OS GIT ignore
+# -----------------
+.DS_Store
+
+# -----------------
+# Code Coverage GIT ignore
+# -----------------
+.coverage
