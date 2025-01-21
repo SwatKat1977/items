@@ -1,4 +1,4 @@
 [run]
 omit =
-    unittests_shared/*
+    items/unittests_shared/*
     /opt/homebrew/*
