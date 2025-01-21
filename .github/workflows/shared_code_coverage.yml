@@ -37,7 +37,7 @@ jobs:
           PYTHONPATH: items/shared:items/unittests_shared
         run: |
           coverage run -m unittest -v main
-          coverage report -m --fail-under=80
+          coverage report -m --fail-under=100
 
       # Step 5: Upload coverage results as artifact
       - name: Upload coverage report
