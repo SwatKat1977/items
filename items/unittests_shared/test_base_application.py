@@ -26,6 +26,11 @@ class TestBaseApplication(unittest.TestCase):
         self.assertTrue(self.app._is_initialised)
         self.app._initialise.assert_called_once()
 
+    def test_initialise_success_no_implementation(self):
+        app : BaseApplication = BaseApplication()
+        self.assertTrue(app.initialise())
+        self.assertTrue(app._is_initialised)
+
     def test_initialise_failure(self):
         self.app._initialise = MagicMock(return_value=False)  # Mock the _initialise method
         self.assertFalse(self.app.initialise())
@@ -68,12 +73,8 @@ class TestBaseApplication(unittest.TestCase):
         self.app.logger = new_logger
         self.assertEqual(self.app.logger, new_logger)
 
-    """
     def test_main_loop_not_implemented(self):
+        self.app = BaseApplication()
+
         with self.assertRaises(NotImplementedError):
             asyncio.run(self.app._main_loop())
-
-    def test_shutdown_not_implemented(self):
-        with self.assertRaises(NotImplementedError):
-            self.app._shutdown()
-    """
