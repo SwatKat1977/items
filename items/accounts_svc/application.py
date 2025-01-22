@@ -73,11 +73,13 @@ class Application(BaseApplication):
 
         config_file_required_str: str = os.getenv(
             "ITEMS_ACCOUNTS_SVC_CONFIG_FILE_REQUIRED", None)
-        config_file_required: bool = False if not config_file_required_str \
-            else config_file_required_str
+
+        config_file_required: bool = False
+        if config_file_required_str is not None and config_file_required_str == "1":
+            config_file_required = True
 
         if not config_file and config_file_required:
-            print("[FATAL ERROR] Configuration file missing!")
+            self._logger.critical("Configuration file missing!")
             return False
 
         Configuration().configure(CONFIGURATION_LAYOUT, config_file,
