@@ -89,7 +89,7 @@ class Application(BaseApplication):
             Configuration().process_config()
 
         except ValueError as ex:
-            self._logger.critical("Configuration error : %s", ex)
+            self._logger.critical("Configuration error : %s", str(ex))
             return False
 
         self._logger.info("Configuration")
