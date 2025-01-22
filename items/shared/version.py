@@ -22,4 +22,5 @@ BUILD_TAG = " [MVP]"
 
 SERVICE_COPYRIGHT_TEXT = 'Copyright 2025 Integrated Test Management ' + \
                          'Suite development team'
+
 LICENSE_TEXT = 'Licensed under the Apache License, Version 2.0'
