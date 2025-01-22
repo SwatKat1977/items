@@ -21,7 +21,7 @@ from configuration_layout import CONFIGURATION_LAYOUT
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
                            LOGGING_DEFAULT_LOG_LEVEL, \
                            LOGGING_LOG_FORMAT_STRING
-from threadsafe_configuration import ThreadafeConfiguration as Configuration
+from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
 

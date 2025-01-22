@@ -103,3 +103,12 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.mock_config_instance.configure.assert_called_once_with(CONFIGURATION_LAYOUT, "config_file_path", True)
         self.mock_config_instance.process_config.assert_called_once()
         self.mock_logger_instance.critical.assert_called_with("Configuration error : %s", "Test config error")
+
+    async def test_main_loop_execution(self):
+        """Test that _main_loop executes properly with asyncio.sleep."""
+        # We'll use an event loop to run the async method and check if it completes
+        loop = asyncio.get_event_loop()
+        try:
+            await asyncio.wait_for(self.application._main_loop(), timeout=1.0)
+        except asyncio.TimeoutError:
+            self.fail("_main_loop did not complete within the expected time frame.")
