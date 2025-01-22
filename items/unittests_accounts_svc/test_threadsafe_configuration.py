@@ -53,7 +53,7 @@ class TestThreadafeConfiguration(unittest.TestCase):
         # Set up mock return value for the get_entry method (no value provided)
         mock_get_entry.return_value = "INFO"
 
-        # Instantiate ThreadafeConfiguration
+        # Instantiate ThreadSafeConfiguration
         config = ThreadSafeConfiguration()
 
         # Call the logging_log_level property
