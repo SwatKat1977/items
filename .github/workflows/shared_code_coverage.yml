@@ -36,5 +36,5 @@ jobs:
         env:
           PYTHONPATH: items/shared:items/unittests_shared
         run: |
-          coverage run -m unittest -v main
+          coverage run --rcfile=./items/.coveragerc_shared -m unittest -v main
           coverage report -m --fail-under=100
