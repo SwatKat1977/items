@@ -21,6 +21,7 @@ from configuration_layout import CONFIGURATION_LAYOUT
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
                            LOGGING_DEFAULT_LOG_LEVEL, \
                            LOGGING_LOG_FORMAT_STRING
+from sqlite_interface import SqliteInterface
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
@@ -31,6 +32,7 @@ class Application(BaseApplication):
     def __init__(self, quart_instance):
         super().__init__()
         self._quart_instance = quart_instance
+        self._db : SqliteInterface = None
 
         self._logger = logging.getLogger(__name__)
         log_format= logging.Formatter(LOGGING_LOG_FORMAT_STRING,
@@ -55,6 +57,10 @@ class Application(BaseApplication):
                           Configuration().logging_log_level)
         self._logger.setLevel(Configuration().logging_log_level)
 
+        # Open databases.
+        if not self._open_database():
+            return False
+
         return True
 
     async def _main_loop(self) -> None:
@@ -78,9 +84,15 @@ class Application(BaseApplication):
         if config_file_required_str is not None and config_file_required_str == "1":
             config_file_required = True
 
+        self._logger.info("Configuration file required? %s",
+                          "True" if config_file_required else "False")
+
         if not config_file and config_file_required:
             self._logger.critical("Configuration file missing!")
             return False
+
+        if config_file_required:
+            self._logger.info("Configuration file : %s", config_file)
 
         Configuration().configure(CONFIGURATION_LAYOUT, config_file,
                                   config_file_required)
@@ -104,3 +116,22 @@ class Application(BaseApplication):
                           Configuration().backend_db_filename)
 
         return True
+
+    def _open_database(self) -> bool:
+        self._logger.info("Opening internal database...")
+
+        status: bool = False
+
+        filename: str = Configuration().backend_db_filename
+
+        self._db = SqliteInterface(self._logger, filename)
+
+        if not self._db.is_valid_database():
+            self._logger.critical("Database file '%s' is not valid!",
+                                  filename)
+        else:
+            status = True
+            self._logger.info("Database '%s' opened successful",
+                                  Configuration().backend_internal_db_filename)
+
+        return status
