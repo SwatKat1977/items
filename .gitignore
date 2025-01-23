@@ -8,7 +8,3 @@
 # -----------------
 .DS_Store
 
-# -----------------
-# Code Coverage GIT ignore
-# -----------------
-.coverage
