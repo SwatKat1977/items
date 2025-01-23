@@ -30,6 +30,7 @@ jobs:
           pip install coverage
           pip install jsonschema
           pip install aiohttp
+          pip install quart
 
       # Step 4: Run tests and measure coverage
       - name: Run tests with coverage
