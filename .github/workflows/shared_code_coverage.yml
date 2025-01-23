@@ -1,4 +1,4 @@
-name: Code Coverage | Shared
+name: Unit Tests & Coverage | Shared
 
 on:
   push:
