@@ -40,10 +40,11 @@ jobs:
           coverage report -m --fail-under=100
           echo "Checking for .coverage file..."
           ls -al  # List files in the current directory to check if .coverage exists
+          mv .coverage /tmp/.coverage
 
       # Step 5: Upload coverage results as artifact
       - name: Upload coverage report
         uses: actions/upload-artifact@v3
         with:
           name: shared-coverage-report
-          path: .coverage
+          path: /tmp/.coverage
