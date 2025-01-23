@@ -1,0 +1,29 @@
+name: "🎉 Feature Request"
+description: "You have an idea or feature that should be implemented? 🎩"
+title: "[Feature] "
+labels: ["Enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Feature Request
+
+        <!-- Fill in the relevant information below to help triage your issue. -->
+  - type: checkboxes
+    id: questions
+    attributes:
+      label: "Details"
+      description: "Provide some additional context for the feature request."
+      options:
+        - label: "New Feature"
+          required: true
+        - label: "RFC (Request for Comments)"
+        - label: "BC Break (Backward Compatibility)"
+  - type: textarea
+    id: summary
+    attributes:
+      label: "Summary"
+      description: "Provide a summary of the feature you would like to see implemented."
+      placeholder: "Describe the feature and why it's useful."
+    validations:
+      required: true
