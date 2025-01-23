@@ -1,0 +1,72 @@
+name: "📦 Project Dependency"
+description: "Report or propose changes related to project dependencies."
+title: "[Dependency] "
+labels: ["dependency"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Project Dependency Issue
+
+        Use this template to report issues with existing dependencies, propose adding new ones, or request updates/removals.
+  - type: input
+    id: dependency_name
+    attributes:
+      label: "Dependency Name"
+      description: "Specify the name of the dependency."
+      placeholder: "e.g., libmagic, OpenSSL"
+    validations:
+      required: true
+  - type: dropdown
+    id: action
+    attributes:
+      label: "Action"
+      description: "What action is required for this dependency?"
+      options:
+        - "Add New Dependency"
+        - "Update Existing Dependency"
+        - "Remove Dependency"
+        - "Other (Specify Below)"
+    validations:
+      required: true
+  - type: input
+    id: current_version
+    attributes:
+      label: "Current Version"
+      description: "Specify the current version of the dependency (if applicable)."
+      placeholder: "e.g., 1.2.3"
+  - type: input
+    id: desired_version
+    attributes:
+      label: "Desired Version"
+      description: "Specify the version you want to update to, if applicable."
+      placeholder: "e.g., 1.3.0"
+  - type: textarea
+    id: reason
+    attributes:
+      label: "Reason for Change"
+      description: |
+        Explain why this action is necessary.
+        - Why do you need this new dependency?
+        - Why does the version need updating or the dependency need removing?
+      placeholder: "Provide a clear justification for this request."
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: "Impact on the Project"
+      description: |
+        Describe the impact of this dependency change on the project:
+        - Will it introduce new features?
+        - Will it resolve an existing issue?
+        - Are there potential risks or compatibility concerns?
+      placeholder: "Describe how this dependency change will affect the project."
+    validations:
+      required: true
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: "Additional Context (Optional)"
+      description: "Provide any other relevant details, links, or resources."
+      placeholder: "Add any extra information here."
