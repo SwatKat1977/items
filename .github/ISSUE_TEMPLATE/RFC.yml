@@ -1,0 +1,84 @@
+name: "📜 RFC"
+description: "Propose a new feature, major change, or functionality."
+title: "[RFC] "
+labels: ["RFC"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## RFC
+
+        <!-- Fill in the relevant information below to help determine the scope. -->
+  - type: input
+    id: proposed_version
+    attributes:
+      label: "Proposed Version(s)"
+      description: "Specify the version(s) where this RFC applies."
+      placeholder: "e.g., x.y.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: bc_break
+    attributes:
+      label: "Backwards Compatibility Break?"
+      description: "Will this RFC introduce breaking changes?"
+      options:
+        - "Yes"
+        - "No"
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: "Goal"
+      description: |
+        Provide a short paragraph describing the GOAL or PURPOSE of the proposal.
+
+        Examples:
+        - Provide a mechanism for ...
+        - Provide tooling around the PHP extension ...
+        - Allow users to ...
+      placeholder: "Explain the goal or purpose of this RFC."
+    validations:
+      required: true
+  - type: textarea
+    id: background
+    attributes:
+      label: "Background"
+      description: "Describe the problem(s) or needs that require the new functionality or major changes."
+      placeholder: "Explain the context or existing problem this RFC addresses."
+    validations:
+      required: true
+  - type: textarea
+    id: considerations
+    attributes:
+      label: "Considerations"
+      description: |
+        Detail the impact on users. Consider these questions:
+        - Will they need to opt-in to a new major version?
+        - Will they need to prepare their code ahead of time to adopt the new feature(s)?
+        - Are there any packages that rely on this one that will be affected?
+      placeholder: "Describe the impact on users and dependencies."
+    validations:
+      required: true
+  - type: textarea
+    id: proposals
+    attributes:
+      label: "Proposal(s)"
+      description: |
+        Describe how you plan to meet the goal. Answer the following:
+
+        - How will users consume the functionality?
+      placeholder: "Explain the proposed implementation or solution."
+    validations:
+      required: true
+  - type: textarea
+    id: appendix
+    attributes:
+      label: "Appendix"
+      description: |
+        Detail anything not belonging in the above sections, such as:
+        - Existing proposals or prior art you consulted.
+        - New interfaces, classes, and other code features you will be adding.
+        - Any additional context or resources.
+      placeholder: "Add additional notes, references, or implementation details."
