@@ -1,0 +1,56 @@
+name: "🐞 Bug Report"
+description: "Something is broken? 🔨"
+title: "[Bug] "
+labels: ["Bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Bug Report
+
+        <!-- Fill in the relevant information below to help triage your issue. -->
+  - type: input
+    id: version
+    attributes:
+      label: "Version(s)"
+      description: "Specify the version(s) where the bug occurs."
+      placeholder: "e.g., x.y.z"
+  - type: textarea
+    id: summary
+    attributes:
+      label: "Summary"
+      description: "Provide a summary describing the problem you are experiencing."
+      placeholder: "Describe the issue in a few sentences."
+    validations:
+      required: true
+  - type: textarea
+    id: current_behaviour
+    attributes:
+      label: "Current Behavior"
+      description: "What is the current (buggy) behaviour?"
+      placeholder: "Describe the observed buggy behaviour."
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: "How to Reproduce"
+      description: |
+        Provide steps to reproduce the bug.
+
+        Adding a failing unit test would help us a lot - you can submit one in a Pull
+        Request separately, referencing this bug report.
+      placeholder: |
+        1. Step one
+        2. Step two
+        3. Step three
+    validations:
+      required: true
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: "Expected Behavior"
+      description: "What was the expected (correct) behaviour?"
+      placeholder: "Describe what you expected to happen instead."
+    validations:
+      required: true
