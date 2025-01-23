@@ -40,7 +40,7 @@ jobs:
           coverage report -m --fail-under=100
           echo "Checking for .coverage file..."
           ls -al  # List files in the current directory to check if .coverage exists
-          mv .coverage /tmp/.coverage
+          cp .coverage /tmp/.coverage
 
           # Print out the current working directory for confirmation
           echo "Current directory: $(pwd)"
@@ -51,4 +51,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: shared-coverage-report
-          path: /tmp/.coverage
+          path: /home/runner/work/items/items/.coverage
