@@ -1,0 +1,52 @@
+name: "Documentation Request"
+description: "Suggest new documentation or request updates to existing content."
+title: "[Docs] <Brief Summary>"
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for contributing to our documentation! Please fill out the following details to help us improve or create the content.
+  - type: textarea
+    id: description
+    attributes:
+      label: "Description"
+      description: "Provide a detailed description of the new documentation or the updates required for existing content."
+      placeholder: "Describe what needs to be documented or updated."
+    validations:
+      required: true
+  - type: input
+    id: doc_location
+    attributes:
+      label: "Documentation Location"
+      description: "Where should this documentation be added or updated? Specify the relevant file, section, or URL."
+      placeholder: "e.g., /docs/setup.md or API reference"
+  - type: textarea
+    id: impact
+    attributes:
+      label: "Why is this important?"
+      description: "Explain how this documentation will benefit users or improve the project."
+      placeholder: "Describe the importance or impact."
+  - type: input
+    id: deadline
+    attributes:
+      label: "Preferred Deadline (optional)"
+      description: "Is there a specific deadline for this documentation?"
+      placeholder: "e.g., 2025-02-15"
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: "Scope of Work"
+      description: "Select the areas that apply."
+      options:
+        - label: "New documentation"
+        - label: "Update existing documentation"
+        - label: "Fix grammar, typos, or formatting"
+        - label: "Add examples or code snippets"
+        - label: "Other (please specify in the description)"
+  - type: textarea
+    id: additional_info
+    attributes:
+      label: "Additional Information (optional)"
+      description: "Include any other relevant details, links, or attachments."
+      placeholder: "Provide any extra context or resources here."
