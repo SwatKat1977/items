@@ -1,6 +1,7 @@
 [run]
 omit =
-    ./unittests_shared/*
-    ./unittests_accounts_svc/*
+    items/unittests_shared/*
+    items/unittests_accounts_svc/*
+    items/shared/*
     /opt/homebrew/*
-    shared/*
+
