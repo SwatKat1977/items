@@ -37,18 +37,23 @@ jobs:
           PYTHONPATH: items/shared:items/unittests_shared
         run: |
           coverage run -m unittest -v main
-          coverage report -m --fail-under=100
-          echo "Checking for .coverage file..."
-          ls -al  # List files in the current directory to check if .coverage exists
-          cp .coverage /tmp/.coverage
+          
+          # Check explicitly for the .coverage file
+          echo "Looking for .coverage file:"
+          ls -al .coverage || echo ".coverage file not found"
+          
+          # If the .coverage file exists, print its size for confirmation
+          if [ -f .coverage ]; then
+            echo ".coverage file exists, uploading..."
+          else
+            echo "No .coverage file generated, something went wrong."
+          fi
 
-          # Print out the current working directory for confirmation
-          echo "Current directory: $(pwd)"
-          ls -al /tmp # List files in the current directory to check if .coverage exists
+          coverage report -m --fail-under=100
 
       # Step 5: Upload coverage results as artifact
       - name: Upload coverage report
         uses: actions/upload-artifact@v3
         with:
           name: shared-coverage-report
-          path: /home/runner/work/items/items/.coverage
+          path: .coverage
