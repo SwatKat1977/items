@@ -42,6 +42,10 @@ jobs:
           ls -al  # List files in the current directory to check if .coverage exists
           mv .coverage /tmp/.coverage
 
+          # Print out the current working directory for confirmation
+          echo "Current directory: $(pwd)"
+          ls -al /tmp # List files in the current directory to check if .coverage exists
+
       # Step 5: Upload coverage results as artifact
       - name: Upload coverage report
         uses: actions/upload-artifact@v3
