@@ -17,6 +17,7 @@ import argparse
 import logging
 import secrets
 import string
+import sql_values
 
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
 LOGGING_DEFAULT_LOG_LEVEL = logging.DEBUG
@@ -26,7 +27,7 @@ LOGGING_LOG_FORMAT_STRING = "%(asctime)s [%(levelname)s] %(message)s"
 DEFAULT_DB_FILENAME: str = "items_accounts_svc.db"
 
 # Default admin password
-DEFAULT_FIXED_ADMIN_PASSWORD: str = "abc123"
+DEFAULT_FIXED_ADMIN_PASSWORD: str = "item_admin_2025"
 
 # Default random password length
 DEFAULT_ADMIN_PASSWORD_LEN: int = 10
