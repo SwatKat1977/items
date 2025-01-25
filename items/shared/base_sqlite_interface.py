@@ -79,7 +79,7 @@ class BaseSqliteInterface:
         except (OSError, FileNotFoundError):
             return False
 
-    def open(self):
+    def open(self, create_mode: bool = False):
         """
         Open a connection to the SQLite database.
 
@@ -91,10 +91,10 @@ class BaseSqliteInterface:
         if self._connection:
             raise SqliteInterfaceException("Database is already open")
 
-        if not os.path.exists(self._db_filename):
+        if not create_mode and not os.path.exists(self._db_filename):
             raise SqliteInterfaceException("Database file cannot be opened")
 
-        if not self.is_valid_database():
+        if not create_mode and not self.is_valid_database():
             raise SqliteInterfaceException("Database file format is not valid")
 
         self._connection = sqlite3.connect(self._db_filename)
