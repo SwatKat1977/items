@@ -130,8 +130,14 @@ class Application(BaseApplication):
             self._logger.critical("Database file '%s' is not valid!",
                                   filename)
         else:
-            status = True
-            self._logger.info("Database '%s' opened successful",
+
+            status, err_str = self._db.open()
+            if not status:
+                self._logger.critical(err_str)
+
+            else:
+                status = True
+                self._logger.info("Database '%s' opened successful",
                                   Configuration().backend_internal_db_filename)
 
         return status
