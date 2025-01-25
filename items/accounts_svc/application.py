@@ -22,6 +22,7 @@ from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
                            LOGGING_DEFAULT_LOG_LEVEL, \
                            LOGGING_LOG_FORMAT_STRING
 from sqlite_interface import SqliteInterface
+from base_sqlite_interface import SqliteInterfaceException
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
@@ -126,18 +127,15 @@ class Application(BaseApplication):
 
         self._db = SqliteInterface(self._logger, filename)
 
-        if not self._db.is_valid_database():
-            self._logger.critical("Database file '%s' is not valid!",
-                                  filename)
+        try:
+            self._db.open()
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Unable to open '%s', reason: %s",
+                                  filename, ex)
+
         else:
-
-            status, err_str = self._db.open()
-            if not status:
-                self._logger.critical(err_str)
-
-            else:
-                status = True
-                self._logger.info("Database '%s' opened successful",
-                                  Configuration().backend_internal_db_filename)
+            self._logger.info("Database '%s' opened successful", filename)
+            status = True
 
         return status
