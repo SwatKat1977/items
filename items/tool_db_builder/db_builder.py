@@ -137,7 +137,8 @@ def build_database(logger: logging.Logger,
         logger.info("Database build successful")
 
     except SqliteInterfaceException as interface_except:
-        print(f"FOO: {str(interface_except)}")
+        logger.critical("Unable to add admin user auth details, reason: %s",
+                        str(interface_except))
         return False
 
     return True
