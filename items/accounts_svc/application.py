@@ -132,7 +132,7 @@ class Application(BaseApplication):
 
         except SqliteInterfaceException as ex:
             self._logger.critical("Unable to open '%s', reason: %s",
-                                  filename, ex)
+                                  filename, str(ex))
 
         else:
             self._logger.info("Database '%s' opened successful", filename)
