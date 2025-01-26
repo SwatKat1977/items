@@ -5,6 +5,7 @@ import asyncio
 from quart import Quart
 from application import Application
 from configuration_layout import CONFIGURATION_LAYOUT
+from base_sqlite_interface import SqliteInterfaceException
 
 class TestApplication(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
@@ -32,6 +33,9 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.application._manage_configuration = MagicMock(return_value=True)
         self.mock_config_instance.logging_log_level = "DEBUG"
 
+        # Mock database opening success
+        self.application._open_database = MagicMock(return_value=True)
+
         # Call _initialise
         result = self.application._initialise()
 
@@ -44,7 +48,7 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.mock_logger_instance.setLevel.assert_called_once_with("DEBUG")
         self.application._manage_configuration.assert_called_once()
 
-    def test_initialise_failure(self):
+    def test_initialise_failure_configuration(self):
         """Test _initialise when configuration management fails."""
         # Mock configuration management failure
         self.application._manage_configuration = MagicMock(return_value=False)
@@ -55,6 +59,19 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         # Assertions
         self.assertFalse(result, "Initialization should fail")
         self.application._manage_configuration.assert_called_once()
+        self.mock_logger_instance.info.assert_called()  # Logger should still log build info
+
+    def test_initialise_failure_open_database(self):
+        """Test _initialise when configuration management fails."""
+        # Mock configuration management failure
+        self.application._open_database = MagicMock(return_value=False)
+
+        # Call _initialise
+        result = self.application._initialise()
+
+        # Assertions
+        self.assertFalse(result, "Initialization should fail")
+        self.application._open_database.assert_called_once()
         self.mock_logger_instance.info.assert_called()  # Logger should still log build info
 
     @patch.dict(os.environ, {"ITEMS_ACCOUNTS_SVC_CONFIG_FILE_REQUIRED": "1"})
@@ -112,3 +129,47 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
             await asyncio.wait_for(self.application._main_loop(), timeout=1.0)
         except asyncio.TimeoutError:
             self.fail("_main_loop did not complete within the expected time frame.")
+
+    @patch("application.Configuration")
+    @patch("application.SqliteInterface")
+    def test_open_database_success(self, mock_sqlite_interface, mock_configuration):
+        """Test that _open_database() succeeds when the database opens."""
+        # Mock the database filename
+        mock_configuration.return_value.backend_db_filename = "test.db"
+
+        # Mock SqliteInterface to simulate a successful open
+        mock_sqlite_instance = mock_sqlite_interface.return_value
+        mock_sqlite_instance.open.return_value = None  # No exception means success
+
+        # Call the method under test
+        result = self.application._open_database()
+
+        # Assert the result is True
+        self.assertTrue(result, "Database opening should succeed")
+
+        # Assert logger calls
+        self.mock_logger_instance.info.assert_any_call("Opening internal database...")
+        self.mock_logger_instance.info.assert_any_call("Database '%s' opened successful", "test.db")
+
+    @patch("application.Configuration")
+    @patch("application.SqliteInterface")
+    def test_open_database_failure(self, mock_sqlite_interface, mock_configuration):
+        """Test that _open_database() fails when opening the database raises an exception."""
+        # Mock the database filename
+        mock_configuration.return_value.backend_db_filename = "test.db"
+
+        # Mock SqliteInterface to raise an exception
+        mock_sqlite_instance = mock_sqlite_interface.return_value
+        mock_sqlite_instance.open.side_effect = SqliteInterfaceException("Test exception")
+
+        # Call the method under test
+        result = self.application._open_database()
+
+        # Assert the result is False
+        self.assertFalse(result, "Database opening should fail")
+
+        # Assert logger calls
+        self.mock_logger_instance.info.assert_any_call("Opening internal database...")
+        self.mock_logger_instance.critical.assert_called_once_with(
+            "Unable to open '%s', reason: %s", "test.db", "Test exception"
+        )
