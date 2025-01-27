@@ -69,13 +69,14 @@ class BaseApplication:
         Start the application.
         """
 
-        while not self._shutdown_requested and self._is_initialised:
-            try:
+        try:
+            while not self._shutdown_requested and self._is_initialised:
                 await self._main_loop()
                 await asyncio.sleep(0.1)
 
-            except KeyboardInterrupt:
-                break
+        except KeyboardInterrupt:
+            self._logger.info("KeyboardInterrupt received. Stopping...")
+            self.stop()
 
         self._logger.info("Exiting application entrypoint...")
 
@@ -107,5 +108,5 @@ class BaseApplication:
         """ Abstract method for main application. """
         raise NotImplementedError("Requires implementing")
 
-    async def _shutdown(self) -> None:
+    def _shutdown(self) -> None:
         """ Abstract method for application shutdown. """
