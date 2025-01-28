@@ -26,6 +26,7 @@ from base_sqlite_interface import SqliteInterfaceException
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
+import apis.basic_authentication_api as basic_auth_api
 
 class Application(BaseApplication):
     """ ITEMS Accounts Service """
@@ -61,6 +62,10 @@ class Application(BaseApplication):
         # Open databases.
         if not self._open_database():
             return False
+
+        basic_auth_blueprint = basic_auth_api.create_blueprint(
+            self._db, self._logger)
+        self._quart_instance.register_blueprint(basic_auth_blueprint)
 
         return True
 
