@@ -58,7 +58,7 @@ class SqliteInterface(BaseSqliteInterface):
                 query, (email_address,))
 
         except SqliteInterfaceException as ex:
-            self._logger.critical("Query failed, reason: %s", ex)
+            self._logger.critical("Query failed, reason: %s", str(ex))
             return None
 
         if rows:
@@ -101,7 +101,7 @@ class SqliteInterface(BaseSqliteInterface):
             rows: dict = self.query_with_values(query, (user_id,))
 
         except SqliteInterfaceException as ex:
-            self._logger.critical("Query failed, reason: %s", ex)
+            self._logger.critical("Query failed, reason: %s", str(ex))
             return None
 
         if not rows:
