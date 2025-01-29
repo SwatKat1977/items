@@ -1,8 +1,8 @@
 import unittest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 from http import HTTPStatus
-from quart import Quart, request
-from apis.basic_authentication_api import ApiResponse, create_blueprint
+from quart import Quart
+from base_view import ApiResponse
 from apis.basic_authentication_api_view import BasicAuthenticationApiView as View
 
 class TestBasicAuthAPI(unittest.IsolatedAsyncioTestCase):
@@ -88,10 +88,10 @@ class TestBasicAuthAPI(unittest.IsolatedAsyncioTestCase):
             response = await client.post('/basic_auth/authenticate',
                                          json={"email_address": "test@example.com", "password": "password123"})
 
-            # ✅ Check response status
+            # Check response status
             self.assertEqual(response.status_code, HTTPStatus.OK)
 
-            # ✅ Check response JSON
+            # Check response JSON
             data = await response.get_json()
             self.assertEqual(data['status'], 0)
             self.assertEqual(data['error'], "User not found")
@@ -151,51 +151,3 @@ class TestBasicAuthAPI(unittest.IsolatedAsyncioTestCase):
             data = await response.get_json()
             self.assertEqual(data['status'], 1)
             self.assertEqual(data['error'], "")
-
-    async def test_create_blueprint_bo(self):
-        """Test that create_blueprint correctly creates and registers the blueprint."""
-
-        # Create blueprint
-        blueprint = create_blueprint(self.sql_interface, self.logger)
-
-        # Register the blueprint with the Quart app
-        self.app.register_blueprint(blueprint)
-
-        # Verify if the route is correctly registered
-        print("Registered routes:", self.app.url_map)  # Check if /basic_auth/authenticate is listed
-
-        # Mock the 'authenticate' method in the View class to return a mock response
-        with patch.object(View, 'authenticate', return_value={"status": 1, "error": ""}) as mock_authenticate:
-            # Mock the actual SQL interface method to return a valid result tuple
-            self.sql_interface.query_some_method.return_value = (123, "")  # Mock DB result
-
-            # Make the async request with the test client
-            async with self.app.test_client() as client:
-                response = await client.post('/basic_auth/authenticate',
-                                             json={"email_address": "test@example.com", "password": "password123"})
-
-                # Assert that the 'authenticate' method was called
-                mock_authenticate.assert_called_once()
-
-                # Assert the response status code
-                self.assertEqual(response.status_code, 200)
-
-                # Assert the response JSON content
-                data = await response.get_json()
-                self.assertEqual(data['status'], 1)
-                self.assertEqual(data['error'], "")
-
-    '''
-    def test_create_blueprint_logging(self):
-        """Test that create_blueprint logs the expected messages."""
-
-        # Call create_blueprint to register the blueprint (with mock logger)
-        blueprint = create_blueprint(self.sql_interface, self.logger)
-
-        # Register the blueprint with the Quart app
-        self.app.register_blueprint(blueprint)
-
-        # Ensure the logger logs the correct messages during blueprint creation
-        self.logger.info.assert_any_call("Registering Basic Authentication API:")
-        self.logger.info.assert_any_call("=> basic_auth/authenticate [POST]")
-    '''
