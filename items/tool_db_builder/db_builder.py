@@ -181,6 +181,9 @@ def main():
         logger.info("Using random admin password...")
         admin_password = generate_secure_password()
     else:
+        logger.info("Using %s admin password...",
+                    "user-defined" if args.adminPassword else
+                    "default")
         if args.adminPassword:
             admin_password = args.adminPassword
 
@@ -188,7 +191,7 @@ def main():
     if not db:
         return
 
-    build_database(logger, db, "admin_password")
+    build_database(logger, db, admin_password)
 
 
 if __name__ == "__main__":

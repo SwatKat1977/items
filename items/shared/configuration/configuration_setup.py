@@ -32,11 +32,11 @@ class ConfigurationSetupItem:
     item_type : ConfigItemDataType
     default_value : typing.Optional[object]
 
-    def __init__(self, item_name : str, item_type : ConfigItemDataType,
-                 valid_values : typing.Optional[list] = None,
-                 is_required : bool = False,
-                 default_value : typing.Optional[object] = None) -> None:
-        # pylint: disable=too-many-arguments
+    def __init__(self, item_name: str, item_type : ConfigItemDataType,
+                 valid_values: typing.Optional[list] = None,
+                 is_required: bool = False,
+                 default_value: typing.Optional[object] = None) -> None:
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         object.__setattr__(self, "item_name", item_name)
         object.__setattr__(self, "item_type", item_type)
         object.__setattr__(self, "valid_values",

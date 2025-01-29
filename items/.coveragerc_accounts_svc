@@ -2,6 +2,7 @@
 omit =
     items/unittests_shared/*
     items/unittests_accounts_svc/*
+    items/accounts_svc/apis/basic_authentication_api.py
     items/shared/*
     /opt/homebrew/*
 

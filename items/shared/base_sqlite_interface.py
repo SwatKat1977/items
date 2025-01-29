@@ -15,7 +15,7 @@ limitations under the License.
 """
 import os
 import sqlite3
-from typing import AnyStr, Optional
+from typing import Optional
 
 
 class SqliteInterfaceException(Exception):
@@ -181,43 +181,3 @@ class BaseSqliteInterface:
         except sqlite3.Error as ex:
             raise SqliteInterfaceException(
                 f"Error querying user ID: {str(ex)}") from ex
-
-
-CREATE_USER_AUTH_DETAILS_TABLE = """
-CREATE TABLE IF NOT EXISTS user_auth_details (
-    id INTEGER PRIMARY KEY,
-    password TEXT NOT NULL,
-    password_salt TEXT NOT NULL,
-    user_id INTEGER NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES user_profile (id)
-);
-"""
-
-'''
-boop = SqliteInterface('womble.test')
-#boop = SqliteInterface('.DS_Store')
-print(f"Is connected : {boop.is_connected()}")
-print(f"Is valid db  : {boop.is_valid_database()}")
-boop.open()
-x = boop.insert_query(CREATE_USER_AUTH_DETAILS_TABLE)
-print(f"LAST ID: {x}")
-'''
-
-'''
-x = boop.insert_query("INSERT INTO user_auth_details (password, password_salt," +
-                      "user_id) VALUES (?, ?, ?)", ('a1', 'b_01', 'ca'))
-x = boop.insert_query("INSERT INTO user_auth_details (password, password_salt," +
-                      "user_id) VALUES (?, ?, ?)", ('a2', 'b_02', 'cb'))
-x = boop.insert_query("INSERT INTO user_auth_details (password, password_salt," +
-                      "user_id) VALUES (?, ?, ?)", ('a3', 'b_03', 'cc'))
-x = boop.insert_query("INSERT INTO user_auth_details (password, password_salt," +
-                      "user_id) VALUES (?, ?, ?)", ('a4', 'b_04', 'cd'))
-print(f"LAST ID: {x}")
-'''
-
-'''
-print(boop.query_with_values("SELECT * from user_auth_details"))
-#boop.open()
-boop.close()
-boop.create_table(";;", "iii")
-'''
