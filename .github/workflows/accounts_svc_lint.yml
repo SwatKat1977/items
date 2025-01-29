@@ -27,5 +27,7 @@ jobs:
           pip install pylint
 
       - name: Run Pylint
+        env:
+          PYTHONPATH: items/shared:items/accounts_svc
         run: |
           pylint --fail-under=10.0 items/accounts_svc
