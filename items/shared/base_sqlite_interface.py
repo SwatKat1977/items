@@ -15,7 +15,7 @@ limitations under the License.
 """
 import os
 import sqlite3
-from typing import AnyStr, Optional
+from typing import Optional
 
 
 class SqliteInterfaceException(Exception):
