@@ -16,54 +16,14 @@ limitations under the License.
 from http import HTTPStatus
 import json
 import logging
-from quart import Blueprint, request, Response
+from quart import request, Response
 from account_logon_type import AccountLogonType
 import interfaces.accounts.basic_authentication as basic_auth
 from base_view import ApiResponse, BaseView
 from sqlite_interface import SqliteInterface
-from apis.basic_authentication_api_view import BasicAuthenticationApiView
 
 
-def create_blueprint(sql_interface: SqliteInterface,
-                     logger: logging.Logger) -> Blueprint:
-    """
-    Creates and registers a Flask Blueprint for handling basic authentication API routes.
-
-    This function initializes a `View` object with the provided SQL interface and logger,
-    and then defines an API endpoint for authentication. It registers the route
-    `/basic_auth/authenticate` with the POST method to handle authentication requests.
-
-    Args:
-        sql_interface (SqliteInterface): An instance of the `SqliteInterface` class used for
-                                         database operations.
-        logger (logging.Logger): A logger instance for logging messages.
-
-    Returns:
-        Blueprint: A Flask `Blueprint` object containing the registered route.
-
-    Example:
-        >>> from flask import Flask
-        >>> from your_module import create_blueprint
-        >>> app = Flask(__name__)
-        >>> blueprint = create_blueprint(sql_interface, logger)
-        >>> app.register_blueprint(blueprint)
-    """
-    view = BasicAuthenticationApiView(sql_interface, logger)
-
-    blueprint = Blueprint('basic_auth_api', __name__)
-
-    logger.info("Registering Basic Authentication API:")
-    logger.info("=> basic_auth/authenticate [POST]")
-
-    @blueprint.route('/basic_auth/authenticate', methods=['POST'])
-    async def authenticate_request():
-        return await view.authenticate()
-
-    return blueprint
-
-'''
-
-class View(BaseView):
+class BasicAuthenticationApiView(BaseView):
     __slots__ = ['_logger', '_sql_interface']
 
     def __init__(self, sql_interface : SqliteInterface,
@@ -164,4 +124,3 @@ class View(BaseView):
         }
         return Response(json.dumps(response_json), status=HTTPStatus.OK,
                         content_type="application/json")
-'''
