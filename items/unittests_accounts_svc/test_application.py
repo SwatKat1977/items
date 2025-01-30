@@ -1,11 +1,11 @@
 import os
 import unittest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 import asyncio
-from quart import Quart
 from application import Application
 from configuration_layout import CONFIGURATION_LAYOUT
 from base_sqlite_interface import SqliteInterfaceException
+
 
 class TestApplication(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
