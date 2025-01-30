@@ -6,14 +6,14 @@ from configuration.configuration_manager import ConfigurationManager
 from threadsafe_configuration import ThreadSafeConfiguration
 
 
-class TestThreadafeConfiguration(unittest.TestCase):
+class TestThreadSafeConfiguration(unittest.TestCase):
     @patch.object(ConfigurationManager, 'get_entry')
     def test_logging_log_level(self, mock_get_entry):
         """Test logging_log_level property"""
         # Set up mock return value for the get_entry method
         mock_get_entry.return_value = "DEBUG"
 
-        # Instantiate ThreadafeConfiguration
+        # Instantiate ThreadSafeConfiguration
         config = ThreadSafeConfiguration()
 
         # Call the logging_log_level property
@@ -33,7 +33,7 @@ class TestThreadafeConfiguration(unittest.TestCase):
         # Set up mock return value for the get_entry method
         mock_get_entry.return_value = "/path/to/database.db"
 
-        # Instantiate ThreadafeConfiguration
+        # Instantiate ThreadSafeConfiguration
         config = ThreadSafeConfiguration()
 
         # Call the backend_db_filename property
@@ -73,7 +73,7 @@ class TestThreadafeConfiguration(unittest.TestCase):
         # Set up mock return value for the get_entry method (no value provided)
         mock_get_entry.return_value = "/default/path/to/database.db"
 
-        # Instantiate ThreadafeConfiguration
+        # Instantiate ThreadSafeConfiguration
         config = ThreadSafeConfiguration()
 
         # Call the backend_db_filename property
