@@ -1,3 +1,4 @@
+import asyncio
 import unittest
 from unittest.mock import  MagicMock, patch
 from application import Application
@@ -27,3 +28,12 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.mock_logger_instance.info.assert_any_call(
             'ITEMS Gateway Microservice %s', "V1.0.0-123-alpha"
         )
+
+    async def test_main_loop_execution(self):
+        """Test that _main_loop executes properly with asyncio.sleep."""
+        # We'll use an event loop to run the async method and check if it completes
+        loop = asyncio.get_event_loop()
+        try:
+            await asyncio.wait_for(self.application._main_loop(), timeout=1.0)
+        except asyncio.TimeoutError:
+            self.fail("_main_loop did not complete within the expected time frame.")
