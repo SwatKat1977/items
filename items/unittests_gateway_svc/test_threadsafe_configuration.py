@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch
-#from configuration_layout import ConfigurationConstants as consts
+from configuration_layout import ConfigurationConstants as consts
 from configuration.configuration_manager import ConfigurationManager
 from threadsafe_configuration import ThreadSafeConfiguration
 
@@ -27,24 +27,44 @@ class TestThreadSafeConfiguration(unittest.TestCase):
         self.assertEqual(log_level, "DEBUG")
 
     @patch.object(ConfigurationManager, 'get_entry')
-    def test_backend_db_filename(self, mock_get_entry):
-        """Test backend_db_filename property"""
+    def test_apis_accounts_svc(self, mock_get_entry):
+        """Test apis_accounts_svc property"""
         # Set up mock return value for the get_entry method
-        mock_get_entry.return_value = "/path/to/database.db"
+        mock_get_entry.return_value = "http://unittests:9001"
 
-        # Instantiate ThreadafeConfiguration
+        # Instantiate ThreadSafeConfiguration
         config = ThreadSafeConfiguration()
 
-        # Call the backend_db_filename property
-        db_filename = config.backend_db_filename
+        # Call the apis_accounts_svc property
+        api: str = config.apis_accounts_svc
 
         # Assert that get_entry was called with the expected parameters
         mock_get_entry.assert_called_once_with(
-            consts.SECTION_BACKEND, consts.ITEM_BACKEND_DB_FILENAME
+            consts.SECTION_APIS, consts.ITEM_APIS_ACCOUNTS_SVC
         )
 
-        # Assert that the backend_db_filename property returns the correct value
-        self.assertEqual(db_filename, "/path/to/database.db")
+        # Assert that the apis_accounts_svc property returns the correct value
+        self.assertEqual(api, "http://unittests:9001")
+
+    @patch.object(ConfigurationManager, 'get_entry')
+    def test_apis_cms_svc(self, mock_get_entry):
+        """Test apis_cms_svc property"""
+        # Set up mock return value for the get_entry method
+        mock_get_entry.return_value = "http://unittests:9002"
+
+        # Instantiate ThreadSafeConfiguration
+        config = ThreadSafeConfiguration()
+
+        # Call the apis_cms_svc property
+        api: str = config.apis_cms_svc
+
+        # Assert that get_entry was called with the expected parameters
+        mock_get_entry.assert_called_once_with(
+            consts.SECTION_APIS, consts.ITEM_APIS_CMS_SVC
+        )
+
+        # Assert that the apis_cms_svc property returns the correct value
+        self.assertEqual(api, "http://unittests:9002")
 
     @patch.object(ConfigurationManager, 'get_entry')
     def test_logging_log_level_default(self, mock_get_entry):
@@ -65,23 +85,3 @@ class TestThreadSafeConfiguration(unittest.TestCase):
 
         # Assert that the logging_log_level property returns the correct value
         self.assertEqual(log_level, "INFO")
-
-    @patch.object(ConfigurationManager, 'get_entry')
-    def test_backend_db_filename_default(self, mock_get_entry):
-        """Test backend_db_filename property when default value is returned"""
-        # Set up mock return value for the get_entry method (no value provided)
-        mock_get_entry.return_value = "/default/path/to/database.db"
-
-        # Instantiate ThreadafeConfiguration
-        config = ThreadSafeConfiguration()
-
-        # Call the backend_db_filename property
-        db_filename = config.backend_db_filename
-
-        # Assert that get_entry was called with the expected parameters
-        mock_get_entry.assert_called_once_with(
-            consts.SECTION_BACKEND, consts.ITEM_BACKEND_DB_FILENAME
-        )
-
-        # Assert that the backend_db_filename property returns the correct value
-        self.assertEqual(db_filename, "/default/path/to/database.db")

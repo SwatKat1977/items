@@ -15,19 +15,39 @@ limitations under the License.
 """
 from configuration import configuration_setup
 
+
+class ConfigurationConstants:
+    """ Constants for the microservice configuration. """
+
+    SECTION_LOGGING: str = 'logging'
+    SECTION_APIS: str = 'apis'
+
+    ITEM_LOGGING_LOG_LEVEL: str = 'log_level'
+    LOG_LEVEL_DEBUG: str = 'DEBUG'
+    LOG_LEVEL_INFO: str = 'INFO'
+
+    ITEM_APIS_ACCOUNTS_SVC: str = "accounts_svc"
+    ITEM_APIS_CMS_SVC: str = "cms_svc"
+
+
 CONFIGURATION_LAYOUT = configuration_setup.ConfigurationSetup(
     {
-        "logging": [
+        ConfigurationConstants.SECTION_LOGGING: [
             configuration_setup.ConfigurationSetupItem(
-                "log_level", configuration_setup.ConfigItemDataType.STRING,
-                valid_values=['DEBUG', 'INFO'], default_value="INFO")
+                ConfigurationConstants.ITEM_LOGGING_LOG_LEVEL,
+                configuration_setup.ConfigItemDataType.STRING,
+                valid_values=[ConfigurationConstants.LOG_LEVEL_DEBUG,
+                              ConfigurationConstants.LOG_LEVEL_INFO],
+                default_value=ConfigurationConstants.LOG_LEVEL_INFO)
         ],
-        "apis": [
+        ConfigurationConstants.SECTION_APIS: [
             configuration_setup.ConfigurationSetupItem(
-                "accounts_svc", configuration_setup.ConfigItemDataType.STRING,
+                ConfigurationConstants.ITEM_APIS_ACCOUNTS_SVC,
+                configuration_setup.ConfigItemDataType.STRING,
                 default_value="http://localhost:3000/"),
             configuration_setup.ConfigurationSetupItem(
-                "cms_svc", configuration_setup.ConfigItemDataType.STRING,
+                ConfigurationConstants.ITEM_APIS_CMS_SVC,
+                configuration_setup.ConfigItemDataType.STRING,
                 default_value="http://localhost:4000/")
         ]
     }
