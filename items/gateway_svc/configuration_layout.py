@@ -22,13 +22,14 @@ class ConfigurationConstants:
     """ Constants for the microservice configuration. """
 
     SECTION_LOGGING: str = 'logging'
-    SECTION_BACKEND: str = 'backend'
+    SECTION_APIS: str = 'apis'
 
     ITEM_LOGGING_LOG_LEVEL: str = 'log_level'
     LOG_LEVEL_DEBUG: str = 'DEBUG'
     LOG_LEVEL_INFO: str = 'INFO'
 
-    ITEM_BACKEND_DB_FILENAME: str = 'db_filename'
+    ITEM_APIS_ACCOUNTS_SVC: str = "accounts_svc"
+    ITEM_APIS_CMS_SVC: str = "cms_svc"
 
 
 CONFIGURATION_LAYOUT = configuration_setup.ConfigurationSetup(
@@ -39,13 +40,17 @@ CONFIGURATION_LAYOUT = configuration_setup.ConfigurationSetup(
                 configuration_setup.ConfigItemDataType.STRING,
                 valid_values=[ConfigurationConstants.LOG_LEVEL_DEBUG,
                               ConfigurationConstants.LOG_LEVEL_INFO],
-                              default_value=ConfigurationConstants.LOG_LEVEL_INFO)
+                default_value=ConfigurationConstants.LOG_LEVEL_INFO)
         ],
-        ConfigurationConstants.SECTION_BACKEND: [
+        ConfigurationConstants.SECTION_APIS: [
             configuration_setup.ConfigurationSetupItem(
-                ConfigurationConstants.ITEM_BACKEND_DB_FILENAME,
+                ConfigurationConstants.ITEM_APIS_ACCOUNTS_SVC,
                 configuration_setup.ConfigItemDataType.STRING,
-                default_value="items_accounts_svc.db")
+                default_value="http://localhost:3000/"),
+            configuration_setup.ConfigurationSetupItem(
+                ConfigurationConstants.ITEM_APIS_CMS_SVC,
+                configuration_setup.ConfigItemDataType.STRING,
+                default_value="http://localhost:4000/")
         ]
     }
 )
