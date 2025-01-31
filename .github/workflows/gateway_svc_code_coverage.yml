@@ -7,6 +7,10 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - 'items/gateway_svc/**'
+      - 'items/unittests_gateway_svc/**'
+      - '.github/workflows/gateway_svc_code_coverage.yml'
 
 jobs:
   coverage:

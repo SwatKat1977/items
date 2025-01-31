@@ -6,6 +6,10 @@ on:
       - main
       - develop
   pull_request:
+    paths:
+      - 'items/shared/**'
+      - 'items/unittests_shared/**'
+      - '.github/workflows/shared_lint.yml'
 
 jobs:
   lint:

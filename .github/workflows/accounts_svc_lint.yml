@@ -9,7 +9,7 @@ on:
     paths:
       - 'items/accounts_svc/**'
       - 'items/unittests_accounts_svc/**'
-      - '.github/workflows/accounts_svc_code_lint.yml'
+      - '.github/workflows/accounts_svc_lint.yml'
 
 jobs:
   lint:

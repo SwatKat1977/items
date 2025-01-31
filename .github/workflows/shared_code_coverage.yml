@@ -7,6 +7,10 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - 'items/shared/**'
+      - 'items/unittests_shared/**'
+      - '.github/workflows/shared_code_coverage.yml'
 
 jobs:
   coverage:
