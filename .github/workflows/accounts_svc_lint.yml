@@ -1,6 +1,7 @@
 name: Linting | Accounts Svc
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - 'items/accounts_svc/**'
