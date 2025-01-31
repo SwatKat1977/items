@@ -6,6 +6,10 @@ on:
       - main
       - develop
   pull_request:
+    paths:
+      - 'items/accounts_svc/**'
+      - 'items/unittests_accounts_svc/**'
+      - '.github/workflows/accounts_svc_code_coverage.yml'
 
 jobs:
   lint:
