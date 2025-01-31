@@ -11,7 +11,12 @@ on:
       - 'items/shared/**'
       - 'items/unittests_shared/**'
       - '.github/workflows/shared_code_coverage.yml'
-
+    paths-ignore:
+      - 'items/accounts_svc/**'
+      - 'items/unittests_accounts_svc/**'
+      - 'items/cms_svc/**'
+      - 'items/gateway_svc/**'
+      - 'items/unittests_gateway_svc/**'
 jobs:
   coverage:
     runs-on: ubuntu-24.04

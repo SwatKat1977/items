@@ -7,7 +7,12 @@ on:
       - 'items/accounts_svc/**'
       - 'items/unittests_accounts_svc/**'
       - '.github/workflows/accounts_svc_lint.yml'
-
+    paths-ignore:
+      - 'items/gateway_svc/**'
+      - 'items/unittests_gateway_svc/**'
+      - 'items/cms_svc/**'
+      - 'items/shared/**'
+      - 'items/unittests_shared/**'
 jobs:
   lint:
     name: Run Pylint
