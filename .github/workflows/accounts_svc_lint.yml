@@ -1,10 +1,6 @@
 name: Linting | Accounts Svc
 
 on:
-  push:
-    branches:
-      - main
-      - develop
   pull_request:
     paths:
       - 'items/accounts_svc/**'

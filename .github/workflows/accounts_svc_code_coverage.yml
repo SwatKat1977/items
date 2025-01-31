@@ -1,12 +1,7 @@
 name: Unit Tests & Coverage | Account Svc
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
     paths:
       - 'items/accounts_svc/**'
       - 'items/unittests_accounts_svc/**'
