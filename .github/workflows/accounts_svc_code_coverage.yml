@@ -7,7 +7,8 @@ on:
       - 'items/accounts_svc/**'
       - 'items/unittests_accounts_svc/**'
       - '.github/workflows/accounts_svc_code_coverage.yml'
-
+    paths-ignore:
+      - 'items/cms_svc/**'
 jobs:
   coverage:
     runs-on: ubuntu-24.04
