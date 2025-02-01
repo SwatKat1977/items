@@ -1,0 +1,38 @@
+name: Perform Lint
+
+on:
+  pull_request:
+
+jobs:
+  items-a:
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.changed_files, 'items/accounts_svc/')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run items/a action
+        run: echo "Running items/a action"
+        # Add your actual steps for items/a here
+
+  items-b:
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.changed_files, 'items/gateway_svc/')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run items/b action
+        run: echo "Running items/b action"
+        # Add your actual steps for items/b here
+
+  items-s:
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.changed_files, 'items/shared/')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run items/s action
+        run: echo "Running items/s action"
+        # Add your actual steps for items/s here
