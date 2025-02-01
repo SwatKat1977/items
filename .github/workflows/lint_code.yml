@@ -24,6 +24,7 @@ jobs:
     needs: setup  # Wait for the setup job to complete
     outputs:
       accounts_svc_changed: ${{ steps.detect.outputs.accounts_svc_changed }}
+      cms_svc_changed: ${{ steps.detect.outputs.cms_svc_changed }}
       gateway_svc_changed: ${{ steps.detect.outputs.gateway_svc_changed }}
       shared_changed: ${{ steps.detect.outputs.shared_changed }}
     steps:
