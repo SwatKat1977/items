@@ -2,3 +2,4 @@
 omit =
     items/unittests_shared/*
     /opt/homebrew/*
+    /usr/lib/python3/*
