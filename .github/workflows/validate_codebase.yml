@@ -133,7 +133,7 @@ jobs:
         env:
           PYTHONPATH: items/shared:items/unittests_accounts_svc:items/accounts_svc
         run: |
-          coverage run --rcfile=.github/workflows/.coveragerc_accounts_svc -m unittest -v main
+          coverage run --rcfile=.github/workflows/.coveragerc_cms_svc -m unittest -v main
           coverage report -m --fail-under=100
 
   verify_gateway-svc:
