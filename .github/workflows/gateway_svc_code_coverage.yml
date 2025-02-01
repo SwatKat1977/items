@@ -1,22 +1,11 @@
 name: Unit Tests & Coverage | Gateway Svc
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
     paths:
       - 'items/gateway_svc/**'
       - 'items/unittests_gateway_svc/**'
       - '.github/workflows/gateway_svc_code_coverage.yml'
-    paths-ignore:
-      - 'items/accounts_svc/**'
-      - 'items/unittests_accounts_svc/**'
-      - 'items/cms_svc/**'
-      - 'items/shared/**'
-      - 'items/unittests_shared/**'
 jobs:
   coverage:
     runs-on: ubuntu-24.04
