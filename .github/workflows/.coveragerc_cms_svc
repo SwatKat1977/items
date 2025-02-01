@@ -4,4 +4,4 @@ omit =
     items/unittests_cms_svc/*
     items/shared/*
     /opt/homebrew/*
-    /usr/lib/python3/
+    /usr/lib/python3/*
