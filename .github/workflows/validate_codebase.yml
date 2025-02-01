@@ -26,6 +26,7 @@ jobs:
       accounts_svc_changed: ${{ steps.detect.outputs.accounts_svc_changed }}
       cms_svc_changed: ${{ steps.detect.outputs.cms_svc_changed }}
       gateway_svc_changed: ${{ steps.detect.outputs.gateway_svc_changed }}
+      web_portal_svc_changed: ${{ steps.detect.outputs.web_portal_svc_changed }}
       shared_changed: ${{ steps.detect.outputs.shared_changed }}
     steps:
       - name: Checkout code
@@ -68,6 +69,16 @@ jobs:
             echo "[INFO] items/gateway_svc has changed"
           else
             echo "gateway_svc_changed=false" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "Checking for changes in items/web_portal_svc/"
+          if git diff --name-only origin/${{ github.event.pull_request.base.ref }} \
+            ${{ github.event.pull_request.head.sha }} \
+              | grep -qE '^items/web_portal_svc/|^items/unittests_web_portal_svc/'; then
+            echo "web_portal_svc_changed=true" >> $GITHUB_OUTPUT
+            echo "[INFO] items/web_portal_svc has changed"
+          else
+            echo "web_portal_svc_changed=false" >> $GITHUB_OUTPUT
           fi
 
           echo "Checking for changes in items/shared/"
@@ -148,7 +159,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install jsonschema aiohttp quart pylint
+          pip install coverage jsonschema aiohttp quart pylint
 
       - name: Run Pylint
         env:
@@ -162,6 +173,34 @@ jobs:
           PYTHONPATH: items/shared:items/unittests_gateway_svc:items/gateway_svc
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_gateway_svc -m unittest -v main
+          coverage report -m --fail-under=100
+
+  verify_web-portal-svc:
+    runs-on: ubuntu-24.04
+    needs: [setup, detect-changes]  # Wait for both setup and detect-changes
+    if: needs.detect-changes.outputs.web_portal_svc_changed == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install coverage jsonschema aiohttp quart pylint
+
+      - name: Run Pylint
+        env:
+          PYTHONPATH: items/shared:items/web_portal_svc
+        run: |
+          pylint --fail-under=10.0 items/web_portal_svc
+
+      # Run tests and measure coverage
+      - name: Run tests with coverage
+        env:
+          PYTHONPATH: items/shared:items/unittests_web_portal_svc:items/web_portal_svc
+        run: |
+          coverage run --rcfile=.github/workflows/.coveragerc_web_portal_svc -m unittest -v main
           coverage report -m --fail-under=100
 
   shared-lint:
