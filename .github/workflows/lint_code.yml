@@ -11,8 +11,10 @@ jobs:
       gateway_svc_changed: ${{ steps.detect.outputs.gateway_svc_changed }}
       shared_changed: ${{ steps.detect.outputs.shared_changed }}
     steps:
-      - name: Checkout code
+      - name: Checkout code with full history
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for all branches and tags
 
       - name: Detect changes in directories
         id: detect
