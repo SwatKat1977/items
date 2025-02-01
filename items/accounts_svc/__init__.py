@@ -23,6 +23,7 @@ app = Quart(__name__)
 
 application = Application(app)
 
+
 @app.before_serving
 async def startup() -> None:
     """
