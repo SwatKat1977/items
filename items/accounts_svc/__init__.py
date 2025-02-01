@@ -18,10 +18,11 @@ import sys
 from quart import Quart
 from application import Application
 
-## Quart application instance
+# Quart application instance
 app = Quart(__name__)
 
 application = Application(app)
+
 
 @app.before_serving
 async def startup() -> None:
