@@ -5,4 +5,4 @@ omit =
     items/accounts_svc/apis/basic_authentication_api.py
     items/shared/*
     /opt/homebrew/*
-
+    /usr/lib/python3/

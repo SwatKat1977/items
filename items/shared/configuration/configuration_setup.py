@@ -46,7 +46,7 @@ class ConfigurationSetupItem:
                   default_value if default_value else [])
 
 class ConfigurationSetup:
-    """ Class that defines the configuaration Format """
+    """ Class that defines the configuration Format """
 
     def __init__(self, setup_items : dict) -> None:
         self._items = setup_items
