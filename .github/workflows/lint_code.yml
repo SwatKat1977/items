@@ -5,7 +5,7 @@ on:
 
 jobs:
   setup:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       # Step 1: Checkout code with full history
       - name: Checkout code with full history
@@ -80,8 +80,8 @@ jobs:
             echo "shared_changed=false" >> $GITHUB_OUTPUT
           fi
 
-  accounts-svc-lint:
-    runs-on: ubuntu-latest
+  verify_accounts-svc:
+    runs-on: ubuntu-24.04
     needs: [setup, detect-changes]  # Wait for both setup and detect-changes
     if: needs.detect-changes.outputs.accounts_svc_changed == 'true'
     steps:
@@ -100,8 +100,8 @@ jobs:
         run: |
           pylint --fail-under=10.0 items/accounts_svc
 
-  cms-svc-lint:
-    runs-on: ubuntu-latest
+  verify_cms-svc:
+    runs-on: ubuntu-24.04
     needs: [setup, detect-changes]  # Wait for both setup and detect-changes
     if: needs.detect-changes.outputs.cms_svc_changed == 'true'
     steps:
@@ -120,8 +120,8 @@ jobs:
         run: |
           pylint --fail-under=10.0 items/cms_svc
 
-  gateway-svc-lint:
-    runs-on: ubuntu-latest
+  verify_gateway-svc:
+    runs-on: ubuntu-24.04
     needs: [setup, detect-changes]  # Wait for both setup and detect-changes
     if: needs.detect-changes.outputs.gateway_svc_changed == 'true'
     steps:
@@ -141,7 +141,7 @@ jobs:
           pylint --fail-under=10.0 items/gateway_svc
 
   shared-lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup, detect-changes]  # Wait for both setup and detect-changes
     if: needs.detect-changes.outputs.shared_changed == 'true'
     steps:
