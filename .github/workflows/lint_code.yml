@@ -8,24 +8,35 @@ on:
       - 'items/shared/**'
 
 jobs:
-  lint:
+  items-a:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        directory: ['accounts_svc', 'gateway_svc', 'shared']
+    if: contains(github.event.pull_request.changed_files, 'items/accounts_svc/')
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Check for changes in directory
-        id: changes
-        uses: dorny/paths-filter@v2
-        with:
-          filters: |
-            items:
-              - 'items/${{ matrix.directory }}/**'
+      - name: Run items/a action
+        run: echo "Running items/a action"
+        # Add your actual steps for items/a here
 
-      - name: Run lint for ${{ matrix.directory }}
-        if: steps.changes.outputs.items == 'true'
-        run: echo "Running lint for items/${{ matrix.directory }}"
-        # Add your actual linting steps here
+  items-b:
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.changed_files, 'items/gateway_svc/')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run items/b action
+        run: echo "Running items/b action"
+        # Add your actual steps for items/b here
+
+  items-s:
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.changed_files, 'items/shared/')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run items/s action
+        run: echo "Running items/s action"
+        # Add your actual steps for items/s here
