@@ -23,7 +23,7 @@ app = Quart(__name__)
 
 application = Application(app)
 
-
+test
 
 @app.before_serving
 async def startup() -> None:
