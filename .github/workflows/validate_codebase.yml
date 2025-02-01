@@ -105,7 +105,7 @@ jobs:
         env:
           PYTHONPATH: items/shared:items/unittests_accounts_svc:items/accounts_svc
         run: |
-          coverage run --rcfile=./items/.coveragerc_accounts_svc -m unittest -v main
+          coverage run --rcfile=.github/workflows/.coveragerc_accounts_svc -m unittest -v main
           coverage report -m --fail-under=100
 
   verify_cms-svc:
@@ -127,6 +127,14 @@ jobs:
           PYTHONPATH: items/shared:items/cms_svc
         run: |
           pylint --fail-under=10.0 items/cms_svc
+
+      # Run tests and measure coverage
+      - name: Run tests with coverage
+        env:
+          PYTHONPATH: items/shared:items/unittests_accounts_svc:items/accounts_svc
+        run: |
+          coverage run --rcfile=.github/workflows/.coveragerc_accounts_svc -m unittest -v main
+          coverage report -m --fail-under=100
 
   verify_gateway-svc:
     runs-on: ubuntu-24.04
