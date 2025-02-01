@@ -45,5 +45,6 @@ async def shutdown() -> None:
     """
     application.stop()
 
+
 if not application.initialise():
     sys.exit()
