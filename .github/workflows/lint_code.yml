@@ -2,6 +2,10 @@ name: Perform Lint
 
 on:
   pull_request:
+    paths:
+      - 'items/accounts_svc/**'
+      - 'items/gateway_svc/**'
+      - 'items/shared/**'
 
 jobs:
   items-a:
