@@ -28,7 +28,6 @@ from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
 import apis.basic_authentication_api as basic_auth_api
 
- 
 class Application(BaseApplication):
     """ ITEMS Accounts Service """
 
