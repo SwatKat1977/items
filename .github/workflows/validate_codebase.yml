@@ -1,4 +1,4 @@
-name: Perform Lint
+name: Validate Branch (lint & unittests)
 
 on:
   pull_request:
