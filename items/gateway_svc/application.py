@@ -113,3 +113,4 @@ class Application(BaseApplication):
                           Configuration().apis_cms_svc)
 
         return True
+
