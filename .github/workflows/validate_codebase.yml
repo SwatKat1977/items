@@ -120,7 +120,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install jsonschema aiohttp quart pylint
+          pip install coverage jsonschema aiohttp quart pylint
 
       - name: Run Pylint
         env:
@@ -161,7 +161,7 @@ jobs:
         env:
           PYTHONPATH: items/shared:items/unittests_gateway_svc:items/gateway_svc
         run: |
-          coverage run --rcfile=./items/.coveragerc_gateway_svc -m unittest -v main
+          coverage run --rcfile=.github/workflows/.coveragerc_gateway_svc -m unittest -v main
           coverage report -m --fail-under=100
 
   shared-lint:
@@ -189,5 +189,5 @@ jobs:
         env:
           PYTHONPATH: items/shared:items/unittests_shared
         run: |
-          coverage run --rcfile=./items/.coveragerc_shared -m unittest -v main
+          coverage run --rcfile=.github/workflows/.coveragerc_shared -m unittest -v main
           coverage report -m --fail-under=100
