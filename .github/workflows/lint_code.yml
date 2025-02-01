@@ -16,6 +16,21 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history for all branches and tags
 
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12' # Adjust to your Python version
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint
+          pip install jsonschema
+          pip install aiohttp
+          pip install quart
+
       - name: Detect changes in directories
         id: detect
         run: |
@@ -49,8 +64,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run lint for accounts_svc
-        run: echo "Running lint for items/accounts_svc"
-        # Add your actual linting steps here
+        run: pylint --fail-under=10.0 items/accounts_svc
 
   gateway-svc-lint:
     runs-on: ubuntu-latest
@@ -61,8 +75,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run lint for gateway_svc
-        run: echo "Running lint for items/gateway_svc"
-        # Add your actual linting steps here
+        run: pylint --fail-under=10.0 items/gateway_svc
 
   shared-lint:
     runs-on: ubuntu-latest
