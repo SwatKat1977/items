@@ -152,10 +152,18 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install jsonschema aiohttp quart pylint
+          pip install coverage jsonschema aiohttp quart pylint
 
       - name: Run Pylint
         env:
           PYTHONPATH: items/shared
         run: |
           pylint --fail-under=10.0 items/shared
+
+      # Run tests and measure coverage
+      - name: Run tests with coverage
+        env:
+          PYTHONPATH: items/shared:items/unittests_shared
+        run: |
+          coverage run --rcfile=./items/.coveragerc_shared -m unittest -v main
+          coverage report -m --fail-under=100
