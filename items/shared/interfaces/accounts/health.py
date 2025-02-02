@@ -14,17 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-SCHEMA_HEALTH_RESPONSE: dict ={
+SCHEMA_HEALTH_RESPONSE: dict = {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
     "status": {
       "type": "string",
       "enum": ["healthy", "degraded", "down"]
-    },
-    "degradation_level": {
-      "type": "string",
-      "enum": ["none", "partial", "full"]
     },
     "issues": {
       "type": "array",
@@ -42,31 +38,32 @@ SCHEMA_HEALTH_RESPONSE: dict ={
     "dependencies": {
       "type": "object",
       "properties": {
-        "database": { "type": "string" },
-        "cache": { "type": "string" },
-        "external_api": { "type": "string" }
+        "database": {
+          "enum": ["none", "partial", "fully_degraded"]},
+        "service": {
+          "enum": ["none", "partial", "fully_degraded"]}
       },
-      "required": ["database", "cache", "external_api"]
+      "required": ["database", "service"]
     },
-    "uptime_seconds": { "type": "integer", "minimum": 0 },
-    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" }
+    "uptime_seconds": {"type": "integer", "minimum": 0},
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"}
   },
   "required": ["status", "degradation_level", "dependencies", "uptime_seconds", "version"],
-  "additionalProperties": false,
+  "additionalProperties": False,
   "allOf": [
     {
       "if": {
-        "properties": { "status": { "const": "healthy" } }
+        "properties": {"status": {"const": "healthy"}}
       },
       "then": {
         "properties": {
-          "issues": { "type": "null" }
+          "issues": {"type": "null"}
         }
       }
     },
     {
       "if": {
-        "properties": { "status": { "enum": ["degraded", "down"] } }
+        "properties": {"status": { "enum": ["degraded", "down"]}}
       },
       "then": {
         "required": ["issues"]
