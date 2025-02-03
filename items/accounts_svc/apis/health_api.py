@@ -22,24 +22,21 @@ from state_object import StateObject
 def create_blueprint(logger: logging.Logger,
                      state_object: StateObject) -> Blueprint:
     """
-    Creates and registers a Flask Blueprint for service health API routes.
+    Creates and returns a Quart Blueprint for the Health Status API.
 
-    This function initializes a `View` object with the provided logger, and
-    then defines an API endpoint for health status. It registers the route the
-    GET method of `/health/status` to handle the request.
+    This function initializes a `HealthApiView` instance and registers an
+    asynchronous route `/health/status` for handling health check requests. The
+    route is logged upon registration.
 
     Args:
-        logger (logging.Logger): A logger instance for logging messages.
+        logger (logging.Logger): The logger instance used for logging API
+                                 registration.
+        state_object (StateObject): The application state object passed to the
+                                    view.
 
     Returns:
-        Blueprint: A Flask `Blueprint` object containing the registered route.
-
-    Example:
-        >>> from flask import Flask
-        >>> from your_module import create_blueprint
-        >>> app = Flask(__name__)
-        >>> blueprint = create_blueprint(ogger)
-        >>> app.register_blueprint(blueprint)
+        Blueprint: A Quart Blueprint instance with the registered health status
+                   route.
     """
     view = HealthApiView(logger, state_object)
 
