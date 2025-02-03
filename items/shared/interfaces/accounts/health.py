@@ -15,59 +15,59 @@ limitations under the License.
 """
 
 SCHEMA_HEALTH_RESPONSE: dict = {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "status": {
-      "type": "string",
-      "enum": ["healthy", "degraded", "down"]
-    },
-    "issues": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "component": { "type": "string" },
-          "status": { "type": "string" },
-          "details": { "type": "string" }
-        },
-        "required": ["component", "status", "details"]
-      },
-      "minItems": 1
-    },
-    "dependencies": {
-      "type": "object",
-      "properties": {
-        "database": {
-          "enum": ["none", "partial", "fully_degraded"]},
-        "service": {
-          "enum": ["none", "partial", "fully_degraded"]}
-      },
-      "required": ["database", "service"]
-    },
-    "uptime_seconds": {"type": "integer", "minimum": 0},
-    "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"}
-  },
-  "required": ["status", "degradation_level", "dependencies", "uptime_seconds", "version"],
-  "additionalProperties": False,
-  "allOf": [
-    {
-      "if": {
-        "properties": {"status": {"const": "healthy"}}
-      },
-      "then": {
-        "properties": {
-          "issues": {"type": "null"}
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "$defs": {
+        "component_status": {
+            "type": "string",
+            "enum": ["none", "partial", "fully_degraded"]
         }
-      }
     },
-    {
-      "if": {
-        "properties": {"status": { "enum": ["degraded", "down"]}}
-      },
-      "then": {
-        "required": ["issues"]
-      }
-    }
-  ]
+    "properties": {
+        "status": {
+            "type": "string",
+            "enum": ["healthy", "degraded", "down"]
+        },
+        "issues": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "component": {"type": "string"},
+                    "status": {"$ref": "#/$defs/component_status"},
+                    "details": {"type": "string"}
+                },
+                "required": ["component", "status", "details"]
+            },
+            "minItems": 1
+        },
+        "dependencies": {
+            "type": "object",
+            "properties": {
+                "database": {"$ref": "#/$defs/component_status"},
+                "service": {"$ref": "#/$defs/component_status"}
+            },
+            "required": ["database", "service"]
+        },
+        "uptime_seconds": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "version": {
+            "type": "string",
+            "pattern": r"^\d+\.\d+\.\d+$"
+        }
+    },
+    "required": ["status", "dependencies", "uptime_seconds", "version"],
+    "additionalProperties": False,
+    "allOf": [
+        {
+            "if": {"properties": {"status": {"const": "healthy"}}},
+            "then": {"properties": {"issues": {"type": "null"}}}
+        },
+        {
+            "if": {"properties": {"status": {"enum": ["degraded", "down"]}}},
+            "then": {"required": ["issues"]}
+        }
+    ]
 }
