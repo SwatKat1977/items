@@ -5,6 +5,8 @@ import logging
 from account_status import AccountStatus
 from sqlite_interface import SqliteInterface
 from base_sqlite_interface import SqliteInterfaceException
+from state_object import StateObject
+
 
 class TestSqliteInterface(unittest.TestCase):
 
@@ -12,13 +14,15 @@ class TestSqliteInterface(unittest.TestCase):
         self.mock_logger = MagicMock(spec=logging.Logger)
         self.db_file = 'test.db'
         self.mock_logger.getChild.return_value = self.mock_logger  # getChild should return itself
+        self.state_object = StateObject()
 
     @patch("base_sqlite_interface.BaseSqliteInterface.__init__")
     def test_initialization(self, mock_base_init):
         """Test that SqliteInterface initializes correctly."""
 
         # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file)
+        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file,
+                                    state_object=self.state_object)
 
         # Assert BaseSqliteInterface's __init__ was called with db_file
         mock_base_init.assert_called_once_with(self.db_file)
@@ -35,10 +39,11 @@ class TestSqliteInterface(unittest.TestCase):
 
         # Create an instance of SqliteInterface
         db_file = "test.db"
-        instance = SqliteInterface(logger=mock_logger, db_file=db_file)
+        interface = SqliteInterface(logger=mock_logger, db_file=self.db_file,
+                                    state_object=self.state_object)
 
         # Use the logger within the class (you'll replace this with actual usage in methods)
-        instance._logger.info("Testing logger usage")
+        interface._logger.info("Testing logger usage")
 
         # Assert the child logger logged the message
         mock_child_logger.info.assert_called_once_with("Testing logger usage")
@@ -49,7 +54,8 @@ class TestSqliteInterface(unittest.TestCase):
         mock_query.return_value = [(1, 2, AccountStatus.ACTIVE.value)]  # logon_type matches the argument (2)
 
         # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file)
+        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file,
+                                    state_object=self.state_object)
 
         user_id, error_str = interface.valid_user_to_logon('test@example.com', 2)  # logon_type is 2
 
@@ -65,7 +71,8 @@ class TestSqliteInterface(unittest.TestCase):
         mock_query.return_value = [(1, 3, AccountStatus.ACTIVE)]
 
         # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file)
+        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file,
+                                    state_object=self.state_object)
 
         user_id, error_str = interface.valid_user_to_logon('test@example.com', 2)
 
@@ -77,7 +84,8 @@ class TestSqliteInterface(unittest.TestCase):
         mock_query.return_value = [(1, 2, AccountStatus.DISABLED.value)]
 
         # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file)
+        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file,
+                                    state_object=self.state_object)
 
         user_id, error_str = interface.valid_user_to_logon('test@example.com', 2)
 
@@ -89,7 +97,8 @@ class TestSqliteInterface(unittest.TestCase):
         mock_query.return_value = None
 
         # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file)
+        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file,
+                                    state_object=self.state_object)
 
         user_id, error_str = interface.valid_user_to_logon('unknown@example.com', 2)
 
@@ -102,7 +111,8 @@ class TestSqliteInterface(unittest.TestCase):
         mock_query.side_effect = SqliteInterfaceException("Database error")
 
         # Create SqliteInterface instance
-        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file)
+        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file,
+                                    state_object=self.state_object)
 
         # Call the method
         result = interface.valid_user_to_logon('test@example.com', 2)
@@ -122,7 +132,8 @@ class TestSqliteInterface(unittest.TestCase):
         mock_query.return_value = [(sha256("passwordsalt".encode('UTF-8')).hexdigest(), "salt")]
 
         # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file)
+        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file,
+                                    state_object=self.state_object)
 
         status, error_str = interface.basic_user_authenticate(1, "password")
 
@@ -138,7 +149,8 @@ class TestSqliteInterface(unittest.TestCase):
         mock_query.return_value = None
 
         # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file)
+        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file,
+                                    state_object=self.state_object)
 
         with self.assertRaises(SqliteInterfaceException) as context:
             interface.basic_user_authenticate(99, "password")
@@ -150,7 +162,8 @@ class TestSqliteInterface(unittest.TestCase):
         mock_query.return_value = [(sha256("wrongpasswordsalt".encode('UTF-8')).hexdigest(), "salt")]
 
         # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file)
+        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file,
+                                    state_object=self.state_object)
 
         status, error_str = interface.basic_user_authenticate(1, "password")
 
@@ -162,7 +175,8 @@ class TestSqliteInterface(unittest.TestCase):
         mock_query.side_effect = SqliteInterfaceException("Database error")
 
         # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file)
+        interface = SqliteInterface(logger=self.mock_logger, db_file=self.db_file,
+                                    state_object=self.state_object)
 
         result = interface.basic_user_authenticate(1, "password")
 

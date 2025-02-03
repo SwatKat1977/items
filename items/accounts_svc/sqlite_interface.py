@@ -18,6 +18,8 @@ import logging
 from typing import Optional, Tuple
 from account_status import AccountStatus
 from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
+from state_object import StateObject
+from service_health_enums import ComponentDegradationLevel
 
 
 class SqliteInterface(BaseSqliteInterface):
@@ -31,9 +33,11 @@ class SqliteInterface(BaseSqliteInterface):
         db_file (str): Path to the SQLite database file.
     """
 
-    def __init__(self, logger: logging.Logger, db_file: str) -> None:
+    def __init__(self, logger: logging.Logger, db_file: str,
+                 state_object: StateObject) -> None:
         super().__init__(db_file)
         self._logger = logger.getChild(__name__)
+        self._state_object: StateObject = state_object
 
     def valid_user_to_logon(self, email_address: str, logon_type: int) \
             -> Optional[Tuple[Optional[int], str]]:
@@ -59,6 +63,8 @@ class SqliteInterface(BaseSqliteInterface):
 
         except SqliteInterfaceException as ex:
             self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.SEVERE
+            self._state_object.database_health_state_str = "Fatal SQL failure"
             return None
 
         if rows:
@@ -102,6 +108,8 @@ class SqliteInterface(BaseSqliteInterface):
 
         except SqliteInterfaceException as ex:
             self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.SEVERE
+            self._state_object.database_health_state_str = "Fatal SQL failure"
             return None
 
         if not rows:
