@@ -27,9 +27,10 @@ from base_sqlite_interface import SqliteInterfaceException
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
-import apis.basic_authentication_api as basic_auth_api
-import apis.health_api as health_api
+from apis import basic_authentication_api as basic_auth_api
+from apis import health_api
 from state_object import StateObject
+
 
 class Application(BaseApplication):
     """ ITEMS Accounts Service """
