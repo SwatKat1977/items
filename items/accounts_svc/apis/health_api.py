@@ -16,9 +16,11 @@ limitations under the License.
 import logging
 from quart import Blueprint
 from apis.health_api_view import HealthApiView
+from state_object import StateObject
 
 
-def create_blueprint(logger: logging.Logger) -> Blueprint:
+def create_blueprint(logger: logging.Logger,
+                     state_object: StateObject) -> Blueprint:
     """
     Creates and registers a Flask Blueprint for service health API routes.
 
@@ -39,7 +41,7 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
         >>> blueprint = create_blueprint(ogger)
         >>> app.register_blueprint(blueprint)
     """
-    view = HealthApiView(logger)
+    view = HealthApiView(logger, state_object)
 
     blueprint = Blueprint('health_api', __name__)
 

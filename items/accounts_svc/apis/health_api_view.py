@@ -16,26 +16,70 @@ limitations under the License.
 from http import HTTPStatus
 import json
 import logging
+import time
 from quart import Response
 from base_view import BaseView
+from state_object import StateObject
+import service_health_enums as health_enums
 
 
 class HealthApiView(BaseView):
     __slots__ = ['_logger']
 
-    def __init__(self, logger: logging.Logger) -> None:
+    def __init__(self, logger: logging.Logger,
+                 state_object: StateObject) -> None:
         self._logger = logger.getChild(__name__)
+        self._state_object = state_object
 
     async def health(self):
 
+        uptime: int = int(time.time()) - self._state_object.startup_time
+
+        issues: list = []
+
+        # Check database health
+        if (self._state_object.database_health !=
+                health_enums.ComponentDegradationLevel.NONE):
+            status = health_enums.ComponentDegradationLevelStr[
+                self._state_object.database_health]
+            issues.append(
+                {"component": "database",
+                 "status": status,
+                 "details": self._state_object.database_health_state_str})
+
+        # Check microservice health
+        if (self._state_object.service_health !=
+                health_enums.ComponentDegradationLevel.NONE):
+            status = health_enums.ComponentDegradationLevelStr[
+                self._state_object.service_health]
+            issues.append(
+                {"component": "service",
+                 "status": status,
+                 "details": self._state_object.service_health_state_str})
+
+        if issues:
+            wibble = any(issue["status"] ==
+                         health_enums.ComponentDegradationLevel.DEGRADED
+                         for issue in issues)
+
+            status = health_enums.STATUS_CRITICAL \
+                if any(issue["status"] ==
+                       health_enums.COMPONENT_DEGRADATION_LEVEL_SEVERE
+                       for issue in issues) else health_enums.STATUS_DEGRADED
+        else:
+            status = health_enums.STATUS_HEALTHY
+
         response: dict = {
-            "status": "healthy",
+            "status": status,
             "dependencies": {
-                "database": "partial",
-                "service": "fully_degraded"
+                "database": health_enums.ComponentDegradationLevelStr[
+                    self._state_object.database_health],
+                "service": health_enums.ComponentDegradationLevelStr[
+                    self._state_object.service_health]
             },
-            "uptime_seconds": 86400,
-            "version": "1.2.3"
+            "issues": issues if issues else None,
+            "uptime_seconds": uptime,
+            "version": self._state_object.version
         }
 
         return Response(json.dumps(response),

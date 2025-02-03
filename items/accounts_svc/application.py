@@ -16,6 +16,7 @@ limitations under the License.
 import asyncio
 import logging
 import os
+import typing
 from base_application import BaseApplication
 from configuration_layout import CONFIGURATION_LAYOUT
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
@@ -28,7 +29,7 @@ from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
 import apis.basic_authentication_api as basic_auth_api
 import apis.health_api as health_api
-
+from state_object import StateObject
 
 class Application(BaseApplication):
     """ ITEMS Accounts Service """
@@ -36,7 +37,8 @@ class Application(BaseApplication):
     def __init__(self, quart_instance):
         super().__init__()
         self._quart_instance = quart_instance
-        self._db : SqliteInterface = None
+        self._db: typing.Optional[SqliteInterface] = None
+        self._state_object: StateObject = StateObject()
 
         self._logger = logging.getLogger(__name__)
         log_format= logging.Formatter(LOGGING_LOG_FORMAT_STRING,
@@ -54,6 +56,9 @@ class Application(BaseApplication):
         self._logger.info(SERVICE_COPYRIGHT_TEXT)
         self._logger.info(LICENSE_TEXT)
 
+        # Set the version string on state object.
+        self._state_object.version = build
+
         if not self._manage_configuration():
             return False
 
@@ -69,7 +74,8 @@ class Application(BaseApplication):
             self._db, self._logger)
         self._quart_instance.register_blueprint(basic_auth_blueprint)
 
-        health_blueprint = health_api.create_blueprint(self._logger)
+        health_blueprint = health_api.create_blueprint(self._logger,
+                                                       self._state_object)
         self._quart_instance.register_blueprint(health_blueprint)
 
         return True

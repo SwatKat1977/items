@@ -15,11 +15,12 @@ limitations under the License.
 """
 from enum import Enum
 
+
 class ServiceDegradationStatus(Enum):
     """ Service degradation Status """
 
     # Everything is working fine
-    HEALTHY	= 0
+    HEALTHY = 0
 
     # Some components are slow or experiencing minor issues
     DEGRADED = 1
@@ -28,9 +29,37 @@ class ServiceDegradationStatus(Enum):
     CRITICAL = 2
 
 
+ServiceDegradationStatusStr: dict = {
+    ServiceDegradationStatus.HEALTHY: "Healthy",
+    ServiceDegradationStatus.DEGRADED: "Degraded",
+    ServiceDegradationStatus.CRITICAL: "Critical"
+}
+
+STATUS_HEALTHY: str = ServiceDegradationStatusStr[
+    ServiceDegradationStatus.HEALTHY]
+STATUS_DEGRADED: str = ServiceDegradationStatusStr[
+    ServiceDegradationStatus.DEGRADED]
+STATUS_CRITICAL: str = ServiceDegradationStatusStr[
+    ServiceDegradationStatus.CRITICAL]
+
+
 class ComponentDegradationLevel(Enum):
     """ Component degradation Level """
 
     NONE = 0
     DEGRADED = 1
     SEVERE = 2
+
+
+ComponentDegradationLevelStr: dict = {
+    ComponentDegradationLevel.NONE: "None",
+    ComponentDegradationLevel.DEGRADED: "Degraded",
+    ComponentDegradationLevel.SEVERE: "Severe"
+}
+
+COMPONENT_DEGRADATION_LEVEL_NONE: str = ComponentDegradationLevelStr[
+    ComponentDegradationLevel.NONE]
+COMPONENT_DEGRADATION_LEVEL_DEGRADED: str = ComponentDegradationLevelStr[
+    ComponentDegradationLevel.DEGRADED]
+COMPONENT_DEGRADATION_LEVEL_SEVERE: str = ComponentDegradationLevelStr[
+    ComponentDegradationLevel.SEVERE]
