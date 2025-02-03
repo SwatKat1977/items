@@ -6,4 +6,4 @@ omit =
     items/accounts_svc/apis/health_api.py
     items/shared/*
     /opt/homebrew/*
-    /usr/lib/python3/
+    /usr/lib/python3/*
