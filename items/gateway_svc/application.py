@@ -17,7 +17,8 @@ import asyncio
 import json
 import logging
 import os
-import types
+import time
+import typing
 import jsonschema
 import requests
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
@@ -30,6 +31,7 @@ from configuration_layout import CONFIGURATION_LAYOUT
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from interfaces.accounts.health import SCHEMA_HEALTH_RESPONSE
 import service_health_enums as health_enums
+
 
 class Application(BaseApplication):
     """ ITEMS Accounts Service """
@@ -61,7 +63,8 @@ class Application(BaseApplication):
                           Configuration().logging_log_level)
         self._logger.setLevel(Configuration().logging_log_level)
 
-        return self._perform_accounts_health_check(version_info)
+        if not self._check_accounts_svc_api_status(version_info):
+            return False
 
         return True
 
@@ -121,112 +124,72 @@ class Application(BaseApplication):
 
         return True
 
-    def _perform_accounts_health_check(self, version_info: str) -> bool:
-        url: str = f"{Configuration().apis_accounts_svc}health/status"
-
+    def _check_accounts_svc_api_status(self, version_info: str) -> bool:
         perform_check: bool = True
 
         while perform_check:
             try:
-                response = requests.get(url)
+                data = self._accounts_svc_api_health_check(version_info)
 
-            except requests.exceptions.ConnectionError as ex:
-                self._logger.error("Connection to accounts service timed out: %s",
-                                   str(ex))
+                if data:
+                    self._logger.info("[Accounts API]")
+                    self._logger.info("=> Status: %s", data["status"])
+                    self._logger.info("=> Version: %s", data["version"])
+                    perform_check = False
+
+                else:
+                    time.sleep(3)
+
+            except RuntimeError as ex:
+                self._logger.critical(str(ex))
                 return False
-
-            if response is None:
-                self._logger.error(
-                    "Missing/invalid JSON body for accounts svc health call")
-                return False
-
-            try:
-                json_data = json.loads(response.text)
-
-            except (TypeError, json.JSONDecodeError):
-                self._logger.error(
-                    "Invalid JSON body type for accounts svc health call")
-                return False
-
-            try:
-                jsonschema.validate(instance=json_data,
-                                    schema=SCHEMA_HEALTH_RESPONSE)
-
-            except jsonschema.exceptions.ValidationError:
-                self._logger.critical(
-                    "Schema for accounts service health check invalid!")
-                return False
-
-            if json_data["status"] == health_enums.STATUS_CRITICAL:
-                self._logger.critical("Accounts service critically degraded, "
-                                      "access to accounts service discontinued "
-                                      "until it is fixed")
-                return False
-
-            elif json_data["status"] == health_enums.STATUS_DEGRADED:
-                self._logger.warning("Accounts service degraded, can continue, but"
-                                     " retries/slow-down may occur..")
-
-            if json_data["version"] != version_info:
-                self._logger.warning(
-                    "Accounts Service version (%s) does not match gateway (%s),"
-                    ", unforeseen issues may occur!", json_data["version"],
-                    version_info)
-
-            self._logger.info("[Accounts API]")
-            self._logger.info("=> Status: %s", json_data["status"])
-            self._logger.info("=> Version: %s", json_data["version"])
-            perform_check = False
 
         return True
 
-    def _perform_accounts_health_check2(self, version_info: str) -> bool:
+    def _accounts_svc_api_health_check(self, version_info: str) \
+            -> typing.Optional[dict]:
         url: str = f"{Configuration().apis_accounts_svc}health/status"
 
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=1)
 
         except requests.exceptions.ConnectionError as ex:
             self._logger.error("Connection to accounts service timed out: %s",
                                str(ex))
-            return False
+            return None
 
         if response is None:
-            self._logger.error(
-                "Missing/invalid JSON body for accounts svc health call")
-            return False
+            raise RuntimeError(
+                "Missing/invalid JSON accounts svc health call JSON body")
 
         try:
             json_data = json.loads(response.text)
 
-        except (TypeError, json.JSONDecodeError):
-            self._logger.error(
-                "Invalid JSON body type for accounts svc health call")
-            return False
-
-        print(json_data)
+        except (TypeError, json.JSONDecodeError) as ex:
+            raise RuntimeError(
+                "Invalid JSON body type for accounts svc health call") from ex
 
         try:
             jsonschema.validate(instance=json_data,
                                 schema=SCHEMA_HEALTH_RESPONSE)
 
         except jsonschema.exceptions.ValidationError as ex:
-            self._logger.critical(
-                "Schema for accounts service health check invalid!")
-            return False
+            raise RuntimeError(
+                "Schema for accounts service health check invalid!") from ex
 
-        if json_data["version"] == version_info:
+        if json_data["version"] != version_info:
             self._logger.warning(
                 "Accounts Service version (%s) does not match gateway (%s),"
                 ", unforeseen issues may occur!", json_data["version"],
                 version_info)
 
-        if json_data["status"] == "healthy":
-            self._logger.critical("Accounts service critically degraded, "
-                                  "access to accounts service discontinued "
-                                  "until it is fixed")
-        else:
+        if json_data["status"] == health_enums.STATUS_CRITICAL:
+            msg: str = "Accounts service critically degraded, access to "\
+                       "accounts service discontinued until it is fixed"
+            raise RuntimeError(msg)
+
+        if json_data["status"] == health_enums.STATUS_DEGRADED:
             self._logger.warning("Accounts service degraded, can continue, but"
                                  "retries/slow-down may occur..")
 
-        return False
+        return json_data
