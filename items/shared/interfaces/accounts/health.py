@@ -26,20 +26,25 @@ SCHEMA_HEALTH_RESPONSE: dict = {
     "properties": {
         "status": {
             "type": "string",
-            "enum": ["healthy", "degraded", "down"]
+            "enum": ["healthy", "degraded", "critical"]
         },
         "issues": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "component": {"type": "string"},
-                    "status": {"$ref": "#/$defs/component_status"},
-                    "details": {"type": "string"}
+            "oneOf": [
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "component": {"type": "string"},
+                            "status": {"$ref": "#/$defs/component_status"},
+                            "details": {"type": "string"}
+                        },
+                        "required": ["component", "status", "details"]
+                    },
+                    "minItems": 1
                 },
-                "required": ["component", "status", "details"]
-            },
-            "minItems": 1
+                {"type": "null"}
+            ]
         },
         "dependencies": {
             "type": "object",
@@ -55,7 +60,7 @@ SCHEMA_HEALTH_RESPONSE: dict = {
         },
         "version": {
             "type": "string",
-            "pattern": r"^\d+\.\d+\.\d+$"
+            "pattern": "^V\\d+\\.\\d+\\.\\d+(?:-\\d+(?: \\[.*?\\])?)?$"
         }
     },
     "required": ["status", "dependencies", "uptime_seconds", "version"],
@@ -66,8 +71,16 @@ SCHEMA_HEALTH_RESPONSE: dict = {
             "then": {"properties": {"issues": {"type": "null"}}}
         },
         {
-            "if": {"properties": {"status": {"enum": ["degraded", "down"]}}},
-            "then": {"required": ["issues"]}
+            "if": {"properties": {"status": {"enum": ["degraded",
+                                                      "critical"]}}},
+            "then": {
+                "properties": {
+                    "issues": {
+                        "type": "array",
+                        "minItems": 1
+                    }
+                }
+            }
         }
     ]
 }
