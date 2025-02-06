@@ -30,6 +30,7 @@ from base_application import BaseApplication
 from configuration_layout import CONFIGURATION_LAYOUT
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from interfaces.accounts.health import SCHEMA_HEALTH_RESPONSE
+import apis.handshake_api as handshake_api
 import service_health_enums as health_enums
 
 
@@ -65,6 +66,10 @@ class Application(BaseApplication):
 
         if not self._check_accounts_svc_api_status(version_info):
             return False
+
+        handshake_blueprint = handshake_api.create_blueprint(
+            self._logger)
+        self._quart_instance.register_blueprint(handshake_blueprint)
 
         return True
 
