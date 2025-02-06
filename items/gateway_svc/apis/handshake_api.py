@@ -15,7 +15,7 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from apis.basic_authentication_api_view import BasicAuthenticationApiView
+from apis.handshake_api_view import HandshakeApiView
 
 
 def create_blueprint(logger: logging.Logger) -> Blueprint:
@@ -32,7 +32,7 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
     Returns:
         Blueprint: A Flask `Blueprint` object containing the registered route.
     """
-    view = BasicAuthenticationApiView(logger)
+    view = HandshakeApiView(logger)
 
     blueprint = Blueprint('handshake_api', __name__)
 
