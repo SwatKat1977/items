@@ -20,11 +20,11 @@ from apis.basic_authentication_api_view import BasicAuthenticationApiView
 
 def create_blueprint(logger: logging.Logger) -> Blueprint:
     """
-    Creates and registers a Flask Blueprint for handling basic authentication API routes.
+    Creates and registers a Flask Blueprint for handling authentication
+    handshake API routes.
 
-    This function initializes a `View` object with the provided SQL interface and logger,
-    and then defines an API endpoint for authentication. It registers the route
-    `/basic_auth/authenticate` with the POST method to handle authentication requests.
+    This function initializes a `View` object with the provided SQL interface
+    and logger, and then defines an API endpoint for authentication handshake.
 
     Args:
         logger (logging.Logger): A logger instance for logging messages.
