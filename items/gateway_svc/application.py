@@ -30,7 +30,7 @@ from base_application import BaseApplication
 from configuration_layout import CONFIGURATION_LAYOUT
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from interfaces.accounts.health import SCHEMA_HEALTH_RESPONSE
-import apis.handshake_api as handshake_api
+from apis import handshake_api
 import service_health_enums as health_enums
 
 

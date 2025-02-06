@@ -47,7 +47,7 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
     logger.info("=> handshake/logout [POST]")
 
     @blueprint.route('/handshake/logout', methods=['POST'])
-    async def logout_user_request():
+    async def logout_user():
         # pylint: disable=unused-variable
         return await view.logout_user()
     return blueprint
