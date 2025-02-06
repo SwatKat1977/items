@@ -13,3 +13,43 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
+SCHEMA_BASIC_AUTHENTICATE_REQUEST: dict = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+        {
+            "email_address":
+                {
+                    "type": "string"
+                },
+            "password":
+                {
+                    "type": "string"
+                },
+        },
+    "required": ["email_address", "password"]
+}
+
+SCHEMA_LOGOUT_REQUEST: dict = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+        {
+            "email_address":
+                {
+                    "type": "string"
+                },
+            "token":
+                {
+                    "type": "string"
+                },
+        },
+    "required": ["email_address", "token"]
+}
