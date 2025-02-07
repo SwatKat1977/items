@@ -32,6 +32,7 @@ from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from interfaces.accounts.health import SCHEMA_HEALTH_RESPONSE
 from apis import handshake_api
 import service_health_enums as health_enums
+from sessions import Sessions
 
 
 class Application(BaseApplication):
@@ -40,6 +41,7 @@ class Application(BaseApplication):
     def __init__(self, quart_instance):
         super().__init__()
         self._quart_instance = quart_instance
+        self._sessions: Sessions = Sessions()
 
         self._logger = logging.getLogger(__name__)
         log_format= logging.Formatter(LOGGING_LOG_FORMAT_STRING,
@@ -68,7 +70,7 @@ class Application(BaseApplication):
             return False
 
         handshake_blueprint = handshake_api.create_blueprint(
-            self._logger)
+            self._logger, self._sessions)
         self._quart_instance.register_blueprint(handshake_blueprint)
 
         return True

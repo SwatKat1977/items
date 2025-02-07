@@ -16,9 +16,10 @@ limitations under the License.
 import logging
 from quart import Blueprint
 from apis.handshake_api_view import HandshakeApiView
+from sessions import Sessions
 
 
-def create_blueprint(logger: logging.Logger) -> Blueprint:
+def create_blueprint(logger: logging.Logger, sessions: Sessions) -> Blueprint:
     """
     Creates and registers a Flask Blueprint for handling authentication
     handshake API routes.
@@ -28,11 +29,12 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
 
     Args:
         logger (logging.Logger): A logger instance for logging messages.
+        sessions (Sessions): A sessions instance,
 
     Returns:
         Blueprint: A Flask `Blueprint` object containing the registered route.
     """
-    view = HandshakeApiView(logger)
+    view = HandshakeApiView(logger, sessions)
 
     blueprint = Blueprint('handshake_api', __name__)
 
