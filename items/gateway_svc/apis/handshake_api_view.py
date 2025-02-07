@@ -121,34 +121,35 @@ class HandshakeApiView(BaseView):
         return Response(json.dumps(response_json), status=response_status,
                         content_type="application/json")
 
-    async def logout_user(self, api_request) -> Response:
+    async def logout_user(self) -> Response:
         """
         Handler method for user session logout endpoint.
-
-        parameters:
-            api_request - REST API request object
 
         returns:
             Instance of Quart Response class.
         """
 
-        request_obj, err_msg = await self._convert_json_body_to_object(
-            api_request, self.logoutRequestSchema)
+        request_msg: ApiResponse = self._validate_json_body(
+            await request.get_data(),
+            handshake_api.SCHEMA_LOGOUT_REQUEST)
 
-        if not request_obj:
-            self._logger.error("Received bad logout request")
-            response =  "BAD REQUEST"
-            response_status = HTTPStatus.NOT_ACCEPTABLE
+        if request_msg.status_code != HTTPStatus.OK:
+            response_json = {
+                'status': 0,
+                'error': request_msg.exception_msg
+            }
+            return Response(json.dumps(response_json),
+                            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                            content_type="application/json")
 
-        else:
-            if self._sessions.is_valid_session(request_obj.email_address,
-                                               request_obj.token):
-                self._sessions.del_auth_session(request_obj.email_address)
-                self._logger.info("User '%s' logged out",
-                                  request_obj.email_address)
+        if self._sessions.is_valid_session(request_msg.body.email_address,
+                                           request_msg.body.token):
+            self._sessions.delete_session(request_msg.body.email_address)
+            self._logger.info("User '%s' logged out",
+                              request_msg.body.email_address)
 
-            response =  "OK"
-            response_status = HTTPStatus.OK
+        response = "OK"
+        response_status = HTTPStatus.OK
 
         return Response(response, status=response_status,
-                        mimetype=mimetypes.types_map['.txt'])
+                        content_type="application/json")
