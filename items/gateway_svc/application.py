@@ -197,6 +197,6 @@ class Application(BaseApplication):
 
         if json_data["status"] == health_enums.STATUS_DEGRADED:
             self._logger.warning("Accounts service degraded, can continue, but"
-                                 "retries/slow-down may occur..")
+                                 " retries/slow-down may occur..")
 
         return json_data
