@@ -148,3 +148,69 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
             await asyncio.wait_for(self.application._main_loop(), timeout=1.0)
         except asyncio.TimeoutError:
             self.fail("_main_loop did not complete within the expected time frame.")
+
+    @patch("time.sleep", return_value=None)
+    def test_check_accounts_svc_api_status_immediate_success(self, mock_sleep):
+        """
+        Test that when _accounts_svc_api_health_check immediately returns valid data,
+        the method logs info and returns True.
+        """
+        # Arrange: valid data returned immediately
+        valid_data = {"status": "OK", "version": "1.0.0"}
+        self.application._accounts_svc_api_health_check = MagicMock(return_value=valid_data)
+
+        # Act
+        result = self.application._check_accounts_svc_api_status("1.0.0")
+
+        # Assert
+        self.assertTrue(result)
+        # The health check should have been called once with the provided version info.
+        self.application._accounts_svc_api_health_check.assert_called_once_with("1.0.0")
+        # Since valid data was returned immediately, time.sleep should not have been called.
+        mock_sleep.assert_not_called()
+        # Verify that logger.info was called with the expected messages.
+        self.application._logger.info.assert_any_call("[Accounts API]")
+        self.application._logger.info.assert_any_call("=> Status: %s", valid_data["status"])
+        self.application._logger.info.assert_any_call("=> Version: %s", valid_data["version"])
+
+    @patch("time.sleep", return_value=None)
+    def test_check_accounts_svc_api_status_retry_then_success(self, mock_sleep):
+        """
+        Test that when _accounts_svc_api_health_check returns falsy (None) on the first call,
+        the method sleeps and then, when valid data is returned on a subsequent call,
+        the method returns True.
+        """
+        # Arrange: first call returns None, then valid data.
+        valid_data = {"status": "OK", "version": "1.0.0"}
+        self.application._accounts_svc_api_health_check = MagicMock(side_effect=[None, valid_data])
+
+        # Act
+        result = self.application._check_accounts_svc_api_status("1.0.0")
+
+        # Assert
+        self.assertTrue(result)
+        # The health check should have been called twice.
+        self.assertEqual(self.application._accounts_svc_api_health_check.call_count, 2)
+        # Verify that time.sleep was called with 3 seconds once.
+        mock_sleep.assert_called_once_with(3)
+        # Check that the logger.info messages are logged as expected after valid data is returned.
+        self.application._logger.info.assert_any_call("[Accounts API]")
+        self.application._logger.info.assert_any_call("=> Status: %s", valid_data["status"])
+        self.application._logger.info.assert_any_call("=> Version: %s", valid_data["version"])
+
+    def test_check_accounts_svc_api_status_runtime_error(self):
+        """
+        Test that when _accounts_svc_api_health_check raises a RuntimeError,
+        the exception branch is executed, an error is logged, and the method returns False.
+        """
+        # Arrange: simulate a RuntimeError on the first call.
+        error_message = "Simulated connection error"
+        self.application._accounts_svc_api_health_check = MagicMock(side_effect=RuntimeError(error_message))
+
+        # Act
+        result = self.application._check_accounts_svc_api_status("1.0.0")
+
+        # Assert
+        self.assertFalse(result)
+        # Verify that logger.critical was called with the error message.
+        self.application._logger.critical.assert_called_once_with(error_message)
