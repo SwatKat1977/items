@@ -63,7 +63,7 @@ class SqliteInterface(BaseSqliteInterface):
 
         except SqliteInterfaceException as ex:
             self._logger.critical("Query failed, reason: %s", str(ex))
-            self._state_object.database_health = ComponentDegradationLevel.SEVERE
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
             self._state_object.database_health_state_str = "Fatal SQL failure"
             return None
 
@@ -108,7 +108,7 @@ class SqliteInterface(BaseSqliteInterface):
 
         except SqliteInterfaceException as ex:
             self._logger.critical("Query failed, reason: %s", str(ex))
-            self._state_object.database_health = ComponentDegradationLevel.SEVERE
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
             self._state_object.database_health_state_str = "Fatal SQL failure"
             return None
 
