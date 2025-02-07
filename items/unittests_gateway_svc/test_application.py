@@ -1,9 +1,22 @@
 import asyncio
+import json
 import os
 import unittest
 from unittest.mock import  MagicMock, patch
+from jsonschema.exceptions import ValidationError
+from requests.exceptions import ConnectionError
 from application import Application
 from configuration_layout import CONFIGURATION_LAYOUT
+
+# For testing purposes, we define a dummy health_enums
+class DummyHealthEnums:
+    STATUS_CRITICAL = "CRITICAL"
+    STATUS_DEGRADED = "DEGRADED"
+
+
+# We assume SCHEMA_HEALTH_RESPONSE is used in validation.
+# Its actual content is not important here since we patch jsonschema.validate.
+DUMMY_SCHEMA_HEALTH_RESPONSE = {}
 
 
 class TestApplication(unittest.IsolatedAsyncioTestCase):
@@ -20,6 +33,15 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.mock_config_instance = MagicMock()
         patch("application.Configuration", return_value=self.mock_config_instance).start()
         self.addCleanup(patch.stopall)
+
+        # For our tests, we patch the configuration used by _accounts_svc_api_health_check.
+        # (The URL isn’t actually used because we patch requests.get.)
+        # Also, if your code uses a module-level SCHEMA_HEALTH_RESPONSE or health_enums,
+        # you might patch them there. For simplicity, we simulate the values in our tests.
+        self.dummy_version = "1.0.0"
+        # Create our dummy health_enums and assign it (if your code uses health_enums.STATUS_...)
+        self.health_enums = DummyHealthEnums()
+
 
     def test_initialise_success(self):
         """Test _initialise when configuration management succeeds."""
@@ -214,3 +236,119 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result)
         # Verify that logger.critical was called with the error message.
         self.application._logger.critical.assert_called_once_with(error_message)
+
+    @patch("requests.get")
+    def test_accounts_svc_api_health_check_connection_error(self, mock_get):
+        # Simulate that requests.get raises a ConnectionError.
+        mock_get.side_effect = ConnectionError("Simulated connection error")
+
+        result = self.application._accounts_svc_api_health_check(self.dummy_version)
+
+        # The method should catch the exception, log an error, and return None.
+        self.assertIsNone(result)
+        self.application._logger.error.assert_called_once_with(
+            "Connection to accounts service timed out: %s", "Simulated connection error"
+        )
+
+    @patch("requests.get")
+    def test_accounts_svc_api_health_check_response_none(self, mock_get):
+        # Simulate that requests.get returns None.
+        mock_get.return_value = None
+        with self.assertRaises(RuntimeError) as context:
+            self.application._accounts_svc_api_health_check(self.dummy_version)
+        self.assertEqual(
+            str(context.exception),
+            "Missing/invalid JSON accounts svc health call JSON body"
+        )
+
+    @patch("requests.get")
+    def test_accounts_svc_api_health_check_invalid_json(self, mock_get):
+        # Simulate that requests.get returns a response with invalid JSON text.
+        dummy_response = MagicMock()
+        dummy_response.text = "not a json"
+        mock_get.return_value = dummy_response
+
+        with self.assertRaises(RuntimeError) as context:
+            self.application._accounts_svc_api_health_check(self.dummy_version)
+        self.assertIn("Invalid JSON body type for accounts svc health call", str(context.exception))
+
+    @patch("requests.get")
+    @patch("jsonschema.validate")
+    def test_accounts_svc_api_health_check_schema_validation_error(self, mock_validate, mock_get):
+        # Simulate valid JSON text but have jsonschema.validate raise a ValidationError.
+        valid_json = {"version": self.dummy_version, "status": "OK"}
+        dummy_response = MagicMock()
+        dummy_response.text = json.dumps(valid_json)
+        mock_get.return_value = dummy_response
+        mock_validate.side_effect = ValidationError("Schema error")
+
+        with self.assertRaises(RuntimeError) as context:
+            self.application._accounts_svc_api_health_check(self.dummy_version)
+        self.assertIn("Schema for accounts service health check invalid!", str(context.exception))
+
+    @patch("requests.get")
+    @patch("jsonschema.validate", return_value=None)
+    def test_accounts_svc_api_health_check_version_mismatch(self, mock_validate, mock_get):
+        # Simulate valid JSON text with a version mismatch.
+        valid_json = {"version": "2.0.0", "status": "OK"}  # JSON version is different from provided
+        dummy_response = MagicMock()
+        dummy_response.text = json.dumps(valid_json)
+        mock_get.return_value = dummy_response
+
+        result = self.application._accounts_svc_api_health_check(self.dummy_version)
+        self.assertEqual(result, valid_json)
+        # Verify that a warning is logged regarding the version mismatch.
+        self.application._logger.warning.assert_called_with(
+            "Accounts Service version (%s) does not match gateway (%s),"
+            ", unforeseen issues may occur!", "2.0.0", self.dummy_version
+        )
+
+    @patch("requests.get")
+    @patch("jsonschema.validate", return_value=None)
+    def test_accounts_svc_api_health_check_status_critical(self, mock_validate, mock_get):
+        # Simulate valid JSON with a critical status.
+        valid_json = {"version": self.dummy_version,
+                      "issues": [{"status": "fully-degraded", "details": "Test"}],
+                      "status": "critical"}
+        dummy_response = MagicMock()
+        dummy_response.text = json.dumps(valid_json)
+        mock_get.return_value = dummy_response
+
+        with self.assertRaises(RuntimeError) as context:
+            self.application._accounts_svc_api_health_check(self.dummy_version)
+        self.assertEqual(
+            str(context.exception),
+            "Accounts service critically degraded, access to accounts service discontinued until it is fixed"
+        )
+
+    @patch("requests.get")
+    @patch("jsonschema.validate", return_value=None)
+    def test_accounts_svc_api_health_check_status_degraded(self, mock_validate, mock_get):
+        # Simulate valid JSON with a degraded status.
+        valid_json = {"version": self.dummy_version,
+                      "issues": [{"status": "partial", "details": "Test"}],
+                      "status": "degraded"}
+        dummy_response = MagicMock()
+        dummy_response.text = json.dumps(valid_json)
+        mock_get.return_value = dummy_response
+
+        result = self.application._accounts_svc_api_health_check(self.dummy_version)
+        self.assertEqual(result, valid_json)
+        # Verify that a warning about degraded status was logged.
+        self.application._logger.warning.assert_called_with(
+            "Accounts service degraded, can continue, but retries/slow-down may occur.."
+        )
+
+    @patch("requests.get")
+    @patch("jsonschema.validate", return_value=None)
+    def test_accounts_svc_api_health_check_normal_response(self, mock_validate, mock_get):
+        # Simulate a valid JSON response with matching version and a non-critical, non-degraded status.
+        valid_json = {"version": self.dummy_version, "status": "OK"}
+        dummy_response = MagicMock()
+        dummy_response.text = json.dumps(valid_json)
+        mock_get.return_value = dummy_response
+
+        result = self.application._accounts_svc_api_health_check(self.dummy_version)
+        self.assertEqual(result, valid_json)
+        # In a normal response, no warning should be logged.
+        self.application._logger.warning.assert_not_called()
