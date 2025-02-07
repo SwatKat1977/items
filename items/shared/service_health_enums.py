@@ -30,9 +30,9 @@ class ServiceDegradationStatus(Enum):
 
 
 ServiceDegradationStatusStr: dict = {
-    ServiceDegradationStatus.HEALTHY: "Healthy",
-    ServiceDegradationStatus.DEGRADED: "Degraded",
-    ServiceDegradationStatus.CRITICAL: "Critical"
+    ServiceDegradationStatus.HEALTHY: "healthy",
+    ServiceDegradationStatus.DEGRADED: "degraded",
+    ServiceDegradationStatus.CRITICAL: "critical"
 }
 
 STATUS_HEALTHY: str = ServiceDegradationStatusStr[
@@ -47,19 +47,19 @@ class ComponentDegradationLevel(Enum):
     """ Component degradation Level """
 
     NONE = 0
-    DEGRADED = 1
-    SEVERE = 2
+    PART_DEGRADED = 1
+    FULLY_DEGRADED = 2
 
 
 ComponentDegradationLevelStr: dict = {
-    ComponentDegradationLevel.NONE: "None",
-    ComponentDegradationLevel.DEGRADED: "Degraded",
-    ComponentDegradationLevel.SEVERE: "Severe"
+    ComponentDegradationLevel.NONE: "none",
+    ComponentDegradationLevel.PART_DEGRADED: "partial",
+    ComponentDegradationLevel.FULLY_DEGRADED: "fully_degraded"
 }
 
 COMPONENT_DEGRADATION_LEVEL_NONE: str = ComponentDegradationLevelStr[
     ComponentDegradationLevel.NONE]
 COMPONENT_DEGRADATION_LEVEL_DEGRADED: str = ComponentDegradationLevelStr[
-    ComponentDegradationLevel.DEGRADED]
-COMPONENT_DEGRADATION_LEVEL_SEVERE: str = ComponentDegradationLevelStr[
-    ComponentDegradationLevel.SEVERE]
+    ComponentDegradationLevel.PART_DEGRADED]
+COMPONENT_DEGRADATION_LEVEL_FULLY_DEGRADED: str = ComponentDegradationLevelStr[
+    ComponentDegradationLevel.FULLY_DEGRADED]

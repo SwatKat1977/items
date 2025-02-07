@@ -20,3 +20,5 @@ class AccountLogonType(Enum):
     """ Type of account logon, e.g. basic """
 
     BASIC = 0
+    GOOGLE_API = 1
+    # FACEBOOK = 2  - FUTURE -

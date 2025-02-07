@@ -58,13 +58,9 @@ class HealthApiView(BaseView):
                  "details": self._state_object.service_health_state_str})
 
         if issues:
-            wibble = any(issue["status"] ==
-                         health_enums.ComponentDegradationLevel.DEGRADED
-                         for issue in issues)
-
             status = health_enums.STATUS_CRITICAL \
                 if any(issue["status"] ==
-                       health_enums.COMPONENT_DEGRADATION_LEVEL_SEVERE
+                       health_enums.COMPONENT_DEGRADATION_LEVEL_FULLY_DEGRADED
                        for issue in issues) else health_enums.STATUS_DEGRADED
         else:
             status = health_enums.STATUS_HEALTHY

@@ -14,8 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import asyncio
+import json
 import logging
 import os
+import time
+import typing
+import jsonschema
+import requests
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
                            LOGGING_DEFAULT_LOG_LEVEL, \
                            LOGGING_LOG_FORMAT_STRING
@@ -24,6 +29,10 @@ from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
 from base_application import BaseApplication
 from configuration_layout import CONFIGURATION_LAYOUT
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
+from interfaces.accounts.health import SCHEMA_HEALTH_RESPONSE
+from apis import handshake_api
+import service_health_enums as health_enums
+from sessions import Sessions
 
 
 class Application(BaseApplication):
@@ -32,6 +41,7 @@ class Application(BaseApplication):
     def __init__(self, quart_instance):
         super().__init__()
         self._quart_instance = quart_instance
+        self._sessions: Sessions = Sessions()
 
         self._logger = logging.getLogger(__name__)
         log_format= logging.Formatter(LOGGING_LOG_FORMAT_STRING,
@@ -43,9 +53,9 @@ class Application(BaseApplication):
 
     def _initialise(self) -> bool:
 
-        build = f"V{RELEASE_VERSION}-{BUILD_VERSION}{BUILD_TAG}"
+        version_info: str = f"V{RELEASE_VERSION}-{BUILD_VERSION}{BUILD_TAG}"
 
-        self._logger.info('ITEMS Gateway Microservice %s', build)
+        self._logger.info('ITEMS Gateway Microservice %s', version_info)
         self._logger.info(SERVICE_COPYRIGHT_TEXT)
         self._logger.info(LICENSE_TEXT)
 
@@ -55,6 +65,13 @@ class Application(BaseApplication):
         self._logger.info('Setting logging level to %s',
                           Configuration().logging_log_level)
         self._logger.setLevel(Configuration().logging_log_level)
+
+        if not self._check_accounts_svc_api_status(version_info):
+            return False
+
+        handshake_blueprint = handshake_api.create_blueprint(
+            self._logger, self._sessions)
+        self._quart_instance.register_blueprint(handshake_blueprint)
 
         return True
 
@@ -113,3 +130,73 @@ class Application(BaseApplication):
                           Configuration().apis_cms_svc)
 
         return True
+
+    def _check_accounts_svc_api_status(self, version_info: str) -> bool:
+        perform_check: bool = True
+
+        while perform_check:
+            try:
+                data = self._accounts_svc_api_health_check(version_info)
+
+                if data:
+                    self._logger.info("[Accounts API]")
+                    self._logger.info("=> Status: %s", data["status"])
+                    self._logger.info("=> Version: %s", data["version"])
+                    perform_check = False
+
+                else:
+                    time.sleep(3)
+
+            except RuntimeError as ex:
+                self._logger.critical(str(ex))
+                return False
+
+        return True
+
+    def _accounts_svc_api_health_check(self, version_info: str) \
+            -> typing.Optional[dict]:
+        url: str = f"{Configuration().apis_accounts_svc}health/status"
+
+        try:
+            response = requests.get(url, timeout=1)
+
+        except requests.exceptions.ConnectionError as ex:
+            self._logger.error("Connection to accounts service timed out: %s",
+                               str(ex))
+            return None
+
+        if response is None:
+            raise RuntimeError(
+                "Missing/invalid JSON accounts svc health call JSON body")
+
+        try:
+            json_data = json.loads(response.text)
+
+        except (TypeError, json.JSONDecodeError) as ex:
+            raise RuntimeError(
+                "Invalid JSON body type for accounts svc health call") from ex
+
+        try:
+            jsonschema.validate(instance=json_data,
+                                schema=SCHEMA_HEALTH_RESPONSE)
+
+        except jsonschema.exceptions.ValidationError as ex:
+            raise RuntimeError(
+                "Schema for accounts service health check invalid!") from ex
+
+        if json_data["version"] != version_info:
+            self._logger.warning(
+                "Accounts Service version (%s) does not match gateway (%s),"
+                ", unforeseen issues may occur!", json_data["version"],
+                version_info)
+
+        if json_data["status"] == health_enums.STATUS_CRITICAL:
+            msg: str = "Accounts service critically degraded, access to "\
+                       "accounts service discontinued until it is fixed"
+            raise RuntimeError(msg)
+
+        if json_data["status"] == health_enums.STATUS_DEGRADED:
+            self._logger.warning("Accounts service degraded, can continue, but"
+                                 " retries/slow-down may occur..")
+
+        return json_data
