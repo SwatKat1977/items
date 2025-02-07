@@ -32,6 +32,10 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.application._manage_configuration = MagicMock(return_value=True)
         self.mock_config_instance.logging_log_level = "DEBUG"
 
+        # Mock the accounts service health check to return valid data
+        self.application._check_accounts_svc_api_status = MagicMock(return_value=True)
+        print(f"\n\n\nMocked _accounts_svc_api_health_check: {self.application._check_accounts_svc_api_status}")
+
         # Call _initialise
         result = self.application._initialise()
 

@@ -2,6 +2,7 @@
 omit =
     items/unittests_shared/*
     items/unittests_gateway_svc/*
+    items/gateway_svc/apis/handshake_api.py
     items/shared/*
     /opt/homebrew/*
     /usr/lib/python3/*
