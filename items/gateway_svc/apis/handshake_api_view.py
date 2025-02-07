@@ -80,7 +80,7 @@ class HandshakeApiView(BaseView):
                 self._logger.critical("Accounts svc request invalid - Reason: %s",
                                       response.exception_msg)
                 response_json = {
-                    "status": 'BAD',
+                    "status": 0,
                     'error': 'Internal error!'
                 }
                 return Response(json.dumps(response_json),
