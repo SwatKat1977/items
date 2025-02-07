@@ -34,7 +34,6 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
 
         # Mock the accounts service health check to return valid data
         self.application._check_accounts_svc_api_status = MagicMock(return_value=True)
-        print(f"\n\n\nMocked _accounts_svc_api_health_check: {self.application._check_accounts_svc_api_status}")
 
         # Call _initialise
         result = self.application._initialise()
@@ -52,6 +51,20 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         """Test _initialise when configuration management fails."""
         # Mock configuration management failure
         self.application._manage_configuration = MagicMock(return_value=False)
+
+        # Call _initialise
+        result = self.application._initialise()
+
+        # Assertions
+        self.assertFalse(result, "Initialization should fail")
+        self.application._manage_configuration.assert_called_once()
+        self.mock_logger_instance.info.assert_called()  # Logger should still log build info
+
+    def test_initialise_configuration_accounts_api_check_failed(self):
+        """Test _initialise when configuration management fails."""
+        # Mock configuration management failure
+        self.application._manage_configuration = MagicMock(return_value=True)
+        self.application._check_accounts_svc_api_status = MagicMock(return_value=False)
 
         # Call _initialise
         result = self.application._initialise()
