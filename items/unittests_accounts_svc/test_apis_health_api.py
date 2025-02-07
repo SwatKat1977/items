@@ -41,7 +41,7 @@ class TestApiHealthApiView(unittest.IsolatedAsyncioTestCase):
         })
 
     async def test_health_degraded(self):
-        self.mock_state.database_health = health_enums.ComponentDegradationLevel.DEGRADED
+        self.mock_state.database_health = health_enums.ComponentDegradationLevel.PART_DEGRADED
         self.mock_state.database_health_state_str = "Slow queries detected"
         self.mock_state.service_health = health_enums.ComponentDegradationLevel.NONE
 
@@ -53,11 +53,11 @@ class TestApiHealthApiView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(data["issues"]), 1)
         self.assertEqual(data["issues"][0]["component"], "database")
         self.assertEqual(data["issues"][0]["status"],
-                         health_enums.ComponentDegradationLevelStr[health_enums.ComponentDegradationLevel.DEGRADED])
+                         health_enums.ComponentDegradationLevelStr[health_enums.ComponentDegradationLevel.PART_DEGRADED])
         self.assertEqual(data["issues"][0]["details"], "Slow queries detected")
 
     async def test_health_critical(self):
-        self.mock_state.database_health = health_enums.ComponentDegradationLevel.SEVERE
+        self.mock_state.database_health = health_enums.ComponentDegradationLevel.FULLY_DEGRADED
         self.mock_state.database_health_state_str = "Database down"
         self.mock_state.service_health = health_enums.ComponentDegradationLevel.NONE
 
@@ -69,13 +69,13 @@ class TestApiHealthApiView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(data["issues"]), 1)
         self.assertEqual(data["issues"][0]["component"], "database")
         self.assertEqual(data["issues"][0]["status"],
-                         health_enums.ComponentDegradationLevelStr[health_enums.ComponentDegradationLevel.SEVERE])
+                         health_enums.ComponentDegradationLevelStr[health_enums.ComponentDegradationLevel.FULLY_DEGRADED])
         self.assertEqual(data["issues"][0]["details"], "Database down")
 
     async def test_health_multiple_issues(self):
-        self.mock_state.database_health = health_enums.ComponentDegradationLevel.DEGRADED
+        self.mock_state.database_health = health_enums.ComponentDegradationLevel.PART_DEGRADED
         self.mock_state.database_health_state_str = "Slow queries detected"
-        self.mock_state.service_health = health_enums.ComponentDegradationLevel.SEVERE
+        self.mock_state.service_health = health_enums.ComponentDegradationLevel.FULLY_DEGRADED
         self.mock_state.service_health_state_str = "Service not responding"
 
         response = await self.view.health()
