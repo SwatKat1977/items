@@ -16,4 +16,4 @@ limitations under the License.
 
 
 class ItemsException(Exception):
-    ''' Definition of Items Exception base class '''
+    """ Definition of Items Exception base class """
