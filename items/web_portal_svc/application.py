@@ -24,6 +24,7 @@ from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
 from configuration_layout import CONFIGURATION_LAYOUT
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
+from apis import auth_api
 
 class Application(BaseApplication):
     """ ITEMS Accounts Service """
@@ -54,6 +55,9 @@ class Application(BaseApplication):
         self._logger.info('Setting logging level to %s',
                           Configuration().logging_log_level)
         self._logger.setLevel(Configuration().logging_log_level)
+
+        auth_blueprint = auth_api.create_blueprint(self._logger)
+        self._quart_instance.register_blueprint(auth_blueprint)
 
         return True
 
