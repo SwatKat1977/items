@@ -16,4 +16,6 @@ limitations under the License.
 
 
 class AuthApiView:
-    ...
+
+    def __init__(self, logger):
+        ...
