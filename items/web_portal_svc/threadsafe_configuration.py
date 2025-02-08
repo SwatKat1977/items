@@ -13,3 +13,21 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from configuration.configuration_manager import ConfigurationManager
+from thread_safe_singleton import ThreadSafeSingleton
+
+
+class ThreadSafeConfiguration(ConfigurationManager,
+                              metaclass=ThreadSafeSingleton):
+    """ Thread-safe singleton for the config """
+
+    @property
+    def logging_log_level(self) -> str:
+        """ Configuration property : Logging | log level """
+        return ThreadSafeConfiguration().get_entry('logging', 'log_level')
+
+    @property
+    def apis_gateway_svc(self) -> str:
+        """ Configuration property : APIs | Gateway Service base path """
+        return ThreadSafeConfiguration().get_entry(
+            "apis", "gateway_svc")
