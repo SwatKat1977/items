@@ -43,8 +43,15 @@ def create_blueprint(logger: logging.Logger, sessions: Sessions) -> Blueprint:
     logger.info("=> /handshake/basic_authenticate [POST]")
 
     @blueprint.route('/handshake/basic_authenticate', methods=['POST'])
-    async def authenticate_request():
+    async def basic_authenticate_request():
         return await view.basic_authenticate()
+
+    logger.info("=> handshake/is_token_valid [POST]")
+
+    @blueprint.route('/handshake/is_token_valid', methods=['POST'])
+    async def is_token_valid():
+        # pylint: disable=unused-variable
+        return await view.is_token_valid()
 
     logger.info("=> handshake/logout [POST]")
 

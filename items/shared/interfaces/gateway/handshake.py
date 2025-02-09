@@ -53,3 +53,20 @@ SCHEMA_LOGOUT_REQUEST: dict = {
         },
     "required": ["email_address", "token"]
 }
+
+SCHEMA_IS_VALID_TOKEN_REQUEST = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "email_address": {
+            "type": "string",
+            "format": "email"
+        },
+        "token": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{32}$"
+        }
+    },
+    "required": ["email_address", "token"],
+    "additionalProperties": False
+}
