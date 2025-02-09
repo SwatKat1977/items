@@ -70,3 +70,16 @@ SCHEMA_IS_VALID_TOKEN_REQUEST = {
     "required": ["email_address", "token"],
     "additionalProperties": False
 }
+
+SCHEMA_IS_VALID_TOKEN_RESPONSE = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "status": {
+            "type": "string",
+            "enum": ["VALID", "INVALID"]
+        }
+    },
+    "required": ["status"],
+    "additionalProperties": False
+}
