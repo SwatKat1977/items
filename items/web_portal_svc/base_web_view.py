@@ -46,7 +46,7 @@ class BaseWebView(BaseView):
         token = request.cookies.get(self.COOKIE_TOKEN)
         username = request.cookies.get(self.COOKIE_USER)
 
-        url = f"{Configuration.apis_gateway_svc}/handshake/valid_token"
+        url = f"{Configuration().apis_gateway_svc}/handshake/is_token_valid"
 
         request_body: dict = {
             "email_address": username,
@@ -54,7 +54,7 @@ class BaseWebView(BaseView):
         }
 
         try:
-            response = requests.get(url, json=request_body, timeout=1)
+            response = requests.post(url, json=request_body, timeout=1)
 
         except requests.exceptions.ConnectionError as ex:
             raise BaseItemsException('Connection to gateway api timed out')\
