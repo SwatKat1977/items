@@ -17,8 +17,8 @@ limitations under the License.
 # Login page template
 TEMPLATE_LOGIN_PAGE = "login.html"
 
-# Index/home page template
-TEMPLATE_HOME_PAGE = "home.html"
+# Landing page template
+TEMPLATE_LANDING_PAGE = "landing.html"
 
 # Internal error page template
 TEMPLATE_INTERNAL_ERROR_PAGE = "internal_server_error.html"
