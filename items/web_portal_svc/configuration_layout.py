@@ -45,7 +45,7 @@ CONFIGURATION_LAYOUT = configuration_setup.ConfigurationSetup(
             configuration_setup.ConfigurationSetupItem(
                 ConfigurationConstants.ITEM_APIS_GATEWAY_SVC,
                 configuration_setup.ConfigItemDataType.STRING,
-                default_value="http://localhost:3000/")
+                default_value="http://localhost:4000/")
         ]
     }
 )
