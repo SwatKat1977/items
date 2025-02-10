@@ -47,8 +47,14 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
     logger.info("=> /login [POST]")
 
     @blueprint.route('/login', methods=['POST'])
-    async def login_page_request():
-        return await view.login_page()
+    async def login_page_request_post():
+        return await view.login_page_post()
+
+    logger.info("=> /login [GET]")
+
+    @blueprint.route('/login', methods=['GET'])
+    async def login_page_request_get():
+        return await view.login_page_get()
 
     logger.info("=> /logout [GET]")
 

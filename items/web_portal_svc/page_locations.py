@@ -14,6 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+# Login page template
+TEMPLATE_LOGIN_PAGE = "login.html"
 
-class BaseItemsException(Exception):
-    """ Definition of Items Exception base class """
+# Index/home page template
+TEMPLATE_HOME_PAGE = "home.html"
+
+# Internal error page template
+TEMPLATE_INTERNAL_ERROR_PAGE = "internal_server_error.html"
