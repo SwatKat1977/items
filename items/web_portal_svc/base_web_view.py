@@ -98,5 +98,5 @@ class BaseWebView(BaseView):
             self._logger.error("Failed to render web page '%s'", page_file)
             return await render_template(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
-    async def _process_post_form_data(self, form_data):
-        return {key: value for key, value in form_data.items()}
+    async def _process_post_form_data(self, form_data) ->dict:
+        return dict(form_data.items())
