@@ -15,6 +15,8 @@ limitations under the License.
 """
 from http import HTTPStatus
 import json
+
+import jinja2
 from base_web_view import BaseWebView
 from base_view import ApiResponse
 from quart import make_response, render_template, request, Response
@@ -25,8 +27,7 @@ from threadsafe_configuration import ThreadSafeConfiguration
 class AuthApiView(BaseWebView):
 
     def __init__(self, logger):
-        super().__init__()
-        self._logger = logger.getChild(__name__)
+        super().__init__(logger)
 
     async def index_page(self):
         """
@@ -46,9 +47,9 @@ class AuthApiView(BaseWebView):
 
         except BaseItemsException as ex:
             self._logger.error('Internal Error: %s', ex)
-            return await render_template(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
+            return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
-        return await render_template(pages.TEMPLATE_LANDING_PAGE)
+        return await self._render_page(pages.TEMPLATE_LANDING_PAGE)
 
     async def login_page_get(self):
         """
@@ -66,9 +67,9 @@ class AuthApiView(BaseWebView):
 
         except BaseItemsException as ex:
             self._logger.error('Internal Error: %s', ex)
-            return await render_template(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
+            return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
-        return await render_template(pages.TEMPLATE_LOGIN_PAGE)
+        return await self._render_page(pages.TEMPLATE_LOGIN_PAGE)
 
     async def login_page_post(self):
         """
@@ -86,16 +87,18 @@ class AuthApiView(BaseWebView):
 
         except BaseItemsException as ex:
             self._logger.error('Internal Error: %s', ex)
-            return await render_template(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
+            return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
-        user_email = (await request.form).get('user_email')
-        password = (await request.form).get('password')
+        form_data = await self._process_post_form_data(await request.form)
+
+        user_email = form_data.get('user_email')
+        password = form_data.get('password')
 
         if not user_email or not password:
             error_msg = "Invalid username/password"
-            return await render_template(pages.TEMPLATE_LOGIN_PAGE,
-                                         generate_error_msg=True,
-                                         error_msg=error_msg)
+            return await self._render_page(pages.TEMPLATE_LOGIN_PAGE,
+                                           generate_error_msg=True,
+                                           error_msg=error_msg)
 
         auth_body: dict = {
                 "email_address": user_email,
@@ -110,9 +113,9 @@ class AuthApiView(BaseWebView):
             self._logger.critical("Gateway svc request invalid - Reason: %s",
                                   response.exception_msg)
             error_msg = "Internal Error"
-            return await render_template(pages.TEMPLATE_LOGIN_PAGE,
-                                         generate_error_msg=True,
-                                         error_msg=error_msg)
+            return await self._render_page(pages.TEMPLATE_LOGIN_PAGE,
+                                           generate_error_msg=True,
+                                           error_msg=error_msg)
 
         if response.body.get("status") == 1:
             redirect = self._generate_redirect('')
@@ -123,6 +126,6 @@ class AuthApiView(BaseWebView):
             return login_response
 
         error_msg = "Invalid username/password"
-        return await render_template(pages.TEMPLATE_LOGIN_PAGE,
-                                     generate_error_msg = True,
-                                     error_msg=error_msg)
+        return await self._render_page(pages.TEMPLATE_LOGIN_PAGE,
+                                       generate_error_msg = True,
+                                       error_msg=error_msg)

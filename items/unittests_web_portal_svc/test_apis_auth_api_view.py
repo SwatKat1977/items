@@ -194,8 +194,6 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(await result.get_data(),
                                      b'<meta http-equiv="Refresh" content="0; url=\'http://localhost/"/>')
 
-
-
     @patch.object(ThreadSafeConfiguration,
                   "get_entry",
                   return_value="https://mocked-url.com/")
@@ -227,31 +225,33 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
 
                     self.assertEqual(result, "login_page")
 
-'''
+    @patch.object(ThreadSafeConfiguration,
+                  "get_entry",
+                  return_value="https://mocked-url.com/")
+    @patch.object(BaseWebView, '_process_post_form_data',
+                  return_value={"user_email": "test", "password": "pass"})
+    async def test_login_page_post_invalid_username_or_password(self,
+                                               mock_process_post_form_data,
+                                               mock_config):
+        """Test login_page_post handles successful login."""
+        mock_response = AsyncMock(
+            status_code=HTTPStatus.OK,
+            body={"status": 0, "error": "fake-token"})
 
-    #@patch("auth_api_view.ThreadSafeConfiguration")
-    #async def test_login_page_post_api_failure(self, mock_config):
-    async def test_login_page_post_api_failure(self):
-        """Test login_page_post handles API failure."""
+        # Mock the API call
+        with patch.object(self.auth_api_view, "_call_api_post", return_value=mock_response):
+            with patch.object(self.auth_api_view, "_render_page", return_value="login_page"):
+                async with self.app.test_request_context('/login', method="POST"):
+                    result = await self.auth_api_view.login_page_post()
 
-        mock_config = MagicMock()
-        mock_config.apis_gateway_svc = "https://mocked-url.com/"
+                    # Ensure the mock API call was made correctly
+                    self.auth_api_view._call_api_post.assert_awaited_once_with(
+                        "https://mocked-url.com/handshake/basic_authenticate",
+                        {"email_address": "test", "password": "pass"}
+                    )
 
-        with patch("threadsafe_configuration.ThreadSafeConfiguration", return_value=mock_config):
+                    self.auth_api_view._render_page.assert_awaited_once_with(
+                        'login.html', generate_error_msg=True,
+                        error_msg='Invalid username/password')
 
-            async with self.app.test_request_context(
-                    "/login", method="POST",
-                    data={"user_email": "test", "password": "wrong"}):
-
-                self.auth_api_view._render_page = AsyncMock(return_value="main_page")
-                self.auth_api_view._call_api_post = AsyncMock(
-                    return_value=MagicMock(status_code=HTTPStatus.INTERNAL_SERVER_ERROR))
-
-                response = await self.auth_api_view.login_page_post()
-                self.auth_api_view._render_page.assert_awaited_once_with(
-                    'login.html', generate_error_msg=True, error_msg='I__nvalid username/password')
-
-                self.assertEqual(response, 200)
-                self.assertIn("Internal Error", await response.get_data(as_text=True))
-
-    '''
+                    self.assertEqual(result, "login_page")
