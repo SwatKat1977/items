@@ -5,8 +5,7 @@ from quart import Quart, request
 from apis.auth_api_view import AuthApiView
 from base_web_view import BaseWebView
 from base_items_exception import BaseItemsException
-from configuration.configuration_manager import ConfigurationManager
-
+from threadsafe_configuration import ThreadSafeConfiguration
 
 class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
 
@@ -166,21 +165,16 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
                 self.auth_api_view._render_page.assert_awaited_once_with(
                     "internal_server_error.html")
 
-
-
-
-    @patch("threadsafe_configuration.ThreadSafeConfiguration")
+    @patch.object(ThreadSafeConfiguration,
+                  "get_entry",
+                  return_value="https://mocked-url.com/")
     @patch.object(BaseWebView, '_process_post_form_data',
                   return_value={"user_email": "test", "password": "pass"})
     async def test_login_page_post_valid_login(self,
                                                mock_process_post_form_data,
                                                mock_config):
         """Test login_page_post handles successful login."""
-
-        # Set up the mock config and response
-        mock_config.apis_gateway_svc = "https://mocked-url.com/"
-
-        mock_response = MagicMock(
+        mock_response = AsyncMock(
             status_code=HTTPStatus.OK,
             body={"status": 1, "token": "fake-token"})
 
@@ -191,15 +185,14 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
                     result = await self.auth_api_view.login_page_post()
 
                     # Ensure the mock API call was made correctly
-                    await self.auth_api_view._call_api_post.assert_awaited_once_with(
+                    self.auth_api_view._call_api_post.assert_awaited_once_with(
                         "https://mocked-url.com/handshake/basic_authenticate",
                         {"email_address": "test", "password": "pass"}
                     )
 
-                    print(f"DAA: {result}")
-
-                # Check if the response returned the expected value
-                #self.assertEqual(await response.data.decode(), "login_page")
+                    self.assertEqual(result.status_code, HTTPStatus.OK)
+                    self.assertEqual(await result.get_data(),
+                                     b'<meta http-equiv="Refresh" content="0; url=\'http://localhost/"/>')
 
 
 '''
