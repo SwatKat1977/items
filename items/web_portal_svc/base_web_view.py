@@ -90,7 +90,12 @@ class BaseWebView(BaseView):
 
     async def _render_page(self,
                            page_file:
-                           str, *args, **kwargs) -> typing.Optional[str]:
+                           str, *args, **kwargs) \
+            -> typing.Optional[str]:   # pragma: no cover
+        """
+        Python unittest and coverage hate quart.render_template so it is
+        getting excluded from unittests for now.
+        """
         try:
             return await render_template(page_file, *args, **kwargs)
 
