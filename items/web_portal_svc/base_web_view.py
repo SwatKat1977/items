@@ -14,13 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import json
+import typing
+import jinja2
 import jsonschema
 import requests
-from quart import request
+from quart import request, render_template
 from base_view import BaseView
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from base_items_exception import BaseItemsException
 from interfaces.gateway.handshake import SCHEMA_IS_VALID_TOKEN_RESPONSE
+import page_locations as pages
 
 
 class BaseWebView(BaseView):
@@ -31,6 +34,9 @@ class BaseWebView(BaseView):
     COOKIE_USER = "items_user"
 
     REDIRECT_URL = "<meta http-equiv=\"Refresh\" content=\"0; url='{0}\"/>"
+
+    def __init__(self, logger):
+        self._logger = logger.getChild(__name__)
 
     def _generate_redirect(self, redirect_url) -> str:
         new_url = f"{request.url_root}{redirect_url}"
@@ -81,3 +87,22 @@ class BaseWebView(BaseView):
                 "Schema for accounts service health check invalid!") from ex
 
         return json_data["status"] == "VALID"
+
+    async def _render_page(self,
+                           page_file:
+                           str, *args, **kwargs) -> typing.Optional[str]:
+        try:
+            return await render_template(page_file, *args, **kwargs)
+
+        except jinja2.TemplateError as ex:
+            self._logger.error("Failed to render web page '%s'", page_file)
+            return await render_template(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
+
+        except (jinja2.UndefinedError, jinja2.TemplateNotFound,
+                jinja2.TemplateSyntaxError, jinja2.TemplateRuntimeError) as ex:
+            self._logger.error("Failed to render web page '%s', reason: %s",
+                               page_file, str(ex))
+            return await render_template(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
+
+    async def _process_post_form_data(self, form_data):
+        return {key: value for key, value in form_data.items()}
