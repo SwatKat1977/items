@@ -94,14 +94,8 @@ class BaseWebView(BaseView):
         try:
             return await render_template(page_file, *args, **kwargs)
 
-        except jinja2.TemplateError as ex:
+        except jinja2.TemplateError:
             self._logger.error("Failed to render web page '%s'", page_file)
-            return await render_template(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
-
-        except (jinja2.UndefinedError, jinja2.TemplateNotFound,
-                jinja2.TemplateSyntaxError, jinja2.TemplateRuntimeError) as ex:
-            self._logger.error("Failed to render web page '%s', reason: %s",
-                               page_file, str(ex))
             return await render_template(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
     async def _process_post_form_data(self, form_data):

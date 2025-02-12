@@ -26,6 +26,7 @@ from configuration_layout import CONFIGURATION_LAYOUT
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from apis import auth_api
 
+
 class Application(BaseApplication):
     """ ITEMS Accounts Service """
 
@@ -34,8 +35,8 @@ class Application(BaseApplication):
         self._quart_instance = quart_instance
 
         self._logger = logging.getLogger(__name__)
-        log_format= logging.Formatter(LOGGING_LOG_FORMAT_STRING,
-                                      LOGGING_DATETIME_FORMAT_STRING)
+        log_format = logging.Formatter(LOGGING_LOG_FORMAT_STRING,
+                                       LOGGING_DATETIME_FORMAT_STRING)
         console_stream = logging.StreamHandler()
         console_stream.setFormatter(log_format)
         self._logger.setLevel(LOGGING_DEFAULT_LOG_LEVEL)
