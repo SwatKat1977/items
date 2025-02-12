@@ -22,6 +22,7 @@ class TestHandshakeApiView(unittest.IsolatedAsyncioTestCase):
         # Register route for testing
         self.app.add_url_rule('/handshake/basic_authenticate', view_func=self.view.basic_authenticate, methods=['POST'])
         self.app.add_url_rule('/handshake/logout', view_func=self.view.logout_user, methods=['POST'])
+        self.app.add_url_rule('/handshake/is_token_valid', view_func=self.view.is_token_valid, methods=['POST'])
 
     @patch.object(ConfigurationManager, 'get_entry')
     async def test_basic_authenticate_invalid_status_from_accounts(self, mock_get_entry):
@@ -226,3 +227,49 @@ class TestHandshakeApiView(unittest.IsolatedAsyncioTestCase):
             data = await response.get_json()
             self.assertEqual(data["status"], 0)
             self.assertEqual(data['error'], "Validation error")
+
+    @patch("sessions.Sessions.is_valid_session")
+    async def test_is_token_valid_valid(self, mock_is_valid_session):
+
+        # Mock `_validate_json_body` to return valid data
+        self.view._validate_json_body = MagicMock()
+        self.view._validate_json_body.return_value = ApiResponse(
+            status_code=HTTPStatus.OK,
+            body=MagicMock(email_address="test@example.com", token="TestToken")
+        )
+
+        #     "required": ["email_address", "token"],
+        async with self.client as client:
+            response = await client.post('/handshake/is_token_valid',
+                                         json={"email_address": "test@example.com",
+                                               "token": "TestTokens"})
+
+            # Check response status
+            self.assertEqual(response.status_code, HTTPStatus.OK)
+
+            # Check response JSON
+            data = await response.get_json()
+            self.assertEqual(data['status'], 'VALID')
+
+    @patch("sessions.Sessions.is_valid_session")
+    async def test_is_token_internal_error(self, mock_is_valid_session):
+
+        # Mock `_validate_json_body` to return valid data
+        self.view._validate_json_body = MagicMock()
+        self.view._validate_json_body.return_value = ApiResponse(
+            status_code=HTTPStatus.IM_A_TEAPOT,
+            body=MagicMock(email_address="test@example.com", token="TestToken")
+        )
+
+        #     "required": ["email_address", "token"],
+        async with self.client as client:
+            response = await client.post('/handshake/is_token_valid',
+                                         json={"email_address": "test@example.com",
+                                               "token": "TestTokens"})
+
+            # Check response status
+            self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+            # Check response JSON
+            data = await response.get_json()
+            self.assertEqual(data['status'], 'BAD REQUEST')
