@@ -110,7 +110,7 @@ class Sessions:
                 entry = self._sessions[email_address]
                 return entry.token == token
 
-            return False
+        return False
 
     def has_session(self, email_address: str) -> bool:
         """

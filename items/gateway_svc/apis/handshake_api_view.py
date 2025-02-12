@@ -121,6 +121,36 @@ class HandshakeApiView(BaseView):
         return Response(json.dumps(response_json), status=response_status,
                         content_type="application/json")
 
+    async def is_token_valid(self):
+        """
+        Endpoint to check to see if a token is valid.
+
+        parameters:
+            api_request - Request from Quart
+
+        returns:
+            Response instance
+        """
+
+        request_obj: ApiResponse = self._validate_json_body(
+            await request.get_data(),
+            handshake_api.SCHEMA_IS_VALID_TOKEN_REQUEST)
+
+        if request_obj.status_code != HTTPStatus.OK:
+            response_json = { 'status': 'BAD REQUEST' }
+            return Response(json.dumps(response_json),
+                            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                            content_type="application/json")
+
+        valid = self._sessions.is_valid_session(request_obj.body.email_address,
+                                                request_obj.body.token)
+
+        response_json = {"status": "VALID" if valid else "INVALID"}
+        response_status = HTTPStatus.OK
+
+        return Response(json.dumps(response_json), response_status,
+                        content_type="application/json")
+
     async def logout_user(self) -> Response:
         """
         Handler method for user session logout endpoint.

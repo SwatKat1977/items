@@ -1,0 +1,59 @@
+{% extends "bootstrap_enabled_template.html" %}
+{% block head %}{{ super() }}
+    <link href='https://unpkg.com/boxicons@2.0.7/css/boxicons.min.css' rel='stylesheet'>
+{% endblock %}
+
+{% block body_params %}id="body-pd"{% endblock %}
+{% block page_body %}
+<header class="header" id="header">
+    <div class="header_toggle" data-bs-toggle="offcanvas" data-bs-target="#sidebarNavbar" aria-controls="sidebarNavbar">
+        <i class="bx bx-menu fs-2" id="header-toggle"></i>
+    </div>
+</header>
+
+<div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarNavbar" aria-labelledby="sidebarNavbarLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title nav_logo-name" id="sidebarNavbarLabel">Quick Menu</h5>
+        <button type="button" class="btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+
+        <div class="nav_list">
+            <a href="#" class="nav_link active" title="Dashboard" data-bs-toggle="tooltip">
+                <i class='bx bx-tachometer nav_icon'></i>
+                <span class="nav_name">Dashboard</span>
+            </a>
+
+            <a href="#" class="nav_link disabled">
+                <i class='bx bx-clipboard nav_icon'></i>
+                <span class="nav_name">Statistics</span>
+            </a>
+
+            <a href="/testcases" class="nav_link disabled">
+                <i class='bx bx-table nav_icon'></i>
+                <span class="nav_name">Test Definitions</span>
+            </a>
+
+            <a href="#" class="nav_link disabled">
+                <i class='bx bx-run nav_icon'></i>
+                <span class="nav_name">Test Execution</span>
+            </a>
+
+            <a href="#" class="nav_link disabled">
+                <i class='bx bx-cog nav_icon'></i>
+                <span class="nav_name">Settings</span>
+            </a>
+
+            <a href="#" class="nav_link disabled">
+                <i class='bx bx-user nav_icon'></i>
+                <span class="nav_name">User Profile</span>
+            </a>
+        </div>
+
+        <a href="logout" class="nav_link">
+            <i class='bx bx-log-out nav_icon'></i>
+            <span class="nav_name">Log out</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -2,7 +2,6 @@ import unittest
 from unittest.mock import patch, MagicMock
 from configuration_layout import ConfigurationConstants as consts
 from configuration.configuration_manager import ConfigurationManager
-#from thread_safe_singleton import ThreadSafeSingleton
 from threadsafe_configuration import ThreadSafeConfiguration
 
 

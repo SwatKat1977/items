@@ -15,11 +15,10 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from apis.handshake_api_view import HandshakeApiView
-from sessions import Sessions
+from apis.auth_api_view import AuthApiView
 
 
-def create_blueprint(logger: logging.Logger, sessions: Sessions) -> Blueprint:
+def create_blueprint(logger: logging.Logger) -> Blueprint:
     """
     Creates and registers a Flask Blueprint for handling authentication
     handshake API routes.
@@ -29,34 +28,38 @@ def create_blueprint(logger: logging.Logger, sessions: Sessions) -> Blueprint:
 
     Args:
         logger (logging.Logger): A logger instance for logging messages.
-        sessions (Sessions): A sessions instance,
 
     Returns:
         Blueprint: A Flask `Blueprint` object containing the registered route.
     """
-    view = HandshakeApiView(logger, sessions)
+    view = AuthApiView(logger)
 
-    blueprint = Blueprint('handshake_api', __name__)
+    blueprint = Blueprint('auth_api', __name__)
 
-    logger.info("Registering handshake endpoint:")
+    logger.info("Registering Authentication endpoint:")
 
-    logger.info("=> /handshake/basic_authenticate [POST]")
+    logger.info("=> / [GET]")
 
-    @blueprint.route('/handshake/basic_authenticate', methods=['POST'])
-    async def basic_authenticate_request():
-        return await view.basic_authenticate()
+    @blueprint.route('/', methods=['GET'])
+    async def index_page_request():
+        return await view.index_page()
 
-    logger.info("=> handshake/is_token_valid [POST]")
+    logger.info("=> /login [POST]")
 
-    @blueprint.route('/handshake/is_token_valid', methods=['POST'])
-    async def is_token_valid():
-        # pylint: disable=unused-variable
-        return await view.is_token_valid()
+    @blueprint.route('/login', methods=['POST'])
+    async def login_page_request_post():
+        return await view.login_page_post()
 
-    logger.info("=> handshake/logout [POST]")
+    logger.info("=> /login [GET]")
 
-    @blueprint.route('/handshake/logout', methods=['POST'])
-    async def logout_user():
-        # pylint: disable=unused-variable
-        return await view.logout_user()
+    @blueprint.route('/login', methods=['GET'])
+    async def login_page_request_get():
+        return await view.login_page_get()
+
+    logger.info("=> /logout [GET]")
+
+    @blueprint.route('/logout', methods=['GET'])
+    async def logout_page_request():
+        return await view.logout_page()
+
     return blueprint
