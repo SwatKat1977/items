@@ -13,7 +13,8 @@ class TestBaseWebView(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         """Set up the Quart test app and push a request context."""
         self.app = Quart(__name__)
-        self.view = BaseWebView()
+        self.mock_logger_instance = MagicMock()
+        self.view = BaseWebView(self.mock_logger_instance)
 
         self.client = self.app.test_client()
         self.ctx = self.app.test_request_context("/test")
