@@ -1,0 +1,125 @@
+{% extends "site_template.html" %}
+{% block title %}Integrated Test Management Suite | =Test Cases{% endblock %}
+{% block head %}{{ super() }}
+    <link rel="stylesheet"
+     href="{{ url_for('static', filename='css/page_test_cases_overview.css') }}">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.2/css/all.css">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="{{ url_for('static', filename='scripts/test_cases.js') }}"></script>
+{% endblock %}
+
+{% block body_params %}id="body-pd"{% endblock %}
+{% block page_body %}
+{{ super() }}
+
+<script>
+  $(document).ready(function() {
+      $("#addFilterModal").on('hidden.bs.modal', function() {
+          window.location.reload();
+      });
+  });
+</script>
+
+<!-- Add Filter Modal -->
+<div class="modal fade" id="addFilterModal" tabindex="-1" aria-labelledby="addFilterModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header addFilterHeader">
+        <h6 class="modal-title" id="addFilterModalLabel">Add Filter</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="filter-name" class="col-form-label">
+              <strong>Name</strong>
+            </label>
+            <input type="text" class="form-control" id="filter-name">
+          </div>
+          <div class="mb-3">
+            <label for="filter-description" class="col-form-label">
+              <strong>Description</strong>
+            </label>
+            <textarea class="form-control" id="filter-description"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <input type="submit" value="Add" class="btn btn-primary">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Test Case Modal -->
+<div class="modal fade" id="addTestCaseModal" tabindex="-1" aria-labelledby="addTestCaseModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header addFilterHeader">
+        <h6 class="modal-title" id="addTestCaseModalLabel">Add Test Case</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="testcase-name" class="col-form-label">
+              <strong>Test Case Name</strong>
+            </label>
+            <input type="text" class="form-control" id="testcase-name">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <input type="submit" value="Add" class="btn btn-primary">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="wrapper mx-2 height-100">
+
+  <div id="content">
+    <div class="row">
+      <p class="lead mb-0"><strong>Test Cases</strong></p>
+      <hr>
+    </div>
+    <div class="row m-2">
+      {% if has_testcases == True %}
+      <div class="tree well">
+        <ul>
+{{ testcases |safe}}
+</ul>
+</div>
+      {% else %}
+      <div id="no_data_msg_jumbo" class="jumbotron text-black border border-dark w-100">
+        <div class="container mt-1 mx-0" id="no_data_msg_container">
+          <div class="row w-100">
+            <div class="col-1 text-center d-flex justify-content-center align-items-center">
+              <i class='lead bx bx-message-error'></i>
+            </div>
+            <div class="col">
+              <p>There aren't any filters or test cases. Use the following buttons to create a test case or filter.</p>
+              <p>
+                <button type="button" class="btn-sm btn-default" data-bs-toggle="modal"
+                        data-bs-target="#addFilterModal">
+                  <strong>+</strong> Add Filter
+                </button>
+                <button type="button" class="btn-sm btn-default" data-bs-toggle="modal"
+                        data-bs-target="#addTestCaseModal">
+                  <strong>+</strong> Add Test Case
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!--Container Main end-->
+{% endblock %}
