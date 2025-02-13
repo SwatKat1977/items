@@ -25,6 +25,7 @@ from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
 from configuration_layout import CONFIGURATION_LAYOUT
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from apis import auth_api
+from apis import test_cases_api
 
 
 class Application(BaseApplication):
@@ -59,6 +60,9 @@ class Application(BaseApplication):
 
         auth_blueprint = auth_api.create_blueprint(self._logger)
         self._quart_instance.register_blueprint(auth_blueprint)
+
+        test_cases_blueprint = test_cases_api.create_blueprint(self._logger)
+        self._quart_instance.register_blueprint(test_cases_blueprint)
 
         return True
 
