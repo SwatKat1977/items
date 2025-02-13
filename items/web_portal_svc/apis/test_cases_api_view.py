@@ -14,9 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from base_web_view import BaseWebView
-
+import page_locations as pages
 
 class TestCasesApiView(BaseWebView):
 
     def __init__(self, logger):
         super().__init__(logger)
+
+    async def test_cases(self, project_id: int):
+        return await self._render_page(pages.TEMPLATE_LOGIN_PAGE)
+

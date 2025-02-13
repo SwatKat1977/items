@@ -38,10 +38,10 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
 
     logger.info("Registering Test Cases endpoint:")
 
-    logger.info("=> /test_cases [GET]")
+    logger.info("=> /<project_id>/test_cases [GET]")
 
-    @blueprint.route('/test_cases', methods=['GET'])
-    async def test_definitions_page_request():
-        return await view.test_definitions_page()
+    @blueprint.route('/<project_id>/test_cases', methods=['GET'])
+    async def test_definitions_page_request(project_id: int):
+        return await view.test_cases(project_id)
 
     return blueprint
