@@ -14,12 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from http import HTTPStatus
-import json
-
-import jinja2
 from base_web_view import BaseWebView
 from base_view import ApiResponse
-from quart import make_response, render_template, request, Response
+from quart import make_response, request, Response
 from base_items_exception import BaseItemsException
 import page_locations as pages
 from threadsafe_configuration import ThreadSafeConfiguration
