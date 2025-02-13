@@ -15,10 +15,13 @@ limitations under the License.
 """
 
 # Login page template
-TEMPLATE_LOGIN_PAGE = "login.html"
+TEMPLATE_LOGIN_PAGE: str = "login.html"
 
 # Landing page template
-TEMPLATE_LANDING_PAGE = "landing.html"
+TEMPLATE_LANDING_PAGE: str = "landing.html"
+
+# Test definitions page template
+TEMPLATE_TEST_DEFINITIONS: str = "test_definitions.html"
 
 # Internal error page template
-TEMPLATE_INTERNAL_ERROR_PAGE = "internal_server_error.html"
+TEMPLATE_INTERNAL_ERROR_PAGE: str = "internal_server_error.html"
