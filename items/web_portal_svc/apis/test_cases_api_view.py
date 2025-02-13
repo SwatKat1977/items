@@ -13,3 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from base_web_view import BaseWebView
+
+
+class TestCasesApiView(BaseWebView):
+
+    def __init__(self, logger):
+        super().__init__(logger)
