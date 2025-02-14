@@ -15,12 +15,16 @@ limitations under the License.
 """
 import asyncio
 import logging
+import os
 from base_application import BaseApplication
+from configuration_layout import CONFIGURATION_LAYOUT
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
                            LOGGING_DEFAULT_LOG_LEVEL, \
                            LOGGING_LOG_FORMAT_STRING
+from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
+
 
 class Application(BaseApplication):
     """ ITEMS Accounts Service """
@@ -45,6 +49,13 @@ class Application(BaseApplication):
         self._logger.info(SERVICE_COPYRIGHT_TEXT)
         self._logger.info(LICENSE_TEXT)
 
+        if not self._manage_configuration():
+            return False
+
+        self._logger.info('Setting logging level to %s',
+                          Configuration().logging_log_level)
+        self._logger.setLevel(Configuration().logging_log_level)
+
         return True
 
     async def _main_loop(self) -> None:
@@ -53,3 +64,50 @@ class Application(BaseApplication):
 
     def _shutdown(self):
         """ Abstract method for application shutdown. """
+
+    def _manage_configuration(self) -> bool:
+        """
+        Manage the service configuration.
+        """
+
+        config_file = os.getenv("ITEMS_CMS_SVC_CONFIG_FILE", None)
+
+        config_file_required_str: str = os.getenv(
+            "ITEMS_CMS_SVC_CONFIG_FILE_REQUIRED", None)
+
+        config_file_required: bool = False
+        if config_file_required_str is not None and config_file_required_str == "1":
+            config_file_required = True
+
+        self._logger.info("Configuration file required? %s",
+                          "True" if config_file_required else "False")
+
+        if not config_file and config_file_required:
+            self._logger.critical("Configuration file missing!")
+            return False
+
+        if config_file_required:
+            self._logger.info("Configuration file : %s", config_file)
+
+        Configuration().configure(CONFIGURATION_LAYOUT, config_file,
+                                  config_file_required)
+
+        try:
+            Configuration().process_config()
+
+        except ValueError as ex:
+            self._logger.critical("Configuration error : %s", str(ex))
+            return False
+
+        self._logger.info("Configuration")
+        self._logger.info("=============")
+
+        self._logger.info("[logging]")
+        self._logger.info("=> Logging log level : %s",
+                          Configuration().logging_log_level)
+
+        self._logger.info("[Backend]")
+        self._logger.info("=> Database filename : %s",
+                          Configuration().backend_db_filename)
+
+        return True
