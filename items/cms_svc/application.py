@@ -17,6 +17,7 @@ import asyncio
 import logging
 import os
 from base_application import BaseApplication
+from base_sqlite_interface import SqliteInterfaceException
 from configuration_layout import CONFIGURATION_LAYOUT
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
                            LOGGING_DEFAULT_LOG_LEVEL, \
@@ -124,7 +125,7 @@ class Application(BaseApplication):
 
         filename: str = Configuration().backend_db_filename
 
-        self._db = SqliteInterface(self._logger, filename, self._state_object)
+        self._db = SqliteInterface(self._logger, filename)
 
         try:
             self._db.open()
