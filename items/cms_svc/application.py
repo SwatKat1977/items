@@ -16,6 +16,7 @@ limitations under the License.
 import asyncio
 import logging
 import os
+import typing
 from base_application import BaseApplication
 from base_sqlite_interface import SqliteInterfaceException
 from configuration_layout import CONFIGURATION_LAYOUT
@@ -34,6 +35,7 @@ class Application(BaseApplication):
     def __init__(self, quart_instance):
         super().__init__()
         self._quart_instance = quart_instance
+        self._db: typing.Optional[SqliteInterface] = None
 
         self._logger = logging.getLogger(__name__)
         log_format= logging.Formatter(LOGGING_LOG_FORMAT_STRING,
