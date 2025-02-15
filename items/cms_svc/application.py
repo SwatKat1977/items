@@ -21,6 +21,7 @@ from configuration_layout import CONFIGURATION_LAYOUT
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
                            LOGGING_DEFAULT_LOG_LEVEL, \
                            LOGGING_LOG_FORMAT_STRING
+from sqlite_interface import SqliteInterface
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
@@ -55,6 +56,10 @@ class Application(BaseApplication):
         self._logger.info('Setting logging level to %s',
                           Configuration().logging_log_level)
         self._logger.setLevel(Configuration().logging_log_level)
+
+        # Open databases.
+        if not self._open_database():
+            return False
 
         return True
 
@@ -111,3 +116,25 @@ class Application(BaseApplication):
                           Configuration().backend_db_filename)
 
         return True
+
+    def _open_database(self) -> bool:
+        self._logger.info("Opening internal database...")
+
+        status: bool = False
+
+        filename: str = Configuration().backend_db_filename
+
+        self._db = SqliteInterface(self._logger, filename, self._state_object)
+
+        try:
+            self._db.open()
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Unable to open '%s', reason: %s",
+                                  filename, str(ex))
+
+        else:
+            self._logger.info("Database '%s' opened successful", filename)
+            status = True
+
+        return status
