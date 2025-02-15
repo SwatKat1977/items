@@ -116,7 +116,6 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.mock_config_instance.process_config.assert_called_once()
         self.mock_logger_instance.critical.assert_called_with("Configuration error : %s", "Test config error")
 
-
     @patch("application.Configuration")
     @patch("application.SqliteInterface")
     def test_open_database_success(self, mock_sqlite_interface, mock_configuration):
