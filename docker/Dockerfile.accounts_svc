@@ -24,14 +24,16 @@ ENV PYTHONPATH=/usr/local/items/accounts_svc:/usr/local/items/shared
 ENV ITEMS_ACCOUNTS_SVC_CONFIG_FILE=/usr/local/items/accounts_svc.config
 ENV ITEMS_ACCOUNTS_SVC_CONFIG_FILE_REQUIRED=1
 ENV ITEMS_ENVIRONMENT="development"
+ENV QUART_APP=accounts_svc
 
-EXPOSE 5050
+EXPOSE 4000
 
 #CMD uvicorn accounts_svc:app --host 0.0.0.0 --port 5050
+# quart run -p 4000
 
 # Default command (can be overridden)
 CMD ["sh", "-c", "if [ \"$ITEMS_ENVIRONMENT\" = \"production\" ]; then \
-    exec uvicorn accounts_svc:app --host 0.0.0.0 --port 8000; \
+    exec uvicorn main:app --host 0.0.0.0 --port 4000; \
 else \
-    exec python -m quart accounts_svc:app --bind 0.0.0.0:8000 --reload; \
+    exec python -m quart run -p 4000 -h 0.0.0.0 --reload; \
 fi"]
