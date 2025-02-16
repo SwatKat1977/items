@@ -63,6 +63,36 @@ class SqliteInterface(BaseSqliteInterface):
         return bool(rows)
 
     def get_testcase_overviews(self, project_id: int) -> typing.Optional[dict]:
+        """
+        Retrieve an overview of test cases organized by folder hierarchy within
+        a project.
+
+        This method queries the database using a recursive common table
+        expression (CTE) to construct the folder hierarchy for the given
+        project. It then retrieves test case IDs associated with each folder.
+
+        Args:
+            project_id (int): The ID of the project for which to retrieve test
+                              case overviews.
+
+        Returns:
+            Optional[dict]: A dictionary containing query results, where
+                            folders are mapped to their corresponding test
+                            cases. Returns None if the query fails.
+
+        Raises:
+            SqliteInterfaceException: If there is a failure while executing the
+                                      SQL query.
+
+        Notes:
+            - The function uses a recursive CTE (`folder_hierarchy`) to
+              determine folder relationships within the project.
+            - Test cases are joined with their respective folders.
+            - The results are ordered by folder level, folder ID, and test case
+              ID.
+            - If a fatal SQL error occurs, the database health state is updated
+              accordingly.
+        """
 
         query: str = '''
         WITH RECURSIVE folder_hierarchy AS (

@@ -137,7 +137,7 @@ class Application(BaseApplication):
 
         filename: str = Configuration().backend_db_filename
 
-        self._db = SqliteInterface(self._logger, filename)
+        self._db = SqliteInterface(self._logger, filename, self._state_object)
 
         try:
             self._db.open()
