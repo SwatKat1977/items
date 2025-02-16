@@ -27,6 +27,8 @@ from sqlite_interface import SqliteInterface
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
+from apis import health_api
+from state_object import StateObject
 
 
 class Application(BaseApplication):
@@ -36,6 +38,7 @@ class Application(BaseApplication):
         super().__init__()
         self._quart_instance = quart_instance
         self._db: typing.Optional[SqliteInterface] = None
+        self._state_object: StateObject = StateObject()
 
         self._logger = logging.getLogger(__name__)
         log_format= logging.Formatter(LOGGING_LOG_FORMAT_STRING,
@@ -53,6 +56,9 @@ class Application(BaseApplication):
         self._logger.info(SERVICE_COPYRIGHT_TEXT)
         self._logger.info(LICENSE_TEXT)
 
+        # Set the version string on state object.
+        self._state_object.version = build
+
         if not self._manage_configuration():
             return False
 
@@ -63,6 +69,10 @@ class Application(BaseApplication):
         # Open databases.
         if not self._open_database():
             return False
+
+        health_blueprint = health_api.create_blueprint(self._logger,
+                                                       self._state_object)
+        self._quart_instance.register_blueprint(health_blueprint)
 
         return True
 
