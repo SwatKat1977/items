@@ -13,3 +13,36 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import logging
+from quart import Blueprint
+from apis.testcases_api_view import TestCasesApiView
+
+
+def create_blueprint(logger: logging.Logger) -> Blueprint:
+    """
+    Creates and returns a Quart Blueprint for the test cases API.
+
+    This function initializes a `TestcasesApiView` instance and registers
+    asynchronous routes under `/testcases/` for handling requests.
+
+    Args:
+        logger (logging.Logger): The logger instance used for logging API
+                                 registration.
+
+    Returns:
+        Blueprint: A Quart Blueprint instance with the registered health status
+                   route.
+    """
+    view = TestCasesApiView(logger)
+
+    blueprint = Blueprint('testcases_api', __name__)
+
+    logger.info("Registering Test Cases API:")
+
+    logger.info("=> /testcases/testcase_details [POST]")
+
+    @blueprint.route('/testcases/testcase_details', methods=['POST'])
+    async def testcase_details():
+        return await view.testcase_details()
+
+    return blueprint
