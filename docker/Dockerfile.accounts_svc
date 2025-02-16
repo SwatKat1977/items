@@ -1,0 +1,35 @@
+FROM python:3.10.11-alpine
+
+# Add a user and group for ITEMS and then setup file paths.
+RUN addgroup -S items && \
+    adduser -S items -G items && \
+    mkdir /usr/local/items &&  \
+    chown items:items /usr/local/items
+
+# Auth service dependencies
+COPY docker/requirements-accounts_svc.txt .
+RUN apk add --no-cache && \
+    pip install --no-cache-dir -r requirements-accounts_svc.txt && \
+    rm requirements-accounts_svc.txt
+
+USER items
+
+# Copy base files into Docker image.
+COPY --chown=items:items items/accounts_svc /usr/local/items/accounts_svc
+COPY --chown=items:items items/shared /usr/local/items/shared
+
+# Configure the environment
+WORKDIR /usr/local/items
+ENV PYTHONPATH="${PYTHONPATH}:/usr/local/items/accounts_svc:/usr/local/items/shared"
+ENV ITEMS_ACCOUNTS_SVC_CONFIG_FILE=/usr/local/items/accounts_svc.config
+ENV ITEMS_ACCOUNTS_SVC_CONFIG_FILE_REQUIRED=1
+ENV ITEMS_ENVIRONMENT="development"
+
+EXPOSE 5050
+
+CMD uvicorn accounts_svc:app --host 0.0.0.0 --port 5050
+
+# Default command (can be overridden)
+CMD ["sh", "-c", "if [ \"ITEMS_ENVIRONMENT\" = \"production\" ];
+     then uvicorn main:app --host 0.0.0.0 --port 8000;
+     else python -m hypercorn main:app --bind 0.0.0.0:8000 --reload; fi"]
