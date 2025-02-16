@@ -14,7 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
-from base_sqlite_interface import BaseSqliteInterface
+import typing
+from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
+from service_health_enums import ComponentDegradationLevel
+from state_object import StateObject
 
 
 class SqliteInterface(BaseSqliteInterface):
@@ -28,6 +31,70 @@ class SqliteInterface(BaseSqliteInterface):
         db_file (str): Path to the SQLite database file.
     """
 
-    def __init__(self, logger: logging.Logger, db_file: str) -> None:
+    def __init__(self, logger: logging.Logger, db_file: str,
+                 state_object: StateObject) -> None:
         super().__init__(db_file)
         self._logger = logger.getChild(__name__)
+        self._state_object: StateObject = state_object
+
+    def is_valid_project_id(self, project_id : int) -> typing.Optional[bool]:
+        """
+        Check to see if a project id is valid.
+
+        parameters:
+            project_id - Project ID to verify
+
+        returns:
+            boolean status
+        """
+
+        query: str = "SELECT id FROM project WHERE id = ?"
+
+        try:
+            rows: typing.Optional[dict] = self.query_with_values(
+                query, (project_id,))
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = "Fatal SQL failure"
+            return None
+
+        return bool(rows)
+
+    def get_testcase_overviews(self, project_id: int) -> typing.Optional[dict]:
+
+        query: str = '''
+        WITH RECURSIVE folder_hierarchy AS (
+            -- Base case: Get root folders in the project
+            SELECT id, parent_id, 0 AS level
+            FROM folders
+            WHERE project_id = ? AND parent_id IS NULL
+
+            UNION ALL
+
+            -- Recursive case: Get subfolders
+            SELECT f.id, f.parent_id, fh.level + 1
+            FROM folders f
+            JOIN folder_hierarchy fh ON f.parent_id = fh.id
+        )
+        SELECT
+            fh.level,
+            fh.id AS folder_id,
+            tc.id AS test_case_id
+        FROM folder_hierarchy fh
+        LEFT JOIN test_cases tc ON fh.id = tc.folder_id
+        ORDER BY fh.level, fh.id, tc.id;
+        '''
+
+        try:
+            rows: typing.Optional[dict] = self.query_with_values(
+                query, (project_id,))
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = "Fatal SQL failure"
+            return None
+
+        return rows
