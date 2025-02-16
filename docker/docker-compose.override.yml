@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  a:
+    build:
+      context: ./a  # Use local build instead of image
+    image: swatkat1977/a:latest  # Keeps the same image tag for local builds
+
+  c:
+    build:
+      context: ./c
+    image: swatkat1977/c:latest
+
+  g:
+    build:
+      context: ./g
+    image: swatkat1977/g:latest

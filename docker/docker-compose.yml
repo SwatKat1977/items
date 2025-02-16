@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  a:
+    image: swatkat1977/a:latest
+    networks:
+      - backend
+    environment:
+      - SERVICE_NAME=a
+
+  c:
+    image: swatkat1977/c:latest
+    networks:
+      - backend
+    environment:
+      - SERVICE_NAME=c
+
+  g:
+    image: swatkat1977/g:latest
+    ports:
+      - "8000:8000"
+    networks:
+      - backend
+    environment:
+      - SERVICE_NAME=g
+
+networks:
+  backend:
+    driver: bridge
