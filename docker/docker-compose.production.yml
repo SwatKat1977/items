@@ -1,15 +1,13 @@
-version: "3.8"
-
 services:
-  a:
+  accounts_svc:
     image: swatkat1977/a:latest
     restart: always  # Ensures auto-restart in production
 
-  c:
+  cms_svc:
     image: swatkat1977/c:latest
     restart: always
 
-  g:
+  gateway_svc:
     image: swatkat1977/g:latest
     restart: always
     ports:

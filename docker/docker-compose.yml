@@ -1,28 +1,26 @@
-version: "3.8"
-
 services:
-  a:
+  accounts_svc:
     image: swatkat1977/a:latest
     networks:
       - backend
     environment:
-      - SERVICE_NAME=a
+      - SERVICE_NAME=items_accounts_svc
 
-  c:
+  cms_svc:
     image: swatkat1977/c:latest
     networks:
       - backend
     environment:
-      - SERVICE_NAME=c
+      - SERVICE_NAME=cms_accounts_svc
 
-  g:
+  gateway_svc:
     image: swatkat1977/g:latest
     ports:
       - "8000:8000"
     networks:
       - backend
     environment:
-      - SERVICE_NAME=g
+      - SERVICE_NAME=gateway_svc
 
 networks:
   backend:

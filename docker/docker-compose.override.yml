@@ -1,17 +1,24 @@
-version: "3.8"
-
 services:
-  a:
+  accounts_svc:
     build:
-      context: ./a  # Use local build instead of image
+      context: ..
+      dockerfile: ./docker/Dockerfile.accounts_svc
     image: swatkat1977/a:latest  # Keeps the same image tag for local builds
 
-  c:
+  cms_svc:
     build:
-      context: ./c
+      context: ..
+      dockerfile: ./docker/Dockerfile.cms_svc
     image: swatkat1977/c:latest
 
-  g:
+  gateway_svc:
     build:
-      context: ./g
+      context: ..
+      dockerfile: ./docker/Dockerfile.gateway_svc
+    image: swatkat1977/g:latest
+
+  web_portal_svc:
+    build:
+      context: .
+      dockerfile: Dockerfile.web_portal_svc
     image: swatkat1977/g:latest
