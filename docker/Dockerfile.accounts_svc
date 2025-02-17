@@ -6,11 +6,19 @@ RUN addgroup -S items && \
     mkdir /usr/local/items &&  \
     chown items:items /usr/local/items
 
+RUN apk add --no-cache
+
+# Switch to the non-root user
+USER items
+
+ENV PATH=$PATH:/home/items/.local/bin
+
+# Ensure latest pip is installed
+RUN pip install --upgrade pip
+
 # Auth service dependencies
-COPY docker/requirements-accounts_svc.txt .
-RUN apk add --no-cache && \
-    pip install --no-cache-dir -r requirements-accounts_svc.txt && \
-    rm requirements-accounts_svc.txt
+COPY ./docker/requirements-accounts_svc.txt .
+RUN pip install --no-cache-dir -r requirements-accounts_svc.txt
 
 USER items
 
