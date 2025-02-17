@@ -1,0 +1,36 @@
+
+FROM python:3.13.2-alpine
+
+# Add a user and group for ITEMS and then setup file paths.
+RUN addgroup -S items && \
+    adduser -S items -G items && \
+    mkdir /usr/local/items &&  \
+    chown items:items /usr/local/items
+
+# Web Portal dependencies
+COPY docker/requirements-web_portal_svc.txt .
+RUN apk add --no-cache && \
+    pip install --no-cache-dir -r requirements-web_portal_svc.txt && \
+    rm requirements-web_portal_svc.txt
+
+USER items
+
+# Copy base files into Docker image.
+COPY --chown=items:items items/web_portal_svc /usr/local/items/web_portal_svc
+COPY --chown=items:items items/shared /usr/local/items/shared
+
+# Configure the environment
+WORKDIR /usr/local/items
+ENV PYTHONPATH=/usr/local/items/web_portal_svc:/usr/local/items/shared
+ENV ITEMS_WEB_PORTAL_SVC_CONFIG_FILE=/usr/local/items/web_portal_svc.config
+ENV ITEMS_WEB_PORTAL_SVC_CONFIG_FILE_REQUIRED=1
+ENV QUART_APP=web_portal_svc
+
+EXPOSE 8080
+
+# Default command (can be overridden)
+CMD ["sh", "-c", "if [ \"$ITEMS_ENVIRONMENT\" = \"production\" ]; then \
+    exec uvicorn main:app --host 0.0.0.0 --port 5000; \
+else \
+    exec python -m quart run -p 8080 -h 0.0.0.0 --reload; \
+fi"]
