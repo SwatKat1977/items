@@ -1,24 +1,24 @@
 services:
   accounts_svc:
     build:
-      context: ..
+      context: .
       dockerfile: ./docker/Dockerfile.accounts_svc
-    image: swatkat1977/a:latest  # Keeps the same image tag for local builds
+    image: swatkat1977/items_accounts_svc:latest
 
   cms_svc:
     build:
-      context: ..
+      context: .
       dockerfile: ./docker/Dockerfile.cms_svc
-    image: swatkat1977/c:latest
+    image: swatkat1977/items_cms_svc:latest
 
   gateway_svc:
     build:
-      context: ..
+      context: .
       dockerfile: ./docker/Dockerfile.gateway_svc
-    image: swatkat1977/g:latest
+    image: swatkat1977/items_gateway_svc:latest
 
   web_portal_svc:
     build:
       context: .
-      dockerfile: Dockerfile.web_portal_svc
-    image: swatkat1977/g:latest
+      dockerfile: ./docker/Dockerfile.web_portal_svc
+    image: swatkat1977/items_web_portal_svc:latest
