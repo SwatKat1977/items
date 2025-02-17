@@ -1,0 +1,5 @@
+quart
+Uvicorn
+jsonschema
+requests
+aiohttp

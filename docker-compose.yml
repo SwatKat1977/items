@@ -1,0 +1,60 @@
+services:
+  accounts_svc:
+    image: swatkat1977/a:latest
+    container_name: accounts_svc
+    networks:
+      - backend
+    environment:
+      - SERVICE_NAME=items_accounts_svc
+      - ITEMS_ENVIRONMENT=development
+    volumes:
+      - "${ITEMS_DOCKER_ACCOUNTS_SVC_CONFIG_FILE}:/usr/local/items/accounts_svc.config"
+      - "${ITEMS_DOCKER_ACCOUNTS_SVC_DB_FILE}:/usr/local/items/accounts_svc.db"
+    env_file:
+      - .env
+
+  cms_svc:
+    image: swatkat1977/c:latest
+    container_name: cms_svc
+    networks:
+      - backend
+    environment:
+      - SERVICE_NAME=cms_accounts_svc
+      - ITEMS_ENVIRONMENT=development
+    volumes:
+      - "${ITEMS_DOCKER_CMS_SVC_CONFIG_FILE}:/usr/local/items/cms_svc.config"
+      - "${ITEMS_DOCKER_CMS_SVC_DB_FILE}:/usr/local/items/cms_svc.db"
+    env_file:
+      - .env
+
+  gateway_svc:
+    image: swatkat1977/g:latest
+    container_name: gateway_svc
+    networks:
+      - backend
+    environment:
+      - SERVICE_NAME=gateway_svc
+      - ITEMS_ENVIRONMENT=development
+    volumes:
+      - "${ITEMS_DOCKER_GATEWAY_SVC_CONFIG_FILE}:/usr/local/items/gateway_svc.config"
+    env_file:
+      - .env
+
+  web_portal_svc:
+    image: swatkat1977/w:latest
+    container_name: web_portal_svc
+    ports:
+      - "8080:8080"
+    networks:
+      - backend
+    environment:
+      - SERVICE_NAME=web_portal_svc
+      - ITEMS_ENVIRONMENT=development
+    volumes:
+      - "${ITEMS_DOCKER_WEB_PORTAL_SVC_CONFIG_FILE}:/usr/local/items/web_portal_svc.config"
+    env_file:
+      - .env
+
+networks:
+  backend:
+    driver: bridge
