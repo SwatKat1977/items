@@ -97,21 +97,23 @@ class SqliteInterface(BaseSqliteInterface):
         query: str = '''
         WITH RECURSIVE folder_hierarchy AS (
             -- Base case: Get root folders in the project
-            SELECT id, parent_id, 0 AS level
+            SELECT id, parent_id, name, 0 AS level
             FROM test_case_folders
             WHERE project_id = ? AND parent_id IS NULL
 
             UNION ALL
 
             -- Recursive case: Get subfolders
-            SELECT f.id, f.parent_id, fh.level + 1
+            SELECT f.id, f.parent_id, f.name, fh.level + 1
             FROM test_case_folders f
             JOIN folder_hierarchy fh ON f.parent_id = fh.id
         )
         SELECT
             fh.level,
             fh.id AS folder_id,
-            tc.id AS test_case_id
+            fh.name AS folder_name,
+            tc.id AS test_case_id,
+            tc.name AS test_case_name
         FROM folder_hierarchy fh
         LEFT JOIN test_cases tc ON fh.id = tc.folder_id
         ORDER BY fh.level, fh.id, tc.id;
