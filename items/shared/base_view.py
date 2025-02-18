@@ -93,16 +93,29 @@ def validate_json(schema):
                 # If validation passes, call the original function
                 return await func(self, request_msg, *args, **kwargs)
 
+
+            except jsonschema.exceptions.ValidationError as e:
+                error_msg = f"Schema validation error: {str(e)}"
+
+            except json.JSONDecodeError as e:
+                error_msg = f"JSON decoding error: {str(e)}"
+
             except requests.exceptions.ConnectionError as e:
-                response_json = {
-                    'status': 0,
-                    'error': str(e)
-                }
-                return quart.Response(
-                    json.dumps(response_json),
-                    status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                    content_type="application/json"
-                )
+                error_msg = f"Connection error: {str(e)}"
+
+            except TypeError as e:
+                error_msg = f"Type error: {str(e)}"
+
+            # Catch specific errors and return an internal server error response
+            response_json = {
+                'status': 0,
+                'error': error_msg
+            }
+            return quart.Response(
+                json.dumps(response_json),
+                status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                content_type="application/json"
+            )
 
         return wrapper
     return decorator

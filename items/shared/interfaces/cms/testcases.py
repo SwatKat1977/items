@@ -30,3 +30,14 @@ SCHEMA_TESTCASES_DETAILS_REQUEST: dict = {
         },
     "required": ["project_id"]
 }
+
+SCHEMA_TESTCASES_CASE_REQUEST: dict = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+        {
+        }
+}
