@@ -73,7 +73,7 @@ def validate_json(schema):
         async def wrapper(self, *args, **kwargs):
             try:
                 # Validate the JSON body using the provided schema
-                request_msg: ApiResponse = self._validate_json_body(
+                request_msg: ApiResponse = self.validate_json_body(
                     await quart.request.get_data(),
                     schema
                 )
@@ -132,7 +132,15 @@ class BaseView:
     CONTENT_TYPE_JSON : str = 'application/json'
     CONTENT_TYPE_TEXT : str = 'text/plain'
 
-    def _validate_json_body(self, data : str, json_schema : dict = None) \
+    def validate_json_body(self, data: str, json_schema: dict = None) \
+            -> typing.Optional[ApiResponse]:
+        """
+        This is a temporary work around as changing _validate_json_body*()
+        would be fairly breaking. This needs to be fixed!
+        """
+        return self._validate_json_body(data, json_schema)
+
+    def _validate_json_body(self, data: str, json_schema: dict = None) \
             -> typing.Optional[ApiResponse]:
         """
         Validate response body is JSON.
