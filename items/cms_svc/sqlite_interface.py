@@ -137,7 +137,21 @@ class SqliteInterface(BaseSqliteInterface):
         return rows
 
     def get_testcase(self, case_id: int) -> typing.Optional[dict]:
+        """
+        Retrieve a test case by its ID from the database.
 
+        Parameters:
+            case_id (int): The ID of the test case to retrieve.
+
+        Returns:
+            dict | None: A dictionary containing the test case details
+                         (id, folder_id, name, description) if found,
+                         otherwise None.
+
+        Handles:
+            - Logs a critical error and updates the database health state
+              if an SqliteInterfaceException occurs.
+        """
         query: str = ("SELECT id, folder_id, name, description "
                       "FROM test_cases WHERE id=?")
 
