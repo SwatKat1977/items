@@ -95,28 +95,33 @@ class SqliteInterface(BaseSqliteInterface):
         """
 
         query: str = '''
-        WITH RECURSIVE folder_hierarchy AS (
-            -- Base case: Get root folders in the project
-            SELECT id, parent_id, name, 0 AS level
-            FROM test_case_folders
-            WHERE project_id = ? AND parent_id IS NULL
+            WITH RECURSIVE folder_hierarchy AS (
+                -- Base case: Get root folders in the project
+                SELECT id, parent_id, name, 0 AS level
+                FROM test_case_folders
+                WHERE project_id = ? AND parent_id IS NULL
 
-            UNION ALL
+                UNION ALL
 
-            -- Recursive case: Get subfolders
-            SELECT f.id, f.parent_id, f.name, fh.level + 1
-            FROM test_case_folders f
-            JOIN folder_hierarchy fh ON f.parent_id = fh.id
-        )
-        SELECT
-            fh.level,
-            fh.id AS folder_id,
-            fh.name AS folder_name,
-            tc.id AS test_case_id,
-            tc.name AS test_case_name
-        FROM folder_hierarchy fh
-        LEFT JOIN test_cases tc ON fh.id = tc.folder_id
-        ORDER BY fh.level, fh.id, tc.id;
+                -- Recursive case: Get subfolders
+                SELECT f.id, f.parent_id, f.name, fh.level + 1
+                FROM test_case_folders f
+                JOIN folder_hierarchy fh ON f.parent_id = fh.id
+            )
+            SELECT 
+                fh.level,
+                fh.id AS folder_id,
+                fh.name AS folder_name,
+                COALESCE(
+                    (SELECT json_group_array(
+                                json_object('id', tc.id, 'name', tc.name)
+                            ) 
+                     FROM test_cases tc 
+                     WHERE tc.folder_id = fh.id),
+                    '[]'  -- Return empty JSON array instead of null
+                ) AS test_cases
+            FROM folder_hierarchy fh
+            ORDER BY fh.level, fh.id;
         '''
 
         try:
