@@ -47,4 +47,10 @@ def create_blueprint(logger: logging.Logger, db: SqliteInterface) -> Blueprint:
     async def testcase_details():
         return await view.testcase_details()
 
+    logger.info("=> /testcases/case/<case_id> [POST]")
+
+    @blueprint.route('/testcases/get_case/<case_id>', methods=['POST'])
+    async def testcase_get_case(case_id: int):
+        return await view.testcase_get_case(case_id)
+
     return blueprint

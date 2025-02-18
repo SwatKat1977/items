@@ -135,3 +135,20 @@ class SqliteInterface(BaseSqliteInterface):
             return None
 
         return rows
+
+    def get_testcase(self, case_id: int) -> typing.Optional[dict]:
+
+        query: str = ("SELECT id, folder_id, name, description "
+                      "FROM test_cases WHERE id=?")
+
+        try:
+            rows: typing.Optional[dict] = self.query_with_values(
+                query, (case_id,))
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = "Fatal SQL failure"
+            return None
+
+        return rows

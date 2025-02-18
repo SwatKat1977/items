@@ -49,3 +49,13 @@ class TestCasesApiView(BaseView):
         return quart.Response(json.dumps(test_suites),
                               status=http.HTTPStatus.OK,
                               content_type="application/json")
+
+    @validate_json(json_schemas.SCHEMA_TESTCASES_CASE_REQUEST)
+    async def testcase_get_case(self, request_msg: ApiResponse, case_id: int):
+        print(f"Test Case ID: {case_id}")
+
+        case_details: dict = self._db.get_testcase(case_id)
+
+        return quart.Response(json.dumps(case_details),
+                              status=http.HTTPStatus.OK,
+                              content_type="application/json")
