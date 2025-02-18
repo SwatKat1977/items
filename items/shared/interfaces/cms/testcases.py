@@ -15,7 +15,7 @@ limitations under the License.
 """
 # pylint: disable=R0801
 
-SCHEMA_TESTCASE_DETAILS_REQUEST: dict = {
+SCHEMA_TESTCASES_DETAILS_REQUEST: dict = {
     "$schema": "http://json-schema.org/draft-07/schema#",
 
     "type": "object",
