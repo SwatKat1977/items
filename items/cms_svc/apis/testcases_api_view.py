@@ -43,7 +43,7 @@ class TestCasesApiView(BaseView):
                                   content_type="application/json")
 
         test_suites: list = self._db.get_testcase_overviews(project_id)
-        print(f"TEST SUITES: {test_suites}")
+
         test_suites = {} if not test_suites else test_suites
 
         return quart.Response(json.dumps(test_suites),
@@ -52,7 +52,6 @@ class TestCasesApiView(BaseView):
 
     @validate_json(json_schemas.SCHEMA_TESTCASES_CASE_REQUEST)
     async def testcase_get_case(self, request_msg: ApiResponse, case_id: int):
-        print(f"Test Case ID: {case_id}")
 
         case_details: dict = self._db.get_testcase(case_id)
 
