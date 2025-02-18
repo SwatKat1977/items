@@ -13,3 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import logging
+from base_view import BaseView, validate_json
+import interfaces.cms.testcases as json_schemas
+
+class TestCasesApiView(BaseView):
+    __slots__ = ['_logger']
+
+    def __init__(self, logger: logging.Logger) -> None:
+        self._logger = logger.getChild(__name__)
+
+    @validate_json(json_schemas.SCHEMA_TESTCASES_DETAILS_REQUEST)
+    async def testcase_details(self):
+        ...

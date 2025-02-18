@@ -41,7 +41,7 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
 
     logger.info("=> /testcases/testcase_details [POST]")
 
-    @blueprint.route('/testcases/testcase_details', methods=['POST'])
+    @blueprint.route('/testcases/details', methods=['POST'])
     async def testcase_details():
         return await view.testcase_details()
 

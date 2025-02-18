@@ -28,6 +28,7 @@ from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
 from apis import health_api
+from apis import testcases_api
 from state_object import StateObject
 
 
@@ -73,6 +74,9 @@ class Application(BaseApplication):
         health_blueprint = health_api.create_blueprint(self._logger,
                                                        self._state_object)
         self._quart_instance.register_blueprint(health_blueprint)
+
+        testcases_blueprint = testcases_api.create_blueprint(self._logger)
+        self._quart_instance.register_blueprint(testcases_blueprint)
 
         return True
 
