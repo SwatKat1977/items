@@ -1,0 +1,24 @@
+services:
+  accounts_svc:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.accounts_svc
+    image: swatkat1977/items_accounts_svc:latest
+
+  cms_svc:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.cms_svc
+    image: swatkat1977/items_cms_svc:latest
+
+  gateway_svc:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.gateway_svc
+    image: swatkat1977/items_gateway_svc:latest
+
+  web_portal_svc:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.web_portal_svc
+    image: swatkat1977/items_web_portal_svc:latest

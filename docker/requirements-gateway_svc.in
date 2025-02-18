@@ -1,0 +1,6 @@
+aiohttp
+jsonschema
+quart
+redis
+requests
+uvicorn

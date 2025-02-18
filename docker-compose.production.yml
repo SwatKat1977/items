@@ -1,0 +1,18 @@
+services:
+  accounts_svc:
+    image: swatkat1977/a:latest
+    restart: always  # Ensures auto-restart in production
+
+  cms_svc:
+    image: swatkat1977/c:latest
+    restart: always
+
+  gateway_svc:
+    image: swatkat1977/g:latest
+    restart: always
+    ports:
+      - "80:8000"  # Expose to standard HTTP port in production
+
+networks:
+  backend:
+    driver: bridge
