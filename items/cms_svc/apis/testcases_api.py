@@ -16,9 +16,10 @@ limitations under the License.
 import logging
 from quart import Blueprint
 from apis.testcases_api_view import TestCasesApiView
+from sqlite_interface import SqliteInterface
 
 
-def create_blueprint(logger: logging.Logger) -> Blueprint:
+def create_blueprint(logger: logging.Logger, db: SqliteInterface) -> Blueprint:
     """
     Creates and returns a Quart Blueprint for the test cases API.
 
@@ -28,12 +29,13 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
     Args:
         logger (logging.Logger): The logger instance used for logging API
                                  registration.
+        db (SqliteInterface): Database interface instance.
 
     Returns:
         Blueprint: A Quart Blueprint instance with the registered health status
                    route.
     """
-    view = TestCasesApiView(logger)
+    view = TestCasesApiView(logger, db)
 
     blueprint = Blueprint('testcases_api', __name__)
 

@@ -75,7 +75,8 @@ class Application(BaseApplication):
                                                        self._state_object)
         self._quart_instance.register_blueprint(health_blueprint)
 
-        testcases_blueprint = testcases_api.create_blueprint(self._logger)
+        testcases_blueprint = testcases_api.create_blueprint(self._logger,
+                                                             self._db)
         self._quart_instance.register_blueprint(testcases_blueprint)
 
         return True

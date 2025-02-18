@@ -48,7 +48,7 @@ class SqliteInterface(BaseSqliteInterface):
             boolean status
         """
 
-        query: str = "SELECT id FROM project WHERE id = ?"
+        query: str = "SELECT id FROM projects WHERE id = ?"
 
         try:
             rows: typing.Optional[dict] = self.query_with_values(
