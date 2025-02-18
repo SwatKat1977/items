@@ -98,14 +98,14 @@ class SqliteInterface(BaseSqliteInterface):
         WITH RECURSIVE folder_hierarchy AS (
             -- Base case: Get root folders in the project
             SELECT id, parent_id, 0 AS level
-            FROM folders
+            FROM test_case_folders
             WHERE project_id = ? AND parent_id IS NULL
 
             UNION ALL
 
             -- Recursive case: Get subfolders
             SELECT f.id, f.parent_id, fh.level + 1
-            FROM folders f
+            FROM test_case_folders f
             JOIN folder_hierarchy fh ON f.parent_id = fh.id
         )
         SELECT
