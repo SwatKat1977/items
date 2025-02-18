@@ -69,3 +69,138 @@ class TestSqliteInterface(unittest.TestCase):
         self.mock_logger.critical.assert_called_once_with("Query failed, reason: %s", "DB error")
         self.assertEqual(self.mock_state_object.database_health, ComponentDegradationLevel.FULLY_DEGRADED)
         self.assertEqual(self.mock_state_object.database_health_state_str, "Fatal SQL failure")
+
+    def test_is_valid_project_id_valid(self):
+        """Test when project ID exists in the database."""
+        self.mock_query.return_value = [{"id": 123}]
+
+        project_id = 123
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = self.mock_query
+        result = interface.is_valid_project_id(project_id)
+
+        self.assertTrue(result)
+        self.mock_query.assert_called_once_with("SELECT id FROM projects WHERE id = ?", (project_id,))
+
+    def test_is_valid_project_id_invalid(self):
+        """Test when project ID does not exist in the database (empty result)."""
+        self.mock_query.return_value = []
+
+        project_id = 999
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = self.mock_query
+        result = interface.is_valid_project_id(project_id)
+
+        self.assertFalse(result)
+        self.mock_query.assert_called_once_with("SELECT id FROM projects WHERE id = ?", (project_id,))
+
+    def test_is_valid_project_id_sqlite_exception(self):
+        """Test that a SqliteInterfaceException is handled correctly."""
+        self.mock_query.side_effect = SqliteInterfaceException("Database failure")
+
+        project_id = 456
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = self.mock_query
+        result = interface.is_valid_project_id(project_id)
+
+        # Ensure function returns None
+        self.assertIsNone(result)
+
+        # Ensure the logger recorded the critical failure
+        self.mock_logger.critical.assert_called_once_with("Query failed, reason: %s", "Database failure")
+
+        # Ensure database health is marked as fully degraded
+        self.assertEqual(self.mock_state_object.database_health, ComponentDegradationLevel.FULLY_DEGRADED)
+        self.assertEqual(self.mock_state_object.database_health_state_str, "Fatal SQL failure")
+
+    def test_get_testcase_valid(self):
+        """Test when a valid test case is found."""
+        self.mock_query.return_value = {
+            "id": 1, "folder_id": 10, "name": "Test Case 1", "description": "Description"
+        }
+
+        case_id = 1
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = self.mock_query
+        result = interface.get_testcase(case_id)
+
+        self.assertEqual(result, {
+            "id": 1, "folder_id": 10, "name": "Test Case 1", "description": "Description"
+        })
+        self.mock_query.assert_called_once_with(
+            "SELECT id, folder_id, name, description FROM test_cases WHERE id=?", (case_id,)
+        )
+
+    def test_get_testcase_not_found(self):
+        """Test when the test case ID does not exist in the database."""
+        self.mock_query.return_value = None
+
+        case_id = 999
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = self.mock_query
+        result = interface.get_testcase(case_id)
+
+        self.assertIsNone(result)
+        self.mock_query.assert_called_once_with(
+            "SELECT id, folder_id, name, description FROM test_cases WHERE id=?", (case_id,)
+        )
+
+    def test_get_testcase_sqlite_exception(self):
+        """Test that a SqliteInterfaceException is handled correctly."""
+        self.mock_query.side_effect = SqliteInterfaceException("Database failure")
+
+        case_id = 456
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = self.mock_query
+        result = interface.get_testcase(case_id)
+
+        # Ensure function returns None
+        self.assertIsNone(result)
+
+        # Ensure the logger recorded the critical failure
+        self.mock_logger.critical.assert_called_once_with("Query failed, reason: %s", "Database failure")
+
+        # Ensure database health is marked as fully degraded
+        self.assertEqual(self.mock_state_object.database_health, ComponentDegradationLevel.FULLY_DEGRADED)
+        self.assertEqual(self.mock_state_object.database_health_state_str, "Fatal SQL failure")
+
+    def test_get_testcase_generic_exception(self):
+        """Test that a generic exception is raised."""
+        self.mock_query.side_effect = Exception("Unexpected error")
+
+        case_id = 789
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = self.mock_query
+
+        with self.assertRaises(Exception) as context:
+            interface.get_testcase(case_id)
+
+        self.assertEqual(str(context.exception), "Unexpected error")
