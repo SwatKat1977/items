@@ -14,12 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from dataclasses import dataclass
+from functools import wraps
 import json
 import http
 from types import SimpleNamespace
 import typing
 import aiohttp
 import jsonschema
+import quart
+
 
 @dataclass(init=True)
 class ApiResponse:
@@ -39,6 +42,48 @@ class ApiResponse:
         self.content_type = content_type
         self.exception_msg = exception_msg
 
+
+def validate_json(schema):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(self, *args, **kwargs):
+            try:
+                # Validate the JSON body using the provided schema
+                request_msg: ApiResponse = self._validate_json_body(
+                    await quart.request.get_data(),
+                    schema
+                )
+
+                # If validation fails, return an error response
+                if request_msg.status_code != http.HTTPStatus.OK:
+                    response_json = {
+                        'status': 0,
+                        'error': request_msg.exception_msg
+                    }
+                    return quart.Response(
+                        json.dumps(response_json),
+                        status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                        content_type="application/json"
+                    )
+
+                # If validation passes, call the original function
+                return await func(self, *args, **kwargs)
+
+            except Exception as e:
+                response_json = {
+                    'status': 0,
+                    'error': str(e)
+                }
+                return quart.Response(
+                    json.dumps(response_json),
+                    status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                    content_type="application/json"
+                )
+
+        return wrapper
+    return decorator
+
+
 class BaseView:
     """ Base view class """
     # pylint: disable=too-few-public-methods
@@ -51,7 +96,7 @@ class BaseView:
     CONTENT_TYPE_TEXT : str = 'text/plain'
 
     def _validate_json_body(self, data : str, json_schema : dict = None) \
-        -> typing.Optional[ApiResponse]:
+            -> typing.Optional[ApiResponse]:
         """
         Validate response body is JSON.
 
