@@ -32,10 +32,8 @@ class TestSqliteInterface(unittest.TestCase):
 
     def test_get_testcase_overviews_success(self):
         """Test successful query execution and response handling."""
-        mock_result = [
-            {"level": 0, "folder_id": 1, "folder_name": "Root", "test_cases": '[{"id": 101, "name": "Test A"}]'},
-            {"level": 1, "folder_id": 2, "folder_name": "Subfolder", "test_cases": '[{"id": 102, "name": "Test B"}]'}
-        ]
+        mock_result = [(0, 1, 'Functional Tests', '[{"id":5,"name":"Invalid Login Test"}]')]
+
         self.mock_query.return_value = mock_result
 
         project_id = 123
@@ -127,9 +125,7 @@ class TestSqliteInterface(unittest.TestCase):
 
     def test_get_testcase_valid(self):
         """Test when a valid test case is found."""
-        self.mock_query.return_value = {
-            "id": 1, "folder_id": 10, "name": "Test Case 1", "description": "Description"
-        }
+        self.mock_query.return_value = [(0, 1, 'Functional Tests', '[{"id":5,"name":"Invalid Login Test"}]')]
 
         case_id = 1
 
@@ -140,9 +136,8 @@ class TestSqliteInterface(unittest.TestCase):
         interface.query_with_values = self.mock_query
         result = interface.get_testcase(case_id)
 
-        self.assertEqual(result, {
-            "id": 1, "folder_id": 10, "name": "Test Case 1", "description": "Description"
-        })
+        expected = [(0, 1, 'Functional Tests', '[{"id":5,"name":"Invalid Login Test"}]')]
+        self.assertEqual(result, expected)
         self.mock_query.assert_called_once_with(
             "SELECT id, folder_id, name, description FROM test_cases WHERE id=?", (case_id,)
         )
