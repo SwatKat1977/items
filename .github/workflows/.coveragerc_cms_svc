@@ -4,5 +4,6 @@ omit =
     items/unittests_cms_svc/*
     items/shared/*
     items/cms_svc/apis/health_api.py
+    items/cms_svc/apis/testcases_api.py
     /opt/homebrew/*
     /usr/lib/python3/*

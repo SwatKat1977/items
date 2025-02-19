@@ -14,12 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from dataclasses import dataclass
+from functools import wraps
 import json
 import http
 from types import SimpleNamespace
 import typing
 import aiohttp
 import jsonschema
+import quart
+import requests
+
 
 @dataclass(init=True)
 class ApiResponse:
@@ -39,6 +43,84 @@ class ApiResponse:
         self.content_type = content_type
         self.exception_msg = exception_msg
 
+
+def validate_json(schema):
+    """
+    Decorator to validate the JSON request body against a given schema.
+
+    This decorator:
+    - Extracts and validates the JSON request body using the provided schema.
+    - If validation fails, returns an HTTP 500 response with an error message.
+    - If validation succeeds, passes the validated data (`request_msg`) to the wrapped function.
+
+    Args:
+        schema (dict): The JSON schema to validate the request body against.
+
+    Returns:
+        A Quart Response object in case of validation failure,
+        otherwise, the decorated function is called with the validated data.
+
+    Example:
+        @validate_json(handshake_api.SCHEMA_BASIC_AUTHENTICATE_REQUEST)
+        async def basic_authenticate(self, request_msg: ApiResponse) -> Response:
+            return Response(json.dumps({"status": 1, "message": "Success"}),
+                            status=HTTPStatus.OK,
+                            content_type="application/json")
+    """
+
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(self, *args, **kwargs):
+            try:
+                # Validate the JSON body using the provided schema
+                request_msg: ApiResponse = self.validate_json_body(
+                    await quart.request.get_data(),
+                    schema
+                )
+
+                # If validation fails, return an error response
+                if request_msg.status_code != http.HTTPStatus.OK:
+                    response_json = {
+                        'status': 0,
+                        'error': request_msg.exception_msg
+                    }
+                    return quart.Response(
+                        json.dumps(response_json),
+                        status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                        content_type="application/json"
+                    )
+
+                # If validation passes, call the original function
+                return await func(self, request_msg, *args, **kwargs)
+
+
+            except jsonschema.exceptions.ValidationError as e:
+                error_msg = f"Schema validation error: {str(e)}"
+
+            except json.JSONDecodeError as e:
+                error_msg = f"JSON decoding error: {str(e)}"
+
+            except requests.exceptions.ConnectionError as e:
+                error_msg = f"Connection error: {str(e)}"
+
+            except TypeError as e:
+                error_msg = f"Type error: {str(e)}"
+
+            # Catch specific errors and return an internal server error response
+            response_json = {
+                'status': 0,
+                'error': error_msg
+            }
+            return quart.Response(
+                json.dumps(response_json),
+                status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                content_type="application/json"
+            )
+
+        return wrapper
+    return decorator
+
+
 class BaseView:
     """ Base view class """
     # pylint: disable=too-few-public-methods
@@ -50,8 +132,16 @@ class BaseView:
     CONTENT_TYPE_JSON : str = 'application/json'
     CONTENT_TYPE_TEXT : str = 'text/plain'
 
-    def _validate_json_body(self, data : str, json_schema : dict = None) \
-        -> typing.Optional[ApiResponse]:
+    def validate_json_body(self, data: str, json_schema: dict = None) \
+            -> typing.Optional[ApiResponse]:
+        """
+        This is a temporary work around as changing _validate_json_body*()
+        would be fairly breaking. This needs to be fixed!
+        """
+        return self._validate_json_body(data, json_schema)
+
+    def _validate_json_body(self, data: str, json_schema: dict = None) \
+            -> typing.Optional[ApiResponse]:
         """
         Validate response body is JSON.
 
