@@ -44,7 +44,7 @@ class TestCasesApiView(BaseView):
 
         test_suites: list = self._db.get_testcase_overviews(project_id)
 
-        test_suites = {} if not test_suites else test_suites
+        test_suites = [] if not test_suites else test_suites
 
         return quart.Response(json.dumps(test_suites),
                               status=http.HTTPStatus.OK,
