@@ -24,6 +24,7 @@ class TestApiTestCasesApiView(unittest.IsolatedAsyncioTestCase):
 
         # Register route for testing
         self.app.add_url_rule('/testcases/details', view_func=self.view.testcase_details, methods=['POST'])
+        self.app.add_url_rule('/testcases/get_case/<case_id>', view_func=self.view.testcase_get_case, methods=['POST'])
 
     async def test_testcase_details_valid_project(self):
         """Test testcase_details with a valid project ID."""
@@ -118,3 +119,72 @@ class TestApiTestCasesApiView(unittest.IsolatedAsyncioTestCase):
             # Check response JSON and assert the structure
             data = await response.get_json()
             self.assertEqual(len(data), 0, 'List should be empty')
+
+    async def test_testcase_get_case_valid(self):
+        """Test `testcase_get_case` with a valid case ID."""
+
+        # Mock _validate_json_body to return valid data for request
+        self.view._validate_json_body = MagicMock(return_value=ApiResponse(
+            status_code=http.HTTPStatus.OK,
+            body=MagicMock(email_address="test@example.com", password="mysecretpassword")
+        ))
+
+        response_json = [
+            [
+                1,
+                3,
+                "Valid Login Test",
+                "Checks login with valid credentials"
+            ]
+        ]
+        self.mock_db.get_testcase.return_value = response_json
+
+        mock_call_api_post = AsyncMock()
+        mock_call_api_post.return_value = MagicMock(status_code=http.HTTPStatus.OK,
+                                                    json=AsyncMock(return_value={"status": 1, "token": "mock_token"}))
+        self.view._call_api_post = mock_call_api_post
+
+        async with self.client as client:
+            response = await client.post('/testcases/get_case/<case_id>', json={})
+
+            # Assert response status
+            self.assertEqual(response.status_code, http.HTTPStatus.OK)
+
+            # Check response JSON and assert the structure
+            data = await response.get_json()
+            self.assertEqual(len(data[0]), 4,
+                             'Test details should have 4 elements')
+            self.assertEqual(data[0][0], 1, 'Test ID should be 1')
+            self.assertEqual(data[0][1], 3, 'Folder ID should be 3')
+            self.assertEqual(data[0][2], "Valid Login Test",
+                             "Test name ID should be 'Valid Login Test'")
+            self.assertEqual(data[0][3], 'Checks login with valid credentials',
+                             "Test description should be 'Checks login with valid credentials'")
+
+    async def test_testcase_get_case_not_found(self):
+        """Test `testcase_get_case` when case ID is not found."""
+
+        # Mock _validate_json_body to return valid data for request
+        self.view._validate_json_body = MagicMock(return_value=ApiResponse(
+            status_code=http.HTTPStatus.OK,
+            body=MagicMock(email_address="test@example.com", password="mysecretpassword")
+        ))
+
+        response_json = []
+        self.mock_db.get_testcase.return_value = response_json
+
+        mock_call_api_post = AsyncMock()
+        mock_call_api_post.return_value = MagicMock(status_code=http.HTTPStatus.OK,
+                                                    json=AsyncMock(return_value={"status": 1, "token": "mock_token"}))
+        self.view._call_api_post = mock_call_api_post
+
+        async with self.client as client:
+            response = await client.post('/testcases/get_case/<case_id>', json={})
+
+            # Assert response status
+            self.assertEqual(response.status_code, http.HTTPStatus.OK)
+
+            # Check response JSON and assert the structure
+            data = await response.get_json()
+            self.assertEqual(len(data), 0,
+                             'Test details should have no elements')
