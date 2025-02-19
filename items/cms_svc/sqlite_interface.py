@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import json
 import logging
 import typing
 from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
@@ -115,7 +116,7 @@ class SqliteInterface(BaseSqliteInterface):
                 COALESCE(
                     (SELECT json_group_array(
                                 json_object('id', tc.id, 'name', tc.name)
-                            ) 
+                            )
                      FROM test_cases tc
                      WHERE tc.folder_id = fh.id),
                     '[]'  -- Return empty JSON array instead of null
@@ -133,6 +134,10 @@ class SqliteInterface(BaseSqliteInterface):
             self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
             self._state_object.database_health_state_str = "Fatal SQL failure"
             return None
+
+        # Iterate over each row and parse the stringified JSON array (which is in the 4th element)
+        for idx, row in enumerate(rows):
+            rows[idx] = row[:3] + (json.loads(row[3]),)
 
         return rows
 
