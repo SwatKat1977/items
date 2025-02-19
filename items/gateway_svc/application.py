@@ -82,8 +82,6 @@ class Application(BaseApplication):
             self._logger, self._sessions)
         self._quart_instance.register_blueprint(testcase_blueprint)
 
-        testcase_api
-
         return True
 
     async def _main_loop(self) -> None:
