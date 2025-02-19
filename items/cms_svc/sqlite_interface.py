@@ -116,7 +116,7 @@ class SqliteInterface(BaseSqliteInterface):
                     (SELECT json_group_array(
                                 json_object('id', tc.id, 'name', tc.name)
                             ) 
-                     FROM test_cases tc 
+                     FROM test_cases tc
                      WHERE tc.folder_id = fh.id),
                     '[]'  -- Return empty JSON array instead of null
                 ) AS test_cases
