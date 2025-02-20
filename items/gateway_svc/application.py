@@ -246,14 +246,14 @@ class Application(BaseApplication):
 
         if response is None:
             raise RuntimeError(
-                "Missing/invalid JSON accounts svc health call JSON body")
+                "Missing/invalid JSON cms svc health call JSON body")
 
         try:
             json_data = json.loads(response.text)
 
         except (TypeError, json.JSONDecodeError) as ex:
             raise RuntimeError(
-                "Invalid JSON body type for accounts svc health call") from ex
+                "Invalid JSON body type for cms svc health call") from ex
 
         try:
             jsonschema.validate(instance=json_data,
