@@ -28,13 +28,15 @@ def create_blueprint(logger: logging.Logger, sessions: Sessions) -> Blueprint:
 
     logger.info("=> /<project_id>/testcase/testcase_details [POST]")
 
-    @blueprint.route('/<project_id>/testcase/testcase_details', methods=['POST'])
-    async def testcase_details_request(project_id: int):
-        return await view.testcase_details(project_id)
+    @blueprint.route('/<int:project_id>/testcase/testcases_details',
+                     methods=['POST'])
+    async def testcases_details_request(project_id: int):
+        return await view.testcases_details(project_id)
 
-    logger.info("=> /<project_id>/testcases/get_case/<case_id> [POST]")
+    logger.info("=> /<project_id>/testcase/get_case/<case_id> [POST]")
 
-    @blueprint.route('/<project_id>/testcases/get_case/<case_id>', methods=['POST'])
+    @blueprint.route('/<int:project_id>/testcase/get_case/<int:case_id>',
+                     methods=['POST'])
     async def get_case_request(project_id: int, case_id: int):
         # pylint: disable=unused-variable
         return await view.get_testcase(project_id, case_id)
