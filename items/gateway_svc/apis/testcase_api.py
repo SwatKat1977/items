@@ -37,6 +37,6 @@ def create_blueprint(logger: logging.Logger, sessions: Sessions) -> Blueprint:
     @blueprint.route('/<project_id>/testcases/get_case/<case_id>', methods=['POST'])
     async def get_case_request(project_id: int, case_id: int):
         # pylint: disable=unused-variable
-        return await view.get_case_request(project_id, case_id)
+        return await view.get_testcase(project_id, case_id)
 
     return blueprint

@@ -14,8 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
+import quart
 from sessions import Sessions
 from base_view import ApiResponse, BaseView, validate_json
+#import interfaces.gateway.testcase as json_schemas
+
 
 class TestCaseApiView(BaseView):
     __slots__ = ['_logger']
@@ -23,3 +26,13 @@ class TestCaseApiView(BaseView):
     def __init__(self, logger: logging.Logger, sessions: Sessions) -> None:
         self._logger = logger.getChild(__name__)
         self._sessions: Sessions = sessions
+
+    #@validate_json(json_schemas.SCHEMA_TESTCASES_DETAILS_REQUEST)
+    async def testcase_details(self, request_msg: ApiResponse,
+                               project_id: int) -> quart.Response:
+        ...
+
+    async def get_testcase(self, request_msg: ApiResponse,
+                           project_id: int,
+                           case_id: int) -> quart.Response:
+        ...
