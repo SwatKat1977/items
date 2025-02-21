@@ -29,8 +29,10 @@ from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
 from base_application import BaseApplication
 from configuration_layout import CONFIGURATION_LAYOUT
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
-from interfaces.accounts.health import SCHEMA_HEALTH_RESPONSE
+from interfaces.accounts.health import SCHEMA_ACCOUNTS_SVC_HEALTH_RESPONSE
+from interfaces.cms.health import SCHEMA_CMS_SVC_HEALTH_RESPONSE
 from apis import handshake_api
+from apis import testcase_api
 import service_health_enums as health_enums
 from sessions import Sessions
 
@@ -69,9 +71,16 @@ class Application(BaseApplication):
         if not self._check_accounts_svc_api_status(version_info):
             return False
 
+        if not self._check_cms_svc_api_status(version_info):
+            return False
+
         handshake_blueprint = handshake_api.create_blueprint(
             self._logger, self._sessions)
         self._quart_instance.register_blueprint(handshake_blueprint)
+
+        testcase_blueprint = testcase_api.create_blueprint(
+            self._logger, self._sessions)
+        self._quart_instance.register_blueprint(testcase_blueprint)
 
         return True
 
@@ -178,7 +187,7 @@ class Application(BaseApplication):
 
         try:
             jsonschema.validate(instance=json_data,
-                                schema=SCHEMA_HEALTH_RESPONSE)
+                                schema=SCHEMA_ACCOUNTS_SVC_HEALTH_RESPONSE)
 
         except jsonschema.exceptions.ValidationError as ex:
             raise RuntimeError(
@@ -197,6 +206,76 @@ class Application(BaseApplication):
 
         if json_data["status"] == health_enums.STATUS_DEGRADED:
             self._logger.warning("Accounts service degraded, can continue, but"
+                                 " retries/slow-down may occur..")
+
+        return json_data
+
+    def _check_cms_svc_api_status(self, version_info: str) -> bool:
+        perform_check: bool = True
+
+        while perform_check:
+            try:
+                data = self._cms_svc_api_health_check(version_info)
+
+                if data:
+                    self._logger.info("[CMS API]")
+                    self._logger.info("=> Status: %s", data["status"])
+                    self._logger.info("=> Version: %s", data["version"])
+                    perform_check = False
+
+                else:
+                    time.sleep(3)
+
+            except RuntimeError as ex:
+                self._logger.critical(str(ex))
+                return False
+
+        return True
+
+    def _cms_svc_api_health_check(self, version_info: str) \
+            -> typing.Optional[dict]:
+        url: str = f"{Configuration().apis_cms_svc}health/status"
+
+        try:
+            response = requests.get(url, timeout=1)
+
+        except requests.exceptions.ConnectionError as ex:
+            self._logger.error("Connection to cms service timed out: %s",
+                               str(ex))
+            return None
+
+        if response is None:
+            raise RuntimeError(
+                "Missing/invalid JSON cms svc health call JSON body")
+
+        try:
+            json_data = json.loads(response.text)
+
+        except (TypeError, json.JSONDecodeError) as ex:
+            raise RuntimeError(
+                "Invalid JSON body type for cms svc health call") from ex
+
+        try:
+            jsonschema.validate(instance=json_data,
+                                schema=SCHEMA_CMS_SVC_HEALTH_RESPONSE)
+
+        except jsonschema.exceptions.ValidationError as ex:
+            raise RuntimeError(
+                "Schema for cms service health check invalid!") from ex
+
+        if json_data["version"] != version_info:
+            self._logger.warning(
+                "CMS Service version (%s) does not match gateway (%s),"
+                ", unforeseen issues may occur!", json_data["version"],
+                version_info)
+
+        if json_data["status"] == health_enums.STATUS_CRITICAL:
+            msg: str = "CMS service critically degraded, access to "\
+                       "cms service discontinued until it is fixed"
+            raise RuntimeError(msg)
+
+        if json_data["status"] == health_enums.STATUS_DEGRADED:
+            self._logger.warning("CMS service degraded, can continue, but"
                                  " retries/slow-down may occur..")
 
         return json_data

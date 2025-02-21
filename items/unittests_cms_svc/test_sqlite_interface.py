@@ -128,50 +128,54 @@ class TestSqliteInterface(unittest.TestCase):
         self.mock_query.return_value = [(0, 1, 'Functional Tests', '[{"id":5,"name":"Invalid Login Test"}]')]
 
         case_id = 1
+        project_id: int = 1
 
         # Create an instance of SqliteInterface
         interface = SqliteInterface(logger=self.mock_logger,
                                     db_file=self.db_file,
                                     state_object=self.mock_state_object)
         interface.query_with_values = self.mock_query
-        result = interface.get_testcase(case_id)
+        result = interface.get_testcase(case_id, project_id)
 
         expected = [(0, 1, 'Functional Tests', '[{"id":5,"name":"Invalid Login Test"}]')]
         self.assertEqual(result, expected)
         self.mock_query.assert_called_once_with(
-            "SELECT id, folder_id, name, description FROM test_cases WHERE id=?", (case_id,)
-        )
+            "SELECT id, folder_id, name, description FROM test_cases WHERE id=? AND project_id=?",
+            (case_id, project_id))
 
     def test_get_testcase_not_found(self):
         """Test when the test case ID does not exist in the database."""
         self.mock_query.return_value = None
 
         case_id = 999
+        project_id = 1
 
         # Create an instance of SqliteInterface
         interface = SqliteInterface(logger=self.mock_logger,
                                     db_file=self.db_file,
                                     state_object=self.mock_state_object)
         interface.query_with_values = self.mock_query
-        result = interface.get_testcase(case_id)
+        result = interface.get_testcase(case_id, project_id)
 
         self.assertIsNone(result)
         self.mock_query.assert_called_once_with(
-            "SELECT id, folder_id, name, description FROM test_cases WHERE id=?", (case_id,)
+            "SELECT id, folder_id, name, description FROM test_cases WHERE id=? AND project_id=?",
+            (case_id, project_id)
         )
 
     def test_get_testcase_sqlite_exception(self):
         """Test that a SqliteInterfaceException is handled correctly."""
         self.mock_query.side_effect = SqliteInterfaceException("Database failure")
 
-        case_id = 456
+        case_id: int = 456
+        project_id: int = 1
 
         # Create an instance of SqliteInterface
         interface = SqliteInterface(logger=self.mock_logger,
                                     db_file=self.db_file,
                                     state_object=self.mock_state_object)
         interface.query_with_values = self.mock_query
-        result = interface.get_testcase(case_id)
+        result = interface.get_testcase(case_id, project_id)
 
         # Ensure function returns None
         self.assertIsNone(result)
@@ -188,6 +192,7 @@ class TestSqliteInterface(unittest.TestCase):
         self.mock_query.side_effect = Exception("Unexpected error")
 
         case_id = 789
+        project_id: int = 1
 
         # Create an instance of SqliteInterface
         interface = SqliteInterface(logger=self.mock_logger,
@@ -196,6 +201,6 @@ class TestSqliteInterface(unittest.TestCase):
         interface.query_with_values = self.mock_query
 
         with self.assertRaises(Exception) as context:
-            interface.get_testcase(case_id)
+            interface.get_testcase(case_id, project_id)
 
         self.assertEqual(str(context.exception), "Unexpected error")

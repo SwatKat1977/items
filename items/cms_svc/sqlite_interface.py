@@ -141,12 +141,15 @@ class SqliteInterface(BaseSqliteInterface):
 
         return rows
 
-    def get_testcase(self, case_id: int) -> typing.Optional[dict]:
+    def get_testcase(self,
+                     case_id: int,
+                     project_id: int) -> typing.Optional[dict]:
         """
         Retrieve a test case by its ID from the database.
 
         Parameters:
             case_id (int): The ID of the test case to retrieve.
+            project_id (int): The ID of the project case is part of.
 
         Returns:
             dict | None: A dictionary containing the test case details
@@ -158,11 +161,11 @@ class SqliteInterface(BaseSqliteInterface):
               if an SqliteInterfaceException occurs.
         """
         query: str = ("SELECT id, folder_id, name, description "
-                      "FROM test_cases WHERE id=?")
+                      "FROM test_cases WHERE id=? AND project_id=?")
 
         try:
             rows: typing.Optional[dict] = self.query_with_values(
-                query, (case_id,))
+                query, (case_id, project_id))
 
         except SqliteInterfaceException as ex:
             self._logger.critical("Query failed, reason: %s", str(ex))

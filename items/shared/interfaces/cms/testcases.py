@@ -39,5 +39,10 @@ SCHEMA_TESTCASES_CASE_REQUEST: dict = {
 
     "properties":
         {
-        }
+            "project_id":
+                {
+                    "type": "integer"
+                }
+        },
+    "required": ["project_id"]
 }

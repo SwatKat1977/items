@@ -15,7 +15,7 @@ limitations under the License.
 """
 # pylint: disable=R0801
 
-SCHEMA_ACCOUNTS_SVC_HEALTH_RESPONSE: dict = {
+SCHEMA_CMS_SVC_HEALTH_RESPONSE: dict = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "$defs": {
@@ -50,10 +50,9 @@ SCHEMA_ACCOUNTS_SVC_HEALTH_RESPONSE: dict = {
         "dependencies": {
             "type": "object",
             "properties": {
-                "database": {"$ref": "#/$defs/component_status"},
-                "service": {"$ref": "#/$defs/component_status"}
+                "database": {"$ref": "#/$defs/component_status"}
             },
-            "required": ["database", "service"]
+            "required": ["database"]
         },
         "uptime_seconds": {
             "type": "integer",
