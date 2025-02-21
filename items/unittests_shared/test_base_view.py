@@ -2,10 +2,13 @@ import unittest
 from unittest.mock import AsyncMock, patch
 from http import HTTPStatus
 import json
-import jsonschema
 from types import SimpleNamespace
+import jsonschema
+import quart
+import requests
 from aiohttp import ClientConnectionError, ClientError
-from base_view import BaseView
+from base_view import ApiResponse, BaseView, validate_json
+
 
 class TestApiResponse(unittest.TestCase):
     def test_api_response_initialization(self):
@@ -28,10 +31,21 @@ class TestApiResponse(unittest.TestCase):
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.exception_msg, "Test exception")
 
+app = quart.Quart(__name__)
 
 class TestBaseView(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.view = BaseView()
+
+    async def asyncSetUp(self):
+        """Ensure Quart test request context is available."""
+        self.test_client = app.test_client()
+        self.context = app.test_request_context('/')
+        await self.context.__aenter__()
+
+    async def asyncTearDown(self):
+        """Clean up Quart request context."""
+        await self.context.__aexit__(None, None, None)
 
     def test_validate_json_body_none(self):
         response = self.view._validate_json_body(None)
@@ -108,3 +122,150 @@ class TestBaseView(unittest.IsolatedAsyncioTestCase):
         response = await self.view._call_api_get("http://example.com")
         self.assertIsNone(response.body)
         self.assertIsInstance(response.exception_msg, ClientConnectionError)
+
+    @patch("quart.request.get_data", new_callable=AsyncMock)
+    @patch.object(BaseView, "_validate_json_body")
+    async def test_decorator_success(self, mock_validate, mock_get_data):
+        """Test decorator when JSON validation succeeds."""
+
+        schema = {"type": "object", "properties": {"project_id": {"type": "integer"}}}
+        mock_request_data = json.dumps({"project_id": 100}).encode()
+
+        # Mock request.get_data() to return our JSON payload
+        mock_get_data.return_value = mock_request_data
+
+        # Mock successful validation response
+        mock_validate.return_value = ApiResponse(status_code=HTTPStatus.OK, exception_msg="")
+
+        @validate_json(schema)
+        async def mock_handler(self, request_msg: ApiResponse) -> quart.Response:
+            return quart.Response(json.dumps({"status": 1, "message": "Success"}),
+                            status=HTTPStatus.OK,
+                            content_type="application/json")
+
+        # Call the decorated function
+        response = await mock_handler(self.view)
+
+        # Assertions
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(await response.get_data(), b'{"status": 1, "message": "Success"}')
+        mock_validate.assert_called_once()  # Ensure validation was called
+
+    @patch("quart.request.get_data", new_callable=AsyncMock)
+    @patch.object(BaseView, "_validate_json_body")
+    async def test_decorator_validation_failure(self, mock_validate, mock_get_data):
+        """Test decorator when JSON validation fails."""
+        schema = {"type": "object", "properties": {"project_id": {"type": "integer"}}}
+        mock_request_data = json.dumps({"project_id": 100}).encode()
+
+        mock_get_data.return_value = mock_request_data
+        mock_validate.return_value = ApiResponse(status_code=HTTPStatus.BAD_REQUEST, exception_msg="Invalid JSON")
+
+        @validate_json(schema)
+        async def mock_handler(self, request_msg: ApiResponse) -> quart.Response:
+            return quart.Response(json.dumps({"status": 1, "message": "Should not reach here"}),
+                            status=HTTPStatus.OK,
+                            content_type="application/json")
+
+        response = await mock_handler(self.view)
+
+        # Assertions
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertEqual(await response.get_data(), b'{"status": 0, "error": "Invalid JSON"}')
+        mock_validate.assert_called_once()
+
+    @patch("quart.request.get_data", new_callable=AsyncMock)
+    @patch.object(BaseView, "_validate_json_body",
+                  side_effect=jsonschema.exceptions.ValidationError("Unexpected error"))
+    async def test_decorator_jsonschema_exception_handling(self, mock_validate, mock_get_data):
+        """Test decorator when an exception occurs during validation."""
+        schema = {"type": "object", "properties": {"project_id": {"type": "integer"}}}
+        mock_request_data = json.dumps({"project_id": 100}).encode()
+        assert_value = b'{"status": 0, "error": "Schema validation error: Unexpected error"}'
+
+        mock_get_data.return_value = mock_request_data
+
+        @validate_json(schema)
+        async def mock_handler(self, request_msg: ApiResponse) -> quart.Response:
+            return quart.Response(json.dumps({"status": 1, "message": "Should not reach here"}),
+                                  status=HTTPStatus.OK,
+                                  content_type="application/json")
+
+        response = await mock_handler(self.view)
+
+        # Assertions
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertIn(assert_value, await response.get_data())
+        mock_validate.assert_called_once()
+
+    @patch("quart.request.get_data", new_callable=AsyncMock)
+    @patch.object(BaseView, "_validate_json_body",
+                  side_effect=json.JSONDecodeError("Unexpected error", "None", 12))
+    async def test_decorator_jsons_exception_handling(self, mock_validate, mock_get_data):
+        """Test decorator when an exception occurs during validation."""
+        schema = {"type": "object", "properties": {"project_id": {"type": "integer"}}}
+        mock_request_data = json.dumps({"project_id": 100}).encode()
+        assert_value = b'{"status": 0, "error": "JSON decoding error: Unexpected error: line 1 column 13 (char 12)"}'
+
+        mock_get_data.return_value = mock_request_data
+
+        @validate_json(schema)
+        async def mock_handler(self, request_msg: ApiResponse) -> quart.Response:
+            return quart.Response(json.dumps({"status": 1, "message": "Should not reach here"}),
+                                  status=HTTPStatus.OK,
+                                  content_type="application/json")
+
+        response = await mock_handler(self.view)
+
+        # Assertions
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertIn(assert_value, await response.get_data())
+        mock_validate.assert_called_once()
+
+    @patch("quart.request.get_data", new_callable=AsyncMock)
+    @patch.object(BaseView, "_validate_json_body",
+                  side_effect=requests.exceptions.ConnectionError("Unexpected issue in request"))
+    async def test_decorator_requests_exception_handling(self, mock_validate, mock_get_data):
+        """Test decorator when an exception occurs during validation."""
+        schema = {"type": "object", "properties": {"project_id": {"type": "integer"}}}
+        mock_request_data = json.dumps({"project_id": 100}).encode()
+        assert_value = b'{"status": 0, "error": "Connection error: Unexpected issue in request"}'
+
+        mock_get_data.return_value = mock_request_data
+
+        @validate_json(schema)
+        async def mock_handler(self, request_msg: ApiResponse) -> quart.Response:
+            return quart.Response(json.dumps({"status": 1, "message": "Should not reach here"}),
+                                  status=HTTPStatus.OK,
+                                  content_type="application/json")
+
+        response = await mock_handler(self.view)
+
+        # Assertions
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertIn(assert_value, await response.get_data())
+        mock_validate.assert_called_once()
+
+    @patch("quart.request.get_data", new_callable=AsyncMock)
+    @patch.object(BaseView, "_validate_json_body",
+                  side_effect=TypeError("Unknown type"))
+    async def test_decorator_type_error_exception_handling(self, mock_validate, mock_get_data):
+        """Test decorator when an exception occurs during validation."""
+        schema = {"type": "object", "properties": {"project_id": {"type": "integer"}}}
+        mock_request_data = json.dumps({"project_id": 100}).encode()
+        assert_value = b'{"status": 0, "error": "Type error: Unknown type"}'
+
+        mock_get_data.return_value = mock_request_data
+
+        @validate_json(schema)
+        async def mock_handler(self, request_msg: ApiResponse) -> quart.Response:
+            return quart.Response(json.dumps({"status": 1, "message": "Should not reach here"}),
+                                  status=HTTPStatus.OK,
+                                  content_type="application/json")
+
+        response = await mock_handler(self.view)
+
+        # Assertions
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertIn(assert_value, await response.get_data())
+        mock_validate.assert_called_once()
