@@ -95,8 +95,20 @@
 
         /* Ensure dropdown menus don't break the layout */
         .dropdown-menu {
+            background-color: #587b94 !important;
             position: absolute; /* Position dropdowns absolutely */
             z-index: 1000; /* Ensure dropdowns appear above other content */
+        }
+
+        /* Change dropdown text color to white for better contrast */
+        .dropdown-menu .dropdown-item {
+            color: white !important;
+        }
+
+        /* Change dropdown text color on hover */
+        .dropdown-menu .dropdown-item:hover {
+            background-color: #456B89 !important; /* Darker shade of blue */
+            color: #fff !important;
         }
 
         .navbar-nav {
