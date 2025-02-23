@@ -6,6 +6,8 @@
     <title>Blue Horizontal Menu</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
     <!-- Custom CSS for blue theme -->
     <style>
         /* Custom blue navbar */
@@ -49,11 +51,6 @@
             flex-wrap: nowrap; /* Prevent wrapping */
         }
 
-        /* Ensure dropdowns stay inline */
-        .dropdown {
-            display: inline-block;
-        }
-
         /* Prevent wrapping in the first line */
         .first-line {
             display: flex;
@@ -66,9 +63,34 @@
             font-size: 0.75rem;
         }
 
+        .menubar_first_line_link_arrow {
+            margin-right: 8px;
+        }
+
+                /* Ensure dropdowns stay inline */
+                .dropdown {
+            display: inline-block;
+        }
+
+        /* Ensure dropdown menus don't break the layout */
+        .dropdown-menu {
+            position: absolute; /* Position dropdowns absolutely */
+            z-index: 1000; /* Ensure dropdowns appear above other content */
+        }
+
         /* Remove gap between User and Help dropdowns */
         .dropdown + .dropdown {
             margin-left: 0; /* Remove left margin */
+        }
+
+        .user_dropdown_text {
+            color: #ffff;
+            font-size: 0.9rem;
+        }
+
+        .help_dropdown_text {
+        color: #FF5F1F !important;
+        font-size: 0.9rem !important;
         }
 
         /* Remove top and right spacing for the container */
@@ -91,12 +113,6 @@
         .navbar-custom .navbar-brand {
             margin-top: 0; /* Remove top margin */
             padding-top: 0; /* Remove top padding */
-        }
-
-        /* Ensure dropdown menus don't break the layout */
-        .dropdown-menu {
-            position: absolute; /* Position dropdowns absolutely */
-            z-index: 1000; /* Ensure dropdowns appear above other content */
         }
 
         .navbar-nav {
@@ -134,13 +150,18 @@
     <nav class="navbar navbar-expand-lg navbar-custom">
         <div class="container-fluid first-line">
             <!-- Left-hand link: Wibble -->
-            <a class="navbar-brand" href="#"><span class="menubar_first_line_link">John Doe</span></a>
+            <a class="navbar-brand" href="#">
+                <span class="menubar_first_line_link">
+                    <i class="fas fa-arrow-left menubar_first_line_link_arrow"></i>
+                    Back to Dashboard
+                </span>
+            </a>
 
             <!-- Right-aligned items: User and Help Dropdowns -->
             <div class="d-flex">
                 <!-- User Dropdown -->
                 <div class="dropdown light-blue-box">
-                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <a class="nav-link dropdown-toggle user_dropdown_text" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         User
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="userDropdown">
@@ -152,7 +173,7 @@
 
                 <!-- Help Dropdown -->
                 <div class="dropdown light-blue-box">
-                    <a class="nav-link dropdown-toggle" href="#" id="helpDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <a class="nav-link dropdown-toggle help_dropdown_text" href="#" id="helpDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         Help
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="helpDropdown">
