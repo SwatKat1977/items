@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blue Horizontal Menu</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS for blue theme -->
+    <style>
+        /* Custom blue navbar */
+        .navbar-custom {
+            background-color: #294665;
+            padding: 0; /* Remove default navbar padding */
+            margin: 0; /* Remove default navbar margin */
+        }
+        .navbar-custom .navbar-brand,
+        .navbar-custom .nav-link {
+            color: white; /* White text */
+        }
+        .navbar-custom .nav-link:hover {
+            color: #f8f9fa; /* Light gray on hover */
+        }
+
+        /* Light blue boxes for dropdowns */
+        .light-blue-box {
+            background-color: #587b94; /* Light blue background */
+            padding: 5px 10px; /* Padding for better spacing */
+            margin: 0; /* Remove margin */
+        }
+
+        /* Second line styling */
+        .second-line {
+            background-color: #294665;
+            color: white; /* White text */
+            padding: 0px 0px 0px 10px;
+            margin-top: 0;
+        }
+
+        .third-line {
+            background-color: #294665;
+            padding: 0px 10px; /* Reduce padding */
+            margin: 0; /* Ensure no margins */
+        }
+
+        /* Prevent navbar from collapsing */
+        .navbar-expand-lg .navbar-nav {
+            flex-direction: row; /* Force horizontal layout */
+            flex-wrap: nowrap; /* Prevent wrapping */
+        }
+
+        /* Ensure dropdowns stay inline */
+        .dropdown {
+            display: inline-block;
+        }
+
+        /* Prevent wrapping in the first line */
+        .first-line {
+            display: flex;
+            flex-wrap: nowrap;
+            white-space: nowrap;
+            overflow: visible; /* Allow dropdowns to overflow */
+        }
+
+        .menubar_first_line_link {
+            font-size: 0.75rem;
+        }
+
+        /* Remove gap between User and Help dropdowns */
+        .dropdown + .dropdown {
+            margin-left: 0; /* Remove left margin */
+        }
+
+        /* Remove top and right spacing for the container */
+        .navbar-custom .container-fluid {
+            padding-top: 0; /* Remove top padding */
+            padding-right: 0; /* Remove right padding */
+            margin-top: 0; /* Remove top margin */
+            margin-right: 0; /* Remove right margin */
+        }
+
+        /* Remove top and right spacing for the dropdown container */
+        .navbar-custom .d-flex {
+            margin-top: 0; /* Remove top margin */
+            margin-right: 0; /* Remove right margin */
+            padding-top: 0; /* Remove top padding */
+            padding-right: 0; /* Remove right padding */
+        }
+
+        /* Remove top spacing for the navbar brand */
+        .navbar-custom .navbar-brand {
+            margin-top: 0; /* Remove top margin */
+            padding-top: 0; /* Remove top padding */
+        }
+
+        /* Ensure dropdown menus don't break the layout */
+        .dropdown-menu {
+            position: absolute; /* Position dropdowns absolutely */
+            z-index: 1000; /* Ensure dropdowns appear above other content */
+        }
+
+        .navbar-nav {
+            margin: 0 !important;
+            padding: 0 !important;
+            gap: 10px; /* Adjust spacing as needed */
+        }
+
+        .nav-item {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Menu item styling */
+        .navbar-nav .nav-link {
+            color: #7995AE; /* Default color */
+            transition: color 0.3s ease; /* Smooth transition */
+        }
+
+        /* Hover effect for menu items */
+        .navbar-nav .nav-link:hover {
+            color: #C9E3FF; /* Hover color */
+        }
+
+        /* Current tab styling */
+        .navbar-nav .nav-link.current {
+            color: #C9E3FF; /* Current tab color */
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- First Line: Wibble, User Dropdown, Help Dropdown -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container-fluid first-line">
+            <!-- Left-hand link: Wibble -->
+            <a class="navbar-brand" href="#"><span class="menubar_first_line_link">John Doe</span></a>
+
+            <!-- Right-aligned items: User and Help Dropdowns -->
+            <div class="d-flex">
+                <!-- User Dropdown -->
+                <div class="dropdown light-blue-box">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        User
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="userDropdown">
+                        <li><a class="dropdown-item" href="#">Profile</a></li>
+                        <li><a class="dropdown-item" href="#">Settings</a></li>
+                        <li><a class="dropdown-item" href="#">Logout</a></li>
+                    </ul>
+                </div>
+
+                <!-- Help Dropdown -->
+                <div class="dropdown light-blue-box">
+                    <a class="nav-link dropdown-toggle" href="#" id="helpDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Help
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="helpDropdown">
+                        <li><a class="dropdown-item" href="#">Documentation</a></li>
+                        <li><a class="dropdown-item" href="#">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Second Line: Indented Name -->
+    <div class="second-line">
+        <div class="container-fluid">
+            <span class="fs-6 fs-md-5 fs-lg-4">
+                <img src="logo.png" width=30 height=30 alt="ITEMS Logo">
+                Name of Project</span>
+        </div>
+    </div>
+
+    <!-- Third Line: Menu Items -->
+    <nav class="navbar navbar-expand-lg navbar-light third-line">
+        <div class="container-fluid">
+            <!-- Left-justified items: Overview, Todo, Test Cases -->
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Overview</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link current" href="#">Todo</a> <!-- Current tab -->
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Test Cases</a>
+                </li>
+            </ul>
+
+            <!-- Right-justified item: Administration -->
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Administration</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Bootstrap 5 JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+</body>
+</html>
