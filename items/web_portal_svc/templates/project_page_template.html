@@ -1,0 +1,86 @@
+{% extends "bootstrap_enabled_template.html" %}
+{% block head %}{{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/project_page_template.css') }}">
+{% endblock %}
+
+{% block body_params %}id="body-pd"{% endblock %}
+{% block page_body %}
+
+    <!-- First Line: Wibble, User Dropdown, Help Dropdown -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container-fluid menubar_first-line">
+            <!-- Left-hand link: Wibble -->
+            <a class="navbar-brand" href="#">
+                <span class="menubar_first_line_link">
+                    <i class="fas fa-arrow-left menubar_first_line_link_arrow"></i>
+                    Back to Dashboard
+                </span>
+            </a>
+
+            <!-- Right-aligned items: User and Help Dropdowns -->
+            <div class="d-flex">
+                <!-- User Dropdown -->
+                <div class="dropdown light-blue-box">
+                    <a class="nav-link dropdown-toggle user_dropdown_text" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        User
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="userDropdown">
+                        <li><a class="dropdown-item" href="#">Profile</a></li>
+                        <li><a class="dropdown-item" href="#">Settings</a></li>
+                        <li><a class="dropdown-item" href="#">Logout</a></li>
+                    </ul>
+                </div>
+
+                <!-- Help Dropdown -->
+                <div class="dropdown light-blue-box">
+                    <a class="nav-link dropdown-toggle help_dropdown_text" href="#" id="helpDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Help
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="helpDropdown">
+                        <li><a class="dropdown-item" href="#">Documentation</a></li>
+                        <li><a class="dropdown-item" href="#">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Second Line: Indented Name -->
+    <div class="menubar_second-line">
+        <div class="container-fluid">
+            <span class="fs-6 fs-md-5 fs-lg-4">
+                <img src=  "{{ url_for('static', filename='logo.png') }}"
+                     width=30 height=30 alt="ITEMS Logo">
+                Name of Project</span>
+        </div>
+    </div>
+
+    <!-- Third Line: Menu Items -->
+    <nav class="navbar navbar-expand-lg navbar-light menubar_third-line">
+        <div class="container-fluid">
+            <!-- Left-justified items: Overview, Todo, Test Cases -->
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link {% if active_page == 'overview' %}current{% endif %}"
+                       href="#">Overview</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_page == 'todo' %}current{% endif %}"
+                       href="#">Todo</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_page == 'test-cases' %}current{% endif %}"
+                       href="#">Test Cases</a>
+                </li>
+            </ul>
+
+            <!-- Right-justified item: Administration -->
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Administration</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+{% endblock %}
