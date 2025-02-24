@@ -8,8 +8,62 @@
 {% block page_body %}
 {{ super() }}
 
-    <div class="container-fluid p-0">
-        <h1 class="mb-4 ps-3">Dynamic Folder Structure</h1>
-    </div>
+    <div class="wrapper mx-2 height-100">
 
-{% endblock %}
+      <div id="content">
+        <div class="row">
+          <h1 class="mb-4 ps-3">Test Cases</h1>
+          <hr>
+        </div>
+        <div class="row m-2">{% if has_testcases == True %}
+            <div id="folder-structure">{% for item in data %}
+                <!-- Render Folder -->
+                <div class="folder" style="margin-left: {{ item[0] * 20 }}px;">
+                    {{ item[2] }}  <!-- Folder name -->
+                </div>
+
+                <!-- Render Files (if any) -->{% if item[3] %}
+                <table class="file-table table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>{% for file in item[3] %}
+                        <tr>
+                            <td>{{ file.id }}</td>
+                            <td>{{ file.name }}</td>
+                        </tr>{% endfor %}
+                    </tbody>
+                </table>{% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- test-->
+          {% else %}
+          <div id="no_data_msg_jumbo" class="jumbotron text-black border border-dark w-100">
+            <div class="container mt-1 mx-0" id="no_data_msg_container">
+              <div class="row w-100">
+                <div class="col-1 text-center d-flex justify-content-center align-items-center">
+                  <i class='lead bx bx-message-error'></i>
+                </div>
+                <div class="col">
+                  <p>There aren't any filters or test cases. Use the following buttons to create a test case or filter.</p>
+                  <p>
+                    <button type="button" class="btn-sm btn-default" data-bs-toggle="modal"
+                            data-bs-target="#addFilterModal">
+                      <strong>+</strong> Add Filter
+                    </button>
+                    <button type="button" class="btn-sm btn-default" data-bs-toggle="modal"
+                            data-bs-target="#addTestCaseModal">
+                      <strong>+</strong> Add Test Case
+                    </button>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>{% endif %}
+        </div>
+      </div>
+    </div>{% endblock %}
