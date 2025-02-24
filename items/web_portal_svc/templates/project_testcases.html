@@ -1,7 +1,7 @@
 {% extends "project_page_template.html" %}
 {% block title %}Integrated Test Management Suite | Test Definitions{% endblock %}
 {% block head %}{{ super() }}
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/project_testcases.css') }}">
 {% endblock %}
 
 {% block body_params %}id="body-pd"{% endblock %}

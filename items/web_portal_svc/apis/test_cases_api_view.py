@@ -22,5 +22,29 @@ class TestCasesApiView(BaseWebView):
         super().__init__(logger)
 
     async def test_cases(self, project_id: int):
-        return await self._render_page(pages.TEMPLATE_LOGIN_PAGE)
+        # Sample data (replace this with your actual data)
+        data = [
+            [
+                0,  # Indentation level
+                1,  # Folder ID
+                "Functional Tests",  # Folder name
+                [  # Files in this folder
+                    {"id": 5, "name": "Invalid Login Test"},
+                    {"id": 4, "name": "Valid Login Test"}
+                ]
+            ],
+            [
+                1,  # Indentation level
+                2,  # Folder ID
+                "Performance Tests",  # Folder name
+                [  # Files in this folder
+                    {"id": 6, "name": "Load Test"},
+                    {"id": 7, "name": "Stress Test"}
+                ]
+            ]
+        ]
 
+        page = "test-cases"  # Default to 'Overview'
+        return await self._render_page(pages.TEMPLATE_TEST_DEFINITIONS_PAGE,
+                                       data=data, active_page=page,
+                                       has_testcases=True)
