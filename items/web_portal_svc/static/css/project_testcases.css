@@ -1,0 +1,20 @@
+.folder {
+    margin-left: 20px; /* Indentation for folders */
+    font-weight: bold;
+    color: #333;
+}
+
+.folder::before {
+    content: "📁 ";
+}
+
+.file-table {
+    margin-left: 40px; /* Indentation for tables */
+    width: calc(100% - 40px); /* Full width minus left margin */
+    background-color: white; /* White background for tables */
+    border: 1px solid lightblue; /* Thin light blue border */
+}
+
+.file-table th, .file-table td {
+    border: 1px solid lightblue; /* Thin light blue border for cells */
+}
