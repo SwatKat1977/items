@@ -8,6 +8,37 @@
 {% block page_body %}
 {{ super() }}
 
+{% macro render_folder(folders, level=0) %}
+    {% for folder in folders %}
+        <div class="folder" style="margin-left: {{ level * 20 }}px;">
+            {{ folder.name }}  <!-- Folder name -->
+        </div>
+
+        {% if folder.test_cases %}
+            <table class="file-table table" style="margin-left: {{ level * 20 }}px;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for test_case in folder.test_cases %}
+                        <tr>
+                            <td>{{ test_case.id }}</td>
+                            <td>{{ test_case.name }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
+        {% if folder.subfolders %}  {# Check if this folder has subfolders #}
+            {{ render_folder(folder.subfolders, level + 1) }}  {# Recursive call #}
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+
     <div class="wrapper mx-2 height-100">
 
       <div id="content">
@@ -16,31 +47,10 @@
           <hr>
         </div>
         <div class="row m-2">{% if has_testcases == True %}
-            <div id="folder-structure">{% for item in data %}
-                <!-- Render Folder -->
-                <div class="folder" style="margin-left: {{ item[0] * 20 }}px;">
-                    {{ item[2] }}  <!-- Folder name -->
-                </div>
-
-                <!-- Render Files (if any) -->{% if item[3] %}
-                <table class="file-table table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                        </tr>
-                    </thead>
-                    <tbody>{% for file in item[3] %}
-                        <tr>
-                            <td>{{ file.id }}</td>
-                            <td>{{ file.name }}</td>
-                        </tr>{% endfor %}
-                    </tbody>
-                </table>{% endif %}
-                {% endfor %}
+            <div id="folder-structure">
+                {{ render_folder(data) }}
             </div>
 
-            <!-- test-->
           {% else %}
           <div id="no_data_msg_jumbo" class="jumbotron text-black border border-dark w-100">
             <div class="container mt-1 mx-0" id="no_data_msg_container">

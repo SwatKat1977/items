@@ -95,51 +95,69 @@ class SqliteInterface(BaseSqliteInterface):
               accordingly.
         """
 
-        query: str = '''
+        # Query for folders with levels
+        folders_query: str = """
             WITH RECURSIVE folder_hierarchy AS (
-                -- Base case: Get root folders in the project
-                SELECT id, parent_id, name, 0 AS level
+                SELECT id, parent_id, name, project_id
                 FROM test_case_folders
-                WHERE project_id = ? AND parent_id IS NULL
+                WHERE parent_id IS NULL AND project_id = ?
 
                 UNION ALL
 
-                -- Recursive case: Get subfolders
-                SELECT f.id, f.parent_id, f.name, fh.level + 1
+                SELECT f.id, f.parent_id, f.name, f.project_id
                 FROM test_case_folders f
-                JOIN folder_hierarchy fh ON f.parent_id = fh.id
+                JOIN folder_hierarchy h ON f.parent_id = h.id
             )
-            SELECT 
-                fh.level,
-                fh.id AS folder_id,
-                fh.name AS folder_name,
-                COALESCE(
-                    (SELECT json_group_array(
-                                json_object('id', tc.id, 'name', tc.name)
-                            )
-                     FROM test_cases tc
-                     WHERE tc.folder_id = fh.id),
-                    '[]'  -- Return empty JSON array instead of null
-                ) AS test_cases
-            FROM folder_hierarchy fh
-            ORDER BY fh.level, fh.id;
-        '''
+            SELECT
+                id AS folder_id,
+                parent_id AS parent_folder_id,
+                name AS folder_name
+            FROM folder_hierarchy
+            ORDER BY parent_id, id;
+        """
+
+        cases_query: str = """
+            SELECT id, folder_id, name
+            FROM test_cases WHERE project_id =?
+            ORDER BY folder_id, id;
+        """
 
         try:
-            rows: typing.Optional[dict] = self.query_with_values(
-                query, (project_id,))
+            folders_rows: typing.Optional[dict] = self.query_with_values(
+                folders_query, (project_id,))
 
         except SqliteInterfaceException as ex:
-            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._logger.critical("Test cases folder query failed, reason: %s",
+                                  str(ex))
             self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
             self._state_object.database_health_state_str = "Fatal SQL failure"
             return None
 
-        # Iterate over each row and parse the stringified JSON array (which is in the 4th element)
-        for idx, row in enumerate(rows):
-            rows[idx] = row[:3] + (json.loads(row[3]),)
+        try:
+            cases_rows: typing.Optional[dict] = self.query_with_values(
+                cases_query, (project_id,))
 
-        return rows
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Test cases query failed, reason: %s",
+                                  str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = "Fatal SQL failure"
+            return None
+
+        # Build the data structure
+        data = {
+            'folders': [
+                {'id': folder_id,
+                 'name': name,
+                 'parent_id': parent_id}
+                for folder_id, parent_id, name in folders_rows],
+            'test_cases': [
+                {'folder_id': folder_id,
+                 'id': test_id,
+                 'name': name} for test_id, folder_id, name in cases_rows]
+        }
+
+        return data
 
     def get_testcase(self,
                      case_id: int,
