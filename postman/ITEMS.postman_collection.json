@@ -1,0 +1,115 @@
+{
+	"info": {
+		"_postman_id": "e0bc8fa8-413d-4634-83f4-66a39fa32043",
+		"name": "ITEMS",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "10935426"
+	},
+	"item": [
+		{
+			"name": "Gateway Service",
+			"item": [
+				{
+					"name": "Details of test cases",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/1/testcase/testcases_details",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"1",
+								"testcase",
+								"testcases_details"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "CMS",
+			"item": [
+				{
+					"name": "Test Cases For Project",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"project_id\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4000/testcases/details",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4000",
+							"path": [
+								"testcases",
+								"details"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Test Case Details",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"project_id\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4000/testcases/get_case/1",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4000",
+							"path": [
+								"testcases",
+								"get_case",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
