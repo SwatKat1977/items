@@ -1,6 +1,6 @@
 from hashlib import sha256
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import call, MagicMock, patch
 import logging
 from sqlite_interface import SqliteInterface, SqliteInterfaceException
 from service_health_enums import ComponentDegradationLevel
@@ -32,9 +32,14 @@ class TestSqliteInterface(unittest.TestCase):
 
     def test_get_testcase_overviews_success(self):
         """Test successful query execution and response handling."""
-        mock_result = [(0, 1, 'Functional Tests', '[{"id":5,"name":"Invalid Login Test"}]')]
 
-        self.mock_query.return_value = mock_result
+        folders_mock_result = [(1, None, "Folder 1")]
+        cases_mock_result = []
+        expected_result = {'folders': [
+            {'id': 1, 'name': 'Folder 1', 'parent_id': None}],
+            'test_cases': []}
+        self.mock_query.side_effect = [folders_mock_result,
+                                       cases_mock_result]
 
         project_id = 123
 
@@ -46,11 +51,16 @@ class TestSqliteInterface(unittest.TestCase):
 
         result = interface.get_testcase_overviews(project_id)
 
-        self.assertEqual(result, mock_result)
-        self.mock_query.assert_called_once_with(interface.query_with_values.call_args[0][0],
-                                                (project_id,))
+        self.assertEqual(result, expected_result)
 
-    def test_get_testcase_overviews_failure(self):
+        expected_calls = [
+            call(interface.query_with_values.call_args_list[0][0][0], (project_id,)),  # First call
+            call(interface.query_with_values.call_args_list[1][0][0], (project_id,)),  # Second call (if exists)
+            # Add more if needed
+        ]
+        self.mock_query.assert_has_calls(expected_calls, any_order=False)  # Set `True` if order doesn't matter
+
+    def test_get_testcase_overviews_folders_query_failure(self):
         """Test exception handling when query fails."""
         self.mock_query.side_effect = SqliteInterfaceException("DB error")
 
@@ -64,9 +74,36 @@ class TestSqliteInterface(unittest.TestCase):
         result = interface.get_testcase_overviews(project_id)
 
         self.assertIsNone(result)
-        self.mock_logger.critical.assert_called_once_with("Query failed, reason: %s", "DB error")
-        self.assertEqual(self.mock_state_object.database_health, ComponentDegradationLevel.FULLY_DEGRADED)
-        self.assertEqual(self.mock_state_object.database_health_state_str, "Fatal SQL failure")
+        self.mock_logger.critical.assert_called_once_with(
+            "Test cases folder query failed, reason: %s", "DB error")
+        self.assertEqual(self.mock_state_object.database_health,
+                         ComponentDegradationLevel.FULLY_DEGRADED)
+        self.assertEqual(self.mock_state_object.database_health_state_str,
+                         "Fatal SQL failure")
+
+    def test_get_testcase_overviews_test_cases_query_failure(self):
+        """Test exception handling when query fails."""
+
+        mock_result = [("Test Case 1", "Description 1"), ("Test Case 2", "Description 2")]
+        self.mock_query.side_effect = [mock_result,
+                                       SqliteInterfaceException("DB error on cases query")]
+
+        project_id = 123
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = self.mock_query
+        result = interface.get_testcase_overviews(project_id)
+
+        self.assertIsNone(result)
+        self.mock_logger.critical.assert_called_once_with(
+            "Test cases query failed, reason: %s", "DB error on cases query")
+        self.assertEqual(self.mock_state_object.database_health,
+                         ComponentDegradationLevel.FULLY_DEGRADED)
+        self.assertEqual(self.mock_state_object.database_health_state_str,
+                         "Fatal SQL failure")
 
     def test_is_valid_project_id_valid(self):
         """Test when project ID exists in the database."""
