@@ -13,3 +13,38 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import logging
+from quart import Blueprint
+from apis.testcases_api_view import TestCasesApiView
+from sqlite_interface import SqliteInterface
+
+
+def create_blueprint(logger: logging.Logger, db: SqliteInterface) -> Blueprint:
+    """
+    Creates and returns a Quart Blueprint for the project API.
+
+    This function initializes a `ProjectApiView` instance and registers
+    asynchronous routes for handling requests.
+
+    Args:
+        logger (logging.Logger): The logger instance used for logging API
+                                 registration.
+        db (SqliteInterface): Database interface instance.
+
+    Returns:
+        Blueprint: A Quart Blueprint instance with the registered routes.
+    """
+    view = TestCasesApiView(logger, db)
+
+    blueprint = Blueprint('project_api', __name__)
+
+    logger.info("Registering Project API:")
+
+    logger.info("=> /project/project_overview/<project_id> [GET]")
+
+    @blueprint.route('/project/project_overview/<project_id>',
+                     methods=['GET'])
+    async def project_overview():
+        return await view.project_overview()
+
+    return blueprint
