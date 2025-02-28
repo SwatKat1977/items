@@ -191,3 +191,48 @@ class SqliteInterface(BaseSqliteInterface):
             return None
 
         return rows
+
+    def get_projects_details(self, fields: str):
+        """
+        Retrieve project details from the database.
+
+        This method constructs and executes a SQL query to fetch the specified
+        fields from the `projects` table. If the query fails, it logs the error
+        and updates the database health status accordingly.
+
+        Args:
+            fields (str): A comma-separated string specifying the columns to
+                          retrieve from the `projects` table.
+
+        Returns:
+            dict | None: A dictionary containing the query results if successful,
+                         otherwise `None` if an error occurs.
+        """
+
+        query = f"SELECT {fields} FROM projects"
+
+        try:
+            rows: dict = self.query_with_values(query)
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "get_projects_details fatal SQL failure"
+            return None
+
+        return rows
+
+    def get_no_of_milestones_for_project(self, _project_id: int):
+        """
+        NOTE: Currently not implemented, so will always return 0
+        """
+
+        return 0
+
+    def get_no_of_testruns_for_project(self, _project_id: int):
+        """
+        NOTE: Currently not implemented, so will always return 0
+        """
+
+        return 0

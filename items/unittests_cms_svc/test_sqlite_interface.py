@@ -241,3 +241,58 @@ class TestSqliteInterface(unittest.TestCase):
             interface.get_testcase(case_id, project_id)
 
         self.assertEqual(str(context.exception), "Unexpected error")
+
+    def test_get_no_of_milestones_for_project_success(self):
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+
+        count: int = interface.get_no_of_milestones_for_project(10)
+        self.assertEqual(count, 0)
+
+    def test_get_no_of_testruns_for_project_success(self):
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+
+        count: int = interface.get_no_of_testruns_for_project(10)
+        self.assertEqual(count, 0)
+
+    def test_get_projects_details_success(self):
+        """Test when the query executes successfully."""
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = MagicMock()
+
+        expected_result = {"id": 1, "name": "Test Project"}
+        interface.query_with_values.return_value = expected_result
+
+        result = interface.get_projects_details("id, name")
+
+        interface.query_with_values.assert_called_once_with(
+            "SELECT id, name FROM projects")
+        self.assertEqual(result, expected_result)
+
+    def test_get_projects_details_failure(self):
+        """Test when the query raises SqliteInterfaceException."""
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = MagicMock()
+
+        interface.query_with_values.side_effect = SqliteInterfaceException("DB Error")
+
+        result = interface.get_projects_details("id, name")
+
+        interface._logger.critical.assert_called_once_with("Query failed, reason: %s", "DB Error")
+        self.assertEqual(interface._state_object.database_health, ComponentDegradationLevel.FULLY_DEGRADED)
+        self.assertEqual(interface._state_object.database_health_state_str,
+                         "get_projects_details fatal SQL failure")
+        self.assertIsNone(result)
