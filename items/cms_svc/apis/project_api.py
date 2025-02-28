@@ -15,7 +15,7 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from apis.testcases_api_view import TestCasesApiView
+from apis.project_api_view import ProjectApiView
 from sqlite_interface import SqliteInterface
 
 
@@ -34,17 +34,16 @@ def create_blueprint(logger: logging.Logger, db: SqliteInterface) -> Blueprint:
     Returns:
         Blueprint: A Quart Blueprint instance with the registered routes.
     """
-    view = TestCasesApiView(logger, db)
+    view = ProjectApiView(logger, db)
 
     blueprint = Blueprint('project_api', __name__)
 
     logger.info("Registering Project API:")
 
-    logger.info("=> /project/project_overview/<project_id> [GET]")
+    logger.info("=> /project/overviews [GET]")
 
-    @blueprint.route('/project/project_overview/<project_id>',
-                     methods=['GET'])
+    @blueprint.route('/project/overviews', methods=['GET'])
     async def project_overview():
-        return await view.project_overview()
+        return await view.project_overviews()
 
     return blueprint
