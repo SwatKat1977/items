@@ -1,7 +1,6 @@
 import http
-import json
 import unittest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock
 import quart
 from sqlite_interface import SqliteInterface, SqliteInterfaceException
 from apis.testcases_api_view import TestCasesApiView

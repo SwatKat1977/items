@@ -241,3 +241,21 @@ class TestSqliteInterface(unittest.TestCase):
             interface.get_testcase(case_id, project_id)
 
         self.assertEqual(str(context.exception), "Unexpected error")
+
+    def test_get_no_of_milestones_for_project_success(self):
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+
+        count: int = interface.get_no_of_milestones_for_project(10)
+        self.assertEqual(count, 0)
+
+    def test_get_no_of_testruns_for_project_success(self):
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+
+        count: int = interface.get_no_of_testruns_for_project(10)
+        self.assertEqual(count, 0)

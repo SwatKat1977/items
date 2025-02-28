@@ -191,3 +191,32 @@ class SqliteInterface(BaseSqliteInterface):
             return None
 
         return rows
+
+    def get_projects_details(self, fields: str):
+        query = f"SELECT {fields} FROM projects"
+
+        try:
+            rows: dict = self.query_with_values(query)
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "get_projects_details fatal SQL failure"
+            return None
+
+        return rows
+
+    def get_no_of_milestones_for_project(self, project_id: int):
+        """
+        NOTE: Currently not implemented, so will always return 0
+        """
+
+        return 0
+
+    def get_no_of_testruns_for_project(self, project_id: int):
+        """
+        NOTE: Currently not implemented, so will always return 0
+        """
+
+        return 0
