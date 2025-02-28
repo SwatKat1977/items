@@ -193,6 +193,22 @@ class SqliteInterface(BaseSqliteInterface):
         return rows
 
     def get_projects_details(self, fields: str):
+        """
+        Retrieve project details from the database.
+
+        This method constructs and executes a SQL query to fetch the specified
+        fields from the `projects` table. If the query fails, it logs the error
+        and updates the database health status accordingly.
+
+        Args:
+            fields (str): A comma-separated string specifying the columns to
+                          retrieve from the `projects` table.
+
+        Returns:
+            dict | None: A dictionary containing the query results if successful,
+                         otherwise `None` if an error occurs.
+        """
+
         query = f"SELECT {fields} FROM projects"
 
         try:
@@ -207,14 +223,14 @@ class SqliteInterface(BaseSqliteInterface):
 
         return rows
 
-    def get_no_of_milestones_for_project(self, project_id: int):
+    def get_no_of_milestones_for_project(self, _project_id: int):
         """
         NOTE: Currently not implemented, so will always return 0
         """
 
         return 0
 
-    def get_no_of_testruns_for_project(self, project_id: int):
+    def get_no_of_testruns_for_project(self, _project_id: int):
         """
         NOTE: Currently not implemented, so will always return 0
         """
