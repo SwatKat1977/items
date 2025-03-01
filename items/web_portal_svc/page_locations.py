@@ -17,8 +17,8 @@ limitations under the License.
 # Login page template
 TEMPLATE_LOGIN_PAGE: str = "login.html"
 
-# Landing page template
-TEMPLATE_LANDING_PAGE: str = "landing.html"
+# Dashboard page template
+TEMPLATE_DASHBOARD_PAGE: str = "dashboard.html"
 
 # Test definitions page template
 TEMPLATE_TEST_DEFINITIONS_PAGE: str = "project_testcases.html"
