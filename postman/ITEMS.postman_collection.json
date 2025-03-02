@@ -10,13 +10,46 @@
 			"name": "Gateway Service",
 			"item": [
 				{
+					"name": "Project API",
+					"item": [
+						{
+							"name": "Projects Overviews",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{GATEWAY_SVC_URL}}/project/overviews?value_fields=name&count_fields=no_of_test_runs",
+									"host": [
+										"{{GATEWAY_SVC_URL}}"
+									],
+									"path": [
+										"project",
+										"overviews"
+									],
+									"query": [
+										{
+											"key": "value_fields",
+											"value": "name"
+										},
+										{
+											"key": "count_fields",
+											"value": "no_of_test_runs"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
 					"name": "Details of test cases",
 					"request": {
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "",
+							"raw": "{\n    \n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -24,10 +57,13 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:5000/1/testcase/testcases_details",
+							"raw": "http://127.0.0.1:5000/1/testcase/testcases_details",
 							"protocol": "http",
 							"host": [
-								"localhost"
+								"127",
+								"0",
+								"0",
+								"1"
 							],
 							"port": "5000",
 							"path": [
@@ -38,12 +74,84 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get details for a test case",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:5000/1/testcase/get_case/1",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "5000",
+							"path": [
+								"1",
+								"testcase",
+								"get_case",
+								"1"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
 		{
 			"name": "CMS",
 			"item": [
+				{
+					"name": "project",
+					"item": [
+						{
+							"name": "Overviews",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://127.0.0.1:4000/project/overviews?value_fields=name&count_fields=no_of_milestones,no_of_test_runs",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "4000",
+									"path": [
+										"project",
+										"overviews"
+									],
+									"query": [
+										{
+											"key": "value_fields",
+											"value": "name"
+										},
+										{
+											"key": "count_fields",
+											"value": "no_of_milestones,no_of_test_runs"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
 				{
 					"name": "Test Cases For Project",
 					"request": {
@@ -59,7 +167,7 @@
 							}
 						},
 						"url": {
-							"raw": "http://127.0.0.1:4000/testcases/details",
+							"raw": "http://127.0.0.1:5000/testcases/details",
 							"protocol": "http",
 							"host": [
 								"127",
@@ -67,7 +175,7 @@
 								"0",
 								"1"
 							],
-							"port": "4000",
+							"port": "5000",
 							"path": [
 								"testcases",
 								"details"
