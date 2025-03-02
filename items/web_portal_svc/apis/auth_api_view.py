@@ -21,6 +21,7 @@ from base_items_exception import BaseItemsException
 import page_locations as pages
 from threadsafe_configuration import ThreadSafeConfiguration
 
+
 class AuthApiView(BaseWebView):
 
     def __init__(self, logger):
@@ -37,6 +38,7 @@ class AuthApiView(BaseWebView):
             Instance of Quart Response class.
         """
 
+        '''
         try:
             if not self._has_auth_cookies() or not self._validate_cookies():
                 redirect = self._generate_redirect('login')
@@ -45,8 +47,11 @@ class AuthApiView(BaseWebView):
         except BaseItemsException as ex:
             self._logger.error('Internal Error: %s', ex)
             return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
+        '''
 
-        return await self._render_page(pages.TEMPLATE_LANDING_PAGE)
+        page: str = "dashboard"
+        return await self._render_page(pages.TEMPLATE_DASHBOARD_PAGE,
+                                       active_page=page)
 
     async def login_page_get(self):
         """
