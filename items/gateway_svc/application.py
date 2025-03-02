@@ -32,6 +32,7 @@ from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from interfaces.accounts.health import SCHEMA_ACCOUNTS_SVC_HEALTH_RESPONSE
 from interfaces.cms.health import SCHEMA_CMS_SVC_HEALTH_RESPONSE
 from apis import handshake_api
+from apis import project_api
 from apis import testcase_api
 import service_health_enums as health_enums
 from sessions import Sessions
@@ -77,6 +78,9 @@ class Application(BaseApplication):
         handshake_blueprint = handshake_api.create_blueprint(
             self._logger, self._sessions)
         self._quart_instance.register_blueprint(handshake_blueprint)
+
+        project_blueprint = project_api.create_blueprint(self._logger)
+        self._quart_instance.register_blueprint(project_blueprint)
 
         testcase_blueprint = testcase_api.create_blueprint(
             self._logger, self._sessions)
