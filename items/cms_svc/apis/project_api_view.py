@@ -29,7 +29,7 @@ class ProjectApiView(BaseView):
         "name"
     }
 
-    VALID_OVERVIEW_COUNTS = {
+    VALID_COUNTS_FIELDS = {
         "no_of_milestones",
         "no_of_test_runs"
     }
@@ -67,6 +67,20 @@ class ProjectApiView(BaseView):
         count_no_of_test_runs: bool = False
 
         if count_fields:
+            requested_count_fields = count_fields.split(",")
+
+            # Validate requested fields
+            invalid_fields = [field for field in requested_count_fields
+                              if field not in self.VALID_COUNTS_FIELDS]
+
+            if invalid_fields:
+                response_json = {
+                    'error': "Invalid count field"
+                }
+                return quart.Response(json.dumps(response_json),
+                                      status=http.HTTPStatus.BAD_REQUEST,
+                                      content_type="application/json")
+
             count_no_of_milestones = "no_of_milestones" in count_fields
             count_no_of_test_runs = "no_of_test_runs" in count_fields
 
