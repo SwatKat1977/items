@@ -13,15 +13,22 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import logging
+from quart import Blueprint
+from apis.project_api_view import ProjectApiView
 
-# Login page template
-TEMPLATE_LOGIN_PAGE: str = "login.html"
 
-# Dashboard page template
-TEMPLATE_DASHBOARD_PAGE: str = "dashboard.html"
+def create_blueprint(logger: logging.Logger) -> Blueprint:
+    view = ProjectApiView(logger)
 
-# Test definitions page template
-TEMPLATE_TEST_DEFINITIONS_PAGE: str = "project_testcases.html"
+    blueprint = Blueprint('project_api', __name__)
 
-# Internal error page template
-TEMPLATE_INTERNAL_ERROR_PAGE: str = "internal_server_error.html"
+    logger.info("Registering Project endpoint:")
+
+    logger.info("=> /project/overviews [GET]")
+
+    @blueprint.route('/project/overviews', methods=['GET'])
+    async def project_overviews_request():
+        return await view.project_overviews()
+
+    return blueprint

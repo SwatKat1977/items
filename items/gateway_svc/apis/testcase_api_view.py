@@ -20,8 +20,6 @@ import quart
 import requests
 from sessions import Sessions
 from base_view import ApiResponse, BaseView, validate_json
-import interfaces.cms.testcases as cms_json_schemas
-#import interfaces.gateway.testcase as json_schemas
 from threadsafe_configuration import ThreadSafeConfiguration
 
 

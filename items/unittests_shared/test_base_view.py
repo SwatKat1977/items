@@ -1,3 +1,4 @@
+import asyncio
 import unittest
 from unittest.mock import AsyncMock, patch
 from http import HTTPStatus
@@ -100,7 +101,15 @@ class TestBaseView(unittest.IsolatedAsyncioTestCase):
 
         response = await self.view._call_api_post("http://example.com", {"data": "test"})
         self.assertIsNone(response.body)
-        self.assertIsInstance(response.exception_msg, ClientError)
+        self.assertEqual(response.exception_msg, "Connection error")
+
+    @patch("aiohttp.ClientSession.post")
+    async def test_call_api_post_timeout_error(self, mock_post):
+        mock_post.side_effect = asyncio.TimeoutError("Timeout error")
+
+        response = await self.view._call_api_post("http://example.com", {"data": "test"})
+        self.assertIsNone(response.body)
+        self.assertEqual(response.exception_msg, "Timeout error")
 
     @patch("aiohttp.ClientSession.get")
     async def test_call_api_get_success(self, mock_get):
@@ -122,6 +131,14 @@ class TestBaseView(unittest.IsolatedAsyncioTestCase):
         response = await self.view._call_api_get("http://example.com")
         self.assertIsNone(response.body)
         self.assertIsInstance(response.exception_msg, ClientConnectionError)
+
+    @patch("aiohttp.ClientSession.get")
+    async def test_call_api_get_timeout_error(self, mock_get):
+        mock_get.side_effect = asyncio.TimeoutError("Timeout error")
+
+        response = await self.view._call_api_get("http://example.com")
+        self.assertIsNone(response.body)
+        self.assertEqual(response.exception_msg, "Timeout error")
 
     @patch("quart.request.get_data", new_callable=AsyncMock)
     @patch.object(BaseView, "_validate_json_body")

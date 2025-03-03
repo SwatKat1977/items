@@ -6,6 +6,8 @@ from apis.auth_api_view import AuthApiView
 from base_web_view import BaseWebView
 from base_items_exception import BaseItemsException
 from threadsafe_configuration import ThreadSafeConfiguration
+from configuration.configuration_manager import ConfigurationManager
+
 
 class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
 
@@ -55,12 +57,49 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
                 mock_validate_cookies.assert_called_once()
                 self.assertEqual(await result.get_data(), b"redirect_html")
 
+    @patch.object(ConfigurationManager, 'get_entry')
     @patch.object(BaseWebView, '_has_auth_cookies', return_value=True)
     @patch.object(BaseWebView, '_validate_cookies', return_value=True)
     async def test_index_page_has_valid_auth_cookies(self,
                                                      mock_validate_cookies,
-                                                     mock_has_auth_cookies):
+                                                     mock_has_auth_cookies,
+                                                     mock_get_entry):
         self.auth_api_view._render_page = AsyncMock(return_value="mocked_template_content")
+
+        response_body: dict = {"projects": [{'id': 0}]}
+
+        # Mock the response of `_call_api_post`
+        mock_call_api_get = AsyncMock()
+        mock_call_api_get.return_value = MagicMock(
+            status_code=HTTPStatus.OK,
+            body=response_body)
+        self.auth_api_view._call_api_get = mock_call_api_get
+
+        async with self.app.app_context():
+            async with self.app.test_request_context('/'):
+                result = await self.auth_api_view.index_page()
+
+                self.assertEqual(result, "mocked_template_content")
+                mock_has_auth_cookies.assert_called_once()
+                mock_validate_cookies.assert_called_once()
+
+    @patch.object(ConfigurationManager, 'get_entry')
+    @patch.object(BaseWebView, '_has_auth_cookies', return_value=True)
+    @patch.object(BaseWebView, '_validate_cookies', return_value=True)
+    async def test_index_page_invalid_gateway_request(self,
+                                                      mock_validate_cookies,
+                                                      mock_has_auth_cookies,
+                                                      mock_get_entry):
+        self.auth_api_view._render_page = AsyncMock(return_value="mocked_template_content")
+
+        response_body: dict = {"status": 0}
+
+        # Mock the response of `_call_api_post`
+        mock_call_api_get = AsyncMock()
+        mock_call_api_get.return_value = MagicMock(
+            status_code=HTTPStatus.BAD_REQUEST,
+            body=response_body)
+        self.auth_api_view._call_api_get = mock_call_api_get
 
         async with self.app.app_context():
             async with self.app.test_request_context('/'):

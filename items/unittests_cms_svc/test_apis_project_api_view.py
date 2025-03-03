@@ -31,7 +31,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, http.HTTPStatus.OK)
         self.assertEqual(data["projects"], [{"id": 1, "name": "Demo Project"}])
 
-    async def test_project_overviews_valid_fields(self):
+    async def test_project_overviews_valid_value_fields(self):
         """Test when valid value_fields are provided"""
         self.mock_db.get_projects_details.return_value = [(1, "Test Project")]
         response = await self.client.get("/project/overviews?value_fields=name")
@@ -39,12 +39,19 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, http.HTTPStatus.OK)
         self.assertEqual(data["projects"], [{"id": 1, "name": "Test Project"}])
 
-    async def test_project_overviews_invalid_field(self):
+    async def test_project_overviews_invalid_value_field(self):
         """Test when an invalid field is requested"""
         response = await self.client.get("/project/overviews?value_fields=invalid_field")
         data = await response.get_json()
         self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
-        self.assertEqual(data, {"error": "Invalid field"})
+        self.assertEqual(data, {"error": "Invalid value field"})
+
+    async def test_project_overviews_invalid_count_field(self):
+        """Test when an invalid field is requested"""
+        response = await self.client.get("/project/overviews?count_fields=invalid_field")
+        data = await response.get_json()
+        self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
+        self.assertEqual(data, {"error": "Invalid count field"})
 
     async def test_project_overviews_with_milestones(self):
         """Test count_fields including milestones"""

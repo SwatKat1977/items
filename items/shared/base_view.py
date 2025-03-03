@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import asyncio
 from dataclasses import dataclass
 from functools import wraps
 import json
@@ -186,7 +187,9 @@ class BaseView:
                            status_code=http.HTTPStatus.OK,
                            content_type=self.CONTENT_TYPE_JSON)
 
-    async def _call_api_post(self, url : str, json_data : dict = None) -> ApiResponse:
+    async def _call_api_post(self, url : str,
+                             json_data : dict = None,
+                             timeout: int = 2) -> ApiResponse:
         """
         Make an API call using the POST method.
 
@@ -200,7 +203,8 @@ class BaseView:
         """
 
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(
+                    timeout=aiohttp.ClientTimeout(total=timeout)) as session:
                 async with session.post(url, json=json_data) as resp:
                     body = await resp.json() \
                         if resp.content_type == self.CONTENT_TYPE_JSON \
@@ -211,11 +215,16 @@ class BaseView:
                         content_type = resp.content_type)
 
         except (aiohttp.ClientConnectionError, aiohttp.ClientError) as ex:
-            api_return = ApiResponse(exception_msg = ex)
+            api_return = ApiResponse(exception_msg = str(ex))
+
+        except asyncio.TimeoutError as ex:
+            api_return = ApiResponse(exception_msg = str(ex))
 
         return api_return
 
-    async def _call_api_get(self, url : str, json_data : dict = None) -> ApiResponse:
+    async def _call_api_get(self, url : str,
+                            json_data: dict = None,
+                            timeout: int = 2) -> ApiResponse:
         """
         Make an API call using the GET method.
 
@@ -229,7 +238,8 @@ class BaseView:
         """
 
         try:
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession(
+                    timeout=aiohttp.ClientTimeout(total=timeout)) as session:
                 async with session.get(url, json=json_data) as resp:
                     body = await resp.json() \
                         if resp.content_type == self.CONTENT_TYPE_JSON \
@@ -241,5 +251,8 @@ class BaseView:
 
         except (aiohttp.ClientConnectionError, aiohttp.ClientError) as ex:
             api_return = ApiResponse(exception_msg = ex)
+
+        except asyncio.TimeoutError as ex:
+            api_return = ApiResponse(exception_msg = str(ex))
 
         return api_return

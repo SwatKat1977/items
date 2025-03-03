@@ -21,6 +21,7 @@ from base_items_exception import BaseItemsException
 import page_locations as pages
 from threadsafe_configuration import ThreadSafeConfiguration
 
+
 class AuthApiView(BaseWebView):
 
     def __init__(self, logger):
@@ -46,7 +47,21 @@ class AuthApiView(BaseWebView):
             self._logger.error('Internal Error: %s', ex)
             return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
-        return await self._render_page(pages.TEMPLATE_LANDING_PAGE)
+        base_url: str = ThreadSafeConfiguration().apis_gateway_svc
+        url = f"{base_url}/project/overviews?value_fields=name&" + \
+              "count_fields=no_of_test_runs,no_of_milestones"
+        response: ApiResponse = await self._call_api_get(url)
+
+        if response.status_code != HTTPStatus.OK:
+            self._logger.critical("Gateway svc request invalid - Reason: %s",
+                                  response.exception_msg)
+            return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
+
+        page: str = "dashboard"
+        projects = response.body["projects"]
+
+        return await self._render_page(pages.TEMPLATE_DASHBOARD_PAGE,
+                                       active_page=page, projects=projects)
 
     async def login_page_get(self):
         """
