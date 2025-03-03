@@ -80,31 +80,24 @@
 
     <div class="container-fluid mt-4">
         <h4 class="fw-bold">Projects</h4>
-        <div class="card p-1 border-dark mx-0 mb-3">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-briefcase-fill fs-3 me-2"></i>
-                <h5 class="m-0 fw-bold">Demo Project 1</h5>
-            </div>
-            <p class="mt-2">
-                <a href="#" class="text-primary text-decoration-none">Milestones</a> |
-                <a href="#" class="text-primary text-decoration-none">Test Runs</a> |
-                <a href="#" class="text-primary text-decoration-none">Test Cases</a>
-            </p>
-            <p class="text-muted mb-1">Contains <strong>x</strong> active test runs and <strong>x</strong> active milestones.</p>
-        </div>
 
-        <div class="card p-1 border-dark mx-0 mb-3">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-briefcase-fill fs-3 me-2"></i>
-                <h5 class="m-0 fw-bold">Demo Project 1</h5>
-            </div>
-            <p class="mt-2">
-                <a href="#" class="text-primary text-decoration-none">Milestones</a> |
-                <a href="#" class="text-primary text-decoration-none">Test Runs</a> |
-                <a href="#" class="text-primary text-decoration-none">Test Cases</a>
-            </p>
-            <p class="text-muted mb-1">Contains <strong>x</strong> active test runs and <strong>x</strong> active milestones.</p>
+    {% for project in projects %}
+    <div class="card p-3 border-dark mx-0 mb-3">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-briefcase-fill fs-3 me-2"></i>
+            <h5 class="m-0 fw-bold">{{ project.name }}</h5>
         </div>
+        <p class="mt-2">
+            <a href="/{{ project.id }}/milestones" class="text-primary text-decoration-none">Milestones</a> |
+            <a href="/{{ project.id }}/testruns" class="text-primary text-decoration-none">Test Runs</a> |
+            <a href="/{{ project.id }}/test_cases" class="text-primary text-decoration-none">Test Cases</a>
+        </p>
+        <p class="text-muted mb-1">
+            Contains <strong>{{ project.no_of_test_runs }}</strong> active test runs
+            and <strong>{{ project.no_of_milestones }}</strong> active milestones.
+        </p>
+    </div>
+    {% endfor %}
     </div>
 
 
