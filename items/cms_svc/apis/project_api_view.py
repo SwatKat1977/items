@@ -54,7 +54,7 @@ class ProjectApiView(BaseView):
 
             if invalid_fields:
                 response_json = {
-                    'error': "Invalid field"
+                    'error': "Invalid value field"
                 }
                 return quart.Response(json.dumps(response_json),
                                       status=http.HTTPStatus.BAD_REQUEST,
