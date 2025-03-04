@@ -271,7 +271,21 @@ class SqliteInterface(BaseSqliteInterface):
         return rows[0][0] > 0
 
     def add_project(self, name: str) -> typing.Optional[int]:
+        """
+        Insert a new project into the database.
+        Updates the database health status to `FULLY_DEGRADED` upon failure.
 
+        Args:
+            name (str): The name of the project to be added.
+
+        Returns:
+            Optional[int]:
+                - The ID of the newly inserted project if successful.
+                - None if a database query error occurs.
+
+        Logs:
+            - Logs a critical error if the database query fails.
+        """
         sql: str = "INSERT INTO projects(name) VALUES(?)"
 
         try:
