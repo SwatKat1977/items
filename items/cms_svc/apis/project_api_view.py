@@ -158,3 +158,8 @@ class ProjectApiView(BaseView):
         return quart.Response(json.dumps(response_body),
                               status=http.HTTPStatus.OK,
                               content_type="application/json")
+
+    async def delete_project(self, project_id: int):
+        return quart.Response(json.dumps({}),
+                              status=http.HTTPStatus.OK,
+                              content_type="application/json")
