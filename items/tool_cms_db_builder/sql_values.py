@@ -17,7 +17,9 @@ limitations under the License.
 SQL_CREATE_PROJECTS_TABLE: str = """
     CREATE TABLE projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE
+        name TEXT NOT NULL UNIQUE,
+        awaiting_purge BOOLEAN NOT NULL DEFAULT 0,
+        creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 """
 
