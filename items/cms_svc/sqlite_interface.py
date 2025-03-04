@@ -237,12 +237,14 @@ class SqliteInterface(BaseSqliteInterface):
 
         return 0
 
-    def project_name_exists(self, _project_name: str) -> typing.Optional[bool]:
+    def project_name_exists(self, project_name: str) -> typing.Optional[bool]:
         """
         Check if a project with the given name exists in the database.
+        Updates the database health status to `FULLY_DEGRADED` in case of
+        failure.
 
         Args:
-            _project_name (str): The name of the project to check.
+            project_name (str): The name of the project to check.
 
         Returns:
             Optional[bool]:
@@ -251,20 +253,55 @@ class SqliteInterface(BaseSqliteInterface):
                 - None if a database query error occurs.
 
         Logs:
-            - Critical log entry if the query fails, along with the exception message.
-            - Updates the database health status to `FULLY_DEGRADED` in case of failure.
+            - Critical log entry if the query fails, along with the exception
+              message.
         """
 
         query: str = "SELECT COUNT(*) FROM projects WHERE name = ?"
 
         try:
-            rows: dict = self.query_with_values(query, (_project_name,))
+            rows: dict = self.query_with_values(query, (project_name,))
 
         except SqliteInterfaceException as ex:
             self._logger.critical("Query failed, reason: %s", str(ex))
             self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
             self._state_object.database_health_state_str = \
-                "get_projects_details fatal SQL failure"
+                "project_name_exists fatal SQL failure"
+            return None
+
+        # Returns True if the project exists, False otherwise
+        return rows[0][0] > 0
+
+    def project_id_exists(self, project_id: int) -> typing.Optional[bool]:
+        """
+        Check if a project with the given id exists in the database.
+        Updates the database health status to `FULLY_DEGRADED` in case of
+        failure.
+
+        Args:
+            project_id (int): The id of the project to check.
+
+        Returns:
+            Optional[bool]:
+                - True if the project exists.
+                - False if the project does not exist.
+                - None if a database query error occurs.
+
+        Logs:
+            - Critical log entry if the query fails, along with the exception
+              message.
+        """
+
+        query: str = "SELECT COUNT(*) FROM projects WHERE id = ?"
+
+        try:
+            rows: dict = self.query_with_values(query, (project_id,))
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "project_id_exists fatal SQL failure"
             return None
 
         # Returns True if the project exists, False otherwise
