@@ -17,7 +17,6 @@ import http
 import json
 import logging
 import typing
-
 import quart
 from base_view import BaseView, validate_json, ApiResponse
 from sqlite_interface import SqliteInterface
@@ -37,6 +36,9 @@ class ProjectApiView(BaseView):
     }
 
     DEFAULT_OVERVIEW_FIELDS_LIST = ["name"]
+
+    VALID_TRUE_VALUES = {"true", "1", "yes"}
+    VALID_FALSE_VALUES = {"false", "0", "no"}
 
     def __init__(self, logger: logging.Logger, db: SqliteInterface) -> None:
         self._logger = logger.getChild(__name__)
@@ -135,7 +137,7 @@ class ProjectApiView(BaseView):
                                   status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
                                   content_type="application/json")
 
-        if self._db.project_name_exists(name):
+        if exists:
             response_body: dict = {
                 "status": 0,
                 "error_msg": "Project name already exists"
@@ -160,6 +162,46 @@ class ProjectApiView(BaseView):
                               content_type="application/json")
 
     async def delete_project(self, project_id: int):
+
+        hard_delete_param = quart.request.args.get("hard_delete")
+
+        if hard_delete_param is None:
+            hard_delete: bool = False  # Default value
+
+        else:
+            hard_delete_lower = hard_delete_param.lower()
+            if hard_delete_lower in self.VALID_TRUE_VALUES:
+                hard_delete: bool = True
+            elif hard_delete_lower in self.VALID_FALSE_VALUES:
+                hard_delete: bool = False
+            else:
+                response_body: dict = {
+                    "status": 0,
+                    "error_msg": "Invalid paramter for hard_delete argument"
+                }
+                return quart.Response(json.dumps(response_body),
+                                      status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                      content_type="application/json")
+
+        exists = self._db.project_id_exists(project_id)
+        if exists is None:
+            response_body: dict = {
+                "status": 0,
+                "error_msg": "Internal error in CMS"
+            }
+            return quart.Response(json.dumps(response_body),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
+        if not exists:
+            response_body: dict = {
+                "status": 0,
+                "error_msg": "Project id is invalid"
+            }
+            return quart.Response(json.dumps(response_body),
+                                  status=http.HTTPStatus.BAD_REQUEST,
+                                  content_type="application/json")
+
         return quart.Response(json.dumps({}),
                               status=http.HTTPStatus.OK,
                               content_type="application/json")
