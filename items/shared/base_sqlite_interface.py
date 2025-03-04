@@ -180,4 +180,27 @@ class BaseSqliteInterface:
 
         except sqlite3.Error as ex:
             raise SqliteInterfaceException(
-                f"Error querying user ID: {str(ex)}") from ex
+                f"Error performing query: {str(ex)}") from ex
+
+    def query(self, query: str, params: tuple = (), commit: bool = False) -> None:
+        """
+        Execute a query without fetching results from the SQLite database.
+
+        Args:
+            query (str): The SQL query to execute.
+            params (tuple, optional): The parameters to bind to the query.
+                                      Defaults to ().
+            commit (bool): Perform commit flag.
+
+        Raises:
+            SqliteInterfaceException: If the query execution fails.
+        """
+        cursor = self._connection.cursor()
+        try:
+            cursor.execute(query, params)
+            if commit:
+                self._connection.commit()
+
+        except sqlite3.Error as ex:
+            raise SqliteInterfaceException(
+                f"Error performing query: {str(ex)}") from ex
