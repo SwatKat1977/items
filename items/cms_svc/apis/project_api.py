@@ -46,4 +46,10 @@ def create_blueprint(logger: logging.Logger, db: SqliteInterface) -> Blueprint:
     async def project_overview():
         return await view.project_overviews()
 
+    logger.info("=> /project/add [POST]")
+
+    @blueprint.route('/project/add', methods=['POST'])
+    async def add_project():
+        return await view.add_project()
+
     return blueprint

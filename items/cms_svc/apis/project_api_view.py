@@ -16,10 +16,12 @@ limitations under the License.
 import http
 import json
 import logging
-import quart
-from base_view import BaseView
-from sqlite_interface import SqliteInterface
+import typing
 
+import quart
+from base_view import BaseView, validate_json, ApiResponse
+from sqlite_interface import SqliteInterface
+import interfaces.cms.project as json_schemas
 
 class ProjectApiView(BaseView):
     __slots__ = ['_logger']
@@ -115,5 +117,44 @@ class ProjectApiView(BaseView):
         }
 
         return quart.Response(json.dumps(projects_info),
+                              status=http.HTTPStatus.OK,
+                              content_type="application/json")
+
+    @validate_json(json_schemas.SCHEMA_ADD_PROJECT_REQUEST)
+    async def add_project(self, request_msg: ApiResponse):
+
+        name: str = request_msg.body.name
+
+        exists = self._db.project_name_exists(name)
+        if exists is None:
+            response_body: dict = {
+                "status": 0,
+                "error_msg": "Internal error in CMS"
+            }
+            return quart.Response(json.dumps(response_body),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
+        if self._db.project_name_exists(name):
+            response_body: dict = {
+                "status": 0,
+                "error_msg": "Project name already exists"
+            }
+            return quart.Response(json.dumps(response_body),
+                                  status=http.HTTPStatus.BAD_REQUEST,
+                                  content_type="application/json")
+
+        new_project_id: typing.Optional[int] = self._db.add_project(name)
+        if new_project_id is None:
+            response_body: dict = {
+                "status": 0,
+                "error_msg": "Internal SQL error in CMS"
+            }
+            return quart.Response(json.dumps(response_body),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
+        response_body: dict = {"project_id": new_project_id}
+        return quart.Response(json.dumps(response_body),
                               status=http.HTTPStatus.OK,
                               content_type="application/json")

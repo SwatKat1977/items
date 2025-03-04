@@ -223,16 +223,63 @@ class SqliteInterface(BaseSqliteInterface):
 
         return rows
 
-    def get_no_of_milestones_for_project(self, _project_id: int):
+    def get_no_of_milestones_for_project(self, _project_id: int) -> int:
         """
         NOTE: Currently not implemented, so will always return 0
         """
 
         return 0
 
-    def get_no_of_testruns_for_project(self, _project_id: int):
+    def get_no_of_testruns_for_project(self, _project_id: int) -> int:
         """
         NOTE: Currently not implemented, so will always return 0
         """
 
         return 0
+
+    def project_name_exists(self, _project_name: str) -> typing.Optional[bool]:
+        """
+        Check if a project with the given name exists in the database.
+
+        Args:
+            _project_name (str): The name of the project to check.
+
+        Returns:
+            Optional[bool]:
+                - True if the project exists.
+                - False if the project does not exist.
+                - None if a database query error occurs.
+
+        Logs:
+            - Critical log entry if the query fails, along with the exception message.
+            - Updates the database health status to `FULLY_DEGRADED` in case of failure.
+        """
+
+        query: str = "SELECT COUNT(*) FROM projects WHERE name = ?"
+
+        try:
+            rows: dict = self.query_with_values(query, (_project_name,))
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "get_projects_details fatal SQL failure"
+            return None
+
+        # Returns True if the project exists, False otherwise
+        return rows[0][0] > 0
+
+    def add_project(self, name: str) -> typing.Optional[int]:
+
+        sql: str = "INSERT INTO projects(name) VALUES(?)"
+
+        try:
+            return self.insert_query(sql, (name,))
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "add_project fatal SQL failure"
+            return None
