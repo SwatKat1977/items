@@ -334,3 +334,19 @@ class SqliteInterface(BaseSqliteInterface):
             self._state_object.database_health_state_str = \
                 "add_project fatal SQL failure"
             return None
+
+    def mark_project_for_awaiting_purge(self, project_id: int) -> bool:
+
+        sql: str = "UPDATE projects SET awaiting_purge = 1 WHERE id = ?"
+
+        try:
+            self.query(sql, (project_id,), commit=True)
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "mark_project_for_awaiting_purge fatal SQL failure"
+            return False
+
+        return True

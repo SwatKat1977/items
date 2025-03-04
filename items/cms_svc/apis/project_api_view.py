@@ -202,6 +202,10 @@ class ProjectApiView(BaseView):
                                   status=http.HTTPStatus.BAD_REQUEST,
                                   content_type="application/json")
 
+        if not hard_delete:
+            self._logger.info("Project %d is being marked as 'awaiting purge")
+            self._db.mark_project_for_awaiting_purge(project_id)
+
         return quart.Response(json.dumps({}),
                               status=http.HTTPStatus.OK,
                               content_type="application/json")
