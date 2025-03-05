@@ -30,7 +30,7 @@ SQL_CREATE_TEST_CASE_FOLDERS_TABLE: str = """
         parent_id INTEGER NULL,
         name TEXT NOT NULL,
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-        FOREIGN KEY (parent_id) REFERENCES folders(id) ON DELETE CASCADE,
+        FOREIGN KEY (parent_id) REFERENCES test_case_folders(id) ON DELETE CASCADE,
         UNIQUE (project_id, parent_id, name)
     );
 """

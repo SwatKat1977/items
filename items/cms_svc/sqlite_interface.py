@@ -336,7 +336,21 @@ class SqliteInterface(BaseSqliteInterface):
             return None
 
     def mark_project_for_awaiting_purge(self, project_id: int) -> bool:
+        """
+        Marks a project as awaiting purge in the database.
 
+        This method updates the `awaiting_purge` flag for the specified project
+        in the `projects` table. If the update fails due to a database error,
+        it logs the failure, updates the database health status, and returns
+        `False`. Otherwise, it returns `True` upon successful update.
+
+        Args:
+            project_id (int): The unique identifier of the project to update.
+
+        Returns:
+            bool: `True` if the project was successfully marked, `False` on
+                  error.
+        """
         sql: str = "UPDATE projects SET awaiting_purge = 1 WHERE id = ?"
 
         try:
@@ -347,6 +361,39 @@ class SqliteInterface(BaseSqliteInterface):
             self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
             self._state_object.database_health_state_str = \
                 "mark_project_for_awaiting_purge fatal SQL failure"
+            return False
+
+        return True
+
+    def hard_delete_project(self, project_id: int) -> bool:
+        """
+        Permanently deletes a project from the database.
+
+        This method attempts to delete a project from the `projects` table
+        based on the given project ID. If the deletion fails due to a database
+        error, it logs the critical failure, updates the database health
+        status, and returns `False`. Otherwise, it returns `True` upon
+        successful deletion.
+
+        Args:
+            project_id (int): The unique identifier of the project to be
+                              deleted.
+
+        Returns:
+            bool: `True` if the project was successfully deleted, `False` if an
+                  error occurred.
+        """
+
+        sql: str = "DELETE FROM projects WHERE id = ?"
+
+        try:
+            self.delete_query(sql, (project_id,))
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "hard_delete_project fatal SQL failure"
             return False
 
         return True

@@ -3,7 +3,7 @@ import unittest
 import tempfile
 import os
 from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
-from sqlite3 import OperationalError
+
 
 class TestBaseSqliteInterface(unittest.TestCase):
     def setUp(self):

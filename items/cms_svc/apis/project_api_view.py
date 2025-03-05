@@ -177,7 +177,7 @@ class ProjectApiView(BaseView):
             else:
                 response_body: dict = {
                     "status": 0,
-                    "error_msg": "Invalid paramter for hard_delete argument"
+                    "error_msg": "Invalid parameter for hard_delete argument"
                 }
                 return quart.Response(json.dumps(response_body),
                                       status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -202,8 +202,13 @@ class ProjectApiView(BaseView):
                                   status=http.HTTPStatus.BAD_REQUEST,
                                   content_type="application/json")
 
-        if not hard_delete:
-            self._logger.info("Project %d is being marked as 'awaiting purge")
+        if hard_delete:
+            self._logger.info("Project %d is being hard-deleted", project_id)
+            self._db.hard_delete_project(project_id)
+
+        else:
+            self._logger.info("Project %d is being marked as 'awaiting purge",
+                              project_id)
             self._db.mark_project_for_awaiting_purge(project_id)
 
         return quart.Response(json.dumps({}),

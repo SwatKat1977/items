@@ -29,6 +29,10 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
                               view_func=self.view.add_project,
                               methods=['POST'])
 
+        self.app.add_url_rule('/project/delete/<int:project_id>',
+                              view_func=self.view.delete_project,
+                              methods=['DELETE'])
+
     async def test_project_overviews_default(self):
         """Test default behavior when no fields are specified"""
         self.mock_db.get_projects_details.return_value = [(1, "Demo Project")]
@@ -153,3 +157,75 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
             self.assertEqual(json.loads(await response.get_data()),
                              {'error_msg': 'Internal SQL error in CMS', 'status': 0})
+
+    async def test_delete_project_default_soft_delete(self):
+        """Test default case when 'hard_delete' param is missing (soft delete)."""
+        self.mock_db.project_id_exists.return_value = True
+
+        async with self.client as client:
+            response = await client.delete("/project/delete/1")
+
+            self.mock_db.project_id_exists.assert_called_once_with(1)
+            self.mock_db.mark_project_for_awaiting_purge.assert_called_once_with(1)
+            self.mock_db.hard_delete_project.assert_not_called()
+            self.assertEqual(response.status_code, http.HTTPStatus.OK)
+
+    async def test_delete_project_hard_delete(self):
+        """Test when 'hard_delete' param is set to 'true' (hard delete)."""
+        self.mock_db.project_id_exists.return_value = True
+
+        async with self.client as client:
+            response = await client.delete("/project/delete/1?hard_delete=true")
+
+            self.mock_db.project_id_exists.assert_called_once_with(1)
+            self.mock_db.hard_delete_project.assert_called_once_with(1)
+            self.mock_db.mark_project_for_awaiting_purge.assert_not_called()
+            self.assertEqual(response.status_code, http.HTTPStatus.OK)
+
+    async def test_delete_project_invalid_hard_delete_param(self):
+        """Test when 'hard_delete' param is invalid."""
+
+        async with self.client as client:
+            response = await client.delete("/project/delete/1?hard_delete=invalid")
+            response_data = await response.get_json()
+
+        self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertEqual(response_data["status"], 0)
+        self.assertEqual(response_data["error_msg"],
+                         "Invalid parameter for hard_delete argument")
+
+    async def test_delete_project_db_error(self):
+        """Test when project_id_exists returns None (database failure)."""
+        self.mock_db.project_id_exists.return_value = None
+
+        async with self.client as client:
+            response = await client.delete("/project/delete/1")
+            response_data = await response.get_json()
+
+        self.mock_db.project_id_exists.assert_called_once_with(1)
+        self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertEqual(response_data["error_msg"], "Internal error in CMS")
+
+    async def test_delete_project_id_not_found(self):
+        """Test when project_id_exists returns False (invalid project)."""
+        self.mock_db.project_id_exists.return_value = False
+
+        async with self.client as client:
+            response = await client.delete("/project/delete/1")
+            response_data = await response.get_json()
+
+        self.mock_db.project_id_exists.assert_called_once_with(1)
+        self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
+        self.assertEqual(response_data["error_msg"], "Project id is invalid")
+
+    async def test_delete_project_soft_delete(self):
+        """Test when 'hard_delete' param is set to 'false' (soft delete)."""
+        self.mock_db.project_id_exists.return_value = True
+
+        async with self.client as client:
+            response = await client.delete("/project/delete/1?hard_delete=false")
+
+        self.mock_db.project_id_exists.assert_called_once_with(1)
+        self.mock_db.mark_project_for_awaiting_purge.assert_called_once_with(1)
+        self.mock_db.hard_delete_project.assert_not_called()
+        self.assertEqual(response.status_code, http.HTTPStatus.OK)
