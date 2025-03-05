@@ -1,11 +1,13 @@
+import os
 import sqlite3
 import unittest
+from unittest.mock import call, MagicMock
 import tempfile
-import os
 from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
-from sqlite3 import OperationalError
+
 
 class TestBaseSqliteInterface(unittest.TestCase):
+
     def setUp(self):
         """
         Set up a temporary SQLite database file for testing.
@@ -146,7 +148,7 @@ class TestBaseSqliteInterface(unittest.TestCase):
         self.interface.open()
         with self.assertRaises(SqliteInterfaceException) as context:
             self.interface.query_with_values("SELECT * FROM non_existing_table")
-        self.assertIn("Error querying user ID", str(context.exception))
+        self.assertIn("Error performing query", str(context.exception))
         self.interface.close()
 
     def test_open_raises_exception_if_already_open(self):
@@ -157,7 +159,6 @@ class TestBaseSqliteInterface(unittest.TestCase):
         with self.assertRaises(SqliteInterfaceException) as context:
             self.interface.open()  # Attempt to open again while already open
         self.assertEqual(str(context.exception), "Database is already open")
-
 
     def test_create_table_raises_exception_if_not_open(self):
         """
@@ -170,3 +171,93 @@ class TestBaseSqliteInterface(unittest.TestCase):
             self.interface.create_table(table_schema, table_name)  # Attempt to create table without opening the DB
 
         self.assertEqual(str(context.exception), "Database is not open")
+
+    def test_delete_query_success(self):
+        """Test delete_query executes successfully with foreign key constraints enabled."""
+        query = "DELETE FROM projects WHERE id = ?"
+        params = (1,)
+
+        mock_connection = MagicMock()
+        mock_cursor = MagicMock()
+        mock_connection.cursor.return_value = mock_cursor
+        self.interface._connection = mock_connection
+
+        # Call delete_query
+        self.interface.delete_query(query, params)
+
+        # Ensure the foreign key check and delete query were executed
+        expected_calls = [
+            call.execute("PRAGMA foreign_keys = ON;"),
+            call.execute(query, params)
+        ]
+        mock_cursor.execute.assert_has_calls(expected_calls)
+        self.assertEqual(mock_connection.commit.call_count, 2)  # Ensures both commits occurred
+
+    def test_delete_query_failure(self):
+        """Test delete_query raises SqliteInterfaceException on database error."""
+        query = "DELETE FROM projects WHERE id = ?"
+        params = (1,)
+
+        mock_connection = MagicMock()
+        mock_cursor = MagicMock()
+        mock_connection.cursor.return_value = mock_cursor
+        self.interface._connection = mock_connection
+
+        # Simulate an SQL execution failure
+        mock_cursor.execute.side_effect = sqlite3.Error("Simulated error")
+
+        with self.assertRaises(SqliteInterfaceException) as context:
+            self.interface.delete_query(query, params)
+
+        self.assertIn("Error performing query", str(context.exception))
+        mock_cursor.execute.assert_called_once_with("PRAGMA foreign_keys = ON;")  # Foreign key enabling was attempted
+
+    def test_query_success_no_commit(self):
+        """Test query executes successfully without commit."""
+        query = "UPDATE projects SET name = ? WHERE id = ?"
+        params = ("New Project Name", 1)
+
+        mock_connection = MagicMock()
+        mock_cursor = MagicMock()
+        mock_connection.cursor.return_value = mock_cursor
+        self.interface._connection = mock_connection
+
+        self.interface.query(query, params)
+
+        mock_cursor.execute.assert_called_once_with(query, params)
+        mock_connection.commit.assert_not_called()  # Ensure commit is NOT called
+
+    def test_query_success_with_commit(self):
+        """Test query executes successfully with commit."""
+        query = "UPDATE projects SET name = ? WHERE id = ?"
+        params = ("Updated Project", 2)
+
+        mock_connection = MagicMock()
+        mock_cursor = MagicMock()
+        mock_connection.cursor.return_value = mock_cursor
+        self.interface._connection = mock_connection
+
+        self.interface.query(query, params, commit=True)
+
+        mock_cursor.execute.assert_called_once_with(query, params)
+        mock_connection.commit.assert_called_once()  # Ensure commit is called
+
+    def test_query_failure(self):
+        """Test query raises SqliteInterfaceException on database error."""
+        query = "UPDATE projects SET name = ? WHERE id = ?"
+        params = ("Failure Test", 3)
+
+        mock_connection = MagicMock()
+        mock_cursor = MagicMock()
+        mock_connection.cursor.return_value = mock_cursor
+        self.interface._connection = mock_connection
+
+        # Simulate an SQL execution failure
+        mock_cursor.execute.side_effect = sqlite3.Error("Simulated SQL error")
+
+        with self.assertRaises(SqliteInterfaceException) as context:
+            self.interface.query(query, params)
+
+        self.assertIn("Error performing query", str(context.exception))
+        mock_cursor.execute.assert_called_once_with(query, params)
+        mock_connection.commit.assert_not_called()  # Ensure commit was never attempted

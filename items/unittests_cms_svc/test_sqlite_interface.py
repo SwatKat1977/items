@@ -296,3 +296,222 @@ class TestSqliteInterface(unittest.TestCase):
         self.assertEqual(interface._state_object.database_health_state_str,
                          "get_projects_details fatal SQL failure")
         self.assertIsNone(result)
+
+    def test_project_name_exists_exists(self):
+        """Test when the project exists (should return True)."""
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+
+        interface.query_with_values = MagicMock(return_value=[(1,)])  # Mock query result
+
+        result = interface.project_name_exists("Test Project")
+
+        self.assertTrue(result)
+        interface.query_with_values.assert_called_once_with(
+            "SELECT COUNT(*) FROM projects WHERE name = ?", ("Test Project",)
+        )
+
+    def test_project_name_exists_not_exists(self):
+        """Test when the project does not exist (should return False)."""
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = MagicMock(return_value=[(0,)])  # Mock query result
+
+        result = interface.project_name_exists("Nonexistent Project")
+
+        self.assertFalse(result)
+        interface.query_with_values.assert_called_once_with(
+            "SELECT COUNT(*) FROM projects WHERE name = ?", ("Nonexistent Project",)
+        )
+
+    def test_project_name_exists_query_failure(self):
+        """Test when a database query fails (should return None)."""
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = MagicMock(side_effect=SqliteInterfaceException("DB error"))
+
+        result = interface.project_name_exists("Any Project")
+
+        self.assertIsNone(result)
+        interface._logger.critical.assert_called_once()
+
+        # Directly check the value instead of asserting a call on __eq__
+        self.assertEqual(interface._state_object.database_health, ComponentDegradationLevel.FULLY_DEGRADED)
+
+        # Check the database health state string
+        self.assertEqual(interface._state_object.database_health_state_str,
+                         "project_name_exists fatal SQL failure")
+
+    def test_add_project_success(self):
+        """Test that add_project returns the new project's ID on success."""
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.insert_query = MagicMock(return_value=42)  # Simulate DB returning ID 42
+
+        result = interface.add_project("Test Project")
+
+        self.assertEqual(result, 42)
+        interface.insert_query.assert_called_once_with("INSERT INTO projects(name) VALUES(?)", ("Test Project",))
+        self.mock_logger.critical.assert_not_called()  # No failure, so critical log should NOT be called
+
+    def test_add_project_query_failure(self):
+        """Test that add_project returns None and logs an error when an exception occurs."""
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.insert_query = MagicMock(side_effect=SqliteInterfaceException("DB error"))
+
+        result = interface.add_project("Failing Project")
+
+        self.assertIsNone(result)
+        self.mock_logger.critical.assert_called_once_with("Query failed, reason: %s", "DB error")
+
+        # Check that database health is updated correctly
+        self.assertEqual(interface._state_object.database_health, ComponentDegradationLevel.FULLY_DEGRADED)
+        self.assertEqual(interface._state_object.database_health_state_str, "add_project fatal SQL failure")
+
+    def test_mark_project_for_awaiting_purge_success(self):
+        """Test successful execution of mark_project_for_awaiting_purge."""
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query = MagicMock(return_value=None)  # Simulating successful query
+
+        result = interface.mark_project_for_awaiting_purge(1)
+
+        interface.query.assert_called_once_with(
+            "UPDATE projects SET awaiting_purge = 1 WHERE id = ?", (1,), commit=True
+        )
+        self.assertTrue(result)
+
+    def test_mark_project_for_awaiting_purge_failure(self):
+        """Test failure case where query raises SqliteInterfaceException."""
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query = MagicMock()
+        interface.query.side_effect = SqliteInterfaceException("DB error")
+
+        result = interface.mark_project_for_awaiting_purge(1)
+
+        interface.query.assert_called_once_with(
+            "UPDATE projects SET awaiting_purge = 1 WHERE id = ?", (1,), commit=True)
+        interface._logger.critical.assert_called_once_with(
+            "Query failed, reason: %s", "DB error")
+        self.assertEqual(
+            interface._state_object.database_health,
+            ComponentDegradationLevel.FULLY_DEGRADED)
+        self.assertEqual(
+            interface._state_object.database_health_state_str,
+            "mark_project_for_awaiting_purge fatal SQL failure")
+        self.assertFalse(result)
+
+    def test_hard_delete_project_success(self):
+        """Test successful execution of hard_delete_project."""
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.delete_query = MagicMock(return_value=None)  # Simulating successful query
+
+        result = interface.hard_delete_project(1)
+
+        interface.delete_query.assert_called_once_with(
+            "DELETE FROM projects WHERE id = ?", (1,)
+        )
+        self.assertTrue(result)
+
+    def test_hard_delete_project_failure(self):
+        """Test failure case where delete_query raises SqliteInterfaceException."""
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.delete_query = MagicMock(side_effect=SqliteInterfaceException("DB error"))
+
+        result = interface.hard_delete_project(1)
+
+        interface.delete_query.assert_called_once_with(
+            "DELETE FROM projects WHERE id = ?", (1,))
+        interface._logger.critical.assert_called_once_with(
+            "Query failed, reason: %s", "DB error")
+        self.assertEqual(interface._state_object.database_health,
+                         ComponentDegradationLevel.FULLY_DEGRADED)
+        self.assertEqual(interface._state_object.database_health_state_str,
+                         "hard_delete_project fatal SQL failure")
+        self.assertFalse(result)
+
+    ###############
+
+    def test_project_id_exists_true(self):
+        """Test case where project exists (COUNT(*) > 0)."""
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = MagicMock(return_value=[(1,)])  # Simulating project exists
+
+        result = interface.project_id_exists(1)
+
+        interface.query_with_values.assert_called_once_with(
+            "SELECT COUNT(*) FROM projects WHERE id = ?", (1,))
+        self.assertTrue(result)
+
+    def test_project_id_exists_false(self):
+        """Test case where project does not exist (COUNT(*) == 0)."""
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        # Simulating project does not exist
+        interface.query_with_values = MagicMock(return_value=[(0,)])
+
+        result = interface.project_id_exists(1)
+
+        interface.query_with_values.assert_called_once_with(
+            "SELECT COUNT(*) FROM projects WHERE id = ?", (1,))
+        self.assertFalse(result)
+
+    def test_project_id_exists_failure(self):
+        """Test case where query_with_values raises SqliteInterfaceException."""
+
+        # Create an instance of SqliteInterface
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = MagicMock(side_effect=SqliteInterfaceException("DB error"))
+        #self.instance.query_with_values.side_effect = SqliteInterfaceException("DB error")
+
+        result = interface.project_id_exists(1)
+
+        interface.query_with_values.assert_called_once_with(
+            "SELECT COUNT(*) FROM projects WHERE id = ?", (1,))
+        interface._logger.critical.assert_called_once_with(
+            "Query failed, reason: %s", "DB error")
+        self.assertEqual(interface._state_object.database_health,
+                         ComponentDegradationLevel.FULLY_DEGRADED)
+        self.assertEqual(interface._state_object.database_health_state_str,
+                         "project_id_exists fatal SQL failure")
+        self.assertIsNone(result)

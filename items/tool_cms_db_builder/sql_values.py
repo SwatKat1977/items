@@ -17,7 +17,9 @@ limitations under the License.
 SQL_CREATE_PROJECTS_TABLE: str = """
     CREATE TABLE projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE
+        name TEXT NOT NULL UNIQUE,
+        awaiting_purge BOOLEAN NOT NULL DEFAULT 0,
+        creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 """
 
@@ -28,7 +30,7 @@ SQL_CREATE_TEST_CASE_FOLDERS_TABLE: str = """
         parent_id INTEGER NULL,
         name TEXT NOT NULL,
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-        FOREIGN KEY (parent_id) REFERENCES folders(id) ON DELETE CASCADE,
+        FOREIGN KEY (parent_id) REFERENCES test_case_folders(id) ON DELETE CASCADE,
         UNIQUE (project_id, parent_id, name)
     );
 """

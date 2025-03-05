@@ -187,8 +187,8 @@ class BaseView:
                            status_code=http.HTTPStatus.OK,
                            content_type=self.CONTENT_TYPE_JSON)
 
-    async def _call_api_post(self, url : str,
-                             json_data : dict = None,
+    async def _call_api_post(self, url: str,
+                             json_data: dict = None,
                              timeout: int = 2) -> ApiResponse:
         """
         Make an API call using the POST method.
@@ -198,7 +198,7 @@ class BaseView:
             json_data - Optional Json body.
 
         returns:
-            ApiResponse which will will contain response data or just
+            ApiResponse which will contain response data or just
             exception_msg if something went wrong.
         """
 
@@ -210,19 +210,19 @@ class BaseView:
                         if resp.content_type == self.CONTENT_TYPE_JSON \
                         else await resp.text()
                     api_return = ApiResponse(
-                        status_code = resp.status,
-                        body = body,
-                        content_type = resp.content_type)
+                        status_code=resp.status,
+                        body=body,
+                        content_type=resp.content_type)
 
         except (aiohttp.ClientConnectionError, aiohttp.ClientError) as ex:
-            api_return = ApiResponse(exception_msg = str(ex))
+            api_return = ApiResponse(exception_msg=str(ex))
 
         except asyncio.TimeoutError as ex:
-            api_return = ApiResponse(exception_msg = str(ex))
+            api_return = ApiResponse(exception_msg=str(ex))
 
         return api_return
 
-    async def _call_api_get(self, url : str,
+    async def _call_api_get(self, url: str,
                             json_data: dict = None,
                             timeout: int = 2) -> ApiResponse:
         """
@@ -233,7 +233,7 @@ class BaseView:
             json_data - Optional Json body.
 
         returns:
-            ApiResponse which will will contain response data or just
+            ApiResponse which will contain response data or just
             exception_msg if something went wrong.
         """
 
@@ -250,9 +250,9 @@ class BaseView:
                         content_type = resp.content_type)
 
         except (aiohttp.ClientConnectionError, aiohttp.ClientError) as ex:
-            api_return = ApiResponse(exception_msg = ex)
+            api_return = ApiResponse(exception_msg=ex)
 
         except asyncio.TimeoutError as ex:
-            api_return = ApiResponse(exception_msg = str(ex))
+            api_return = ApiResponse(exception_msg=str(ex))
 
         return api_return

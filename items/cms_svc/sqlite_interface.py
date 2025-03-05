@@ -223,16 +223,177 @@ class SqliteInterface(BaseSqliteInterface):
 
         return rows
 
-    def get_no_of_milestones_for_project(self, _project_id: int):
+    def get_no_of_milestones_for_project(self, _project_id: int) -> int:
         """
         NOTE: Currently not implemented, so will always return 0
         """
 
         return 0
 
-    def get_no_of_testruns_for_project(self, _project_id: int):
+    def get_no_of_testruns_for_project(self, _project_id: int) -> int:
         """
         NOTE: Currently not implemented, so will always return 0
         """
 
         return 0
+
+    def project_name_exists(self, project_name: str) -> typing.Optional[bool]:
+        """
+        Check if a project with the given name exists in the database.
+        Updates the database health status to `FULLY_DEGRADED` in case of
+        failure.
+
+        Args:
+            project_name (str): The name of the project to check.
+
+        Returns:
+            Optional[bool]:
+                - True if the project exists.
+                - False if the project does not exist.
+                - None if a database query error occurs.
+
+        Logs:
+            - Critical log entry if the query fails, along with the exception
+              message.
+        """
+
+        query: str = "SELECT COUNT(*) FROM projects WHERE name = ?"
+
+        try:
+            rows: dict = self.query_with_values(query, (project_name,))
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "project_name_exists fatal SQL failure"
+            return None
+
+        # Returns True if the project exists, False otherwise
+        return rows[0][0] > 0
+
+    def project_id_exists(self, project_id: int) -> typing.Optional[bool]:
+        """
+        Check if a project with the given id exists in the database.
+        Updates the database health status to `FULLY_DEGRADED` in case of
+        failure.
+
+        Args:
+            project_id (int): The id of the project to check.
+
+        Returns:
+            Optional[bool]:
+                - True if the project exists.
+                - False if the project does not exist.
+                - None if a database query error occurs.
+
+        Logs:
+            - Critical log entry if the query fails, along with the exception
+              message.
+        """
+
+        query: str = "SELECT COUNT(*) FROM projects WHERE id = ?"
+
+        try:
+            rows: dict = self.query_with_values(query, (project_id,))
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "project_id_exists fatal SQL failure"
+            return None
+
+        # Returns True if the project exists, False otherwise
+        return rows[0][0] > 0
+
+    def add_project(self, name: str) -> typing.Optional[int]:
+        """
+        Insert a new project into the database.
+        Updates the database health status to `FULLY_DEGRADED` upon failure.
+
+        Args:
+            name (str): The name of the project to be added.
+
+        Returns:
+            Optional[int]:
+                - The ID of the newly inserted project if successful.
+                - None if a database query error occurs.
+
+        Logs:
+            - Logs a critical error if the database query fails.
+        """
+        sql: str = "INSERT INTO projects(name) VALUES(?)"
+
+        try:
+            return self.insert_query(sql, (name,))
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "add_project fatal SQL failure"
+            return None
+
+    def mark_project_for_awaiting_purge(self, project_id: int) -> bool:
+        """
+        Marks a project as awaiting purge in the database.
+
+        This method updates the `awaiting_purge` flag for the specified project
+        in the `projects` table. If the update fails due to a database error,
+        it logs the failure, updates the database health status, and returns
+        `False`. Otherwise, it returns `True` upon successful update.
+
+        Args:
+            project_id (int): The unique identifier of the project to update.
+
+        Returns:
+            bool: `True` if the project was successfully marked, `False` on
+                  error.
+        """
+        sql: str = "UPDATE projects SET awaiting_purge = 1 WHERE id = ?"
+
+        try:
+            self.query(sql, (project_id,), commit=True)
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "mark_project_for_awaiting_purge fatal SQL failure"
+            return False
+
+        return True
+
+    def hard_delete_project(self, project_id: int) -> bool:
+        """
+        Permanently deletes a project from the database.
+
+        This method attempts to delete a project from the `projects` table
+        based on the given project ID. If the deletion fails due to a database
+        error, it logs the critical failure, updates the database health
+        status, and returns `False`. Otherwise, it returns `True` upon
+        successful deletion.
+
+        Args:
+            project_id (int): The unique identifier of the project to be
+                              deleted.
+
+        Returns:
+            bool: `True` if the project was successfully deleted, `False` if an
+                  error occurred.
+        """
+
+        sql: str = "DELETE FROM projects WHERE id = ?"
+
+        try:
+            self.delete_query(sql, (project_id,))
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "hard_delete_project fatal SQL failure"
+            return False
+
+        return True
