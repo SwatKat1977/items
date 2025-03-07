@@ -17,7 +17,6 @@ import dataclasses
 import json
 import logging
 import os
-import zoneinfo
 import jsonschema
 import tzlocal
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
@@ -185,6 +184,16 @@ SERVER_SETTINGS_DEFAULT_TIME_ZONE: str = "default_time_zone"
 
 @dataclasses.dataclass
 class MetadataSettings:
+    """
+    Represents the metadata configuration settings.
+
+    Attributes:
+        default_time_zone (str): The default time zone for the system. If
+                                 empty, no default is set.
+        using_server_default_time_zone (bool): Indicates whether the server's
+                                               default time zone is used.
+        instance_name (str): The name of the current instance.
+    """
     default_time_zone: str = ""
     using_server_default_time_zone: bool = False
     instance_name: str = ""
@@ -216,12 +225,38 @@ METADATA_FILE_SCHEMA: dict = {
 
 
 class MetadataHandler:
+    """
+    Handles the reading and management of metadata configuration settings.
+
+    Attributes:
+        _logger (logging.Logger): Logger instance for recording messages and
+                                  errors.
+        metadata_settings (MetadataSettings): Stores the current metadata
+                                              configuration settings.
+
+    Methods:
+        read_metadata_file() -> bool:
+            Reads the metadata configuration file and loads the settings.
+    """
 
     def __init__(self, logger: logging.Logger):
+        """
+        Initializes the MetadataHandler with a logger and default metadata settings.
+
+        Args:
+            logger (logging.Logger): The logger instance used for logging messages and errors.
+        """
         self._logger = logger.getChild(__name__)
         self.metadata_settings: MetadataSettings = MetadataSettings()
 
     def read_metadata_file(self) -> bool:
+        """
+        Reads the metadata configuration file and loads the settings.
+
+        Returns:
+            bool: True if the file was successfully read and parsed, False otherwise.
+        """
+
         config_file: str = Configuration().general_metadata_config_file
 
         if not os.path.exists(config_file):
@@ -229,16 +264,20 @@ class MetadataHandler:
                                   config_file)
             return False
 
+        read_failed: bool = True
+
         try:
             with open(config_file, 'r') as file:
                 config_data = json.load(file)
+                read_failed = False
 
         except (TypeError, json.JSONDecodeError):
             self._logger.critical("The JSON file is not properly formatted.")
-            return False
 
         except IOError as ex:
             self._logger.critical("An IO error occurred: %s", str(ex))
+
+        if read_failed:
             return False
 
         try:
@@ -255,10 +294,7 @@ class MetadataHandler:
         instance_name: str = server_settings[SERVER_SETTINGS_INSTANCE_NAME]
 
         if time_zone == DEFAULT_TIME_ZONE_DEFAULT:
-            # Get the system's timezone name in a zoneinfo-compatible format
-            # and the read it using zoneinfo.
             server_tz_name = tzlocal.get_localzone_name()
-            server_tz = zoneinfo.ZoneInfo(server_tz_name)
 
             if server_tz_name.upper() not in VALID_TIME_ZONES_IDS:
                 self._logger.critical("Unable to get server timezone, aborting...")
@@ -288,3 +324,32 @@ class MetadataHandler:
                           self.metadata_settings.instance_name)
 
         return True
+
+    def write_metadata_file(self, data: dict) -> bool:
+        """Writes metadata configuration to a file with error handling."""
+        config_file: str = Configuration().general_metadata_config_file
+
+        try:
+            with open(config_file, "w", encoding="utf-8") as file:
+                json.dump(data, file, indent=4)
+
+            self._logger.info(
+                "Metadata config file '%s' written successfully.",
+                config_file)
+            return True
+
+        except FileNotFoundError:
+            self._logger.critical("Config file path does not exist: '%s'",
+                                  config_file)
+
+        except PermissionError:
+            self._logger.critical(
+                "Permission denied when writing config file: '%s'",
+                config_file)
+
+        except OSError as ex:
+            self._logger.critical("OS error when writing config file '%s': %s",
+                                  config_file, str(ex))
+
+        # Return False on failure
+        return False
