@@ -15,6 +15,7 @@ limitations under the License.
 """
 from dataclasses import dataclass, field
 
+
 @dataclass
 class StateObject:
     ...
