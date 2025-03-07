@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from configuration.configuration_manager import ConfigurationManager
+from configuration_layout import ConfigurationConstants as Constants
 from thread_safe_singleton import ThreadSafeSingleton
 
 
@@ -24,16 +25,25 @@ class ThreadSafeConfiguration(ConfigurationManager,
     @property
     def logging_log_level(self) -> str:
         """ Configuration property : Logging | log level """
-        return ThreadSafeConfiguration().get_entry('logging', 'log_level')
+        return ThreadSafeConfiguration().get_entry(
+            Constants.SECTION_LOGGING,
+            Constants.LOGGING_LOG_LEVEL)
+
+    @property
+    def general_metadata_config_file(self) -> str:
+        """ Configuration property : General | metadata config file """
+        return ThreadSafeConfiguration().get_entry(
+            Constants.SECTION_GENERAL,
+            Constants.GENERAL_METADATA_CONFIG_FILE)
 
     @property
     def apis_accounts_svc(self) -> str:
         """ Configuration property : APIs | Accounts Service base path """
         return ThreadSafeConfiguration().get_entry(
-            "apis", "accounts_svc")
+            Constants.SECTION_APIS, Constants.APIS_ACCOUNTS_SVC)
 
     @property
     def apis_cms_svc(self) -> str:
         """ Configuration property : APIs | CMS Service base path """
         return ThreadSafeConfiguration().get_entry(
-            "apis", "cms_svc")
+            Constants.SECTION_APIS, Constants.APIS_CMS_SVC)
