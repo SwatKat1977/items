@@ -267,7 +267,7 @@ class MetadataHandler:
         read_failed: bool = True
 
         try:
-            with open(config_file, 'r') as file:
+            with open(config_file, 'r', encoding='utf-8') as file:
                 config_data = json.load(file)
                 read_failed = False
 

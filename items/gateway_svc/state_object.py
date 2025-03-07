@@ -13,9 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
 class StateObject:
-    ...
+    """
+    Object holding state information.
+    """
