@@ -36,6 +36,7 @@ from apis import project_api
 from apis import testcase_api
 import service_health_enums as health_enums
 from sessions import Sessions
+from metadata_handler import MetadataHandler
 
 
 class Application(BaseApplication):
@@ -47,12 +48,14 @@ class Application(BaseApplication):
         self._sessions: Sessions = Sessions()
 
         self._logger = logging.getLogger(__name__)
-        log_format= logging.Formatter(LOGGING_LOG_FORMAT_STRING,
-                                      LOGGING_DATETIME_FORMAT_STRING)
+        log_format = logging.Formatter(LOGGING_LOG_FORMAT_STRING,
+                                       LOGGING_DATETIME_FORMAT_STRING)
         console_stream = logging.StreamHandler()
         console_stream.setFormatter(log_format)
         self._logger.setLevel(LOGGING_DEFAULT_LOG_LEVEL)
         self._logger.addHandler(console_stream)
+
+        self._metadata_handler: MetadataHandler = MetadataHandler(self._logger)
 
     def _initialise(self) -> bool:
 
@@ -68,6 +71,9 @@ class Application(BaseApplication):
         self._logger.info('Setting logging level to %s',
                           Configuration().logging_log_level)
         self._logger.setLevel(Configuration().logging_log_level)
+
+        if not self._metadata_handler.read_metadata_file():
+            return False
 
         if not self._check_accounts_svc_api_status(version_info):
             return False
@@ -135,6 +141,10 @@ class Application(BaseApplication):
         self._logger.info("[logging]")
         self._logger.info("=> Logging log level : %s",
                           Configuration().logging_log_level)
+
+        self._logger.info("[general]")
+        self._logger.info("=> Metadata config file : %s",
+                          Configuration().general_metadata_config_file)
 
         self._logger.info("[apis]")
         self._logger.info("=> Accounts Service API : %s",
