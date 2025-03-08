@@ -54,3 +54,9 @@ class ThreadSafeConfiguration(ConfigurationManager,
         """ Configuration property : APIs | CMS Service base path """
         return ThreadSafeConfiguration().get_entry(
             Constants.SECTION_APIS, Constants.APIS_CMS_SVC)
+
+    @property
+    def apis_web_portal_svc(self) -> str:
+        """ Configuration property : APIs | Web Portal Service base path """
+        return ThreadSafeConfiguration().get_entry(
+            Constants.SECTION_APIS, Constants.APIS_WEB_PORTAL_SVC)

@@ -35,8 +35,10 @@ class ConfigurationConstants:
 
     APIS_ACCOUNTS_SVC: str = "accounts_svc"
     APIS_CMS_SVC: str = "cms_svc"
+    APIS_WEB_PORTAL_SVC: str = "web_portal_svc"
     APIS_ACCOUNTS_SVC_DEFAULT: str = "http://localhost:4000/"
     APIS_CMS_SVC_DEFAULT: str = "http://localhost:5000/"
+    APIS_WEB_PORTAL_SVC_DEFAULT: str = "http://localhost:8080/"
 
 
 CONFIGURATION_LAYOUT = configuration_setup.ConfigurationSetup(
@@ -72,7 +74,12 @@ CONFIGURATION_LAYOUT = configuration_setup.ConfigurationSetup(
                 ConfigurationConstants.APIS_CMS_SVC,
                 configuration_setup.ConfigItemDataType.STRING,
                 default_value=
-                ConfigurationConstants.APIS_CMS_SVC_DEFAULT)
+                ConfigurationConstants.APIS_CMS_SVC_DEFAULT),
+            configuration_setup.ConfigurationSetupItem(
+                ConfigurationConstants.APIS_WEB_PORTAL_SVC,
+                configuration_setup.ConfigItemDataType.STRING,
+                default_value=
+                ConfigurationConstants.APIS_WEB_PORTAL_SVC_DEFAULT)
         ]
     }
 )
