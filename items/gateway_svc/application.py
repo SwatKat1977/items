@@ -75,8 +75,10 @@ class Application(BaseApplication):
         if not self._metadata_handler.read_metadata_file():
             return False
 
-        if not self._metadata_handler.update_web_portal_webhook(-1):
-            return False
+        # NOTE: Currently disabled as web portal side has not been implemented
+        #       yet.
+        # if not self._metadata_handler.update_web_portal_webhook(-1):
+        #    return False
 
         if not self._check_accounts_svc_api_status(version_info):
             return False
