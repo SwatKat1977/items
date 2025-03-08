@@ -17,7 +17,9 @@ import dataclasses
 import json
 import logging
 import os
+import time
 import jsonschema
+import requests
 import tzlocal
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 
@@ -181,6 +183,7 @@ SECTION_SERVER_SETTINGS: str = "server_settings"
 SERVER_SETTINGS_INSTANCE_NAME: str = "instance_name"
 SERVER_SETTINGS_DEFAULT_TIME_ZONE: str = "default_time_zone"
 
+INFINITE_UPDATE_RETRIES: int = -1
 
 @dataclasses.dataclass
 class MetadataSettings:
@@ -352,4 +355,40 @@ class MetadataHandler:
                                   config_file, str(ex))
 
         # Return False on failure
+        return False
+
+    def update_web_portal_webhook(self, retries: int = 0) -> bool:
+        perform_update: int = 1 if retries in (0,INFINITE_UPDATE_RETRIES) \
+                                else retries
+
+        metadata_items: dict = {
+            "default_time_zone": self.metadata_settings.default_time_zone,
+            "using_server_default_time_zone":
+                self.metadata_settings.using_server_default_time_zone,
+            "instance_name": self.metadata_settings.instance_name
+        }
+
+        base_path: str = Configuration().apis_web_portal_svc
+        url: str = f"{base_path}webhooks/update_metadata"
+
+        while perform_update != 0:
+            try:
+                requests.post(url, metadata_items, timeout=1)
+                return True
+
+            except requests.exceptions.ConnectionError as ex:
+                self._logger.error(("Connection to web portal service timed "
+                                    "out whilst update metadata: %s"),
+                                   str(ex))
+
+            self._logger.warning("Unable to update Web Portal with metadata "
+                                 "configuration items")
+
+            if retries != INFINITE_UPDATE_RETRIES:
+                perform_update -= 1
+
+            time.sleep(3)
+
+        self._logger.critical("Failed to update Web Portal with metadata "
+                              "configuration items")
         return False

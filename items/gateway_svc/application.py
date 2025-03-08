@@ -75,6 +75,9 @@ class Application(BaseApplication):
         if not self._metadata_handler.read_metadata_file():
             return False
 
+        if not self._metadata_handler.update_web_portal_webhook(-1):
+            return False
+
         if not self._check_accounts_svc_api_status(version_info):
             return False
 
@@ -151,6 +154,8 @@ class Application(BaseApplication):
                           Configuration().apis_accounts_svc)
         self._logger.info("=> CMS Service API : %s",
                           Configuration().apis_cms_svc)
+        self._logger.info("=> Web Portal Service API : %s",
+                          Configuration().apis_web_portal_svc)
 
         return True
 
