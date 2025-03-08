@@ -31,6 +31,7 @@ class ConfigurationConstants:
 
     GENERAL_METADATA_CONFIG_FILE: str = "metadata_config_file"
     GENERAL_METADATA_CONFIG_FILE_DEFAULT: str = "metadata.config"
+    GENERAL_API_SIGNING_SECRET: str = "api_signing_secret"
 
     APIS_ACCOUNTS_SVC: str = "accounts_svc"
     APIS_CMS_SVC: str = "cms_svc"
@@ -54,7 +55,11 @@ CONFIGURATION_LAYOUT = configuration_setup.ConfigurationSetup(
                 ConfigurationConstants.GENERAL_METADATA_CONFIG_FILE,
                 configuration_setup.ConfigItemDataType.STRING,
                 default_value=
-                ConfigurationConstants.GENERAL_METADATA_CONFIG_FILE_DEFAULT)
+                ConfigurationConstants.GENERAL_METADATA_CONFIG_FILE_DEFAULT),
+            configuration_setup.ConfigurationSetupItem(
+                ConfigurationConstants.GENERAL_API_SIGNING_SECRET,
+                configuration_setup.ConfigItemDataType.STRING,
+                is_required=True),
         ],
 
         ConfigurationConstants.SECTION_APIS: [

@@ -37,6 +37,13 @@ class ThreadSafeConfiguration(ConfigurationManager,
             Constants.GENERAL_METADATA_CONFIG_FILE)
 
     @property
+    def general_api_signing_secret(self) -> str:
+        """ Configuration property : General | API signing secret """
+        return ThreadSafeConfiguration().get_entry(
+            Constants.SECTION_GENERAL,
+            Constants.GENERAL_API_SIGNING_SECRET)
+
+    @property
     def apis_accounts_svc(self) -> str:
         """ Configuration property : APIs | Accounts Service base path """
         return ThreadSafeConfiguration().get_entry(
