@@ -290,4 +290,4 @@ class BaseView:
         Returns:
             str: The generated HMAC signature as a hexadecimal string.
         """
-        return hmac.new(secret_key, data.encode(), hashlib.sha256).hexdigest()
+        return hmac.new(secret_key, data, hashlib.sha256).hexdigest()
