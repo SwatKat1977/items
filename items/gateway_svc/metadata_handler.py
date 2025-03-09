@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import dataclasses
+import http
 import json
 import logging
 import os
@@ -378,14 +379,19 @@ class MetadataHandler:
         }
 
         base_path: str = Configuration().apis_web_portal_svc
-        url: str = f"{base_path}webhooks/update_metadata"
+        url: str = f"{base_path}webhook/update_metadata"
 
         while perform_update != 0:
             try:
-                requests.post(url, metadata_items, timeout=1, headers=headers)
-                self._logger.info("Updated Web Portal with metadata "
-                                  "configuration items")
-                return True
+                response = requests.post(url,
+                                         json.dumps(metadata_items),
+                                         timeout=1,
+                                         headers=headers)
+
+                if response.status_code == http.HTTPStatus.OK:
+                    self._logger.info("Updated Web Portal with metadata "
+                                      "configuration items")
+                    return True
 
             except requests.exceptions.ConnectionError as ex:
                 self._logger.error(("Connection to web portal service timed "
