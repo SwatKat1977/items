@@ -14,10 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
-from base_web_view import BaseWebView
+from base_view import ApiResponse, BaseView, validate_json
+import interfaces.gateway.metadata  as json_schemas
 
 
-class WebhookApiView(BaseWebView):
+class WebhookApiView(BaseView):
 
     def __init__(self, logger: logging.Logger):
-        super().__init__(logger)
+        self._logger = logger.getChild(__name__)
+
+    @validate_json(json_schemas.SCHEMA_UPDATE_METADATA_REQUEST)
+    async def update_metadata(self, request_msg: ApiResponse):
+        ...

@@ -39,8 +39,8 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
 
     logger.info("=> /webhook/update_metadata [POST]")
 
-    @blueprint.route('/webhook/update_metadata', methods=['GET'])
-    async def test_definitions_page_request(project_id: int):
-        return await view.test_cases(project_id)
+    @blueprint.route('/webhook/update_metadata', methods=['POST'])
+    async def update_metadata_request():
+        return await view.update_metadata()
 
     return blueprint
