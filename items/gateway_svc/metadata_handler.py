@@ -22,6 +22,7 @@ import jsonschema
 import requests
 import tzlocal
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
+from base_view import BaseView
 
 TIME_ZONES = [
     {"display": "American Samoa", "id": "US/Samoa"},
@@ -368,12 +369,22 @@ class MetadataHandler:
             "instance_name": self.metadata_settings.instance_name
         }
 
+        secret: bytes = Configuration().general_api_signing_secret.encode()
+        signature: str = BaseView.generate_api_signature(secret,
+                                                         metadata_items)
+        headers = {
+            "Content-Type": "application/json",
+            "X-Signature": signature
+        }
+
         base_path: str = Configuration().apis_web_portal_svc
         url: str = f"{base_path}webhooks/update_metadata"
 
         while perform_update != 0:
             try:
-                requests.post(url, metadata_items, timeout=1)
+                requests.post(url, metadata_items, timeout=1, headers=headers)
+                self._logger.info("Updated Web Portal with metadata "
+                                  "configuration items")
                 return True
 
             except requests.exceptions.ConnectionError as ex:
