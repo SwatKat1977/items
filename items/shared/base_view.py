@@ -259,8 +259,8 @@ class BaseView:
 
         return api_return
 
-    def verify_api_signature(self,
-                             secret_key: bytes,
+    @staticmethod
+    def verify_api_signature(secret_key: bytes,
                              data: any, received_signature) -> bool:
         """
         Verifies the integrity and authenticity of received data using
@@ -278,7 +278,8 @@ class BaseView:
         computed_signature = hmac.new(secret_key, data, hashlib.sha256).hexdigest()
         return hmac.compare_digest(computed_signature, received_signature)
 
-    def generate_api_signature(self, secret_key: bytes, data: any):
+    @staticmethod
+    def generate_api_signature(secret_key: bytes, data: any):
         """
         Generates an api HMAC-SHA256 signature for the given data using the
         provided secret key.
@@ -290,4 +291,14 @@ class BaseView:
         Returns:
             str: The generated HMAC signature as a hexadecimal string.
         """
+        if isinstance(data, dict):
+            # Convert dictionary to JSON string
+            data = json.dumps(data, separators=(',', ':'), sort_keys=True).encode('utf-8')
+        elif isinstance(data, str):
+            data = data.encode('utf-8')  # Ensure it's in bytes
+        elif isinstance(data, bytes):
+            pass  # Already in bytes
+        else:
+            raise TypeError("Data must be a str, bytes, or dict")
+
         return hmac.new(secret_key, data, hashlib.sha256).hexdigest()
