@@ -20,7 +20,7 @@ class TestThreadSafeConfiguration(unittest.TestCase):
 
         # Assert that get_entry was called with the expected parameters
         mock_get_entry.assert_called_once_with(
-            consts.SECTION_LOGGING, consts.ITEM_LOGGING_LOG_LEVEL
+            consts.SECTION_LOGGING, consts.LOGGING_LOG_LEVEL
         )
 
         # Assert that the logging_log_level property returns the correct value
@@ -40,7 +40,7 @@ class TestThreadSafeConfiguration(unittest.TestCase):
 
         # Assert that get_entry was called with the expected parameters
         mock_get_entry.assert_called_once_with(
-            consts.SECTION_APIS, consts.ITEM_APIS_ACCOUNTS_SVC
+            consts.SECTION_APIS, consts.APIS_ACCOUNTS_SVC
         )
 
         # Assert that the apis_accounts_svc property returns the correct value
@@ -60,7 +60,7 @@ class TestThreadSafeConfiguration(unittest.TestCase):
 
         # Assert that get_entry was called with the expected parameters
         mock_get_entry.assert_called_once_with(
-            consts.SECTION_APIS, consts.ITEM_APIS_CMS_SVC
+            consts.SECTION_APIS, consts.APIS_CMS_SVC
         )
 
         # Assert that the apis_cms_svc property returns the correct value
@@ -80,7 +80,7 @@ class TestThreadSafeConfiguration(unittest.TestCase):
 
         # Assert that get_entry was called with the expected parameters
         mock_get_entry.assert_called_once_with(
-            consts.SECTION_LOGGING, consts.ITEM_LOGGING_LOG_LEVEL
+            consts.SECTION_LOGGING, consts.LOGGING_LOG_LEVEL
         )
 
         # Assert that the logging_log_level property returns the correct value

@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from configuration.configuration_manager import ConfigurationManager
+from configuration_layout import ConfigurationConstants as Constants
 from thread_safe_singleton import ThreadSafeSingleton
 
 
@@ -24,16 +25,38 @@ class ThreadSafeConfiguration(ConfigurationManager,
     @property
     def logging_log_level(self) -> str:
         """ Configuration property : Logging | log level """
-        return ThreadSafeConfiguration().get_entry('logging', 'log_level')
+        return ThreadSafeConfiguration().get_entry(
+            Constants.SECTION_LOGGING,
+            Constants.LOGGING_LOG_LEVEL)
+
+    @property
+    def general_metadata_config_file(self) -> str:
+        """ Configuration property : General | metadata config file """
+        return ThreadSafeConfiguration().get_entry(
+            Constants.SECTION_GENERAL,
+            Constants.GENERAL_METADATA_CONFIG_FILE)
+
+    @property
+    def general_api_signing_secret(self) -> str:
+        """ Configuration property : General | API signing secret """
+        return ThreadSafeConfiguration().get_entry(
+            Constants.SECTION_GENERAL,
+            Constants.GENERAL_API_SIGNING_SECRET)
 
     @property
     def apis_accounts_svc(self) -> str:
         """ Configuration property : APIs | Accounts Service base path """
         return ThreadSafeConfiguration().get_entry(
-            "apis", "accounts_svc")
+            Constants.SECTION_APIS, Constants.APIS_ACCOUNTS_SVC)
 
     @property
     def apis_cms_svc(self) -> str:
         """ Configuration property : APIs | CMS Service base path """
         return ThreadSafeConfiguration().get_entry(
-            "apis", "cms_svc")
+            Constants.SECTION_APIS, Constants.APIS_CMS_SVC)
+
+    @property
+    def apis_web_portal_svc(self) -> str:
+        """ Configuration property : APIs | Web Portal Service base path """
+        return ThreadSafeConfiguration().get_entry(
+            Constants.SECTION_APIS, Constants.APIS_WEB_PORTAL_SVC)

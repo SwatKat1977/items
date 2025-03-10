@@ -53,6 +53,8 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.application._manage_configuration = MagicMock(return_value=True)
         self.mock_config_instance.logging_log_level = "DEBUG"
 
+        self.application._metadata_handler.read_metadata_file = MagicMock(return_value=True)
+
         # Mock the accounts service health check to return valid data
         self.application._check_accounts_svc_api_status = MagicMock(return_value=True)
         self.application._check_cms_svc_api_status = MagicMock(return_value=True)
@@ -84,6 +86,9 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
 
     def test_initialise_accounts_api_check_failed(self):
         """Test _initialise when configuration management fails."""
+
+        self.application._metadata_handler.read_metadata_file = MagicMock(return_value=True)
+
         # Mock configuration management failure
         self.application._manage_configuration = MagicMock(return_value=True)
         self.application._check_accounts_svc_api_status = MagicMock(return_value=False)
@@ -98,6 +103,9 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
 
     def test_initialise_cms_api_check_failed(self):
         """Test _initialise when configuration management fails."""
+
+        self.application._metadata_handler.read_metadata_file = MagicMock(return_value=True)
+
         # Mock configuration management failure
         self.application._manage_configuration = MagicMock(return_value=True)
         self.application._check_accounts_svc_api_status = MagicMock(return_value=True)

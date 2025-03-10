@@ -123,7 +123,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://127.0.0.1:4000/project/overviews?value_fields=name&count_fields=no_of_milestones,no_of_test_runs",
+									"raw": "http://127.0.0.1:4000/project/overviews?count_fields=no_of_test_runs",
 									"protocol": "http",
 									"host": [
 										"127",
@@ -138,13 +138,41 @@
 									],
 									"query": [
 										{
-											"key": "value_fields",
-											"value": "name"
-										},
-										{
 											"key": "count_fields",
-											"value": "no_of_milestones,no_of_test_runs"
+											"value": "no_of_test_runs"
 										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Add Project",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Beta Project\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://127.0.0.1:4000/project/add",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "4000",
+									"path": [
+										"project",
+										"add"
 									]
 								}
 							},
