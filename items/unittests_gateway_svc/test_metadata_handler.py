@@ -17,6 +17,10 @@ class TestMetadataHandler(unittest.IsolatedAsyncioTestCase):
 
         self.metadata_handler = MetadataHandler(self.mock_logger)
 
+    def tearDown(self):
+        """Stop all patches after each test."""
+        patch.stopall()
+
     @patch("os.path.exists", return_value=False)
     @patch.object(ConfigurationManager, 'get_entry')
     def test_read_metadata_file_missing(self,
@@ -163,3 +167,49 @@ class TestMetadataHandler(unittest.IsolatedAsyncioTestCase):
                 ("Default server time zone (%s) in metadata configuration "
                  "is not a valid time zone!"), "INVALID_TZ"
             )
+
+    @patch("builtins.open", new_callable=mock_open)
+    @patch.object(ConfigurationManager, "get_entry", return_value="metadata.cfg")
+    def test_write_metadata_file_success(self, mock_get_entry, mock_file):
+        """Test writing metadata successfully."""
+        test_data = {"key": "value"}
+
+        with patch.object(self.metadata_handler._logger, "info") as mock_log:
+            self.assertTrue(self.metadata_handler.write_metadata_file(test_data))
+
+            # Ensure json.dump was called
+            mock_file().write.assert_called()
+            mock_log.assert_any_call("Metadata config file '%s' written successfully.", "metadata.cfg")
+
+    @patch("builtins.open", side_effect=FileNotFoundError)
+    @patch.object(ConfigurationManager, "get_entry", return_value="metadata.cfg")
+    def test_write_metadata_file_file_not_found(self, mock_get_entry, mock_file):
+        """Test when the file path does not exist."""
+        test_data = {"key": "value"}
+
+        with patch.object(self.metadata_handler._logger, "critical") as mock_log:
+            self.assertFalse(self.metadata_handler.write_metadata_file(test_data))
+
+            mock_log.assert_any_call("Config file path does not exist: '%s'", "metadata.cfg")
+
+    @patch("builtins.open", side_effect=PermissionError)
+    @patch.object(ConfigurationManager, "get_entry", return_value="metadata.cfg")
+    def test_write_metadata_file_permission_denied(self, mock_get_entry, mock_file):
+        """Test when writing the file fails due to permission error."""
+        test_data = {"key": "value"}
+
+        with patch.object(self.metadata_handler._logger, "critical") as mock_log:
+            self.assertFalse(self.metadata_handler.write_metadata_file(test_data))
+
+            mock_log.assert_any_call("Permission denied when writing config file: '%s'", "metadata.cfg")
+
+    @patch("builtins.open", side_effect=OSError("Disk full"))
+    @patch.object(ConfigurationManager, "get_entry", return_value="metadata.cfg")
+    def test_write_metadata_file_os_error(self, mock_get_entry, mock_file):
+        """Test when an OS error occurs while writing the file."""
+        test_data = {"key": "value"}
+
+        with patch.object(self.metadata_handler._logger, "critical") as mock_log:
+            self.assertFalse(self.metadata_handler.write_metadata_file(test_data))
+
+            mock_log.assert_any_call("OS error when writing config file '%s': %s", "metadata.cfg", "Disk full")
