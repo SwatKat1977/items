@@ -360,6 +360,20 @@ class MetadataHandler:
         return False
 
     def update_web_portal_webhook(self, retries: int = 0) -> bool:
+        """
+        Sends an update request to the Web Portal webhook with metadata configuration.
+
+        This method generates metadata, signs the request, and attempts to send it
+        to the Web Portal service. If the update fails, it retries a specified number
+        of times before logging a critical failure.
+
+        Args:
+            retries (int, optional): The number of retry attempts. If set to 0 or
+                                     INFINITE_UPDATE_RETRIES, it retries indefinitely.
+
+        Returns:
+            bool: True if the update is successful, False otherwise.
+        """
         perform_update: int = 1 if retries in (0,INFINITE_UPDATE_RETRIES) \
                                 else retries
 
@@ -406,6 +420,13 @@ class MetadataHandler:
         return False
 
     def build_metadata_dictionary(self) -> dict:
+        """
+        Builds and returns a dictionary containing metadata configuration.
+
+        Returns:
+            dict: A dictionary containing metadata settings such as time zone,
+                  server default settings, and instance name.
+        """
         metadata_items: dict = {
             "default_time_zone": self.metadata_settings.default_time_zone,
             "using_server_default_time_zone":
