@@ -363,12 +363,7 @@ class MetadataHandler:
         perform_update: int = 1 if retries in (0,INFINITE_UPDATE_RETRIES) \
                                 else retries
 
-        metadata_items: dict = {
-            "default_time_zone": self.metadata_settings.default_time_zone,
-            "using_server_default_time_zone":
-                self.metadata_settings.using_server_default_time_zone,
-            "instance_name": self.metadata_settings.instance_name
-        }
+        metadata_items: dict = self.build_metadata_dictionary()
 
         secret: bytes = Configuration().general_api_signing_secret.encode()
         signature: str = BaseView.generate_api_signature(secret,
@@ -409,3 +404,12 @@ class MetadataHandler:
         self._logger.critical("Failed to update Web Portal with metadata "
                               "configuration items")
         return False
+
+    def build_metadata_dictionary(self) -> dict:
+        metadata_items: dict = {
+            "default_time_zone": self.metadata_settings.default_time_zone,
+            "using_server_default_time_zone":
+                self.metadata_settings.using_server_default_time_zone,
+            "instance_name": self.metadata_settings.instance_name
+        }
+        return metadata_items

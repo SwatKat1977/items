@@ -14,7 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-SCHEMA_UPDATE_METADATA_REQUEST: dict  = {
+SCHEMA_UPDATE_METADATA_RESPONSE: dict = {
+    "type": "object",
+    "properties": {
+        "default_time_zone": {"type": "string"},
+        "using_server_default_time_zone": {"type": "boolean"},
+        "instance_name": {"type": "string"}
+    },
+    "required": ["default_time_zone", "using_server_default_time_zone", "instance_name"],
+    "additionalProperties": False
+}
+
+SCHEMA_GET_METADATA_REQUEST: dict = {
     "type": "object",
     "properties": {
         "default_time_zone": {"type": "string"},
