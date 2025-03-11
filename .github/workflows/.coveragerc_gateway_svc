@@ -5,6 +5,7 @@ omit =
     items/gateway_svc/apis/handshake_api.py
     items/gateway_svc/apis/project_api.py
     items/gateway_svc/apis/testcase_api.py
+    items/gateway_svc/apis/webhook_api.py
     items/shared/*
     /opt/homebrew/*
     /usr/lib/python3/*
