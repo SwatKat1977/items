@@ -19,6 +19,7 @@ RUN pip install --upgrade pip
 # Gateway API dependencies
 COPY ./docker/requirements-gateway_svc.txt .
 RUN pip install --no-cache-dir -r requirements-gateway_svc.txt
+RUN pip install tzlocal
 
 USER items
 
