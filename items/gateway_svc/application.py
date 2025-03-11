@@ -34,6 +34,7 @@ from interfaces.cms.health import SCHEMA_CMS_SVC_HEALTH_RESPONSE
 from apis import handshake_api
 from apis import project_api
 from apis import testcase_api
+from apis import webhook_api
 import service_health_enums as health_enums
 from sessions import Sessions
 from metadata_handler import MetadataHandler
@@ -75,9 +76,6 @@ class Application(BaseApplication):
         if not self._metadata_handler.read_metadata_file():
             return False
 
-        if not self._metadata_handler.update_web_portal_webhook(-1):
-            return False
-
         if not self._check_accounts_svc_api_status(version_info):
             return False
 
@@ -94,6 +92,10 @@ class Application(BaseApplication):
         testcase_blueprint = testcase_api.create_blueprint(
             self._logger, self._sessions)
         self._quart_instance.register_blueprint(testcase_blueprint)
+
+        webhook_blueprint = webhook_api.create_blueprint(
+            self._logger, self._metadata_handler)
+        self._quart_instance.register_blueprint(webhook_blueprint)
 
         return True
 

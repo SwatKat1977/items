@@ -58,7 +58,6 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         # Mock the accounts service health check to return valid data
         self.application._check_accounts_svc_api_status = MagicMock(return_value=True)
         self.application._check_cms_svc_api_status = MagicMock(return_value=True)
-        self.application._metadata_handler.update_web_portal_webhook = MagicMock(return_value=True)
 
         # Call _initialise
         result = self.application._initialise()
@@ -91,7 +90,6 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.application._metadata_handler.read_metadata_file = MagicMock(return_value=True)
 
         # Mock configuration management failure
-        self.application._metadata_handler.update_web_portal_webhook = MagicMock(return_value=True)
         self.application._manage_configuration = MagicMock(return_value=True)
         self.application._check_accounts_svc_api_status = MagicMock(return_value=False)
 
@@ -112,7 +110,6 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.application._manage_configuration = MagicMock(return_value=True)
         self.application._check_accounts_svc_api_status = MagicMock(return_value=True)
         self.application._check_cms_svc_api_status = MagicMock(return_value=False)
-        self.application._metadata_handler.update_web_portal_webhook = MagicMock(return_value=True)
 
         # Call _initialise
         result = self.application._initialise()
@@ -130,18 +127,6 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         result = self.application._initialise()
 
         self.assertFalse(result, "Initialization should fail")
-
-    def test_initialise_update_web_portal_webhook_failed(self):
-        self.application._metadata_handler.read_metadata_file = MagicMock(return_value=True)
-        self.application._metadata_handler.update_web_portal_webhook = MagicMock(return_value=False)
-        self.application._manage_configuration = MagicMock(return_value=True)
-
-        # Call _initialise
-        result = self.application._initialise()
-
-        self.assertFalse(result, "Initialization should fail")
-
-        self.application._metadata_handler.update_web_portal_webhook.assert_called_once_with(-1)
 
     @patch.dict(os.environ, {"ITEMS_GATEWAY_SVC_CONFIG_FILE_REQUIRED": "1"})
     def test_manage_configuration_missing_config_file_required(self):
