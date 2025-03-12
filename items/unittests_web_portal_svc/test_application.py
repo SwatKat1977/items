@@ -26,6 +26,19 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         patch("application.BUILD_VERSION", "123").start()
         patch("application.BUILD_TAG", "-alpha").start()
 
+        with patch.object(self.application, "get_metadata",
+                          return_value=True):
+            # Call _initialise
+            result = self.application._initialise()
+
+            # Assertions
+            self.assertTrue(result, "Initialization should succeed")
+            self.mock_logger_instance.info.assert_any_call(
+                'ITEMS Web Portal Microservice %s', "V1.0.0-123-alpha"
+            )
+
+        return
+
         self.application.get_metadata = MagicMock(return_value=True)
 
         # Call _initialise
