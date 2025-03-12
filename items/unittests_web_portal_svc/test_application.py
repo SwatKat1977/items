@@ -30,7 +30,6 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
             print("DEBUG: Calling _initialise()")
             result = self.application._initialise()
             print(f"DEBUG: get_metadata() called? {mock_get_metadata.called}")
-
             self.assertTrue(result, "Initialization should succeed")
 
         return
