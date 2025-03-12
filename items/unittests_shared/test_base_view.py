@@ -1,6 +1,8 @@
 import asyncio
 import unittest
 from unittest.mock import AsyncMock, patch
+import hashlib
+import hmac
 from http import HTTPStatus
 import json
 from types import SimpleNamespace
@@ -37,6 +39,11 @@ app = quart.Quart(__name__)
 class TestBaseView(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.view = BaseView()
+
+        self.secret_key = b"supersecretkey"
+        self.data = b"testdata"
+        self.valid_signature = hmac.new(self.secret_key, self.data, hashlib.sha256).hexdigest()
+        self.invalid_signature = "invalidsignature"
 
     async def asyncSetUp(self):
         """Ensure Quart test request context is available."""
@@ -286,3 +293,112 @@ class TestBaseView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertIn(assert_value, await response.get_data())
         mock_validate.assert_called_once()
+
+    def test_verify_api_signature_valid_signature(self):
+        """Test with a valid signature."""
+        self.assertTrue(self.view.verify_api_signature(self.secret_key,
+                                                       self.data,
+                                                       self.valid_signature))
+
+    def test_verify_api_signature_invalid_signature(self):
+        """Test with an invalid signature."""
+        self.assertFalse(self.view.verify_api_signature(self.secret_key,
+                                                        self.data,
+                                                        self.invalid_signature))
+
+    def test_verify_api_signature_different_data(self):
+        """Test with different data but valid secret key."""
+        different_data = b"differentdata"
+        computed_signature = hmac.new(self.secret_key, different_data, hashlib.sha256).hexdigest()
+        self.assertFalse(self.view.verify_api_signature(self.secret_key,
+                                                        self.data,
+                                                        computed_signature))
+
+    def test_verify_api_signature_different_secret_key(self):
+        """Test with a different secret key but same data."""
+        different_secret = b"differentsecretkey"
+        computed_signature = hmac.new(different_secret, self.data, hashlib.sha256).hexdigest()
+        self.assertFalse(self.view.verify_api_signature(self.secret_key,
+                                                        self.data,
+                                                        computed_signature))
+
+    def test_verify_api_signature_empty_data(self):
+        """Test with empty data."""
+        empty_data = b""
+        computed_signature = hmac.new(self.secret_key, empty_data, hashlib.sha256).hexdigest()
+        self.assertFalse(self.view.verify_api_signature(self.secret_key,
+                                                        self.data,
+                                                        computed_signature))
+
+    def test_verify_api_signature_empty_secret_key(self):
+        """Test with an empty secret key."""
+        empty_secret = b""
+        computed_signature = hmac.new(empty_secret, self.data, hashlib.sha256).hexdigest()
+        self.assertFalse(self.view.verify_api_signature(self.secret_key,
+                                                        self.data,
+                                                        computed_signature))
+
+    def test_generate_signature_consistency(self):
+        """Test if the generated signature is consistent for the same inputs."""
+        expected_signature = hmac.new(self.secret_key, self.data, hashlib.sha256).hexdigest()
+        self.assertEqual(self.view.generate_api_signature(self.secret_key,
+                                                          self.data),
+                         expected_signature)
+
+    def test_generate_signature_with_different_data(self):
+        """Test if different data produces different signatures."""
+        different_data = b"differentdata"
+        signature_1 = self.view.generate_api_signature(self.secret_key, self.data)
+        signature_2 = self.view.generate_api_signature(self.secret_key, different_data)
+        self.assertNotEqual(signature_1, signature_2)
+
+    def test_generate_signature_with_different_secret_key(self):
+        """Test if different secret keys produce different signatures."""
+        different_secret = b"differentsecretkey"
+        signature_1 = self.view.generate_api_signature(self.secret_key, self.data)
+        signature_2 = self.view.generate_api_signature(different_secret, self.data)
+        self.assertNotEqual(signature_1, signature_2)
+
+    def test_generate_signature_with_empty_data(self):
+        """Test signature generation with empty data."""
+        empty_data = b""
+        expected_signature = hmac.new(self.secret_key, empty_data, hashlib.sha256).hexdigest()
+        self.assertEqual(self.view.generate_api_signature(self.secret_key, empty_data), expected_signature)
+
+    def test_generate_signature_with_empty_secret_key(self):
+        """Test signature generation with an empty secret key."""
+        empty_secret = b""
+        expected_signature = hmac.new(empty_secret, self.data, hashlib.sha256).hexdigest()
+        self.assertEqual(self.view.generate_api_signature(empty_secret,
+                                                          self.data),
+                         expected_signature)
+
+    def test_generate_signature_with_dict(self):
+        """Test signing with a dictionary input"""
+        data = {"user": "alice", "action": "login"}
+        expected_data = json.dumps(data, separators=(',', ':'), sort_keys=True).encode('utf-8')
+        expected_signature = hmac.new(self.secret_key, expected_data, hashlib.sha256).hexdigest()
+
+        result = BaseView.generate_api_signature(self.secret_key, data)
+        self.assertEqual(result, expected_signature)
+
+    def test_generate_signature_with_str(self):
+        """Test signing with a string input"""
+        data = "test_string"
+        expected_signature = hmac.new(self.secret_key, data.encode('utf-8'), hashlib.sha256).hexdigest()
+
+        result = BaseView.generate_api_signature(self.secret_key, data)
+        self.assertEqual(result, expected_signature)
+
+    def test_generate_signature_with_bytes(self):
+        """Test signing with a bytes input"""
+        data = b"test_bytes"
+        expected_signature = hmac.new(self.secret_key, data, hashlib.sha256).hexdigest()
+
+        result = BaseView.generate_api_signature(self.secret_key, data)
+        self.assertEqual(result, expected_signature)
+
+    def test_generate_signature_with_invalid_type(self):
+        """Test invalid input type raises TypeError"""
+        with self.assertRaises(TypeError):
+            BaseView.generate_api_signature(self.secret_key, 1234)  # Invalid type (int)

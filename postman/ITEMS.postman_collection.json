@@ -43,6 +43,19 @@
 					]
 				},
 				{
+					"name": "Webhook API",
+					"item": [
+						{
+							"name": "get_metadata",
+							"request": {
+								"method": "GET",
+								"header": []
+							},
+							"response": []
+						}
+					]
+				},
+				{
 					"name": "Details of test cases",
 					"request": {
 						"method": "POST",
@@ -123,7 +136,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://127.0.0.1:4000/project/overviews?value_fields=name&count_fields=no_of_milestones,no_of_test_runs",
+									"raw": "http://127.0.0.1:4000/project/overviews?count_fields=no_of_test_runs",
 									"protocol": "http",
 									"host": [
 										"127",
@@ -138,12 +151,76 @@
 									],
 									"query": [
 										{
-											"key": "value_fields",
-											"value": "name"
-										},
-										{
 											"key": "count_fields",
-											"value": "no_of_milestones,no_of_test_runs"
+											"value": "no_of_test_runs"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Add Project",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Beta Project\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://127.0.0.1:4000/project/add",
+									"protocol": "http",
+									"host": [
+										"127",
+										"0",
+										"0",
+										"1"
+									],
+									"port": "4000",
+									"path": [
+										"project",
+										"add"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Project",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Beta Project\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{GATEWAY_SVC_URL}}project/delete/3?hard_delete=true",
+									"host": [
+										"{{GATEWAY_SVC_URL}}project"
+									],
+									"path": [
+										"delete",
+										"3"
+									],
+									"query": [
+										{
+											"key": "hard_delete",
+											"value": "true"
 										}
 									]
 								}
@@ -212,6 +289,43 @@
 								"testcases",
 								"get_case",
 								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Web Portal",
+			"item": [
+				{
+					"name": "Update Metadata",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"default_time_zone\": \"_server_tz_\",\n    \"using_server_default_time_zone\": true,\n    \"instance_name\": \"Sample Instance\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8080/webhook/update_metadata",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"webhook",
+								"update_metadata"
 							]
 						}
 					},

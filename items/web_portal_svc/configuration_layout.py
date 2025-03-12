@@ -23,27 +23,36 @@ class ConfigurationConstants:
 
     SECTION_LOGGING: str = 'logging'
     SECTION_APIS: str = 'apis'
+    SECTION_GENERAL: str = 'general'
 
-    ITEM_LOGGING_LOG_LEVEL: str = 'log_level'
+    LOGGING_LOG_LEVEL: str = 'log_level'
     LOG_LEVEL_DEBUG: str = 'DEBUG'
     LOG_LEVEL_INFO: str = 'INFO'
 
-    ITEM_APIS_GATEWAY_SVC: str = "gateway_svc"
+    GENERAL_API_SIGNING_SECRET: str = "api_signing_secret"
+
+    APIS_GATEWAY_SVC: str = "gateway_svc"
 
 
 CONFIGURATION_LAYOUT = configuration_setup.ConfigurationSetup(
     {
         ConfigurationConstants.SECTION_LOGGING: [
             configuration_setup.ConfigurationSetupItem(
-                ConfigurationConstants.ITEM_LOGGING_LOG_LEVEL,
+                ConfigurationConstants.LOGGING_LOG_LEVEL,
                 configuration_setup.ConfigItemDataType.STRING,
                 valid_values=[ConfigurationConstants.LOG_LEVEL_DEBUG,
                               ConfigurationConstants.LOG_LEVEL_INFO],
                 default_value=ConfigurationConstants.LOG_LEVEL_INFO)
         ],
+        ConfigurationConstants.SECTION_GENERAL: [
+            configuration_setup.ConfigurationSetupItem(
+                ConfigurationConstants.GENERAL_API_SIGNING_SECRET,
+                configuration_setup.ConfigItemDataType.STRING,
+                is_required=True),
+        ],
         ConfigurationConstants.SECTION_APIS: [
             configuration_setup.ConfigurationSetupItem(
-                ConfigurationConstants.ITEM_APIS_GATEWAY_SVC,
+                ConfigurationConstants.APIS_GATEWAY_SVC,
                 configuration_setup.ConfigItemDataType.STRING,
                 default_value="http://localhost:4000/")
         ]

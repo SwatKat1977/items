@@ -20,11 +20,45 @@ class TestThreadSafeConfiguration(unittest.TestCase):
 
         # Assert that get_entry was called with the expected parameters
         mock_get_entry.assert_called_once_with(
-            consts.SECTION_LOGGING, consts.ITEM_LOGGING_LOG_LEVEL
+            consts.SECTION_LOGGING, consts.LOGGING_LOG_LEVEL
         )
 
         # Assert that the logging_log_level property returns the correct value
         self.assertEqual(log_level, "DEBUG")
+
+    @patch.object(ConfigurationManager, 'get_entry')
+    def test_general_metadata_config_file(self, mock_get_entry):
+        """Test general_metadata_config_file property"""
+        # Set up mock return value for the get_entry method
+        mock_get_entry.return_value = "metadata.cfg"
+
+        # Instantiate ThreadSafeConfiguration
+        config = ThreadSafeConfiguration()
+
+        # Call the apis_accounts_svc property
+        api: str = config.general_metadata_config_file
+
+        # Assert that get_entry was called with the expected parameters
+        mock_get_entry.assert_called_once_with(
+            consts.SECTION_GENERAL, consts.GENERAL_METADATA_CONFIG_FILE
+        )
+
+    @patch.object(ConfigurationManager, 'get_entry')
+    def test_general_api_signing_secret(self, mock_get_entry):
+        """Test general_api_signing_secret property"""
+        # Set up mock return value for the get_entry method
+        mock_get_entry.return_value = "SigningSecret"
+
+        # Instantiate ThreadSafeConfiguration
+        config = ThreadSafeConfiguration()
+
+        # Call the apis_accounts_svc property
+        api: str = config.general_api_signing_secret
+
+        # Assert that get_entry was called with the expected parameters
+        mock_get_entry.assert_called_once_with(
+            consts.SECTION_GENERAL, consts.GENERAL_API_SIGNING_SECRET
+        )
 
     @patch.object(ConfigurationManager, 'get_entry')
     def test_apis_accounts_svc(self, mock_get_entry):
@@ -40,7 +74,7 @@ class TestThreadSafeConfiguration(unittest.TestCase):
 
         # Assert that get_entry was called with the expected parameters
         mock_get_entry.assert_called_once_with(
-            consts.SECTION_APIS, consts.ITEM_APIS_ACCOUNTS_SVC
+            consts.SECTION_APIS, consts.APIS_ACCOUNTS_SVC
         )
 
         # Assert that the apis_accounts_svc property returns the correct value
@@ -60,7 +94,27 @@ class TestThreadSafeConfiguration(unittest.TestCase):
 
         # Assert that get_entry was called with the expected parameters
         mock_get_entry.assert_called_once_with(
-            consts.SECTION_APIS, consts.ITEM_APIS_CMS_SVC
+            consts.SECTION_APIS, consts.APIS_CMS_SVC
+        )
+
+        # Assert that the apis_cms_svc property returns the correct value
+        self.assertEqual(api, "http://unittests:9002")
+
+    @patch.object(ConfigurationManager, 'get_entry')
+    def test_apis_web_portal_svc(self, mock_get_entry):
+        """Test apis_cms_svc property"""
+        # Set up mock return value for the get_entry method
+        mock_get_entry.return_value = "http://unittests:9002"
+
+        # Instantiate ThreadSafeConfiguration
+        config = ThreadSafeConfiguration()
+
+        # Call the apis_cms_svc property
+        api: str = config.apis_web_portal_svc
+
+        # Assert that get_entry was called with the expected parameters
+        mock_get_entry.assert_called_once_with(
+            consts.SECTION_APIS, consts.APIS_WEB_PORTAL_SVC
         )
 
         # Assert that the apis_cms_svc property returns the correct value
@@ -80,7 +134,7 @@ class TestThreadSafeConfiguration(unittest.TestCase):
 
         # Assert that get_entry was called with the expected parameters
         mock_get_entry.assert_called_once_with(
-            consts.SECTION_LOGGING, consts.ITEM_LOGGING_LOG_LEVEL
+            consts.SECTION_LOGGING, consts.LOGGING_LOG_LEVEL
         )
 
         # Assert that the logging_log_level property returns the correct value

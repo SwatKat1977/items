@@ -16,6 +16,8 @@ limitations under the License.
 import asyncio
 from dataclasses import dataclass
 from functools import wraps
+import hashlib
+import hmac
 import json
 import http
 from types import SimpleNamespace
@@ -256,3 +258,47 @@ class BaseView:
             api_return = ApiResponse(exception_msg=str(ex))
 
         return api_return
+
+    @staticmethod
+    def verify_api_signature(secret_key: bytes,
+                             data: any, received_signature) -> bool:
+        """
+        Verifies the integrity and authenticity of received data using
+        HMAC-SHA256.
+
+        Args:
+            secret_key (bytes): The secret key used for HMAC generation.
+            data (any): The data to be verified.
+            received_signature (str): The expected HMAC signature.
+
+        Returns:
+            bool: True if the computed api signature matches the received
+                  signature, False otherwise.
+        """
+        computed_signature = hmac.new(secret_key, data, hashlib.sha256).hexdigest()
+        return hmac.compare_digest(computed_signature, received_signature)
+
+    @staticmethod
+    def generate_api_signature(secret_key: bytes, data: any):
+        """
+        Generates an api HMAC-SHA256 signature for the given data using the
+        provided secret key.
+
+        Args:
+            secret_key (bytes): The secret key used for HMAC generation.
+            data (str): The data to be signed.
+
+        Returns:
+            str: The generated HMAC signature as a hexadecimal string.
+        """
+        if isinstance(data, dict):
+            # Convert dictionary to JSON string
+            data = json.dumps(data, separators=(',', ':'), sort_keys=True).encode('utf-8')
+        elif isinstance(data, str):
+            data = data.encode('utf-8')  # Ensure it's in bytes
+        elif isinstance(data, bytes):
+            pass  # Already in bytes
+        else:
+            raise TypeError("Data must be a str, bytes, or dict")
+
+        return hmac.new(secret_key, data, hashlib.sha256).hexdigest()
