@@ -62,6 +62,7 @@ class Application(BaseApplication):
         self._logger.info(LICENSE_TEXT)
 
         if not self._manage_configuration():
+            print("\n\n\n\n\n\n\n\n\n\nif not self._manage_configuration():")
             return False
 
         self._logger.info('Setting logging level to %s',
@@ -72,6 +73,7 @@ class Application(BaseApplication):
         metadata_result = self.get_metadata(GET_METADATA_INFINITE_RETRIES)
         print(f"\n\n\nDEBUG: get_metadata returned {metadata_result}")
         if not self.get_metadata(GET_METADATA_INFINITE_RETRIES):
+            print("\n\n\n\n\n\n\n\n\n\nif not self.get_metadata(GET_METADATA_INFINITE_RETRIES):")
             return False
 
 
