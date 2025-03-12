@@ -14,8 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import asyncio
+import http
 import logging
 import os
+import time
+import uuid
+import requests
 from base_application import BaseApplication
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
                            LOGGING_DEFAULT_LOG_LEVEL, \
@@ -27,6 +31,10 @@ from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from apis import auth_api
 from apis import test_cases_api
 from apis import webhook_api
+from base_view import BaseView
+from metadata_settings import MetadataSettings
+
+GET_METADATA_INFINITE_RETRIES: int = -1
 
 
 class Application(BaseApplication):
@@ -35,6 +43,7 @@ class Application(BaseApplication):
     def __init__(self, quart_instance):
         super().__init__()
         self._quart_instance = quart_instance
+        self._metadata_settings: MetadataSettings = MetadataSettings()
 
         self._logger = logging.getLogger(__name__)
         log_format = logging.Formatter(LOGGING_LOG_FORMAT_STRING,
@@ -58,6 +67,8 @@ class Application(BaseApplication):
         self._logger.info('Setting logging level to %s',
                           Configuration().logging_log_level)
         self._logger.setLevel(Configuration().logging_log_level)
+
+        self.get_metadata(GET_METADATA_INFINITE_RETRIES)
 
         auth_blueprint = auth_api.create_blueprint(self._logger)
         self._quart_instance.register_blueprint(auth_blueprint)
@@ -123,3 +134,56 @@ class Application(BaseApplication):
                           Configuration().apis_gateway_svc)
 
         return True
+
+    def get_metadata(self, retries: int = 0) -> bool:
+        perform_update: int = 1 if retries in (0,
+                                               GET_METADATA_INFINITE_RETRIES) \
+                                else retries
+
+        # Generate number used once (NONCE)
+        nonce = str(uuid.uuid4())
+
+        string_to_sign: str = f"/webhook/get_metadata:{nonce}"
+        secret: bytes = b"wibble"  # bytes = Configuration().general_api_signing_secret.encode()
+        signature: str = BaseView.generate_api_signature(secret, string_to_sign)
+        headers = {
+            "Content-Type": "application/json",
+            "X-Signature": signature
+        }
+
+        base_path: str = Configuration().apis_gateway_svc
+        url: str = f"{base_path}webhook/get_metadata?nonce={nonce}"
+
+        while perform_update != 0:
+            try:
+                response = requests.get(url, timeout=1, headers=headers)
+
+                if response.status_code == http.HTTPStatus.OK:
+                    data: dict = response.json()
+                    self._metadata_settings.default_time_zone = \
+                        data["default_time_zone"]
+                    self._metadata_settings.using_server_default_time_zone = \
+                        data["using_server_default_time_zone"]
+                    self._metadata_settings.instance_name = \
+                        data["instance_name"]
+
+                    self._logger.info("Successfully updated Web Portal with "
+                                      "metadata configuration items")
+                    return True
+
+            except requests.exceptions.ConnectionError as ex:
+                self._logger.error(("Connection to web portal service timed "
+                                    "out whilst getting metadata: %s"),
+                                   str(ex))
+
+            self._logger.warning("Unable to update Web Portal with metadata "
+                                 "configuration items")
+
+            if retries != GET_METADATA_INFINITE_RETRIES:
+                perform_update -= 1
+
+            time.sleep(3)
+
+        self._logger.critical("Failed to update Web Portal with metadata "
+                              "configuration items")
+        return False
