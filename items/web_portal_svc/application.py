@@ -145,7 +145,7 @@ class Application(BaseApplication):
         nonce = str(uuid.uuid4())
 
         string_to_sign: str = f"/webhook/get_metadata:{nonce}"
-        secret: bytes = b"wibble"  # bytes = Configuration().general_api_signing_secret.encode()
+        secret: bytes = Configuration().general_api_signing_secret.encode()
         signature: str = BaseView.generate_api_signature(secret, string_to_sign)
         headers = {
             "Content-Type": "application/json",
