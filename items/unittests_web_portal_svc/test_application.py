@@ -6,6 +6,7 @@ import asyncio
 import requests
 from application import Application, GET_METADATA_INFINITE_RETRIES
 from configuration_layout import CONFIGURATION_LAYOUT
+from configuration.configuration_manager import ConfigurationManager
 
 
 class TestApplication(unittest.IsolatedAsyncioTestCase):
@@ -19,7 +20,8 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.application._logger = self.mock_logger_instance
         self.application._metadata_settings = MagicMock()
 
-    def test_initialise_success(self):
+    @patch.object(ConfigurationManager, 'get_entry', return_value="test_value")
+    def test_initialise_success(self, mock_get_entry):
         """Test _initialise when configuration management succeeds."""
         # Mock constants
         patch("application.RELEASE_VERSION", "1.0.0").start()
@@ -29,21 +31,8 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.application._manage_configuration = MagicMock(return_value=True)
 
         with patch.object(self.application, "get_metadata", return_value=True) as mock_get_metadata:
-            print("DEBUG: Calling _initialise()")
             result = self.application._initialise()
-            print(f"DEBUG: get_metadata() called? {mock_get_metadata.called}")
             self.assertTrue(result, "Initialization should succeed")
-
-        return
-
-        # Call _initialise
-        result = self.application._initialise()
-
-        # Assertions
-        self.assertTrue(result, "Initialization should succeed")
-        self.mock_logger_instance.info.assert_any_call(
-            'ITEMS Web Portal Microservice %s', "V1.0.0-123-alpha"
-        )
 
     async def test_main_loop_execution(self):
         """Test that _main_loop executes properly with asyncio.sleep."""
@@ -67,13 +56,15 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.application._manage_configuration.assert_called_once()
         self.mock_logger_instance.info.assert_called()  # Logger should still log build info
 
-    def test_initialise_get_metadata_failure(self):
+    @patch.object(ConfigurationManager, 'get_entry', return_value="test_value")
+    def test_initialise_get_metadata_failure(self, mock_get_entry):
         """Test _initialise when configuration management succeeds."""
         # Mock constants
         patch("application.RELEASE_VERSION", "1.0.0").start()
         patch("application.BUILD_VERSION", "123").start()
         patch("application.BUILD_TAG", "-alpha").start()
 
+        self.application._manage_configuration = MagicMock(return_value=True)
         self.application.get_metadata = MagicMock(return_value=False)
 
         # Call _initialise
