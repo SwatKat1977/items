@@ -68,7 +68,8 @@ class Application(BaseApplication):
                           Configuration().logging_log_level)
         self._logger.setLevel(Configuration().logging_log_level)
 
-        self.get_metadata(GET_METADATA_INFINITE_RETRIES)
+        if not self.get_metadata(GET_METADATA_INFINITE_RETRIES):
+            return False
 
         auth_blueprint = auth_api.create_blueprint(self._logger)
         self._quart_instance.register_blueprint(auth_blueprint)
