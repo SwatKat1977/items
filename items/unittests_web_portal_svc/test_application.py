@@ -26,6 +26,8 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         patch("application.BUILD_VERSION", "123").start()
         patch("application.BUILD_TAG", "-alpha").start()
 
+        self.application._manage_configuration = MagicMock(return_value=True)
+
         with patch.object(self.application, "get_metadata", return_value=True) as mock_get_metadata:
             print("DEBUG: Calling _initialise()")
             result = self.application._initialise()
