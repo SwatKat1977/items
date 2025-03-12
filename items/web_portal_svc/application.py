@@ -68,8 +68,12 @@ class Application(BaseApplication):
                           Configuration().logging_log_level)
         self._logger.setLevel(Configuration().logging_log_level)
 
+        print(f"\n\n\nDEBUG: get_metadata before call: {self.get_metadata}")
+        metadata_result = self.get_metadata(GET_METADATA_INFINITE_RETRIES)
+        print(f"\n\n\nDEBUG: get_metadata returned {metadata_result}")
         if not self.get_metadata(GET_METADATA_INFINITE_RETRIES):
             return False
+
 
         auth_blueprint = auth_api.create_blueprint(self._logger)
         self._quart_instance.register_blueprint(auth_blueprint)
