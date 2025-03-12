@@ -138,6 +138,40 @@ class Application(BaseApplication):
         return True
 
     def get_metadata(self, retries: int = 0) -> bool:
+        """
+        Fetches metadata from the web portal service and updates internal
+        settings.
+
+        This method retrieves metadata configuration items such as the default
+        time zone, whether the server's default time zone is used, and the
+        instance name. It attempts the request up to a specified number of
+        retries.
+
+        Args:
+            retries (int, optional): The number of times to retry fetching
+                                     metadata. If set to
+                                     `GET_METADATA_INFINITE_RETRIES`, it
+                                     retries indefinitely. Defaults to 0.
+
+        Returns:
+            bool: True if metadata was successfully retrieved and updated,
+                  False otherwise.
+
+        Logs:
+            - INFO: If metadata retrieval is successful.
+            - WARNING: If a request fails but retries are remaining.
+            - ERROR: If a connection error occurs.
+            - CRITICAL: If all retries are exhausted without success.
+
+        Raises:
+            requests.exceptions.ConnectionError: If a connection to the web
+            portal fails.
+
+        Notes:
+            - The request is signed using an API signature for authentication.
+            - Uses a UUID as a nonce for security.
+            - Sleeps for 3 seconds between failed attempts before retrying.
+        """
         perform_update: int = 1 if retries in (0,
                                                GET_METADATA_INFINITE_RETRIES) \
                                 else retries
