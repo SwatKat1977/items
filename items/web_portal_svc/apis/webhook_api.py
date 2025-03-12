@@ -16,9 +16,11 @@ limitations under the License.
 import logging
 from quart import Blueprint
 from apis.webhook_api_view import WebhookApiView
+from metadata_settings import MetadataSettings
 
 
-def create_blueprint(logger: logging.Logger) -> Blueprint:
+def create_blueprint(logger: logging.Logger,
+                     metadata_settings: MetadataSettings) -> Blueprint:
     """
     Creates and registers a Quart Blueprint for handling webhook API routes.
 
@@ -27,11 +29,12 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
 
     Args:
         logger (logging.Logger): A logger instance for logging messages.
+        metadata_settings (MetadataSettings): A metadata settings instances.
 
     Returns:
         Blueprint: A Quart `Blueprint` object containing the registered route.
     """
-    view = WebhookApiView(logger)
+    view = WebhookApiView(logger, metadata_settings)
 
     blueprint = Blueprint('webhook_api', __name__)
 

@@ -76,7 +76,8 @@ class Application(BaseApplication):
         test_cases_blueprint = test_cases_api.create_blueprint(self._logger)
         self._quart_instance.register_blueprint(test_cases_blueprint)
 
-        webhook_blueprint = webhook_api.create_blueprint(self._logger)
+        webhook_blueprint = webhook_api.create_blueprint(
+            self._logger, self._metadata_settings)
         self._quart_instance.register_blueprint(webhook_blueprint)
 
         return True
