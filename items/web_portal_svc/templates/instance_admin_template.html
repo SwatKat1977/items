@@ -1,0 +1,28 @@
+{% extends "dashboard_template.html" %}
+{% block title %}Integrated Test Management Suite | Instance Admin{% endblock %}
+{% block head %}{{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/instance_admin.css') }}">
+{% endblock %}
+
+{% block body_params %}id="body-pd"{% endblock %}
+{% block page_body %}
+{{ super() }}
+
+    <div class="container-fluid d-flex">
+        <!-- Sidebar -->
+        <nav class="sidebar d-flex flex-column">
+            <h4 class="fw-bold">Manage Settings</h4>
+            <a href="#" class="nav-link text-dark">Overview</a>
+            <a href="#" class="nav-link text-dark">Projects</a>
+            <a href="#" class="nav-link text-dark">Users & Roles</a>
+            <a href="#" class="nav-link text-dark">Customizations</a>
+            <a href="#" class="nav-link text-dark">Integration</a>
+            <a href="#" class="nav-link text-dark">Data Management</a>
+            <a href="#" class="nav-link text-dark fw-bold">Site Settings</a>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="content">{% block instance_admin_body %}{% endblock %}
+        </main>
+    </div>
+{% endblock %}
