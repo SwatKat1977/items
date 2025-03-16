@@ -27,8 +27,16 @@ class DashboardApiView(BaseWebView):
         super().__init__(logger)
         self._metadata_settings = metadata
 
-    async def admin_overview_request(self):
+    async def admin_overview(self):
+
         return await self._render_page(
             pages.PAGE_INSTANCE_ADMIN_OVERVIEW,
+            instance_name=self._metadata_settings.instance_name,
+            active_page="administration")
+
+    async def admin_site_settings(self):
+
+        return await self._render_page(
+            pages.PAGE_INSTANCE_ADMIN_SITE_SETTINGS,
             instance_name=self._metadata_settings.instance_name,
             active_page="administration")

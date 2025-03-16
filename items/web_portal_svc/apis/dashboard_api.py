@@ -41,6 +41,12 @@ def create_blueprint(logger: logging.Logger,
 
     @blueprint.route('/admin/overview', methods=['GET'])
     async def admin_overview_request():
-        return await view.admin_overview_request()
+        return await view.admin_overview()
+
+    logger.info("=> /admin/site_settings [GET]")
+
+    @blueprint.route('/admin/site_settings', methods=['GET'])
+    async def admin_site_settings_request():
+        return await view.admin_site_settings()
 
     return blueprint
