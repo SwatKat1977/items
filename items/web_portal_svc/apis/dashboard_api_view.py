@@ -13,3 +13,21 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import logging
+from base_web_view import BaseWebView
+from metadata_settings import MetadataSettings
+import page_locations as pages
+
+
+class DashboardApiView(BaseWebView):
+
+    def __init__(self,
+                 logger: logging.Logger,
+                 metadata: MetadataSettings):
+        super().__init__(logger)
+        self._metadata_settings = metadata
+
+    async def admin_overview_request(self):
+        return await self._render_page(pages.TEMPLATE_INSTANCE_ADMIN,
+                                       instance_name="DEV | Work In Progress",
+                                       active_page="dashboard")
