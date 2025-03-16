@@ -2,19 +2,13 @@
 {% block title %}Integrated Test Management Suite | All Projects{% endblock %}
 {% block head %}{{ super() }}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-
-    <style>
-    body {
-        background-color: #EBF1F6;
-    }
-    </style>
 {% endblock %}
 
 {% block body_params %}id="body-pd"{% endblock %}
 {% block page_body %}
 {{ super() }}
 
-    <!-- First Line: User dropdown, Help dropdown -->
+    <!-- First Line: User Dropdown, Help Dropdown -->
     <nav class="navbar navbar-expand-lg navbar-custom">
         <div class="container-fluid menubar_first-line">
             <!-- Right-aligned items: User and Help Dropdowns -->
@@ -31,7 +25,7 @@
                     </ul>
                 </div>
 
-                <!-- Help dropdown -->
+                <!-- Help Dropdown -->
                 <div class="dropdown light-blue-box">
                     <a class="nav-link dropdown-toggle help_dropdown_text" href="#" id="helpDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         Help
@@ -45,7 +39,7 @@
         </div>
     </nav>
 
-    <!-- Second Line: Project logo & instance name -->
+    <!-- Second Line: Logo and Instance Name -->
     <div class="menubar_second-line">
         <div class="container-fluid">
             <span class="fs-6 fs-md-5 fs-lg-4">
@@ -55,7 +49,7 @@
         </div>
     </div>
 
-    <!-- Third Line: Menu items -->
+    <!-- Third Line: Menu Items -->
     <nav class="navbar navbar-expand-lg navbar-light menubar_third-line">
         <div class="container-fluid">
             <!-- Left-justified items: Overview, Todo, Test Cases -->

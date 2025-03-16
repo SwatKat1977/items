@@ -13,3 +13,34 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import logging
+from quart import Blueprint
+from apis.dashboard_api_view import DashboardApiView
+from metadata_settings import MetadataSettings
+
+
+def create_blueprint(logger: logging.Logger,
+                     metadata: MetadataSettings) -> Blueprint:
+    """
+    Creates and registers a Quart Blueprint for handling dashboard API routes.
+
+    Args:
+        logger (logging.Logger): A logger instance for logging messages.
+        metadata (MetadataSettings): A metadata settings instance.
+
+    Returns:
+        Blueprint: A Quart `Blueprint` object containing the registered route.
+    """
+    view = DashboardApiView(logger, metadata)
+
+    blueprint = Blueprint('dashboard_api', __name__)
+
+    logger.info("Registering Dashboard endpoint:")
+
+    logger.info("=> /admin/overview [GET]")
+
+    @blueprint.route('/admin/overview', methods=['GET'])
+    async def admin_overview_request():
+        return await view.admin_overview_request()
+
+    return blueprint
