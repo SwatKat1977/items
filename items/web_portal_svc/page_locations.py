@@ -26,4 +26,4 @@ TEMPLATE_TEST_DEFINITIONS_PAGE: str = "project_testcases.html"
 # Internal error page template
 TEMPLATE_INTERNAL_ERROR_PAGE: str = "internal_server_error.html"
 
-TEMPLATE_INSTANCE_ADMIN: str = "instance_admin_template.html"
+PAGE_INSTANCE_ADMIN_OVERVIEW: str = "instance_admin_overview.html"
