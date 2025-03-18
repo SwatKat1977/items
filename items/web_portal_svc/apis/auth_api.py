@@ -22,18 +22,19 @@ from metadata_settings import MetadataSettings
 def create_blueprint(logger: logging.Logger,
                      metadata: MetadataSettings) -> Blueprint:
     """
-    Creates and registers a Flask Blueprint for handling authentication
+    Creates and registers a Quart Blueprint for handling authentication
     handshake API routes.
 
-    This function initializes a `View` object with the provided SQL interface
-    and logger, and then defines an API endpoint for authentication handshake.
+    This function initializes a `View` object with the provided meta ddata
+    instance and logger, and then defines an API endpoint for authentication
+    handshake.
 
     Args:
         logger (logging.Logger): A logger instance for logging messages.
         metadata (MetadataSettings): A metadata settings instance.
 
     Returns:
-        Blueprint: A Flask `Blueprint` object containing the registered route.
+        Blueprint: A Quart `Blueprint` object containing the registered route.
     """
     view = AuthApiView(logger, metadata)
 
