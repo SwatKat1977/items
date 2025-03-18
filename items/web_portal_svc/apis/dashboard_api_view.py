@@ -32,11 +32,37 @@ class DashboardApiView(BaseWebView):
         return await self._render_page(
             pages.PAGE_INSTANCE_ADMIN_OVERVIEW,
             instance_name=self._metadata_settings.instance_name,
-            active_page="administration")
+            active_page="administration",
+            active_admin_page="admin_page_overview")
+
+    async def admin_projects(self):
+
+        return await self._render_page(
+            pages.PAGE_INSTANCE_ADMIN_PROJECTS,
+            instance_name=self._metadata_settings.instance_name,
+            active_page="administration",
+            active_admin_page="admin_page_projects")
+
+    async def admin_users_and_roles(self):
+
+        return await self._render_page(
+            pages.PAGE_INSTANCE_ADMIN_USERS_AND_ROLES,
+            instance_name=self._metadata_settings.instance_name,
+            active_page="administration",
+            active_admin_page="admin_page_users_roles")
+
+    async def admin_manage_data(self):
+
+        return await self._render_page(
+            pages.PAGE_INSTANCE_ADMIN_MANAGE_DATA,
+            instance_name=self._metadata_settings.instance_name,
+            active_page="administration",
+            active_admin_page="admin_page_manage_data")
 
     async def admin_site_settings(self):
 
         return await self._render_page(
             pages.PAGE_INSTANCE_ADMIN_SITE_SETTINGS,
             instance_name=self._metadata_settings.instance_name,
-            active_page="administration")
+            active_page="administration",
+            active_admin_page="admin_page_site_settings")

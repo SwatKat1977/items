@@ -43,6 +43,24 @@ def create_blueprint(logger: logging.Logger,
     async def admin_overview_request():
         return await view.admin_overview()
 
+    logger.info("=> /admin/projects [GET]")
+
+    @blueprint.route('/admin/projects', methods=['GET'])
+    async def admin_projects_request():
+        return await view.admin_projects()
+
+    logger.info("=> /admin/projects [GET]")
+
+    @blueprint.route('/admin/users_roles', methods=['GET'])
+    async def admin_admin_users_and_roles_request():
+        return await view.admin_users_and_roles()
+
+    logger.info("=> /admin/manage_data [GET]")
+
+    @blueprint.route('/admin/manage_data', methods=['GET'])
+    async def admin_admin_manage_data_request():
+        return await view.admin_manage_data()
+
     logger.info("=> /admin/site_settings [GET]")
 
     @blueprint.route('/admin/site_settings', methods=['GET'])
