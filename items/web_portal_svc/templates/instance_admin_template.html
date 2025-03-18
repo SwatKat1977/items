@@ -12,13 +12,17 @@
         <!-- Sidebar -->
         <nav class="sidebar d-flex flex-column">
             <p>Manage projects, users and server settings.</p>
-            <a href="/admin/overview" class="nav-link text-dark">Overview</a>
-            <a href="#" class="nav-link text-dark">Projects</a>
-            <a href="#"
+            <a href="/admin/overview" class="nav-link text-dark {% if active_admin_page == 'admin_page_overview' %}fw-bold{% endif %}">
+                Overview
+            </a>
+            <a href="/admin/projects" class="nav-link text-dark {% if active_admin_page == 'admin_page_projects' %}fw-bold{% endif %}">
+                Projects
+            </a>
+            <a href="/admin/users_roles"
                class="nav-link text-dark {% if active_admin_page == 'admin_page_users_roles' %}fw-bold{% endif %}">
                 Users & Roles
             </a>
-            <a href="#"
+            <a href="/admin/manage_data"
                class="nav-link text-dark {% if active_admin_page == 'admin_page_manage_data' %}fw-bold{% endif %}">
                 Manage Data
             </a>
