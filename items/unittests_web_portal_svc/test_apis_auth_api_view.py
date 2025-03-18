@@ -7,6 +7,7 @@ from base_web_view import BaseWebView
 from base_items_exception import BaseItemsException
 from threadsafe_configuration import ThreadSafeConfiguration
 from configuration.configuration_manager import ConfigurationManager
+from metadata_settings import MetadataSettings
 
 
 class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
@@ -14,7 +15,9 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.app = Quart(__name__)
         self.logger = MagicMock()
-        self.auth_api_view = AuthApiView(self.logger)
+        self.metadata = MetadataSettings()
+        self.auth_api_view = AuthApiView(self.logger,
+                                         self.metadata)
 
         # Need to push the context for it to be valid in async tests
         self.app_ctx = self.app.app_context()
