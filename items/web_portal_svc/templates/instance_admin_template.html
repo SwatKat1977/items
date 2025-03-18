@@ -14,9 +14,18 @@
             <p>Manage projects, users and server settings.</p>
             <a href="/admin/overview" class="nav-link text-dark">Overview</a>
             <a href="#" class="nav-link text-dark">Projects</a>
-            <a href="#" class="nav-link text-dark">Users & Roles</a>
-            <a href="#" class="nav-link text-dark">Manage Data</a>
-            <a href="/admin/site_settings" class="nav-link text-dark fw-bold">Site Settings</a>
+            <a href="#"
+               class="nav-link text-dark {% if active_admin_page == 'admin_page_users_roles' %}fw-bold{% endif %}">
+                Users & Roles
+            </a>
+            <a href="#"
+               class="nav-link text-dark {% if active_admin_page == 'admin_page_manage_data' %}fw-bold{% endif %}">
+                Manage Data
+            </a>
+            <a href="/admin/site_settings"
+               class="nav-link text-dark {% if active_admin_page == 'admin_page_site_settings' %}fw-bold{% endif %}">
+                Site Settings
+            </a>
         </nav>
 
         <!-- Main Content -->
