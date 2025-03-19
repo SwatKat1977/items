@@ -15,16 +15,21 @@ limitations under the License.
 """
 import http
 import json
+import logging
 import quart
 from base_web_view import BaseWebView
 import page_locations as pages
 from threadsafe_configuration import ThreadSafeConfiguration
+from metadata_settings import MetadataSettings
 
 
 class TestCasesApiView(BaseWebView):
 
-    def __init__(self, logger):
+    def __init__(self,
+                 logger: logging.Logger,
+                 metadata: MetadataSettings):
         super().__init__(logger)
+        self._metadata_settings = metadata
 
     async def test_cases(self, project_id: int):
         gateway_svc: str = ThreadSafeConfiguration().apis_gateway_svc
@@ -47,9 +52,11 @@ class TestCasesApiView(BaseWebView):
         details = self._transform_tests_details_data(response.body)
 
         page = "test-cases"  # Default to 'Overview'
-        return await self._render_page(pages.TEMPLATE_TEST_DEFINITIONS_PAGE,
-                                       data=details, active_page=page,
-                                       has_testcases=True)
+        return await self._render_page(
+            pages.TEMPLATE_TEST_DEFINITIONS_PAGE,
+            data=details, active_page=page,
+            has_testcases=True,
+            instance_name=self._metadata_settings.instance_name)
 
     def _transform_tests_details_data(self, data):
         folder_map = {folder['id']: {**folder, 'subfolders': [],

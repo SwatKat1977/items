@@ -14,18 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from http import HTTPStatus
+import logging
 from base_web_view import BaseWebView
 from base_view import ApiResponse
 from quart import make_response, request, Response
 from base_items_exception import BaseItemsException
 import page_locations as pages
 from threadsafe_configuration import ThreadSafeConfiguration
+from metadata_settings import MetadataSettings
 
 
 class AuthApiView(BaseWebView):
 
-    def __init__(self, logger):
+    def __init__(self,
+                 logger: logging.Logger,
+                 metadata: MetadataSettings):
         super().__init__(logger)
+        self._metadata_settings = metadata
 
     async def index_page(self):
         """
@@ -60,8 +65,11 @@ class AuthApiView(BaseWebView):
         page: str = "dashboard"
         projects = response.body["projects"]
 
-        return await self._render_page(pages.TEMPLATE_DASHBOARD_PAGE,
-                                       active_page=page, projects=projects)
+        return await self._render_page(
+            pages.TEMPLATE_DASHBOARD_PAGE,
+            active_page=page,
+            projects=projects,
+            instance_name=self._metadata_settings.instance_name)
 
     async def login_page_get(self):
         """

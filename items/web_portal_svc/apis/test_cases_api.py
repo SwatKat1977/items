@@ -16,9 +16,11 @@ limitations under the License.
 import logging
 from quart import Blueprint
 from apis.test_cases_api_view import TestCasesApiView
+from metadata_settings import MetadataSettings
 
 
-def create_blueprint(logger: logging.Logger) -> Blueprint:
+def create_blueprint(logger: logging.Logger,
+                     metadata: MetadataSettings) -> Blueprint:
     """
     Creates and registers a Flask Blueprint for handling authentication
     handshake API routes.
@@ -28,11 +30,12 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
 
     Args:
         logger (logging.Logger): A logger instance for logging messages.
+        metadata (MetadataSettings): A metadata settings instance.
 
     Returns:
         Blueprint: A Flask `Blueprint` object containing the registered route.
     """
-    view = TestCasesApiView(logger)
+    view = TestCasesApiView(logger, metadata)
 
     blueprint = Blueprint('test_cases_api', __name__)
 
