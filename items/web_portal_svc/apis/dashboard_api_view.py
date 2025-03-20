@@ -52,8 +52,6 @@ class DashboardApiView(BaseWebView):
         page: str = "dashboard"
         projects = response.body["projects"]
 
-        print(projects)
-
         return await self._render_page(
             pages.PAGE_INSTANCE_ADMIN_PROJECTS,
             instance_name=self._metadata_settings.instance_name,
