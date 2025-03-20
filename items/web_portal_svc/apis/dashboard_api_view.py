@@ -82,3 +82,11 @@ class DashboardApiView(BaseWebView):
             instance_name=self._metadata_settings.instance_name,
             active_page="administration",
             active_admin_page="admin_page_site_settings")
+
+    async def admin_add_project(self):
+
+        return await self._render_page(
+            pages.PAGE_INSTANCE_ADMIN_ADD_PROJECT,
+            instance_name=self._metadata_settings.instance_name,
+            active_page="administration",
+            active_admin_page="admin_page_site_settings")

@@ -35,3 +35,5 @@ PAGE_INSTANCE_ADMIN_PROJECTS: str = "instance_admin_projects.html"
 PAGE_INSTANCE_ADMIN_USERS_AND_ROLES: str = "instance_admin_users_roles.html"
 PAGE_INSTANCE_ADMIN_MANAGE_DATA: str = "instance_admin_manage_data.html"
 PAGE_INSTANCE_ADMIN_SITE_SETTINGS: str = "instance_admin_site_settings.html"
+
+PAGE_INSTANCE_ADMIN_ADD_PROJECT: str = "instance_admin_add_project.html"
