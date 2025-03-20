@@ -13,10 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import http
 import logging
+from base_view import ApiResponse
 from base_web_view import BaseWebView
 from metadata_settings import MetadataSettings
 import page_locations as pages
+from threadsafe_configuration import ThreadSafeConfiguration
 
 
 class DashboardApiView(BaseWebView):
@@ -36,6 +39,20 @@ class DashboardApiView(BaseWebView):
             active_admin_page="admin_page_overview")
 
     async def admin_projects(self):
+
+        base_url: str = ThreadSafeConfiguration().apis_gateway_svc
+        url = f"{base_url}/project/overviews?value_fields=name"
+        response: ApiResponse = await self._call_api_get(url)
+
+        if response.status_code != http.HTTPStatus.OK:
+            self._logger.critical("Gateway svc request invalid - Reason: %s",
+                                  response.exception_msg)
+            return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
+
+        page: str = "dashboard"
+        projects = response.body["projects"]
+
+        print(projects)
 
         return await self._render_page(
             pages.PAGE_INSTANCE_ADMIN_PROJECTS,
