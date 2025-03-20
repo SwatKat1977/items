@@ -58,7 +58,8 @@ class DashboardApiView(BaseWebView):
             pages.PAGE_INSTANCE_ADMIN_PROJECTS,
             instance_name=self._metadata_settings.instance_name,
             active_page="administration",
-            active_admin_page="admin_page_projects")
+            active_admin_page="admin_page_projects",
+            projects=projects)
 
     async def admin_users_and_roles(self):
 

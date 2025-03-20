@@ -20,13 +20,19 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td><a href="#" class="text-dark text-decoration-none">Example Test Project</a></td>
-            <td class="text-end">
-              <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i></button>
-              <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
-            </td>
-          </tr>
+        {% for project in projects %}
+        <tr>
+          <td><a href="#" class="text-black">{{ project.name }}</a></td>
+          <td class="text-end">
+            <button class="btn btn-link text-primary">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-link text-danger">
+              <i class="bi bi-x-circle"></i>
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
         </tbody>
       </table>
       <div class="mt-3">
