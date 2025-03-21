@@ -20,3 +20,15 @@
     document.getElementById('confirmCheckbox').checked = false;
     document.getElementById('confirmDeleteButton').disabled = true;
   });
+
+document.getElementById('confirmDeleteModal').addEventListener('hidden.bs.modal', function () {
+  const checkbox = document.getElementById('confirmCheckbox');
+  const button = document.getElementById('confirmDeleteButton');
+
+  if (checkbox) {
+    checkbox.checked = false;
+  }
+  if (button) {
+    button.disabled = true;
+  }
+});
