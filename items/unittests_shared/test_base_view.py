@@ -402,3 +402,36 @@ class TestBaseView(unittest.IsolatedAsyncioTestCase):
         """Test invalid input type raises TypeError"""
         with self.assertRaises(TypeError):
             BaseView.generate_api_signature(self.secret_key, 1234)  # Invalid type (int)
+
+    @patch("aiohttp.ClientSession.delete")
+    async def test_call_api_delete_success(self, mock_delete):
+        mock_response = AsyncMock()
+        mock_response.status = 200
+        mock_response.content_type = self.view.CONTENT_TYPE_JSON
+        mock_response.json.return_value = {"key": "value"}
+
+        # Configure the mock to return the response when used in 'async with'
+        mock_delete.return_value.__aenter__.return_value = mock_response
+
+        # Call the method under test
+        response = await self.view._call_api_delete("http://example.com", {"data": "test"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.body, {"key": "value"})
+        self.assertEqual(response.content_type, self.view.CONTENT_TYPE_JSON)
+
+    @patch("aiohttp.ClientSession.delete")
+    async def test_call_api_delete_client_error(self, mock_delete):
+        mock_delete.side_effect = ClientError("Connection error")
+
+        response = await self.view._call_api_delete("http://example.com", {"data": "test"})
+        self.assertIsNone(response.body)
+        self.assertEqual(response.exception_msg, "Connection error")
+
+    @patch("aiohttp.ClientSession.delete")
+    async def test_call_api_delete_timeout_error(self, mock_delete):
+        mock_delete.side_effect = asyncio.TimeoutError("Timeout error")
+
+        response = await self.view._call_api_delete("http://example.com", {"data": "test"})
+        self.assertIsNone(response.body)
+        self.assertEqual(response.exception_msg, "Timeout error")
