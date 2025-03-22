@@ -247,7 +247,7 @@ class BaseView:
                         if resp.content_type == self.CONTENT_TYPE_JSON \
                         else await resp.text()
                     api_return = ApiResponse(
-                        status_code = resp.status,
+                        status_code=resp.status,
                         body = body,
                         content_type = resp.content_type)
 
