@@ -34,11 +34,11 @@ ENV ITEMS_CMS_SVC_CONFIG_FILE_REQUIRED=1
 ENV ITEMS_ENVIRONMENT="development"
 ENV QUART_APP=cms_svc
 
-EXPOSE 5000
+EXPOSE 5050
 
 # Default command (can be overridden)
 CMD ["sh", "-c", "if [ \"$ITEMS_ENVIRONMENT\" = \"production\" ]; then \
     exec uvicorn main:app --host 0.0.0.0 --port 5000; \
 else \
-    exec python -m quart run -p 5000 -h 0.0.0.0 --reload; \
+    exec python -m quart run -p 5050 -h 0.0.0.0 --reload; \
 fi"]

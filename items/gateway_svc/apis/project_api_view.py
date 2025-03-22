@@ -17,7 +17,6 @@ import http
 import json
 import logging
 import quart
-import requests
 from base_view import BaseView
 from threadsafe_configuration import ThreadSafeConfiguration
 
@@ -47,6 +46,33 @@ class ProjectApiView(BaseView):
         if api_response.status_code != http.HTTPStatus.OK:
             self._logger.critical("CMS svc /project/overviews request invalid"
                                   " - Reason: %s",api_response.exception_msg)
+            response_json = {
+                "status": 0,
+                'error': 'Internal error!'
+            }
+            return quart.Response(json.dumps(response_json),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
+        return quart.Response(json.dumps(api_response.body),
+                              status=http.HTTPStatus.OK,
+                              content_type="application/json")
+
+    async def delete_project(self, project_id: int):
+        cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
+        url: str = f"{cms_svc}project/delete/{project_id}?hard_delete=true"
+
+        api_response = await self._call_api_delete(url)
+
+        if api_response.status_code == http.HTTPStatus.BAD_REQUEST:
+            return quart.Response(json.dumps(api_response.body),
+                                  status=http.HTTPStatus.BAD_REQUEST,
+                                  content_type="application/json")
+
+        if api_response.status_code != http.HTTPStatus.OK:
+            self._logger.critical(
+                "CMS svc %s request invalid - Reason: %s",
+                url, api_response.exception_msg)
             response_json = {
                 "status": 0,
                 'error': 'Internal error!'
