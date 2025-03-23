@@ -20,6 +20,9 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.app.add_url_rule('/project/overviews',
                               view_func=self.view.project_overviews,
                               methods=['GET'])
+        self.app.add_url_rule('/project/add',
+                              view_func=self.view.add_project,
+                              methods=['POST'])
         self.app.add_url_rule('/<project_id>/delete_project',
                               view_func=self.view.delete_project,
                               methods=['DELETE'])
@@ -121,3 +124,39 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
             # Check response status
             self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
+
+    @patch.object(ConfigurationManager, 'get_entry')
+    async def test_add_project_success(self, mock_get_entry):
+        # Mock the response of `_call_api_delete`
+        mock_call_api_post = AsyncMock()
+        mock_call_api_post.return_value = MagicMock(
+            status_code=http.HTTPStatus.OK,
+            body={'status': 1})
+        self.view._call_api_post = mock_call_api_post
+
+        request_body: dict = {
+            "name": "test project"
+        }
+        async with self.client as client:
+            response = await client.post('/project/add',
+                                         json=request_body)
+
+            # Check response status
+            self.assertEqual(response.status_code, http.HTTPStatus.OK)
+
+    @patch.object(ConfigurationManager, 'get_entry')
+    async def test_add_project_internal_error(self, mock_get_entry):
+        mock_call_api_post = AsyncMock()
+        mock_call_api_post.return_value = MagicMock(
+            status_code=http.HTTPStatus.BAD_REQUEST)
+        self.view._call_api_post = mock_call_api_post
+
+        request_body: dict = {
+            "name": "test project"
+        }
+        async with self.client as client:
+            response = await client.post('/project/add',
+                                         json=request_body)
+
+            self.assertEqual(response.status_code,
+                             http.HTTPStatus.INTERNAL_SERVER_ERROR)
