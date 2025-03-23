@@ -17,9 +17,9 @@ import http
 import json
 import logging
 import quart
-import requests
-from base_view import BaseView
+from base_view import ApiResponse, BaseView, validate_json
 from threadsafe_configuration import ThreadSafeConfiguration
+import interfaces.gateway.project as json_schemas
 
 
 class ProjectApiView(BaseView):
@@ -47,6 +47,60 @@ class ProjectApiView(BaseView):
         if api_response.status_code != http.HTTPStatus.OK:
             self._logger.critical("CMS svc /project/overviews request invalid"
                                   " - Reason: %s",api_response.exception_msg)
+            response_json = {
+                "status": 0,
+                'error': 'Internal error!'
+            }
+            return quart.Response(json.dumps(response_json),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
+        return quart.Response(json.dumps(api_response.body),
+                              status=http.HTTPStatus.OK,
+                              content_type="application/json")
+
+    @validate_json(json_schemas.SCHEMA_ADD_PROJECT_REQUEST)
+    async def add_project(self, request_msg: ApiResponse):
+
+        cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
+        url: str = f"{cms_svc}project/add"
+
+        cms_request: dict = {
+            "name": request_msg.body.name
+        }
+        api_response = await self._call_api_post(url, cms_request)
+
+        if api_response.status_code != http.HTTPStatus.OK:
+            self._logger.critical("CMS svc /project/add request invalid"
+                                  " - Reason: %s",api_response.exception_msg)
+            response_json = {
+                "status": 0,
+                'error': api_response.body['error_msg']
+            }
+            return quart.Response(json.dumps(response_json),
+                                  status=http.HTTPStatus.BAD_REQUEST,
+                                  content_type="application/json")
+
+        response_json: dict = {"status": 1}
+        return quart.Response(json.dumps(response_json),
+                              status=http.HTTPStatus.OK,
+                              content_type="text/plain")
+
+    async def delete_project(self, project_id: int):
+        cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
+        url: str = f"{cms_svc}project/delete/{project_id}?hard_delete=true"
+
+        api_response = await self._call_api_delete(url)
+
+        if api_response.status_code == http.HTTPStatus.BAD_REQUEST:
+            return quart.Response(json.dumps(api_response.body),
+                                  status=http.HTTPStatus.BAD_REQUEST,
+                                  content_type="application/json")
+
+        if api_response.status_code != http.HTTPStatus.OK:
+            self._logger.critical(
+                "CMS svc %s request invalid - Reason: %s",
+                url, api_response.exception_msg)
             response_json = {
                 "status": 0,
                 'error': 'Internal error!'

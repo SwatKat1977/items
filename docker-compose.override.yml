@@ -10,12 +10,16 @@ services:
       context: .
       dockerfile: ./docker/Dockerfile.cms_svc
     image: swatkat1977/items_cms_svc:latest
+    ports:
+      - 5050:5050
 
   gateway_svc:
     build:
       context: .
       dockerfile: ./docker/Dockerfile.gateway_svc
     image: swatkat1977/items_gateway_svc:latest
+    ports:
+      - 3000:3000
 
   web_portal_svc:
     build:
