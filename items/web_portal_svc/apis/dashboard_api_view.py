@@ -48,40 +48,33 @@ class DashboardApiView(BaseWebView):
             project_id = form.get('projectId')
 
             base_url: str = ThreadSafeConfiguration().apis_gateway_svc
-            url = f"{base_url}project/delete/{project_id}?hard_delete=false"
-            print(f"URL = {url}")
-
-            response: ApiResponse = await self._call_api_get(url)
+            url = f"{base_url}{project_id}/delete_project"
+            response: ApiResponse = await self._call_api_delete(url)
 
             if response.status_code != http.HTTPStatus.OK:
                 self._logger.critical("Gateway svc request invalid - Reason: %s",
                                       response.exception_msg)
                 return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
-            data = await quart.request.get_json()
-            print(f"This is a POST request with data: {data}")
+        base_url: str = ThreadSafeConfiguration().apis_gateway_svc
+        url = f"{base_url}/project/overviews?value_fields=name"
+        response: ApiResponse = await self._call_api_get(url)
 
-        # GET method
-        elif quart.request.method == 'GET':
-            base_url: str = ThreadSafeConfiguration().apis_gateway_svc
-            url = f"{base_url}/project/overviews?value_fields=name"
-            response: ApiResponse = await self._call_api_get(url)
+        if response.status_code != http.HTTPStatus.OK:
+            self._logger.critical(
+                "Gateway svc request invalid - Reason: %s",
+                response.exception_msg)
+            return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
-            if response.status_code != http.HTTPStatus.OK:
-                self._logger.critical(
-                    "Gateway svc request invalid - Reason: %s",
-                    response.exception_msg)
-                return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
+        page: str = "dashboard"
+        projects = response.body["projects"]
 
-            page: str = "dashboard"
-            projects = response.body["projects"]
-
-            return await self._render_page(
-                pages.PAGE_INSTANCE_ADMIN_PROJECTS,
-                instance_name=self._metadata_settings.instance_name,
-                active_page="administration",
-                active_admin_page="admin_page_projects",
-                projects=projects)
+        return await self._render_page(
+            pages.PAGE_INSTANCE_ADMIN_PROJECTS,
+            instance_name=self._metadata_settings.instance_name,
+            active_page="administration",
+            active_admin_page="admin_page_projects",
+            projects=projects)
 
     async def admin_users_and_roles(self):
 
