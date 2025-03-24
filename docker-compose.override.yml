@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: ./docker/Dockerfile.accounts_svc
     image: swatkat1977/items_accounts_svc:latest
+    ports:
+      - 4000:4000
 
   cms_svc:
     build:
