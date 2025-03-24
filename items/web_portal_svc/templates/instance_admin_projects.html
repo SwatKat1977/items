@@ -8,8 +8,6 @@
 {% block body_params %}id="body-pd"{% endblock %}
 
 {% block instance_admin_body %}
-
-    <!-- Main Content -->
     <div class="flex-grow-1">
       <h4 class="mb-3">Projects</h4>
       <hr />
@@ -24,78 +22,43 @@
         {% for project in projects %}
         <tr>
           <td>
-            <a href="{{ project.id }}/project_overview"
-               class="text-black text-decoration-none project-link">
-              {{ project.name }}
-            </a>
+            <a href="{{ project.id }}/project_overview" class="text-black text-decoration-none project-link">{{ project.name }}</a>
           </td>
           <td class="text-end">
-
-            <!-- Button to modify a project -->
-            <button class="btn btn-link text-primary"
-                    onclick="window.location.href='{{ project.id }}/modify_project'">
-              <i class="bi bi-pencil"></i>
-            </button>
-
-            <!-- Button to delete a project -->
-            <button class="btn btn-link text-danger" data-bs-toggle="modal"
-                    data-bs-target="#confirmDeleteModal"
-                    data-project-id="{{ project.id }}">
-              <i class="bi bi-x-circle"></i>
-            </button>
+            <button class="btn btn-link text-primary" onclick="window.location.href='{{ project.id }}/modify_project'"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-link text-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-project-id="{{ project.id }}"><i class="bi bi-x-circle"></i></button>
           </td>
         </tr>
         {% endfor %}
         </tbody>
       </table>
-
       <div class="mt-3">
-        <button class="btn btn-primary me-2"
-                onclick="window.location.href='/admin/add_project'">
-          + Add Project
-        </button>
+        <button class="btn btn-primary me-2" onclick="window.location.href='/admin/add_project'">+ Add Project</button>
       </div>
-
     </div>
 
-<!-- Delete project modal box -->
-<div class="modal fade" id="confirmDeleteModal"
-     tabindex="-1"
-     aria-labelledby="confirmDeleteModalLabel"
-     aria-hidden="true">
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-
-      <!-- Modal Header with Custom Styles -->
       <div class="modal-header delete-project-confirmation-modal-header">
         <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmation</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-
-      <!-- Modal Body -->
       <div class="modal-body">
-        <p>Are you sure you want to delete the project? This action cannot be undone.
-           All test cases, test runs etc. will be removed</p>
-
-        <!-- Checkbox for Confirmation -->
+        <p>Are you sure you want to delete the project? This action cannot be undone. All test cases, test runs etc. will be removed</p>
         <div class="form-check">
           <input class="form-check-input" type="checkbox" id="confirmCheckbox">
-          <label class="form-check-label" for="confirmCheckbox">
-            I confirm I want to delete this item.
-          </label>
+          <label class="form-check-label" for="confirmCheckbox">I confirm I want to delete this item.</label>
         </div>
       </div>
-
-      <!-- Modal Footer -->
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" id="cancelDeleteButton" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-danger" id="confirmDeleteButton" disabled>OK</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Hidden Form to Submit POST Request -->
 <form id="deleteForm" action="/admin/projects" method="POST" style="display: none;">
   <input type="hidden" name="projectId" id="projectId">
 </form>
