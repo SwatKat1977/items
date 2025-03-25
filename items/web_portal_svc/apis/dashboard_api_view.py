@@ -102,6 +102,18 @@ class DashboardApiView(BaseWebView):
 
     async def admin_add_project(self):
 
+        # POST method - send new project to gateway
+        if quart.request.method == 'POST':
+            print("I am a post")
+
+            form = await quart.request.form
+            project_name: str = form.get('project_name')
+            announcement: str = form.get('announcement')
+            show_announcement: bool = form.get('show_announcement') == 'on'
+            print(f"project_name      : {project_name}")
+            print(f"announcement      : {announcement}")
+            print(f"show_announcement : {show_announcement}")
+
         return await self._render_page(
             pages.PAGE_INSTANCE_ADMIN_ADD_PROJECT,
             instance_name=self._metadata_settings.instance_name,
