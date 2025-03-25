@@ -1,0 +1,15 @@
+.project-create-tab .nav-link {
+  border: none;
+  background-color: transparent; /* Optional for a cleaner look */
+  color: #000; /* Default text color */
+}
+
+.project-create-tab .nav-link.active {
+  border-bottom: 2px solid #007bff; /* Optional to highlight the active tab */
+  font-weight: bold; /* Optional for emphasis */
+  color: #007bff; /* Match with the active color */
+}
+
+.project-create-tab .nav-link:hover {
+  color: #007bff; /* Hover effect */
+}
