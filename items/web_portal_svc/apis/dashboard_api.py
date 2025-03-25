@@ -67,7 +67,7 @@ def create_blueprint(logger: logging.Logger,
     async def admin_site_settings_request():
         return await view.admin_site_settings()
 
-    @blueprint.route('/admin/add_project', methods=['GET'])
+    @blueprint.route('/admin/add_project', methods=['GET', 'POST'])
     async def admin_add_project_request():
         return await view.admin_add_project()
 

@@ -1,24 +1,56 @@
+{% extends "instance_admin_template.html" %}
+{% block title %}ITEMS | Add New Project{% endblock %}
+{% block head %}{{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/instance_admin_add_project.css') }}">
+{% endblock %}
 
+{% block body_params %}id="body-pd"{% endblock %}
+{% block instance_admin_body %}
+        <form id="editProjectForm" action="/admin/add_project" method="post">
 
+          <!-- Tab Navigation -->
+          <ul class="nav project-create-tab" id="addProjectTabs">
+            <li class="nav-item">
+              <a class="nav-link active" data-bs-toggle="tab" href="#overview">Overview</a>
+            </li>
+            <!--
+            <li class="nav-item">
+              <a class="nav-link" data-bs-toggle="tab" href="#access">Access</a>
+            </li>
+            -->
+          </ul>
 
+          <div class="tab-content">
+            <!-- Project Tab -->
+            <div class="tab-pane active" id="project">
+              <label for="projectName">Name *</label>
+              <input type="text" class="form-control" id="projectName" name="project_name"
+                required pattern="\S.*" title="Project name cannot be empty or contain only spaces.">
 
-    <!-- Tab Navigation -->
-    <ul class="nav project-create-tab" id="myTabs">
-      <li class="nav-item">
-        <a class="nav-link active" data-bs-toggle="tab" href="#overview">Overview</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="tab" href="#access">Access</a>
-      </li>
-    </ul>
+              <div class="form-group">
+                <label for="announcement">Announcement</label>
+                <textarea class="form-control" id="announcement" name="announcement"></textarea>
+              </div>
 
-    <!-- Tab Content -->
-    <div class="tab-content mt-4">
-      <div class="tab-pane fade show active" id="overview">
-        <h3>Access Overview</h3>
-        <p>Welcome to the project overview section. Here you'll find general information about the project.</p>
-      </div>
-      <div class="tab-pane fade" id="access">
-        <h3>Project Details</h3>
-        <p>Detailed information about the project goes here.</p>
-      </div>
+              <label>
+                <input type="checkbox" name="show_announcement"> Show the announcement on the overview page
+              </label>
+            </div>
+
+            <!-- Access Tab -->
+            <div class="tab-pane" id="access">
+              <label><input type="checkbox" name="admin_access"> Admin Access</label>
+              <label><input type="checkbox" name="read_only_access"> Read-only Access</label>
+            </div>
+
+          </div>
+
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary">Create Project</button>
+          </div>
+        </form>
+
+{% endblock %}
+
+{% block postBody %}{{ super() }}
+{% endblock %}
