@@ -25,15 +25,19 @@
             <div class="tab-pane active" id="project">
               <label for="projectName">Name *</label>
               <input type="text" class="form-control" id="projectName" name="project_name"
-                required pattern="\S.*" title="Project name cannot be empty or contain only spaces.">
+                required pattern="\S.*" value="{{ form_data.get('project_name', '') }}"
+                title="Project name cannot be empty or contain only spaces.">
 
               <div class="form-group">
                 <label for="announcement">Announcement</label>
-                <textarea class="form-control" id="announcement" name="announcement"></textarea>
+                <textarea class="form-control" id="announcement" name="announcement">{{ form_data.get('announcement', '') }}
+                </textarea>
               </div>
 
               <label>
-                <input type="checkbox" name="show_announcement"> Show the announcement on the overview page
+                  <input type="checkbox" id="show_announcement" name="show_announcement"
+                    {% if form_data.get('show_announcement') == 'on' %} checked {% endif %}>
+                    Show the announcement on the overview page
               </label>
             </div>
 
@@ -44,6 +48,12 @@
             </div>
 
           </div>
+
+          {% if error_msg_str %}
+          <div class="jumbotron text-black" id="error_msg">
+            {{ error_msg_str }}
+          </div>
+          {% endif %}
 
           <div class="form-group">
             <button type="submit" class="btn btn-primary">Create Project</button>

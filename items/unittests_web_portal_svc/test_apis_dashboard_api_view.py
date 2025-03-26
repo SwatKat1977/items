@@ -1,9 +1,11 @@
 import http
 import unittest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 import quart
 from apis.dashboard_api_view import DashboardApiView
 from metadata_settings import MetadataSettings
+from configuration.configuration_manager import ConfigurationManager
+import page_locations as pages
 
 
 class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
@@ -23,7 +25,7 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
                               methods=['GET'])
         self.app.add_url_rule('/admin/projects',
                               view_func=self.view.admin_projects,
-                              methods=['GET'])
+                              methods=['GET', 'POST'])
         self.app.add_url_rule('/admin/users_roles',
                               view_func=self.view.admin_users_and_roles,
                               methods=['GET'])
@@ -33,6 +35,9 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
         self.app.add_url_rule('/admin/site_settings',
                               view_func=self.view.admin_site_settings,
                               methods=['GET'])
+        self.app.add_url_rule('/admin/add_project',
+                              view_func=self.view.admin_add_project,
+                              methods=['GET', 'POST'])
 
     async def test_admin_overview(self):
         self.view._render_page = AsyncMock(return_value="Mock Page")
@@ -44,11 +49,52 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status_code,
                              http.HTTPStatus.OK)
 
-    async def test_admin_projects(self):
+    @patch.object(ConfigurationManager, 'get_entry')
+    async def test_admin_projects_GET_success(self, mock_get_entry):
+        mock_call_api_get = AsyncMock()
+        mock_call_api_get.return_value = MagicMock(
+            status_code=http.HTTPStatus.OK,
+            body={'projects': []})
+        self.view._call_api_get = mock_call_api_get
         self.view._render_page = AsyncMock(return_value="Mock Page")
 
         async with self.client as client:
             response = await client.get('/admin/projects')
+
+            # Check response status
+            self.assertEqual(response.status_code,
+                             http.HTTPStatus.OK)
+
+    @patch.object(ConfigurationManager, 'get_entry')
+    async def test_admin_projects_GET_internal_error(self, mock_get_entry):
+        mock_call_api_get = AsyncMock()
+        mock_call_api_get.return_value = MagicMock(
+            status_code=http.HTTPStatus.BAD_REQUEST,
+            body={'projects': []})
+        self.view._call_api_get = mock_call_api_get
+        self.view._render_page = AsyncMock(return_value="Mock Page")
+
+        async with self.client as client:
+            response = await client.get('/admin/projects')
+
+            # Check response status
+            self.assertEqual(response.status_code,
+                             http.HTTPStatus.OK)
+
+        # Check that the internal error page is rendered
+        self.view._render_page.assert_called_once_with(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
+
+    @patch.object(ConfigurationManager, 'get_entry')
+    async def test_admin_projects_POST_success(self, mock_get_entry):
+        mock_call_api_post = AsyncMock()
+        mock_call_api_post.return_value = MagicMock(
+            status_code=http.HTTPStatus.OK,
+            body={})
+        self.view._call_api_post = mock_call_api_post
+        self.view._render_page = AsyncMock(return_value="Mock Page")
+
+        async with self.client as client:
+            response = await client.post('/admin/projects')
 
             # Check response status
             self.assertEqual(response.status_code,
@@ -83,3 +129,27 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
             # Check response status
             self.assertEqual(response.status_code,
                              http.HTTPStatus.OK)
+
+    async def test_admin_add_project_GET(self):
+        self.view._render_page = AsyncMock(return_value="Mock Page")
+
+        async with self.client as client:
+            response = await client.get('/admin/add_project')
+
+            # Check that the internal error page is rendered
+            self.view._render_page.assert_called_once_with(
+                pages.PAGE_INSTANCE_ADMIN_ADD_PROJECT,
+                instance_name='', active_page='administration',
+                active_admin_page='admin_page_site_settings')
+
+    async def test_admin_add_project_POST_success(self):
+        self.view._render_page = AsyncMock(return_value="Mock Page")
+
+        async with self.client as client:
+            response = await client.post('/admin/add_project')
+
+    async def test_admin_add_project_POST_failed(self):
+        self.view._render_page = AsyncMock(return_value="Mock Page")
+
+        async with self.client as client:
+            response = await client.post('/admin/add_project')

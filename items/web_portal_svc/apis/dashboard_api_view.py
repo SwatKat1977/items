@@ -104,18 +104,64 @@ class DashboardApiView(BaseWebView):
 
         # POST method - send new project to gateway
         if quart.request.method == 'POST':
-            print("I am a post")
-
             form = await quart.request.form
             project_name: str = form.get('project_name')
             announcement: str = form.get('announcement')
             show_announcement: bool = form.get('show_announcement') == 'on'
-            print(f"project_name      : {project_name}")
-            print(f"announcement      : {announcement}")
-            print(f"show_announcement : {show_announcement}")
+
+            if all([project_name, (announcement is not None)]):
+                gateway_request_body: dict = {
+                    "name": project_name,
+                    "announcement": announcement,
+                    "announcement_on_overview": show_announcement
+                }
+                base_url: str = ThreadSafeConfiguration().apis_gateway_svc
+                url = f"{base_url}/project/add"
+                response: ApiResponse = await self._call_api_post(
+                    url, gateway_request_body)
+
+                print(response)
+
+                if response.status_code == http.HTTPStatus.INTERNAL_SERVER_ERROR:
+                    self._logger.critical(
+                        "Gateway svc request '/project/add' is invalid: %s",
+                        response.body)
+                    form = await quart.request.form
+                    form_data = form.to_dict()
+                    return await self._render_page(
+                        pages.PAGE_INSTANCE_ADMIN_ADD_PROJECT,
+                        instance_name=self._metadata_settings.instance_name,
+                        active_page="administration",
+                        active_admin_page="admin_page_site_settings",
+                        error_msg_str="Internal server error!",
+                        form_data=form_data)
+
+                if response.status_code == http.HTTPStatus.BAD_REQUEST:
+                    status_code = response.body.get("status")
+
+
+                    error_msg = response.body.get("error") \
+                        if status_code is not None \
+                        else "Internal ITEMS error"
+
+                    form = await quart.request.form
+                    form_data = form.to_dict()
+                    print(f"FORM: {form_data}")
+
+                    return await self._render_page(
+                        pages.PAGE_INSTANCE_ADMIN_ADD_PROJECT,
+                        instance_name=self._metadata_settings.instance_name,
+                        active_page="administration",
+                        active_admin_page="admin_page_site_settings",
+                        error_msg_str=error_msg,
+                        form_data=form_data)
+
+                redirect = self._generate_redirect('/admin/projects')
+                return await quart.make_response(redirect)
 
         return await self._render_page(
             pages.PAGE_INSTANCE_ADMIN_ADD_PROJECT,
             instance_name=self._metadata_settings.instance_name,
             active_page="administration",
-            active_admin_page="admin_page_site_settings")
+            active_admin_page="admin_page_site_settings",
+            form_data={})
