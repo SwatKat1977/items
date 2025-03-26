@@ -108,6 +108,7 @@ class DashboardApiView(BaseWebView):
             project_name: str = form.get('project_name')
             announcement: str = form.get('announcement')
             show_announcement: bool = form.get('show_announcement') == 'on'
+            announcement = announcement.rstrip()
 
             if all([project_name, (announcement is not None)]):
                 gateway_request_body: dict = {
@@ -119,8 +120,6 @@ class DashboardApiView(BaseWebView):
                 url = f"{base_url}/project/add"
                 response: ApiResponse = await self._call_api_post(
                     url, gateway_request_body)
-
-                print(response)
 
                 if response.status_code == http.HTTPStatus.INTERNAL_SERVER_ERROR:
                     self._logger.critical(
@@ -138,15 +137,12 @@ class DashboardApiView(BaseWebView):
 
                 if response.status_code == http.HTTPStatus.BAD_REQUEST:
                     status_code = response.body.get("status")
-
-
                     error_msg = response.body.get("error") \
                         if status_code is not None \
                         else "Internal ITEMS error"
 
                     form = await quart.request.form
                     form_data = form.to_dict()
-                    print(f"FORM: {form_data}")
 
                     return await self._render_page(
                         pages.PAGE_INSTANCE_ADMIN_ADD_PROJECT,
