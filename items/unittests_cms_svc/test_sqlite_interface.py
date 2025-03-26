@@ -360,14 +360,27 @@ class TestSqliteInterface(unittest.TestCase):
                                     state_object=self.mock_state_object)
         interface.insert_query = MagicMock(return_value=42)  # Simulate DB returning ID 42
 
-        result = interface.add_project("Test Project")
+        add_project_dict: dict = {
+            "project_name": "Test Project",
+            "announcement": "An announcement",
+            "announcement_on_overview": True
+        }
+        result = interface.add_project(add_project_dict)
 
         self.assertEqual(result, 42)
-        interface.insert_query.assert_called_once_with("INSERT INTO projects(name) VALUES(?)", ("Test Project",))
+        interface.insert_query.assert_called_once_with(
+            "INSERT INTO projects(name, announcement, show_announcement_on_overview) VALUES(?,?,?)",
+            ("Test Project", "An announcement", True))
         self.mock_logger.critical.assert_not_called()  # No failure, so critical log should NOT be called
 
     def test_add_project_query_failure(self):
         """Test that add_project returns None and logs an error when an exception occurs."""
+
+        add_project_dict: dict = {
+            "project_name": "Failing Project",
+            "announcement": "An announcement",
+            "announcement_on_overview": True
+        }
 
         # Create an instance of SqliteInterface
         interface = SqliteInterface(logger=self.mock_logger,
@@ -375,7 +388,7 @@ class TestSqliteInterface(unittest.TestCase):
                                     state_object=self.mock_state_object)
         interface.insert_query = MagicMock(side_effect=SqliteInterfaceException("DB error"))
 
-        result = interface.add_project("Failing Project")
+        result = interface.add_project(add_project_dict)
 
         self.assertIsNone(result)
         self.mock_logger.critical.assert_called_once_with("Query failed, reason: %s", "DB error")
