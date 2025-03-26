@@ -140,7 +140,8 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
             self.view._render_page.assert_called_once_with(
                 pages.PAGE_INSTANCE_ADMIN_ADD_PROJECT,
                 instance_name='', active_page='administration',
-                active_admin_page='admin_page_site_settings')
+                active_admin_page='admin_page_site_settings',
+                form_data={})
 
     async def test_admin_add_project_POST_success(self):
         self.view._render_page = AsyncMock(return_value="Mock Page")
