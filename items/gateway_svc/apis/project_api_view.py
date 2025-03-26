@@ -87,7 +87,7 @@ class ProjectApiView(BaseView):
         response_json: dict = {"status": 1}
         return quart.Response(json.dumps(response_json),
                               status=http.HTTPStatus.OK,
-                              content_type="text/plain")
+                              content_type="application/json")
 
     async def delete_project(self, project_id: int):
         cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
