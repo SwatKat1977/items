@@ -307,13 +307,13 @@ class SqliteInterface(BaseSqliteInterface):
         # Returns True if the project exists, False otherwise
         return rows[0][0] > 0
 
-    def add_project(self, name: str) -> typing.Optional[int]:
+    def add_project(self, details: dict) -> typing.Optional[int]:
         """
         Insert a new project into the database.
         Updates the database health status to `FULLY_DEGRADED` upon failure.
 
         Args:
-            name (str): The name of the project to be added.
+            details (dict): Project details.
 
         Returns:
             Optional[int]:
@@ -323,10 +323,16 @@ class SqliteInterface(BaseSqliteInterface):
         Logs:
             - Logs a critical error if the database query fails.
         """
-        sql: str = "INSERT INTO projects(name) VALUES(?)"
+        name: str = details["project_name"]
+        announcement: str = details["announcement"]
+        announcement_on_overview: str = details["announcement_on_overview"]
+        sql: str = ("INSERT INTO projects(name, announcement, "
+                    "show_announcement_on_overview) VALUES(?,?,?)")
 
         try:
-            return self.insert_query(sql, (name,))
+            return self.insert_query(sql, (name,
+                                           announcement,
+                                           announcement_on_overview))
 
         except SqliteInterfaceException as ex:
             self._logger.critical("Query failed, reason: %s", str(ex))

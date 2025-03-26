@@ -19,6 +19,8 @@ SQL_CREATE_PROJECTS_TABLE: str = """
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
         awaiting_purge BOOLEAN NOT NULL DEFAULT 0,
+        announcement TEXT NOT NULL DEFAULT '',
+        show_announcement_on_overview INTEGER NOT NULL DEFAULT 0,
         creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 """

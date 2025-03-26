@@ -66,7 +66,10 @@ class ProjectApiView(BaseView):
         url: str = f"{cms_svc}project/add"
 
         cms_request: dict = {
-            "name": request_msg.body.name
+            "name": request_msg.body.name,
+            "announcement": request_msg.body.announcement,
+            "announcement_on_overview":
+                request_msg.body.announcement_on_overview,
         }
         api_response = await self._call_api_post(url, cms_request)
 

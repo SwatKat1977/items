@@ -25,7 +25,15 @@ SCHEMA_ADD_PROJECT_REQUEST: dict = {
             "name":
                 {
                     "type": "string"
-                }
+                },
+            "announcement":
+                {
+                    "type": "string"
+                },
+            "announcement_on_overview":
+                {
+                    "type": "boolean"
+                },
         },
-    "required": ["name"]
+    "required": ["name", "announcement", "announcement_on_overview"]
 }
