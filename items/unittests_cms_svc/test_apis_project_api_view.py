@@ -5,7 +5,6 @@ from unittest.mock import AsyncMock, patch, MagicMock
 import quart
 from sqlite_interface import SqliteInterface, SqliteInterfaceException
 from apis.project_api_view import ProjectApiView
-from base_view import ApiResponse
 
 
 class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
@@ -86,6 +85,12 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.mock_db.project_name_exists = MagicMock(return_value=False)
         self.mock_db.add_project = MagicMock(return_value=42)
 
+        test_json_body: dict = {
+            "name": "Project Delta_4",
+            "announcement": "hello world!",
+            "announcement_on_overview": True
+        }
+
         # Mock _call_api_post to simulate a valid API call response
         mock_call_api_post = AsyncMock()
         mock_call_api_post.return_value = MagicMock(
@@ -97,7 +102,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         async with self.client as client:
             response = await client.post('/project/add',
-                                         json={"name": "123"})
+                                         json=test_json_body)
 
             # Assert response status
             self.assertEqual(response.status_code, http.HTTPStatus.OK)
@@ -108,6 +113,12 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         """Test when the project name already exists."""
         self.mock_db.project_name_exists = MagicMock(return_value=True)
 
+        test_json_body: dict = {
+            "name": "Project Delta_4",
+            "announcement": "hello world!",
+            "announcement_on_overview": True
+        }
+
         # Mock _call_api_post to simulate a valid API call response
         mock_call_api_post = AsyncMock()
         mock_call_api_post.return_value = MagicMock(
@@ -117,7 +128,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         async with self.client as client:
             response = await client.post('/project/add',
-                                         json={"name": "123"})
+                                         json=test_json_body)
 
             # Assert response status
             self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
@@ -128,9 +139,14 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         """Test database query failure while checking if project name exists."""
         self.mock_db.project_name_exists = MagicMock(return_value=None)
 
+        test_json_body: dict = {
+            "name": "Project Delta_4",
+            "announcement": "hello world!",
+            "announcement_on_overview": True
+        }
         async with self.client as client:
             response = await client.post('/project/add',
-                                         json={"name": "123"})
+                                         json=test_json_body)
 
             # Assert response status
             self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -142,6 +158,12 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.mock_db.project_name_exists = MagicMock(return_value=False)
         self.mock_db.add_project = MagicMock(return_value=None)
 
+        test_json_body: dict = {
+            "name": "Project Delta_4",
+            "announcement": "hello world!",
+            "announcement_on_overview": True
+        }
+
         # Mock _call_api_post to simulate a valid API call response
         mock_call_api_post = AsyncMock()
         mock_call_api_post.return_value = MagicMock(
@@ -151,7 +173,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         async with self.client as client:
             response = await client.post('/project/add',
-                                         json={"name": "123"})
+                                         json=test_json_body)
 
             # Assert response status
             self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)

@@ -135,7 +135,9 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.view._call_api_post = mock_call_api_post
 
         request_body: dict = {
-            "name": "test project"
+            "name": "test project",
+            "announcement": "Test that announcement are written",
+            "announcement_on_overview": False
         }
         async with self.client as client:
             response = await client.post('/project/add',
@@ -152,7 +154,9 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.view._call_api_post = mock_call_api_post
 
         request_body: dict = {
-            "name": "test project"
+            "name": "test project",
+            "announcement": "Test that announcement are written",
+            "announcement_on_overview": False
         }
         async with self.client as client:
             response = await client.post('/project/add',

@@ -146,7 +146,14 @@ class ProjectApiView(BaseView):
                                   status=http.HTTPStatus.BAD_REQUEST,
                                   content_type="application/json")
 
-        new_project_id: typing.Optional[int] = self._db.add_project(name)
+        add_project_dict: dict = {
+            "project_name": name,
+            "announcement": request_msg.body.announcement,
+            "announcement_on_overview":
+                request_msg.body.announcement_on_overview
+        }
+        new_project_id: typing.Optional[int] = self._db.add_project(
+            add_project_dict)
         if new_project_id is None:
             response_body: dict = {
                 "status": 0,
