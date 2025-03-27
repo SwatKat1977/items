@@ -37,3 +37,4 @@ PAGE_INSTANCE_ADMIN_MANAGE_DATA: str = "instance_admin_manage_data.html"
 PAGE_INSTANCE_ADMIN_SITE_SETTINGS: str = "instance_admin_site_settings.html"
 
 PAGE_INSTANCE_ADMIN_ADD_PROJECT: str = "instance_admin_add_project.html"
+PAGE_INSTANCE_ADMIN_MODIFY_PROJECT: str = "instance_admin_modify_project.html"

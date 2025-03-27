@@ -160,3 +160,13 @@ class DashboardApiView(BaseWebView):
             active_page="administration",
             active_admin_page="admin_page_site_settings",
             form_data={})
+
+    async def admin_modify_project(self, project_id):
+
+        print(f"[admin_modify_project] Project ID : {project_id}")
+        return await self._render_page(
+            pages.PAGE_INSTANCE_ADMIN_MODIFY_PROJECT,
+            instance_name=self._metadata_settings.instance_name,
+            active_page="administration",
+            active_admin_page="admin_page_site_settings",
+            form_data={})
