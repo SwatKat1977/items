@@ -108,12 +108,11 @@ class DashboardApiView(BaseWebView):
             project_name: str = form.get('project_name')
             announcement: str = form.get('announcement')
             show_announcement: bool = form.get('show_announcement') == 'on'
-            announcement = announcement.rstrip()
 
             if all([project_name, (announcement is not None)]):
                 gateway_request_body: dict = {
                     "name": project_name,
-                    "announcement": announcement,
+                    "announcement": announcement.rstrip(),
                     "announcement_on_overview": show_announcement
                 }
                 base_url: str = ThreadSafeConfiguration().apis_gateway_svc
