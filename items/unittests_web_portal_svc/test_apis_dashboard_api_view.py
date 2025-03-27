@@ -9,6 +9,23 @@ import page_locations as pages
 from base_view import ApiResponse
 
 
+class RealFormMock:
+    def __init__(self, data):
+        self._data = data
+
+    def get(self, key):
+        return self._data.get(key)
+
+    def to_dict(self):
+        return self._data.copy()
+
+    def __await__(self):
+        async def _wrapper():
+            return self
+
+        return _wrapper().__await__()
+
+
 class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self):
@@ -152,14 +169,12 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
                 active_admin_page='admin_page_site_settings',
                 form_data={})
 
-
     @patch.object(ConfigurationManager, 'get_entry')
     async def test_admin_add_project_POST_success(self, mock_get_entry):
         response_body = ApiResponse(
             status_code=http.HTTPStatus.OK,
             body={'status': 1}, content_type='application/json', exception_msg=None)
 
-        mock_response = MagicMock()
         self.view._call_api_post = AsyncMock(
             return_value=response_body,
             status_code=http.HTTPStatus.OK)
@@ -192,8 +207,36 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
             result = await self.view.admin_add_project()
             self.view._generate_redirect.assert_called_once_with('/admin/projects')
 
-    async def test_admin_add_project_POST_failed(self):
+    @patch.object(ConfigurationManager, 'get_entry')
+    async def test_admin_add_project_POST_failed(self, mock_get_entry):
         self.view._render_page = AsyncMock(return_value="Mock Page")
 
-        async with self.client as client:
-            response = await client.post('/admin/add_project')
+        response_body = ApiResponse(
+            status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+            body={'status': 1}, content_type='application/json', exception_msg=None)
+
+        self.view._call_api_post = AsyncMock(
+            return_value=response_body,
+            status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        mock_request = MagicMock()
+        mock_request.method = 'POST'
+        mock_request.form = RealFormMock({
+            'project_name': 'Test',
+            'announcement': 'Test',
+            'show_announcement': 'on'
+        })
+
+        with patch('quart.request', mock_request):
+            result = await self.view.admin_add_project()
+            self.view._render_page.assert_called_once_with(
+                'instance_admin_add_project.html',
+                instance_name='',
+                active_page='administration',
+                active_admin_page='admin_page_site_settings',
+                error_msg_str='Internal server error!',
+                form_data={'project_name': 'Test',
+                           'announcement': 'Test',
+                           'show_announcement': 'on'})
+
+#113-155
