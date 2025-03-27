@@ -180,21 +180,6 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
             status_code=http.HTTPStatus.OK)
         self.view._generate_redirect = MagicMock(return_value="redirect_response")
 
-        class RealFormMock:
-            def __init__(self, data):
-                self._data = data
-
-            def get(self, key):
-                return self._data.get(key)
-
-            def to_dict(self):
-                return self._data.copy()
-
-            def __await__(self):
-                async def _wrapper():
-                    return self
-                return _wrapper().__await__()
-
         mock_request = MagicMock()
         mock_request.method = 'POST'
         mock_request.form = RealFormMock({
@@ -208,7 +193,7 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
             self.view._generate_redirect.assert_called_once_with('/admin/projects')
 
     @patch.object(ConfigurationManager, 'get_entry')
-    async def test_admin_add_project_POST_failed(self, mock_get_entry):
+    async def test_admin_add_project_POST_failed_internal_error(self, mock_get_entry):
         self.view._render_page = AsyncMock(return_value="Mock Page")
 
         response_body = ApiResponse(
@@ -239,4 +224,36 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
                            'announcement': 'Test',
                            'show_announcement': 'on'})
 
-#113-155
+    @patch.object(ConfigurationManager, 'get_entry')
+    async def test_admin_add_project_POST_failed_bad_request(self, mock_get_entry):
+        self.view._render_page = AsyncMock(return_value="Mock Page")
+
+        response_body = ApiResponse(
+            status_code=http.HTTPStatus.BAD_REQUEST,
+            body={'status': 0, 'error': 'test_error'},
+            content_type='application/json',
+            exception_msg=None)
+
+        self.view._call_api_post = AsyncMock(
+            return_value=response_body,
+            status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        mock_request = MagicMock()
+        mock_request.method = 'POST'
+        mock_request.form = RealFormMock({
+            'project_name': 'Test',
+            'announcement': 'Test',
+            'show_announcement': 'on'
+        })
+
+        with patch('quart.request', mock_request):
+            result = await self.view.admin_add_project()
+            self.view._render_page.assert_called_once_with(
+                'instance_admin_add_project.html',
+                instance_name='',
+                active_page='administration',
+                active_admin_page='admin_page_site_settings',
+                error_msg_str='test_error',
+                form_data={'project_name': 'Test',
+                           'announcement': 'Test',
+                           'show_announcement': 'on'})
