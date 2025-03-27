@@ -6,6 +6,7 @@ from apis.dashboard_api_view import DashboardApiView
 from metadata_settings import MetadataSettings
 from configuration.configuration_manager import ConfigurationManager
 import page_locations as pages
+from base_view import ApiResponse
 
 
 class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
@@ -16,8 +17,11 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
         self.metadata = MetadataSettings()
         self.view = DashboardApiView(self.logger,
                                      self.metadata)
+        self.view._render_page = AsyncMock()
+        self.view._generate_redirect = MagicMock(return_value="redirect_url")
 
-        self.client = self.app.test_client()  # Client for making requests in tests
+
+        self.client = self.app.test_client()
 
         # Register route for testing
         self.app.add_url_rule('/admin/overview',
@@ -38,6 +42,11 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
         self.app.add_url_rule('/admin/add_project',
                               view_func=self.view.admin_add_project,
                               methods=['GET', 'POST'])
+
+        """Ensure Quart test request context is available."""
+        self.test_client = self.app.test_client()
+        self.context = self.app.test_request_context('/')
+        await self.context.__aenter__()
 
     async def test_admin_overview(self):
         self.view._render_page = AsyncMock(return_value="Mock Page")
@@ -143,11 +152,45 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
                 active_admin_page='admin_page_site_settings',
                 form_data={})
 
-    async def test_admin_add_project_POST_success(self):
-        self.view._render_page = AsyncMock(return_value="Mock Page")
 
-        async with self.client as client:
-            response = await client.post('/admin/add_project')
+    @patch.object(ConfigurationManager, 'get_entry')
+    async def test_admin_add_project_POST_success(self, mock_get_entry):
+        response_body = ApiResponse(
+            status_code=http.HTTPStatus.OK,
+            body={'status': 1}, content_type='application/json', exception_msg=None)
+
+        mock_response = MagicMock()
+        self.view._call_api_post = AsyncMock(
+            return_value=response_body,
+            status_code=http.HTTPStatus.OK)
+        self.view._generate_redirect = MagicMock(return_value="redirect_response")
+
+        class RealFormMock:
+            def __init__(self, data):
+                self._data = data
+
+            def get(self, key):
+                return self._data.get(key)
+
+            def to_dict(self):
+                return self._data.copy()
+
+            def __await__(self):
+                async def _wrapper():
+                    return self
+                return _wrapper().__await__()
+
+        mock_request = MagicMock()
+        mock_request.method = 'POST'
+        mock_request.form = RealFormMock({
+            'project_name': 'Test',
+            'announcement': 'Test',
+            'show_announcement': 'on'
+        })
+
+        with patch('quart.request', mock_request):
+            result = await self.view.admin_add_project()
+            self.view._generate_redirect.assert_called_once_with('/admin/projects')
 
     async def test_admin_add_project_POST_failed(self):
         self.view._render_page = AsyncMock(return_value="Mock Page")
