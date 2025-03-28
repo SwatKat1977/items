@@ -192,6 +192,68 @@ class SqliteInterface(BaseSqliteInterface):
 
         return rows
 
+    def get_project_details(self, project_id: int) -> typing.Optional[dict]:
+        """
+        Retrieve project details from the database using the provided project
+        ID.
+
+        Args:
+            project_id (int): The ID of the project to retrieve.
+
+        Returns:
+            dict | None: A dictionary containing project details if the project
+                         exists and is not marked for purge, or `None` if:
+            - The project does not exist.
+            - The project is flagged for purge (`awaiting_purge`).
+            - A database error occurs.
+
+        The returned dictionary contains the following keys:
+            - "id" (int): Project ID.
+            - "name" (str): Project name.
+            - "announcement" (str | None): Project announcement message.
+            - "show_announcement_on_overview" (bool): Indicates if the
+              announcement should be displayed.
+
+        Logs:
+            - Critical error if the SQL query fails.
+        """
+        sql: str = ("SELECT id, name, awaiting_purge, announcement, "
+                    "show_announcement_on_overview FROM projects "
+                    f"WHERE id={project_id}")
+
+        try:
+            rows: dict = self.query_with_values(sql)
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical(
+                "'get_project_details' Query failed, reason: %s",
+                str(ex))
+            self._state_object.database_health = \
+                ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "get_project_details fatal SQL failure"
+            return None
+
+        # No project found, return None to represent that
+        if not len(rows):
+            return None
+
+        entry = rows[0]
+
+        # If 'awaiting_purge' flag is set then treat it the project the same as
+        # if it didn't exist.
+        if entry[2] == 1:
+            return None
+
+        project_details: dict = {
+            "id": entry[0],
+            "name": entry[1],
+            "announcement": entry[3],
+            "show_announcement_on_overview": entry[4]
+        }
+
+        return project_details
+
     def get_projects_details(self, fields: str):
         """
         Retrieve project details from the database.
