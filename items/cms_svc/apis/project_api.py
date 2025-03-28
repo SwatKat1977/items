@@ -40,10 +40,16 @@ def create_blueprint(logger: logging.Logger, db: SqliteInterface) -> Blueprint:
 
     logger.info("Registering Project API:")
 
+    logger.info("=> /project/details/<int:project_id> [GET]")
+
+    @blueprint.route('/project/details/<project_id>', methods=['GET'])
+    async def project_details(project_id: int ):
+        return await view.project_details(project_id)
+
     logger.info("=> /project/overviews [GET]")
 
     @blueprint.route('/project/overviews', methods=['GET'])
-    async def project_overview():
+    async def project_overviews():
         return await view.project_overviews()
 
     logger.info("=> /project/add [POST]")

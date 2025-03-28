@@ -44,6 +44,11 @@ class ProjectApiView(BaseView):
         self._logger = logger.getChild(__name__)
         self._db: SqliteInterface = db
 
+    async def project_details(self, project_id: int):
+        return quart.Response(json.dumps({}),
+                              status=http.HTTPStatus.BAD_REQUEST,
+                              content_type="application/json")
+
     async def project_overviews(self):
         # Get fields from query parameters
         value_fields = quart.request.args.get("value_fields")
