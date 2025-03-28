@@ -235,7 +235,7 @@ class SqliteInterface(BaseSqliteInterface):
             return None
 
         # No project found, return None to represent that
-        if not len(rows):
+        if not rows:
             return None
 
         entry = rows[0]
