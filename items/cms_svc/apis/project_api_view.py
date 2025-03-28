@@ -45,8 +45,16 @@ class ProjectApiView(BaseView):
         self._db: SqliteInterface = db
 
     async def project_details(self, project_id: int):
-        return quart.Response(json.dumps({}),
-                              status=http.HTTPStatus.BAD_REQUEST,
+        details: typing.Optional[dict] = self._db.get_project_details(
+            project_id)
+
+        if not details:
+            return quart.Response(json.dumps({}),
+                                  status=http.HTTPStatus.BAD_REQUEST,
+                                  content_type="application/json")
+
+        return quart.Response(json.dumps(details),
+                              status=http.HTTPStatus.OK,
                               content_type="application/json")
 
     async def project_overviews(self):
