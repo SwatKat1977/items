@@ -1,0 +1,10 @@
+a.project-link:hover {
+    color: #007bff   !important;
+    cursor: pointer  !important;
+}
+
+.delete-project-confirmation-modal-header {
+  background-color: #de092d;
+  color: #FFFFFF;
+  padding: 8px;
+}

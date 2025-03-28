@@ -17,6 +17,8 @@ from configuration import configuration_setup
 
 # pylint: disable=too-few-public-methods
 
+APIS_GATEWAY_SVC_DEFAULT = "http://localhost:3000/"
+
 
 class ConfigurationConstants:
     """ Constants for the microservice configuration. """
@@ -54,7 +56,7 @@ CONFIGURATION_LAYOUT = configuration_setup.ConfigurationSetup(
             configuration_setup.ConfigurationSetupItem(
                 ConfigurationConstants.APIS_GATEWAY_SVC,
                 configuration_setup.ConfigItemDataType.STRING,
-                default_value="http://localhost:4000/")
+                default_value=APIS_GATEWAY_SVC_DEFAULT)
         ]
     }
 )
