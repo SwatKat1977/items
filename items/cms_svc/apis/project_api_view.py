@@ -181,6 +181,10 @@ class ProjectApiView(BaseView):
                               status=http.HTTPStatus.OK,
                               content_type="application/json")
 
+    async def modify_project(self):
+        foo = self
+        return None
+
     async def delete_project(self, project_id: int):
 
         hard_delete_param = quart.request.args.get("hard_delete")

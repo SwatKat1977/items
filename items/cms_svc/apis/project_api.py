@@ -58,6 +58,12 @@ def create_blueprint(logger: logging.Logger, db: SqliteInterface) -> Blueprint:
     async def add_project():
         return await view.add_project()
 
+    logger.info("=> /project/modify [POST]")
+
+    @blueprint.route('/project/modify', methods=['POST'])
+    async def modify_project():
+        return await view.modify_project()
+
     logger.info("=> /project/delete [DELETE]")
 
     @blueprint.route('/project/delete/<int:project_id>', methods=['DELETE'])
