@@ -580,3 +580,70 @@ class TestSqliteInterface(unittest.TestCase):
                          ComponentDegradationLevel.FULLY_DEGRADED)
         self.assertEqual(interface._state_object.database_health_state_str,
                          "modify_project fatal SQL failure")
+
+
+
+
+
+
+
+
+
+
+
+
+
+    def test_get_project_details_success(self):
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = MagicMock()
+        interface.query_with_values.return_value = [(1, 'Test Project', 0, 'Test Announcement', True)]
+        result = interface.get_project_details(1)
+
+        self.assertEqual(result, {
+            'id': 1,
+            'name': 'Test Project',
+            'announcement': 'Test Announcement',
+            'show_announcement_on_overview': True
+        })
+        interface.query_with_values.assert_called_once()
+
+    def test_get_project_details_not_found(self):
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = MagicMock()
+        interface.query_with_values.return_value = []
+        result = interface.get_project_details(999)
+
+        self.assertIsNone(result)
+        interface.query_with_values.assert_called_once()
+
+    def test_get_project_details_awaiting_purge(self):
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = MagicMock()
+        interface.query_with_values.return_value = [(1, 'Old Project', 1, 'Old Announcement', False)]
+        result = interface.get_project_details(1)
+
+        self.assertIsNone(result)
+        interface.query_with_values.assert_called_once()
+
+    def test_get_project_details_database_error(self):
+        interface = SqliteInterface(logger=self.mock_logger,
+                                    db_file=self.db_file,
+                                    state_object=self.mock_state_object)
+        interface.query_with_values = MagicMock()
+
+        # Simulate SQL error
+        interface.query_with_values.side_effect = SqliteInterfaceException('Database error')
+        result = interface.get_project_details(1)
+
+        self.assertIsNone(result)
+        self.mock_logger.critical.assert_called_once_with(
+            "'get_project_details' Query failed, reason: %s", 'Database error'
+        )
+        self.assertEqual(self.mock_state_object.database_health, ComponentDegradationLevel.FULLY_DEGRADED)
+        self.assertEqual(self.mock_state_object.database_health_state_str, "get_project_details fatal SQL failure")
