@@ -181,9 +181,12 @@ class ProjectApiView(BaseView):
                               status=http.HTTPStatus.OK,
                               content_type="application/json")
 
-    async def modify_project(self):
+    @validate_json(json_schemas.SCHEMA_MODIFY_PROJECT_REQUEST)
+    async def modify_project(self, request_msg: ApiResponse):
         foo = self
-        return None
+        return quart.Response(json.dumps({}),
+                              status=http.HTTPStatus.OK,
+                              content_type="application/json")
 
     async def delete_project(self, project_id: int):
 

@@ -38,3 +38,28 @@ SCHEMA_ADD_PROJECT_REQUEST: dict = {
         },
     "required": ["name", "announcement", "announcement_on_overview"]
 }
+
+
+SCHEMA_MODIFY_PROJECT_REQUEST: dict = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+        {
+            "name":
+                {
+                    "type": "string"
+                },
+            "announcement":
+                {
+                    "type": "string"
+                },
+            "announcement_on_overview":
+                {
+                    "type": "boolean"
+                }
+        },
+    "required": ["name", "announcement", "announcement_on_overview"]
+}
