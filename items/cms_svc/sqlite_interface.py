@@ -405,7 +405,56 @@ class SqliteInterface(BaseSqliteInterface):
 
     def modify_project(self, project_id: int, details: dict) \
             -> typing.Optional[bool]:
+        """
+        Update the details of a project in the database.
 
+        Args:
+            project_id (int): The ID of the project to be updated.
+            details (dict): A dictionary containing the project details to be
+                            updated.
+                - `announcement` (str): The project announcement message.
+                - `announcement_on_overview` (str): Indicates if the
+                                                    announcement should be
+                                                    displayed on the overview.
+                - `project_name` (str, optional): The new name of the project,
+                                                  if it is being changed.
+
+        Returns:
+            Optional[bool]:
+                - `True` if the project details were successfully updated.
+                - `False` if the update failed due to a database error.
+                - `None` if no update was performed (this case is not
+                         explicitly handled,
+                  but a return value of `None` could indicate no data or
+                  unexpected behavior).
+
+        Behavior:
+            - If `project_name` is provided, it updates the project name along
+              with the announcement details.
+            - If `project_name` is not provided, only the announcement details
+              are updated.
+            - Executes an SQL `UPDATE` statement using safe parameter
+              substitution to prevent SQL injection.
+            - If the query fails, logs the error, updates the database health
+              state to `FULLY_DEGRADED`, and returns `False`.
+
+        Errors:
+            - Logs a critical error and degrades the database state if a
+              `SqliteInterfaceException` occurs.
+
+        Example:
+            ```python
+            result = modify_project(101, {
+                "announcement": "New product launch soon!",
+                "announcement_on_overview": "true",
+                "project_name": "Updated Project Name"
+            })
+            if result:
+                print("Project updated successfully.")
+            else:
+                print("Failed to update project.")
+            ```
+        """
         announcement: str = details["announcement"]
         announcement_on_overview: str = details["announcement_on_overview"]
 
