@@ -43,7 +43,7 @@ def create_blueprint(logger: logging.Logger, db: SqliteInterface) -> Blueprint:
     logger.info("=> /project/details/<int:project_id> [GET]")
 
     @blueprint.route('/project/details/<project_id>', methods=['GET'])
-    async def project_details(project_id: int ):
+    async def project_details(project_id: int):
         return await view.project_details(project_id)
 
     logger.info("=> /project/overviews [GET]")
@@ -60,9 +60,9 @@ def create_blueprint(logger: logging.Logger, db: SqliteInterface) -> Blueprint:
 
     logger.info("=> /project/modify [POST]")
 
-    @blueprint.route('/project/modify', methods=['POST'])
-    async def modify_project():
-        return await view.modify_project()
+    @blueprint.route('/project/modify/<int:project_id>', methods=['POST'])
+    async def modify_project(project_id: int):
+        return await view.modify_project(project_id)
 
     logger.info("=> /project/delete [DELETE]")
 
