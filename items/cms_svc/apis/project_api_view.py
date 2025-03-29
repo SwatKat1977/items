@@ -183,7 +183,43 @@ class ProjectApiView(BaseView):
 
     @validate_json(json_schemas.SCHEMA_MODIFY_PROJECT_REQUEST)
     async def modify_project(self, request_msg: ApiResponse, project_id: int):
+        """
+        Modify the details of an existing project based on the provided project
+        ID.
 
+        Args:
+            request_msg (ApiResponse): The request message containing the
+                                       updated project details.
+            project_id (int): The ID of the project to be modified.
+
+        Returns:
+            quart.Response:
+                - HTTP 200 (OK) with `{"status": 1}` if the project is
+                  successfully updated.
+                - HTTP 400 (Bad Request) if the requested project name already
+                  exists.
+                - HTTP 500 (Internal Server Error) if an internal error occurs.
+
+        Behavior:
+            - Validates the input using the `SCHEMA_MODIFY_PROJECT_REQUEST`.
+            - Checks if the project with the given `project_id` exists.
+            - If the project does not exist, returns an internal error response.
+            - If the project name is being changed, checks for name conflicts.
+            - If a conflict is detected, returns a 400 error.
+            - Updates the project details using the database method
+              `self._db.modify_project`.
+
+        Errors:
+            - Logs and returns an internal error if database queries fail.
+            - Returns a bad request error if the new project name already exists.
+
+        Example Response:
+            ```json
+            {
+                "status": 1
+            }
+            ```
+        """
         existing_details = self._db.get_project_details(project_id)
         if existing_details is None:
             response_body: dict = {
