@@ -184,9 +184,8 @@ class ProjectApiView(BaseView):
     @validate_json(json_schemas.SCHEMA_MODIFY_PROJECT_REQUEST)
     async def modify_project(self, request_msg: ApiResponse, project_id: int):
 
-        valid: typing.Optional[bool] = self._db.is_valid_project_id(project_id)
-
-        if valid is None:
+        existing_details = self._db.get_project_details(project_id)
+        if existing_details is None:
             response_body: dict = {
                 "status": 0,
                 "error_msg": "Internal error in CMS"
@@ -195,26 +194,38 @@ class ProjectApiView(BaseView):
                                   status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
                                   content_type="application/json")
 
-        if valid is False:
-            response_body: dict = {
-                "status": 0,
-                "error_msg": "Invalid project ID"
-            }
-            return quart.Response(json.dumps(response_body),
-                                  status=http.HTTPStatus.BAD_REQUEST,
-                                  content_type="application/json")
-
         body = request_msg.body
-        updated_data = {
-            "name": body.name,
-            "announcement": request_msg.body.announcement,
+        updated_details = {
+            "announcement": body.announcement,
             "announcement_on_overview": body.announcement_on_overview
         }
-        print(updated_data)
 
-        status = True  # self._db.get_modify_project(project_id, updated_details)
+        if body.name != existing_details["name"]:
+            exists = self._db.project_name_exists(body.name)
 
-        return quart.Response(json.dumps({}),
+            if exists is None:
+                response_body: dict = {
+                    "status": 0,
+                    "error_msg": "Internal error in CMS"
+                }
+                return quart.Response(json.dumps(response_body),
+                                      status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                      content_type="application/json")
+
+            if exists:
+                response_body: dict = {
+                    "status": 0,
+                    "error_msg": "New project name already exists"
+                }
+                return quart.Response(json.dumps(response_body),
+                                      status=http.HTTPStatus.BAD_REQUEST,
+                                      content_type="application/json")
+
+            updated_details["project_name"] = body.name
+
+        status = self._db.modify_project(project_id, updated_details)
+
+        return quart.Response(json.dumps({ "status": 1}),
                               status=http.HTTPStatus.OK,
                               content_type="application/json")
 

@@ -403,6 +403,43 @@ class SqliteInterface(BaseSqliteInterface):
                 "add_project fatal SQL failure"
             return None
 
+    def modify_project(self, project_id: int, details: dict) \
+            -> typing.Optional[bool]:
+
+        announcement: str = details["announcement"]
+        announcement_on_overview: str = details["announcement_on_overview"]
+
+        if "project_name" not in details:
+            sql: str = ("UPDATE projects SET announcement=?,"
+                        "show_announcement_on_overview=? WHERE id=?")
+            sql_values: tuple = (announcement,
+                                 announcement_on_overview,
+                                 project_id)
+
+        else:
+            sql: str = ("UPDATE projects SET name=?, announcement=?,"
+                        "show_announcement_on_overview=?  WHERE id=?")
+            name: str = details["project_name"]
+            sql_values: tuple = (name,
+                                 announcement,
+                                 announcement_on_overview,
+                                 project_id)
+
+        try:
+            self.query(sql, sql_values, commit=True)
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical(
+                "modify_project %d query failed, reason: %s",
+                project_id, str(ex))
+            self._state_object.database_health = \
+                ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "modify_project fatal SQL failure"
+            return False
+
+        return True
+
     def mark_project_for_awaiting_purge(self, project_id: int) -> bool:
         """
         Marks a project as awaiting purge in the database.
