@@ -347,17 +347,17 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.view._db.project_name_exists.return_value = None
 
         request_data = {
-            "body": {
-                "name": "New Project",
-                "announcement": "New Announcement",
-                "announcement_on_overview": True
-            }
+            "name": "New Project",
+            "announcement": "New Announcement",
+            "announcement_on_overview": True
         }
 
         async with self.client as client:
-            response = await client.post("/project/modify/1", data=json.dumps(request_data), content_type='application/json')
+            response = await client.post("/project/modify/1",
+                                         json=request_data)
 
         self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
-        self.assertEqual(json.loads(await response.get_data()), {"status": 0, "error_msg": "Internal error in CMS"})
+        self.assertEqual(await response.get_json(),
+                         {"status": 0, "error_msg": "Internal error in CMS"})
 
 
