@@ -39,7 +39,6 @@ SCHEMA_ADD_PROJECT_REQUEST: dict = {
     "required": ["name", "announcement", "announcement_on_overview"]
 }
 
-
 SCHEMA_MODIFY_PROJECT_REQUEST: dict = {
     "$schema": "http://json-schema.org/draft-07/schema#",
 
