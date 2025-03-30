@@ -617,7 +617,7 @@ class TestSqliteInterface(unittest.TestCase):
         interface.query_with_values.return_value = []
         result = interface.get_project_details(999)
 
-        self.assertIsNone(result)
+        self.assertEqual(result, {})
         interface.query_with_values.assert_called_once()
 
     def test_get_project_details_awaiting_purge(self):

@@ -319,7 +319,23 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertEqual(await response.get_json(),
-                         {"status": 0, "error_msg": "Internal error in CMS"})
+                         {"status": 0, "error_msg": "Internal error : Cannot get project details"})
+
+    async def test_modify_project_invalid_project_id_on_fetch(self):
+        self.view._db.get_project_details.return_value = {}
+
+        request_data = {
+            "name": "Failed Project",
+            "announcement": "New Announcement",
+            "announcement_on_overview": True
+        }
+        async with self.client as client:
+            response = await client.post("/project/modify/1",
+                                         json=request_data)
+
+        self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
+        self.assertEqual(await response.get_json(),
+                         {"status": 0, "error_msg": "Invalid project ID"})
 
     async def test_modify_project_name_conflict(self):
         self.view._db.get_project_details.return_value = {"name": "Old Project"}
@@ -355,4 +371,4 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertEqual(await response.get_json(),
-                         {"status": 0, "error_msg": "Internal error in CMS"})
+                         {"status": 0, "error_msg": "Internal error : Cannot check project name"})
