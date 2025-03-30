@@ -89,6 +89,37 @@ class ProjectApiView(BaseView):
                               status=http.HTTPStatus.OK,
                               content_type="text/plain")
 
+    @validate_json(json_schemas.SCHEMA_MODIFY_PROJECT_REQUEST)
+    async def modify_project(self,
+                             request_msg: ApiResponse,
+                             project_id: int):
+        cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
+        url: str = f"{cms_svc}project/modify/{project_id}"
+
+        cms_request: dict = {
+            "name": request_msg.body.name,
+            "announcement": request_msg.body.announcement,
+            "announcement_on_overview":
+                request_msg.body.announcement_on_overview,
+        }
+        api_response = await self._call_api_post(url, cms_request)
+
+        if api_response.status_code != http.HTTPStatus.OK:
+            self._logger.critical("CMS svc /project/modify request invalid"
+                                  " - Reason: %s",api_response.exception_msg)
+            response_json = {
+                "status": 0,
+                'error': api_response.body['error_msg']
+            }
+            return quart.Response(json.dumps(response_json),
+                                  status=http.HTTPStatus.BAD_REQUEST,
+                                  content_type="application/json")
+
+        response_json: dict = {"status": 1}
+        return quart.Response(json.dumps(response_json),
+                              status=http.HTTPStatus.OK,
+                              content_type="text/plain")
+
     async def delete_project(self, project_id: int):
         cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
         url: str = f"{cms_svc}project/delete/{project_id}?hard_delete=true"

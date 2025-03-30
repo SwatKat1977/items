@@ -37,6 +37,12 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
     async def add_project_request():
         return await view.add_project()
 
+    logger.info("=> /project/modify/<int:project_id> [POST]")
+
+    @blueprint.route('/project/modify/<int:project_id>', methods=['POST'])
+    async def modify_project_request(project_id: int):
+        return await view.modify_project(project_id)
+
     logger.info("=> /<project_id>/delete_project [DELETE]")
 
     @blueprint.route('/<project_id>/delete_project', methods=['DELETE'])
