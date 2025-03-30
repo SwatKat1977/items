@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from quart import Quart
 from configuration.configuration_manager import ConfigurationManager
 from apis.project_api_view import ProjectApiView
+from threadsafe_configuration import ThreadSafeConfiguration
 
 
 class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
@@ -26,6 +27,9 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.app.add_url_rule('/<project_id>/delete_project',
                               view_func=self.view.delete_project,
                               methods=['DELETE'])
+        self.app.add_url_rule('/project/modify/<project_id>',
+                              view_func=self.view.modify_project,
+                              methods=['POST'])
 
     @patch.object(ConfigurationManager, 'get_entry')
     async def test_project_overviews_internal_error(self, mock_get_entry):
@@ -164,3 +168,53 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
             self.assertEqual(response.status_code,
                              http.HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    @patch.object(ThreadSafeConfiguration, "apis_cms_svc", "http://localhost/")
+    async def test_modify_project_success(self):
+        mock_call_api_post = AsyncMock()
+        mock_call_api_post.return_value = AsyncMock(status_code=http.HTTPStatus.OK)
+        self.view._call_api_post = mock_call_api_post
+
+        request_body = {
+            "name": "Updated Project",
+            "announcement": "New announcement",
+            "announcement_on_overview": True
+        }
+
+        async with self.client as client:
+            response = await client.post('/project/modify/123', json=request_body)
+
+        self.assertEqual(response.status_code, http.HTTPStatus.OK)
+        self.assertEqual(await response.get_json(), {"status": 1})
+
+        # Verify URL was correctly constructed
+        mock_call_api_post.assert_called_once_with(
+            "http://localhost/project/modify/123", request_body)
+
+    @patch.object(ThreadSafeConfiguration, "apis_cms_svc", "http://localhost/")
+    async def test_modify_project_failure(self):
+        mock_call_api_post = AsyncMock()
+        mock_call_api_post.return_value = AsyncMock(
+            status_code=http.HTTPStatus.BAD_REQUEST,
+            exception_msg="Invalid Project Name",
+            body={'error_msg': "Invalid Project Name"}
+        )
+        self.view._call_api_post = mock_call_api_post
+
+        request_body = {
+            "name": "Invalid Project",
+            "announcement": "Error Announcement",
+            "announcement_on_overview": False
+        }
+
+        async with self.client as client:
+            response = await client.post('/project/modify/123', json=request_body)
+
+        self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
+        self.assertEqual(await response.get_json(), {
+            "status": 0,
+            "error": "Invalid Project Name"
+        })
+        mock_call_api_post.assert_called_once_with(
+            "http://localhost/project/modify/123", request_body
+        )
