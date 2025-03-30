@@ -32,6 +32,10 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
                               view_func=self.view.delete_project,
                               methods=['DELETE'])
 
+        self.app.add_url_rule('/project/details/<project_id>',
+                              view_func=self.view.project_details,
+                              methods=['GET'])
+
     async def test_project_overviews_default(self):
         """Test default behavior when no fields are specified"""
         self.mock_db.get_projects_details.return_value = [(1, "Demo Project")]
@@ -251,3 +255,25 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.mock_db.mark_project_for_awaiting_purge.assert_called_once_with(1)
         self.mock_db.hard_delete_project.assert_not_called()
         self.assertEqual(response.status_code, http.HTTPStatus.OK)
+
+    async def test_project_details_has_details(self):
+        returned_response_body: dict = {
+            "id": 2,
+            "name": "Project Delta",
+            "announcement": "Delta test 1234567890",
+            "show_announcement_on_overview": 1
+        }
+        self.mock_db.get_project_details.return_value = returned_response_body
+
+        async with self.client as client:
+            response = await client.get("/project/details/1")
+            self.assertEqual(response.status_code, http.HTTPStatus.OK)
+            self.assertEqual(await response.get_json(), returned_response_body)
+
+    async def test_project_details_no_details(self):
+        self.mock_db.get_project_details.return_value = {}
+
+        async with self.client as client:
+            response = await client.get("/project/details/1")
+            self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
+            self.assertEqual(await response.get_json(), {})
