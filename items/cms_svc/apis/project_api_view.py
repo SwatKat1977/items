@@ -224,8 +224,9 @@ class ProjectApiView(BaseView):
         if existing_details is None:
             response_body: dict = {
                 "status": 0,
-                "error_msg": "Internal error in CMS"
+                "error_msg": "Internal error : Cannot get project details"
             }
+            self._logger.warning("modify_project: Cannot get project details")
             return quart.Response(json.dumps(response_body),
                                   status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
                                   content_type="application/json")
@@ -242,8 +243,9 @@ class ProjectApiView(BaseView):
             if exists is None:
                 response_body: dict = {
                     "status": 0,
-                    "error_msg": "Internal error in CMS"
+                    "error_msg": "Internal error : Cannot check project name"
                 }
+                self._logger.warning("modify_project: Cannot check project name")
                 return quart.Response(json.dumps(response_body),
                                       status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
                                       content_type="application/json")
