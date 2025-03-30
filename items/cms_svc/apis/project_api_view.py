@@ -231,6 +231,15 @@ class ProjectApiView(BaseView):
                                   status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
                                   content_type="application/json")
 
+        elif not existing_details:
+            response_body: dict = {
+                "status": 0,
+                "error_msg": "Invalid project ID"
+            }
+            return quart.Response(json.dumps(response_body),
+                                  status=http.HTTPStatus.BAD_REQUEST,
+                                  content_type="application/json")
+
         body = request_msg.body
         updated_details = {
             "announcement": body.announcement,
