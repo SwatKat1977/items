@@ -336,11 +336,8 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
                                          json=request_data)
 
         self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
-        self.assertEqual(json.loads(await response.get_data()), {"status": 0, "error_msg": "New project name already exists"})
-
-
-
-
+        self.assertEqual(json.loads(await response.get_data()),
+                         {"status": 0, "error_msg": "New project name already exists"})
 
     async def test_modify_project_internal_error_on_name_check(self):
         self.view._db.get_project_details.return_value = {"name": "Old Project"}
@@ -359,5 +356,3 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertEqual(await response.get_json(),
                          {"status": 0, "error_msg": "Internal error in CMS"})
-
-
