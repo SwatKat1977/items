@@ -162,11 +162,27 @@ class DashboardApiView(BaseWebView):
             form_data={})
 
     async def admin_modify_project(self, project_id):
+        base_url: str = ThreadSafeConfiguration().apis_gateway_svc
+        url = f"{base_url}/project/details/{project_id}"
 
-        print(f"[admin_modify_project] Project ID : {project_id}")
+        api_response = await self._call_api_get(url)
+
+        if api_response.status_code != http.HTTPStatus.OK:
+            self._logger.critical(
+                "(admin_modify_project) Cannot get details for project %s"
+                " - Reason: %s",project_id, api_response.exception_msg)
+            redirect = self._generate_redirect('admin/projects')
+            return await quart.make_response(redirect)
+
+        form_data: dict = {
+            "project_name": api_response.body["name"],
+            "announcement": api_response.body["announcement"].rstrip(),
+            "show_announcement": api_response.body["show_announcement_on_overview"]
+        }
         return await self._render_page(
             pages.PAGE_INSTANCE_ADMIN_MODIFY_PROJECT,
             instance_name=self._metadata_settings.instance_name,
             active_page="administration",
             active_admin_page="admin_page_site_settings",
-            form_data={})
+            form_data=form_data)
+
