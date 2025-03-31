@@ -220,4 +220,3 @@ class DashboardApiView(BaseWebView):
             active_page="administration",
             active_admin_page="admin_page_site_settings",
             form_data=form_data)
-
