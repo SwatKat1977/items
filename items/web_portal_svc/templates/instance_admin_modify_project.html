@@ -6,8 +6,7 @@
 
 {% block body_params %}id="body-pd"{% endblock %}
 {% block instance_admin_body %}
-        <form id="editProjectForm" action="/admin/modify_project" method="post">
-
+        <form id="editProjectForm" action="/admin/{{ form_data.get('id') }}/modify_project" method="post">
           <!-- Tab Navigation -->
           <ul class="nav project-create-tab" id="addProjectTabs">
             <li class="nav-item">

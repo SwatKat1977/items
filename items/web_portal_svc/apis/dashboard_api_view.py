@@ -162,7 +162,40 @@ class DashboardApiView(BaseWebView):
             form_data={})
 
     async def admin_modify_project(self, project_id):
+
         base_url: str = ThreadSafeConfiguration().apis_gateway_svc
+
+        if quart.request.method == 'POST':
+            url = f"{base_url}/project/modify/{project_id}"
+            form = await quart.request.form
+            request_data: dict = {
+                "name": form.get('project_name'),
+                "announcement": form.get('announcement'),
+                "announcement_on_overview": form.get('show_announcement') == 'on'
+            }
+            response: ApiResponse = await self._call_api_post(url,
+                                                              request_data)
+            if response.status_code != http.HTTPStatus.OK:
+                request_data: dict = {
+                    "project_name": form.get('project_name'),
+                    "announcement": form.get('announcement'),
+                    "show_announcement": form.get('show_announcement') == 'on'
+                }
+                reason: str = f" - reason: {response.body['error']}" \
+                    if 'error' in response.body else ''
+                self._logger.warning("Unable to modify project %s%s",
+                                     project_id, reason)
+
+                return await self._render_page(
+                    pages.PAGE_INSTANCE_ADMIN_MODIFY_PROJECT,
+                    instance_name=self._metadata_settings.instance_name,
+                    active_page="administration",
+                    active_admin_page="admin_page_site_settings",
+                    form_data=request_data)
+
+            redirect = self._generate_redirect('admin/projects')
+            return await quart.make_response(redirect)
+
         url = f"{base_url}/project/details/{project_id}"
 
         api_response = await self._call_api_get(url)
@@ -175,6 +208,7 @@ class DashboardApiView(BaseWebView):
             return await quart.make_response(redirect)
 
         form_data: dict = {
+            "id": project_id,
             "project_name": api_response.body["name"],
             "announcement": api_response.body["announcement"].rstrip(),
             "show_announcement": api_response.body["show_announcement_on_overview"]
