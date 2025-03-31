@@ -192,6 +192,68 @@ class SqliteInterface(BaseSqliteInterface):
 
         return rows
 
+    def get_project_details(self, project_id: int) -> typing.Optional[dict]:
+        """
+        Retrieve project details from the database using the provided project
+        ID.
+
+        Args:
+            project_id (int): The ID of the project to retrieve.
+
+        Returns:
+            dict | None: A dictionary containing project details if the project
+                         exists and is not marked for purge, or `None` if:
+            - The project does not exist.
+            - The project is flagged for purge (`awaiting_purge`).
+            - A database error occurs.
+
+        The returned dictionary contains the following keys:
+            - "id" (int): Project ID.
+            - "name" (str): Project name.
+            - "announcement" (str | None): Project announcement message.
+            - "show_announcement_on_overview" (bool): Indicates if the
+              announcement should be displayed.
+
+        Logs:
+            - Critical error if the SQL query fails.
+        """
+        sql: str = ("SELECT id, name, awaiting_purge, announcement, "
+                    "show_announcement_on_overview FROM projects "
+                    f"WHERE id={project_id}")
+
+        try:
+            rows: dict = self.query_with_values(sql)
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical(
+                "'get_project_details' Query failed, reason: %s",
+                str(ex))
+            self._state_object.database_health = \
+                ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "get_project_details fatal SQL failure"
+            return None
+
+        # No project found, return None to represent that
+        if not rows:
+            return {}
+
+        entry = rows[0]
+
+        # If 'awaiting_purge' flag is set then treat it the project the same as
+        # if it didn't exist.
+        if entry[2] == 1:
+            return None
+
+        project_details: dict = {
+            "id": entry[0],
+            "name": entry[1],
+            "announcement": entry[3],
+            "show_announcement_on_overview": entry[4]
+        }
+
+        return project_details
+
     def get_projects_details(self, fields: str):
         """
         Retrieve project details from the database.
@@ -340,6 +402,92 @@ class SqliteInterface(BaseSqliteInterface):
             self._state_object.database_health_state_str = \
                 "add_project fatal SQL failure"
             return None
+
+    def modify_project(self, project_id: int, details: dict) \
+            -> typing.Optional[bool]:
+        """
+        Update the details of a project in the database.
+
+        Args:
+            project_id (int): The ID of the project to be updated.
+            details (dict): A dictionary containing the project details to be
+                            updated.
+                - `announcement` (str): The project announcement message.
+                - `announcement_on_overview` (str): Indicates if the
+                                                    announcement should be
+                                                    displayed on the overview.
+                - `project_name` (str, optional): The new name of the project,
+                                                  if it is being changed.
+
+        Returns:
+            Optional[bool]:
+                - `True` if the project details were successfully updated.
+                - `False` if the update failed due to a database error.
+                - `None` if no update was performed (this case is not
+                         explicitly handled,
+                  but a return value of `None` could indicate no data or
+                  unexpected behavior).
+
+        Behavior:
+            - If `project_name` is provided, it updates the project name along
+              with the announcement details.
+            - If `project_name` is not provided, only the announcement details
+              are updated.
+            - Executes an SQL `UPDATE` statement using safe parameter
+              substitution to prevent SQL injection.
+            - If the query fails, logs the error, updates the database health
+              state to `FULLY_DEGRADED`, and returns `False`.
+
+        Errors:
+            - Logs a critical error and degrades the database state if a
+              `SqliteInterfaceException` occurs.
+
+        Example:
+            ```python
+            result = modify_project(101, {
+                "announcement": "New product launch soon!",
+                "announcement_on_overview": "true",
+                "project_name": "Updated Project Name"
+            })
+            if result:
+                print("Project updated successfully.")
+            else:
+                print("Failed to update project.")
+            ```
+        """
+        announcement: str = details["announcement"]
+        announcement_on_overview: str = details["announcement_on_overview"]
+
+        if "project_name" not in details:
+            sql: str = ("UPDATE projects SET announcement=?,"
+                        "show_announcement_on_overview=? WHERE id=?")
+            sql_values: tuple = (announcement,
+                                 announcement_on_overview,
+                                 project_id)
+
+        else:
+            sql: str = ("UPDATE projects SET name=?, announcement=?,"
+                        "show_announcement_on_overview=?  WHERE id=?")
+            name: str = details["project_name"]
+            sql_values: tuple = (name,
+                                 announcement,
+                                 announcement_on_overview,
+                                 project_id)
+
+        try:
+            self.query(sql, sql_values, commit=True)
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical(
+                "modify_project %d query failed, reason: %s",
+                project_id, str(ex))
+            self._state_object.database_health = \
+                ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "modify_project fatal SQL failure"
+            return False
+
+        return True
 
     def mark_project_for_awaiting_purge(self, project_id: int) -> bool:
         """

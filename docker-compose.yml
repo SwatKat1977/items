@@ -37,6 +37,7 @@ services:
       - ITEMS_ENVIRONMENT=development
     volumes:
       - "${ITEMS_DOCKER_GATEWAY_SVC_CONFIG_FILE}:/usr/local/items/gateway_svc.config"
+      - "${ITEMS_DOCKER_GATEWAY_SVC_METADATA_CONFIG_FILE}:/usr/local/items/metadata.config"
     env_file:
       - .env
 
