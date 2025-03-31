@@ -191,7 +191,8 @@ class DashboardApiView(BaseWebView):
                     instance_name=self._metadata_settings.instance_name,
                     active_page="administration",
                     active_admin_page="admin_page_site_settings",
-                    form_data=request_data)
+                    form_data=request_data,
+                    error_msg_str="Internal error modifying project")
 
             redirect = self._generate_redirect('admin/projects')
             return await quart.make_response(redirect)
