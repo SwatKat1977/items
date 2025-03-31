@@ -59,6 +59,36 @@ class ProjectApiView(BaseView):
                               status=http.HTTPStatus.OK,
                               content_type="application/json")
 
+    async def project_details(self, project_id: int):
+        cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
+        url: str = f"{cms_svc}project/details/{project_id}"
+
+        api_response = await self._call_api_get(url)
+
+        if api_response.status_code == http.HTTPStatus.BAD_REQUEST:
+            response_json = {
+                "status": 0,
+                'error': 'Invalid project ID'
+            }
+            return quart.Response(json.dumps(response_json),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
+        if api_response.status_code != http.HTTPStatus.OK:
+            self._logger.critical("CMS svc /project/details request invalid"
+                                  " - Reason: %s",api_response.exception_msg)
+            response_json = {
+                "status": 0,
+                'error': 'Internal error!'
+            }
+            return quart.Response(json.dumps(response_json),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
+        return quart.Response(json.dumps(api_response.body),
+                              status=http.HTTPStatus.OK,
+                              content_type="application/json")
+
     @validate_json(json_schemas.SCHEMA_ADD_PROJECT_REQUEST)
     async def add_project(self, request_msg: ApiResponse):
 
