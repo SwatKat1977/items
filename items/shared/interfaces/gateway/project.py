@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+# pylint: disable=duplicate-code
 
 SCHEMA_ADD_PROJECT_REQUEST: dict = {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -34,6 +35,30 @@ SCHEMA_ADD_PROJECT_REQUEST: dict = {
                 {
                     "type": "boolean"
                 },
+        },
+    "required": ["name", "announcement", "announcement_on_overview"]
+}
+
+SCHEMA_MODIFY_PROJECT_REQUEST: dict = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+        {
+            "name":
+                {
+                    "type": "string"
+                },
+            "announcement":
+                {
+                    "type": "string"
+                },
+            "announcement_on_overview":
+                {
+                    "type": "boolean"
+                }
         },
     "required": ["name", "announcement", "announcement_on_overview"]
 }

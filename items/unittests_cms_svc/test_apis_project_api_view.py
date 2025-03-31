@@ -3,6 +3,7 @@ import json
 import unittest
 from unittest.mock import AsyncMock, patch, MagicMock
 import quart
+from base_view import ApiResponse
 from sqlite_interface import SqliteInterface, SqliteInterfaceException
 from apis.project_api_view import ProjectApiView
 
@@ -31,6 +32,14 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.app.add_url_rule('/project/delete/<int:project_id>',
                               view_func=self.view.delete_project,
                               methods=['DELETE'])
+
+        self.app.add_url_rule('/project/details/<project_id>',
+                              view_func=self.view.project_details,
+                              methods=['GET'])
+
+        self.app.add_url_rule('/project/modify/<project_id>',
+                              view_func=self.view.modify_project,
+                              methods=['POST'])
 
     async def test_project_overviews_default(self):
         """Test default behavior when no fields are specified"""
@@ -251,3 +260,115 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.mock_db.mark_project_for_awaiting_purge.assert_called_once_with(1)
         self.mock_db.hard_delete_project.assert_not_called()
         self.assertEqual(response.status_code, http.HTTPStatus.OK)
+
+    async def test_project_details_has_details(self):
+        returned_response_body: dict = {
+            "id": 2,
+            "name": "Project Delta",
+            "announcement": "Delta test 1234567890",
+            "show_announcement_on_overview": 1
+        }
+        self.mock_db.get_project_details.return_value = returned_response_body
+
+        async with self.client as client:
+            response = await client.get("/project/details/1")
+            self.assertEqual(response.status_code, http.HTTPStatus.OK)
+            self.assertEqual(await response.get_json(), returned_response_body)
+
+    async def test_project_details_no_details(self):
+        self.mock_db.get_project_details.return_value = {}
+
+        async with self.client as client:
+            response = await client.get("/project/details/1")
+            self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
+            self.assertEqual(await response.get_json(), {})
+
+    async def test_modify_project_success(self):
+        self.view._db.get_project_details.return_value = {
+            "name": "Old Project",
+            "announcement": "Old Announcement",
+            "announcement_on_overview": False
+        }
+        self.view._db.project_name_exists.return_value = False
+        self.view._db.modify_project.return_value = True
+
+        request_data = {
+            "name": "New Project",
+            "announcement": "New Announcement",
+            "announcement_on_overview": True
+        }
+        async with self.client as client:
+            response = await client.post("/project/modify/1",
+                                         json=request_data)
+
+        print(f"\n\n\n\nRESP: {response}")
+        self.assertEqual(response.status_code, http.HTTPStatus.OK)
+        self.assertEqual(await response.get_json(), {"status": 1})
+
+    async def test_modify_project_internal_error_on_fetch(self):
+        self.view._db.get_project_details.return_value = None
+
+        request_data = {
+            "name": "Failed Project",
+            "announcement": "New Announcement",
+            "announcement_on_overview": True
+        }
+        async with self.client as client:
+            response = await client.post("/project/modify/1",
+                                         json=request_data)
+
+        self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertEqual(await response.get_json(),
+                         {"status": 0, "error_msg": "Internal error : Cannot get project details"})
+
+    async def test_modify_project_invalid_project_id_on_fetch(self):
+        self.view._db.get_project_details.return_value = {}
+
+        request_data = {
+            "name": "Failed Project",
+            "announcement": "New Announcement",
+            "announcement_on_overview": True
+        }
+        async with self.client as client:
+            response = await client.post("/project/modify/1",
+                                         json=request_data)
+
+        self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
+        self.assertEqual(await response.get_json(),
+                         {"status": 0, "error_msg": "Invalid project ID"})
+
+    async def test_modify_project_name_conflict(self):
+        self.view._db.get_project_details.return_value = {"name": "Old Project"}
+        self.view._db.project_name_exists.return_value = True
+
+        request_data = {
+            "name": "New Project",
+            "announcement": "New Announcement",
+            "announcement_on_overview": True
+        }
+
+        async with self.client as client:
+            response = await client.post("/project/modify/1",
+                                         json=request_data)
+
+        self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
+        self.assertEqual(json.loads(await response.get_data()),
+                         {"status": 0, "error_msg": "New project name already exists"})
+
+    async def test_modify_project_internal_error_on_name_check(self):
+        self.view._db.get_project_details.return_value = {"name": "Old Project"}
+        self.view._db.project_name_exists.return_value = None
+
+        request_data = {
+            "name": "New Project",
+            "announcement": "New Announcement",
+            "announcement_on_overview": True
+        }
+
+        async with self.client as client:
+            response = await client.post("/project/modify/1",
+                                         json=request_data)
+
+        self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertEqual(await response.get_json(),
+                         {"status": 0, "error_msg": "Internal error : Cannot check project name"})
