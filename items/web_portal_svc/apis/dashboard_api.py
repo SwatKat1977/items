@@ -43,13 +43,13 @@ def create_blueprint(logger: logging.Logger,
     async def admin_overview_request():
         return await view.admin_overview()
 
-    logger.info("=> /admin/projects [GET]")
+    logger.info("=> /admin/projects [GET, POST]")
 
-    @blueprint.route('/admin/projects', methods=['GET'])
+    @blueprint.route('/admin/projects', methods=['GET', 'POST'])
     async def admin_projects_request():
         return await view.admin_projects()
 
-    logger.info("=> /admin/projects [GET]")
+    logger.info("=> /admin/users_roles [GET]")
 
     @blueprint.route('/admin/users_roles', methods=['GET'])
     async def admin_admin_users_and_roles_request():
@@ -66,5 +66,18 @@ def create_blueprint(logger: logging.Logger,
     @blueprint.route('/admin/site_settings', methods=['GET'])
     async def admin_site_settings_request():
         return await view.admin_site_settings()
+
+    logger.info("=> /admin/add_project [GET, POST]")
+
+    @blueprint.route('/admin/add_project', methods=['GET', 'POST'])
+    async def admin_add_project_request():
+        return await view.admin_add_project()
+
+    logger.info("=> /admin/<project_id>/modify_project [GET, POST]")
+
+    @blueprint.route('/admin/<project_id>/modify_project',
+                     methods=['GET', 'POST'])
+    async def admin_modify_project_request(project_id: int):
+        return await view.admin_modify_project(project_id)
 
     return blueprint
