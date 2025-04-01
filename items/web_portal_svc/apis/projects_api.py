@@ -15,7 +15,7 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from apis.projects_api_view import TestCasesApiView
+from apis.projects_api_view import ProjectsApiView
 from metadata_settings import MetadataSettings
 
 
@@ -35,7 +35,7 @@ def create_blueprint(logger: logging.Logger,
     Returns:
         Blueprint: A Quart `Blueprint` object containing the registered route.
     """
-    view = TestCasesApiView(logger, metadata)
+    view = ProjectsApiView(logger, metadata)
 
     blueprint = Blueprint('test_cases_api', __name__)
 
