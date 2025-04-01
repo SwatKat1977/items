@@ -4,7 +4,7 @@ omit =
     items/unittests_web_portal_svc/*
     items/web_portal_svc/apis/auth_api.py
     items/web_portal_svc/apis/dashboard_api.py
-    items/web_portal_svc/apis/test_cases_api.py
+    items/web_portal_svc/apis/projects_api.py
     items/web_portal_svc/apis/webhook_api.py
     items/shared/*
     /opt/homebrew/*
