@@ -59,6 +59,9 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
         self.app.add_url_rule('/admin/add_project',
                               view_func=self.view.admin_add_project,
                               methods=['GET', 'POST'])
+        self.app.add_url_rule('/admin/<project_id>/modify_project',
+                              view_func=self.view.admin_modify_project,
+                              methods=['GET', 'POST'])
 
         """Ensure Quart test request context is available."""
         self.test_client = self.app.test_client()
@@ -257,3 +260,130 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
                 form_data={'project_name': 'Test',
                            'announcement': 'Test',
                            'show_announcement': 'on'})
+
+    @patch.object(ConfigurationManager, 'get_entry')
+    async def test_admin_modify_project_get_success(self, mock_get_entry):
+        self.view._metadata_settings = MagicMock()
+        self.view._metadata_settings.instance_name = "Test Instance"
+
+        mock_get_entry.return_value = "http://localhost"
+
+        response_body = {
+            "name": "Demo Project",
+            "announcement": "This is a test project.",
+            "show_announcement_on_overview": True
+        }
+        mock_call_api_get = AsyncMock()
+        mock_call_api_get.return_value = MagicMock(
+            status_code=http.HTTPStatus.OK,
+            body=response_body)
+        self.view._call_api_get = mock_call_api_get
+        self.view._render_page = AsyncMock(return_value="Mock Page")
+
+        async with self.client as client:
+            response = await client.get('/admin/123/modify_project')
+            self.assertIsNotNone(response, "Response is None. Check logs.")
+            self.assertEqual(response.status_code, http.HTTPStatus.OK)
+
+        self.view._call_api_get.assert_called_once_with("http://localhost/project/details/123")
+        self.view._render_page.assert_called_once_with(
+            'instance_admin_modify_project.html',
+            instance_name="Test Instance",
+            active_page="administration",
+            active_admin_page="admin_page_site_settings",
+            form_data={
+                "id": "123",
+                "project_name": "Demo Project",
+                "announcement": "This is a test project.",
+                "show_announcement": True,
+            }
+        )
+
+    @patch.object(ConfigurationManager, 'get_entry')
+    async def test_admin_modify_project_get_fail(self, mock_get_entry):
+        mock_get_entry.return_value = "http://localhost"
+
+        mock_call_api_get = AsyncMock()
+        mock_call_api_get.return_value = MagicMock(
+            status_code=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+            body={'status': 0})
+        self.view._call_api_get = mock_call_api_get
+        self.view._render_page = AsyncMock(return_value="Mock Page")
+
+        self.view._generate_redirect.return_value = "Redirected to admin/projects"
+
+        async with self.client as client:
+            response = await client.get('/admin/123/modify_project')
+
+        self.view._call_api_get.assert_called_once_with("http://localhost/project/details/123")
+        self.view._generate_redirect.assert_called_once_with('admin/projects')
+
+    @patch.object(ConfigurationManager, 'get_entry')
+    async def test_admin_modify_project_post_success(self, mock_get_entry):
+        mock_get_entry.return_value = "http://localhost"
+
+        self.view._call_api_post = AsyncMock()
+        self.view._call_api_post.return_value = ApiResponse(
+            status_code=http.HTTPStatus.OK
+        )
+        self.view._generate_redirect.return_value = "Redirected to admin/projects"
+
+        request_data = {
+            "project_name": "Updated Project",
+            "announcement": "Updated Announcement",
+            "show_announcement": "on"
+        }
+
+        async with self.client as client:
+            response = await client.post('/admin/123/modify_project', form=request_data)
+
+        self.view._call_api_post.assert_called_once_with(
+            "http://localhost/project/modify/123",
+            {
+                "name": "Updated Project",
+                "announcement": "Updated Announcement",
+                "announcement_on_overview": True
+            }
+        )
+        self.view._generate_redirect.assert_called_once_with('admin/projects')
+
+    @patch.object(ConfigurationManager, 'get_entry')
+    async def test_admin_modify_project_post_fail(self, mock_get_entry):
+        mock_get_entry.return_value = "http://localhost"
+
+        self.view._call_api_post = AsyncMock()
+        self.view._call_api_post.return_value = ApiResponse(
+            status_code=http.HTTPStatus.BAD_REQUEST,
+            body={"error": "Invalid data"}
+        )
+        self.view._render_page.return_value = "Error Page Rendered"
+
+        request_data = {
+            "project_name": "Invalid Project",
+            "announcement": "Invalid Announcement",
+            "show_announcement": "off"
+        }
+
+        async with self.client as client:
+            response = await client.post('/admin/123/modify_project', form=request_data)
+
+        self.view._call_api_post.assert_called_once_with(
+            "http://localhost/project/modify/123",
+            {
+                "name": "Invalid Project",
+                "announcement": "Invalid Announcement",
+                "announcement_on_overview": False
+            }
+        )
+        self.view._render_page.assert_called_once_with(
+            "instance_admin_modify_project.html",
+            instance_name=self.view._metadata_settings.instance_name,
+            active_page="administration",
+            active_admin_page="admin_page_site_settings",
+            form_data={
+                "project_name": "Invalid Project",
+                "announcement": "Invalid Announcement",
+                "show_announcement": False
+            },
+            error_msg_str="Internal error modifying project"
+        )
