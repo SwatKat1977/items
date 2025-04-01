@@ -2,19 +2,19 @@ import http
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 from quart import Quart
-from apis.test_cases_api_view import TestCasesApiView
+from apis.projects_api_view import ProjectsApiView
 from configuration.configuration_manager import ConfigurationManager
 from metadata_settings import MetadataSettings
 
 
-class TestApisTestCasesApiView(unittest.IsolatedAsyncioTestCase):
+class TestApisProjectsApiView(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
         self.app = Quart(__name__)
         self.logger = MagicMock()
         self.metadata = MetadataSettings()
-        self.view = TestCasesApiView(self.logger,
-                                     self.metadata)
+        self.view = ProjectsApiView(self.logger,
+                                    self.metadata)
 
         # Set up Quart test client and mock dependencies.
         self.client = self.app.test_client()
