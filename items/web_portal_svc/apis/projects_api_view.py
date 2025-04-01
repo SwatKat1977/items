@@ -23,7 +23,7 @@ from threadsafe_configuration import ThreadSafeConfiguration
 from metadata_settings import MetadataSettings
 
 
-class TestCasesApiView(BaseWebView):
+class ProjectsApiView(BaseWebView):
 
     def __init__(self,
                  logger: logging.Logger,
