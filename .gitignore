@@ -1,10 +1,15 @@
 # -----------------
-# Python GIT ignore
+# Python ignore
 # -----------------
 *.pyc
 
 # -----------------
-# Mac OS GIT ignore
+# Mac OS ignore
 # -----------------
 .DS_Store
 
+# -----------------
+# PyCharm ignore
+# -----------------
+ */.idea/workspace.xml
+ */.idea/tasks.xml

@@ -15,31 +15,38 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from apis.test_cases_api_view import TestCasesApiView
+from apis.projects_api_view import ProjectsApiView
 from metadata_settings import MetadataSettings
 
 
 def create_blueprint(logger: logging.Logger,
                      metadata: MetadataSettings) -> Blueprint:
     """
-    Creates and registers a Flask Blueprint for handling authentication
-    handshake API routes.
+    Creates and registers a Quart Blueprint for handling HTML pages related to
+    projects.
 
-    This function initializes a `View` object with the provided SQL interface
-    and logger, and then defines an API endpoint for authentication handshake.
+    This function initializes a `View` object with Metadata settings and an
+    instance of logger, and then defines  API endpoints for projects pages.
 
     Args:
         logger (logging.Logger): A logger instance for logging messages.
         metadata (MetadataSettings): A metadata settings instance.
 
     Returns:
-        Blueprint: A Flask `Blueprint` object containing the registered route.
+        Blueprint: A Quart `Blueprint` object containing the registered route.
     """
-    view = TestCasesApiView(logger, metadata)
+    view = ProjectsApiView(logger, metadata)
 
     blueprint = Blueprint('test_cases_api', __name__)
 
-    logger.info("Registering Test Cases endpoint:")
+    logger.info("Registering Projects endpoints:")
+
+    logger.info("=> /<project_id>/project_overview [GET]")
+
+    @blueprint.route('/<project_id>/project_overview',
+                     methods=['GET'])
+    async def project_overview_request(project_id: int):
+        return await view.project_overview(project_id)
 
     logger.info("=> /<project_id>/test_cases [GET]")
 
