@@ -24,3 +24,27 @@
     background-color: #ffe6e6;
     text-align: center;
 }
+
+.cancelButton:hover {
+  background-color: #ede9e8 !important;
+  border-color: red !important;
+  color: red !important;
+}
+
+.cancel-icon {
+  display: inline-block;
+  color: red;
+  font-size: 18px;
+  width: 22px;
+  height: 22px;
+  text-align: center;
+  line-height: 20px;
+  margin-right: 5px;
+  transition: none; /* Prevents hover animations */
+}
+
+.cancel-icon:hover {
+  color: red !important;
+  border-color: red !important;
+  background-color: #ffe6e6 !important;
+}

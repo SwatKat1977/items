@@ -1,6 +1,7 @@
 {% extends "instance_admin_template.html" %}
 {% block title %}ITEMS | Add New Project{% endblock %}
 {% block head %}{{ super() }}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/instance_admin_add_project.css') }}">
 {% endblock %}
 
@@ -49,14 +50,16 @@
 
           </div>
 
-          {% if error_msg_str %}
-          <div class="jumbotron text-black" id="error_msg">
+          {% if error_msg_str %}<div class="jumbotron text-black" id="error_msg">
             {{ error_msg_str }}
-          </div>
-          {% endif %}
-
+          </div>{% endif %}
           <div class="form-group">
             <button type="submit" class="btn btn-primary">Create Project</button>
+             <button type="button"
+                     class="btn btn-outline-danger cancelButton"
+                     onclick="window.location.href='/admin/projects'">
+               <i class="bi bi-x-lg cancel-icon"></i> Cancel
+             </button>
           </div>
         </form>
 
