@@ -22,7 +22,7 @@
         {% for project in projects %}
         <tr>
           <td>
-            <a href="{{ project.id }}/project_overview" class="text-black text-decoration-none project-link">{{ project.name }}</a>
+            <a href="{{ project.id }}/modify_project" class="text-black text-decoration-none project-link">{{ project.name }}</a>
           </td>
           <td class="text-end">
             <button class="btn btn-link text-primary" onclick="window.location.href='{{ project.id }}/modify_project'"><i class="bi bi-pencil"></i></button>
