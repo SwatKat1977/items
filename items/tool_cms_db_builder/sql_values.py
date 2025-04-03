@@ -52,7 +52,7 @@ CREATE TABLE test_cases (
 
 # Type of field - e.g. 'string', 'text', 'int'
 SQL_CREATE_FIELD_TYPE: str = """
-CREATE TABLE field_type (
+CREATE TABLE field_types (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL
 );
@@ -60,11 +60,11 @@ CREATE TABLE field_type (
 
 # Option specific for a field type (e.g. required)
 SQL_CREATE_FIELD_TYPE_OPTION: str = """
-CREATE TABLE field_type_option (
+CREATE TABLE field_type_options (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     field_type_id INTEGER NOT NULL,
     option_name TEXT NOT NULL,
-    FOREIGN KEY (field_type_id) REFERENCES field_type(id) ON DELETE CASCADE
+    FOREIGN KEY (field_type_id) REFERENCES field_types(id) ON DELETE CASCADE
 );
 """
 

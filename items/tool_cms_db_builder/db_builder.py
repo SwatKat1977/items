@@ -54,11 +54,31 @@ def add_static_values_field_types(logger: logging.Logger,
                                   database: BaseSqliteInterface) -> bool:
     logger.info("-> Populating field type static values")
 
-    query: str = "INSERT INTO field_type(id, name) VALUES(?,?)"
+    query: str = "INSERT INTO field_types(id, name) VALUES(?,?)"
 
     try:
         for field_id, field_name in db_static_values.STATIC_VALUES_FIELD_TYPES:
             database.insert_query(query, (int(field_id), field_name))
+
+    except SqliteInterfaceException as interface_except:
+        logger.critical("Unable to add field type static value, reason: %s",
+                        str(interface_except))
+        return False
+
+    return True
+
+
+def add_static_values_field_type_options(logger: logging.Logger,
+                                         database: BaseSqliteInterface) -> bool:
+    logger.info("-> Populating field type options static values")
+
+    query: str = ("INSERT INTO field_type_options(id, field_type_id, "
+                  "option_name) VALUES(?,?,?)")
+
+    try:
+        for option_id, field_type_id, option_name in db_static_values.STATIC_VALUES_FIELD_TYPE_OPTIONS:
+            database.insert_query(query,
+                                  (option_id, field_type_id, option_name))
 
     except SqliteInterfaceException as interface_except:
         logger.critical("Unable to add field type static value, reason: %s",
@@ -134,6 +154,7 @@ def main():
     build_database(logger, db)
 
     add_static_values_field_types(logger, db)
+    add_static_values_field_type_options(logger, db)
 
 
 if __name__ == "__main__":
