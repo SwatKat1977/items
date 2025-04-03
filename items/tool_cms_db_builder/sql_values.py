@@ -49,3 +49,54 @@ CREATE TABLE test_cases (
     UNIQUE (project_id, folder_id, name)
 );
 """
+
+# Type of field - e.g. 'string', 'text', 'int'
+SQL_CREATE_FIELD_TYPE: str = """
+CREATE TABLE field_type (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL
+);
+"""
+
+# Option specific for a field type (e.g. required)
+SQL_CREATE_FIELD_TYPE_OPTION: str = """
+CREATE TABLE field_type_option (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    field_type_id INTEGER NOT NULL,
+    option_name TEXT NOT NULL,
+    default_value TEXT NOT NULL DEFAULT '',
+    FOREIGN KEY (field_type_id) REFERENCES field_type(id) ON DELETE CASCADE
+);
+"""
+
+# Values for the field option.
+SQL_CREATE_FIELD_TYPE_OPTION_VALUE: str = """
+CREATE TABLE caseFieldOptionValue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    caseField_id INTEGER NOT NULL,
+    fieldTypeOption_id INTEGER NOT NULL,
+    option_value TEXT NOT NULL,
+    FOREIGN KEY (caseField_id) REFERENCES caseField(id) ON DELETE CASCADE,
+    FOREIGN KEY (fieldTypeOption_id) REFERENCES fieldTypeOption(id) ON DELETE CASCADE
+);
+"""
+
+
+
+
+
+
+
+SQL_CREATE_TEST_CASE_FIELD: str = """
+CREATE TABLE test_case_field (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    field_mame TEXT NOT NULL,
+    description TEXT NOT NULL,
+    system_name TEXT NOT NULL,
+    field_type TEXT NOT NULL,
+    enabled INTEGER NOT NULL,
+    UNIQUE (field_mame, system_name)
+);
+"""
+
+
