@@ -108,11 +108,11 @@ def build_database(logger: logging.Logger,
                               "test_cases")
 
         logger.info("-> Creating field_type table")
-        database.create_table(sql_values.SQL_CREATE_FIELD_TYPE,
+        database.create_table(sql_values.SQL_CREATE_FIELD_TYPES_TABLE,
                               "field_type")
 
         logger.info("-> Creating field_type_option table")
-        database.create_table(sql_values.SQL_CREATE_FIELD_TYPE_OPTION,
+        database.create_table(sql_values.SQL_CREATE_FIELD_TYPE_OPTIONS_TABLE,
                               "field_type_option")
 
     except SqliteInterfaceException as interface_except:

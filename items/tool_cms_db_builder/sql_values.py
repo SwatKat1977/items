@@ -51,7 +51,7 @@ CREATE TABLE test_cases (
 """
 
 # Type of field - e.g. 'string', 'text', 'int'
-SQL_CREATE_FIELD_TYPE: str = """
+SQL_CREATE_FIELD_TYPES_TABLE: str = """
 CREATE TABLE field_types (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL
@@ -59,7 +59,7 @@ CREATE TABLE field_types (
 """
 
 # Option specific for a field type (e.g. required)
-SQL_CREATE_FIELD_TYPE_OPTION: str = """
+SQL_CREATE_FIELD_TYPE_OPTIONS_TABLE: str = """
 CREATE TABLE field_type_options (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     field_type_id INTEGER NOT NULL,
@@ -67,6 +67,28 @@ CREATE TABLE field_type_options (
     FOREIGN KEY (field_type_id) REFERENCES field_types(id) ON DELETE CASCADE
 );
 """
+
+
+
+
+
+
+
+# Test Case Fields
+SQL_CREATE_TEST_CASE_FIELD: str = """
+CREATE TABLE test_case_field (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    field_mame TEXT NOT NULL,
+    description TEXT NOT NULL,
+    system_name TEXT NOT NULL,
+    field_type_id INTEGER NOT NULL,
+    enabled INTEGER NOT NULL,
+    UNIQUE (field_mame, system_name)
+
+        FOREIGN KEY (fieldTypeOption_id) REFERENCES fieldTypeOption(id) ON DELETE CASCADE
+);
+"""
+
 
 # Values for the field option.
 SQL_CREATE_FIELD_TYPE_OPTION_VALUE: str = """
@@ -85,17 +107,5 @@ CREATE TABLE caseFieldOptionValue (
 
 
 
-
-SQL_CREATE_TEST_CASE_FIELD: str = """
-CREATE TABLE test_case_field (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    field_mame TEXT NOT NULL,
-    description TEXT NOT NULL,
-    system_name TEXT NOT NULL,
-    field_type TEXT NOT NULL,
-    enabled INTEGER NOT NULL,
-    UNIQUE (field_mame, system_name)
-);
-"""
 
 
