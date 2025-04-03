@@ -17,6 +17,7 @@ import argparse
 import logging
 import os.path
 import sql_values
+import db_static_values
 from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
 
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
@@ -49,6 +50,24 @@ def open_db(logger: logging.Logger, filename: str) -> BaseSqliteInterface:
     return db
 
 
+def add_static_values_field_types(logger: logging.Logger,
+                                  database: BaseSqliteInterface) -> bool:
+    logger.info("-> Populating field type static values")
+
+    query: str = "INSERT INTO field_type(id, name) VALUES(?,?)"
+
+    try:
+        for field_id, field_name in db_static_values.STATIC_VALUES_FIELD_TYPES:
+            database.insert_query(query, (int(field_id), field_name))
+
+    except SqliteInterfaceException as interface_except:
+        logger.critical("Unable to add field type static value, reason: %s",
+                        str(interface_except))
+        return False
+
+    return True
+
+
 def build_database(logger: logging.Logger,
                    database: BaseSqliteInterface) -> bool:
     """
@@ -67,6 +86,14 @@ def build_database(logger: logging.Logger,
         logger.info("-> Creating test_case_folders table")
         database.create_table(sql_values.SQL_CREATE_TEST_CASES_TABLE,
                               "test_cases")
+
+        logger.info("-> Creating field_type table")
+        database.create_table(sql_values.SQL_CREATE_FIELD_TYPE,
+                              "field_type")
+
+        logger.info("-> Creating field_type_option table")
+        database.create_table(sql_values.SQL_CREATE_FIELD_TYPE_OPTION,
+                              "field_type_option")
 
     except SqliteInterfaceException as interface_except:
         logger.critical("Unable to add add tables, reason: %s",
@@ -105,6 +132,8 @@ def main():
         return
 
     build_database(logger, db)
+
+    add_static_values_field_types(logger, db)
 
 
 if __name__ == "__main__":

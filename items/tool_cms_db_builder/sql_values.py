@@ -64,7 +64,6 @@ CREATE TABLE field_type_option (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     field_type_id INTEGER NOT NULL,
     option_name TEXT NOT NULL,
-    default_value TEXT NOT NULL DEFAULT '',
     FOREIGN KEY (field_type_id) REFERENCES field_type(id) ON DELETE CASCADE
 );
 """
