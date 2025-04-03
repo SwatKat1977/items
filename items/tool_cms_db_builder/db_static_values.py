@@ -14,15 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+# Field types in tuple (id, name)
 STATIC_VALUES_FIELD_TYPES: list = [
-    "Checkbox",
-    "Date",
-    "Dropdown",
-    "Integer",
-    "String",
-    "Text",
-    "Url (Link)",
-    "User"
+    (1, "Checkbox"),
+    (2, "Date"),
+    (3, "Dropdown"),
+    (4, "Integer"),
+    (5, "String"),
+    (6, "Text"),
+    (7, "Url (Link)"),
+    (8, "User")
 ]
 
 '''
@@ -32,3 +33,36 @@ Future fields:
     Steps
     Scenarios
 '''
+
+# (id, field_type_id, option_name)
+STATIC_VALUES_FIELD_TYPE_OPTIONS: list = [
+    # Checkbox field type options
+    (1, 1, "Default Value"),
+
+    # Dropdown field type options
+    (2, 3, "Items"),
+    (3, 3, "Default Value"),
+    (4, 3, "Field Required"),
+
+    # Integer field type options
+    (5, 4, "Default Value"),
+    (6, 4, "Field Required"),
+
+    # String field type options
+    (7, 5, "Default Value"),
+    (8, 5, "Field Required"),
+
+    # Text field type options
+    (9,  6, "Text Format"),  # Markdown or Plain
+    (10, 6, "Rows"),
+    (11, 6, "Default Value"),
+    (12, 6, "Field Required"),
+
+    # Url (Link) field type options
+    (13, 7, "Default Value"),
+    (14, 7, "Field Required"),
+
+    # Url (Link) field type options
+    (15, 8, "Default Value"),
+    (16, 8, "Field Required"),
+]
