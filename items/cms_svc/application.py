@@ -27,6 +27,7 @@ from sqlite_interface import SqliteInterface
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
+from apis import admin_api
 from apis import health_api
 from apis import project_api
 from apis import testcases_api
@@ -71,6 +72,9 @@ class Application(BaseApplication):
         # Open databases.
         if not self._open_database():
             return False
+
+        admin_blueprint = admin_api.create_blueprint(self._logger)
+        self._quart_instance.register_blueprint(admin_blueprint)
 
         health_blueprint = health_api.create_blueprint(self._logger,
                                                        self._state_object)
