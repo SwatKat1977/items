@@ -16,10 +16,11 @@ limitations under the License.
 import logging
 from quart import Blueprint
 from apis.admin_api_view import AdminApiView
+from sqlite_interface import SqliteInterface
 
 
-def create_blueprint(logger: logging.Logger) -> Blueprint:
-    view = AdminApiView(logger)
+def create_blueprint(logger: logging.Logger, db: SqliteInterface) -> Blueprint:
+    view = AdminApiView(logger, db)
 
     blueprint = Blueprint('admin_api', __name__)
 
@@ -34,9 +35,9 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
 
     logger.info("=> admin/move_testcase_custom_field_position [POST]")
 
-    @blueprint.route('/admin/move_testcase_custom_field_position',
+    @blueprint.route('/admin/move_testcase_custom_field/<int:field_id>',
                      methods=['POST'])
-    async def move_testcase_custom_field_position_request():
-        return await move_testcase_custom_field_position_field()
+    async def move_testcase_custom_field_request(field_id: int):
+        return await view.move_testcase_custom_field(field_id)
 
     return blueprint

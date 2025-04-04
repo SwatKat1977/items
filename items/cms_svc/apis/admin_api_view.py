@@ -15,11 +15,30 @@ limitations under the License.
 """
 import logging
 from base_view import BaseView
-
+from sqlite_interface import CustomFieldMoveDirection, SqliteInterface
 
 class AdminApiView(BaseView):
     __slots__ = ['_logger']
 
-    def __init__(self, logger: logging.Logger) -> None:
+    def __init__(self, logger: logging.Logger, db: SqliteInterface) -> None:
         self._logger = logger.getChild(__name__)
+        self._db: SqliteInterface = db
 
+    async def add_testcase_custom_field(self):
+        ...
+
+    async def move_testcase_custom_field(self, field_id: int):
+
+        self._db.move_test_case_custom_field(10, CustomFieldMoveDirection.UP)
+
+''''
+        return await view.add_testcase_custom_field()
+
+    logger.info("=> admin/move_testcase_custom_field_position [POST]")
+
+    @blueprint.route('/admin/move_testcase_custom_field_position',
+                     methods=['POST'])
+    async def move_testcase_custom_field_position_request():
+        return await move_testcase_custom_field_position_field()
+
+'''

@@ -73,7 +73,8 @@ class Application(BaseApplication):
         if not self._open_database():
             return False
 
-        admin_blueprint = admin_api.create_blueprint(self._logger)
+        admin_blueprint = admin_api.create_blueprint(self._logger,
+                                                     self._db)
         self._quart_instance.register_blueprint(admin_blueprint)
 
         health_blueprint = health_api.create_blueprint(self._logger,
