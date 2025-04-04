@@ -73,7 +73,7 @@ SQL_CREATE_TEST_CASE_CUSTOM_FIELDS_TABLE: str = """
 CREATE TABLE test_case_custom_fields (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     field_mame TEXT NOT NULL,
-    description TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
     system_name TEXT NOT NULL,
     field_type_id INTEGER NOT NULL,
     entry_type TEXT NOT NULL CHECK(entry_type IN ('system', 'user')),
