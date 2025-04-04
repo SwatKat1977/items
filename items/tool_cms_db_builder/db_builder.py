@@ -88,6 +88,31 @@ def add_static_values_field_type_options(logger: logging.Logger,
     return True
 
 
+def add_static_values_system_test_case_fields(logger: logging.Logger,
+                                              database: BaseSqliteInterface) -> bool:
+    logger.info("-> Populating system testcase custom fields")
+
+    # (id, field_mame, system_name, field_type_id, entry_type, enabled, position)
+    query: str = ("INSERT INTO test_case_custom_fields(id, field_mame, "
+                  "system_name, field_type_id, entry_type, enabled, position) "
+                  "VALUES(?,?,?,?,?,?,?)")
+
+    try:
+        for field_id, field_mame, system_name, field_type_id, entry_type, \
+                enabled, position in db_static_values.STATIC_VALUES_SYSTEM_FIELDS:
+
+            values = (field_id, field_mame, system_name, field_type_id, entry_type,
+                      enabled, position)
+            database.insert_query(query, values)
+
+    except SqliteInterfaceException as interface_except:
+        logger.critical("Unable to add system test case fields, reason: %s",
+                        str(interface_except))
+        return False
+
+    return True
+
+
 def build_database(logger: logging.Logger,
                    database: BaseSqliteInterface) -> bool:
     """
@@ -165,6 +190,9 @@ def main():
         return
 
     if not add_static_values_field_type_options(logger, db):
+        return
+
+    if not add_static_values_system_test_case_fields(logger, db):
         return
 
 
