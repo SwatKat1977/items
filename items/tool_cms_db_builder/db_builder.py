@@ -52,16 +52,16 @@ def open_db(logger: logging.Logger, filename: str) -> BaseSqliteInterface:
 
 def add_static_values_field_types(logger: logging.Logger,
                                   database: BaseSqliteInterface) -> bool:
-    logger.info("-> Populating field type static values")
+    logger.info("-> Populating custom field type static values")
 
-    query: str = "INSERT INTO field_types(id, name) VALUES(?,?)"
+    query: str = "INSERT INTO custom_field_types(id, name) VALUES(?,?)"
 
     try:
         for field_id, field_name in db_static_values.STATIC_VALUES_FIELD_TYPES:
             database.insert_query(query, (int(field_id), field_name))
 
     except SqliteInterfaceException as interface_except:
-        logger.critical("Unable to add field type static value, reason: %s",
+        logger.critical("Unable to add custom field type static value, reason: %s",
                         str(interface_except))
         return False
 
@@ -70,9 +70,9 @@ def add_static_values_field_types(logger: logging.Logger,
 
 def add_static_values_field_type_options(logger: logging.Logger,
                                          database: BaseSqliteInterface) -> bool:
-    logger.info("-> Populating field type options static values")
+    logger.info("-> Populating custom field type options static values")
 
-    query: str = ("INSERT INTO field_type_options(id, field_type_id, "
+    query: str = ("INSERT INTO custom_field_type_options(id, field_type_id, "
                   "option_name) VALUES(?,?,?)")
 
     try:
@@ -107,21 +107,21 @@ def build_database(logger: logging.Logger,
         database.create_table(sql_values.SQL_CREATE_TEST_CASES_TABLE,
                               "test_cases")
 
-        logger.info("-> Creating field_type table")
-        database.create_table(sql_values.SQL_CREATE_FIELD_TYPES_TABLE,
-                              "field_type")
+        logger.info("-> Creating custom_field_type table")
+        database.create_table(sql_values.SQL_CREATE_CUSTOM_FIELD_TYPES_TABLE,
+                              "custom_field_type")
 
-        logger.info("-> Creating field_type_option table")
-        database.create_table(sql_values.SQL_CREATE_FIELD_TYPE_OPTIONS_TABLE,
-                              "field_type_option")
+        logger.info("-> Creating custom_field_type_option table")
+        database.create_table(sql_values.SQL_CREATE_CUSTOM_FIELD_TYPE_OPTIONS_TABLE,
+                              "custom_field_type_option")
 
-        logger.info("-> Creating test_case_fields table")
-        database.create_table(sql_values.SQL_CREATE_TEST_CASE_FIELDS_TABLE,
-                              "test_case_fields")
+        logger.info("-> Creating test_case_custom_fields table")
+        database.create_table(sql_values.SQL_CREATE_TEST_CASE_CUSTOM_FIELDS_TABLE,
+                              "test_case_custom_fields")
 
-        logger.info("-> Creating test_case_field__type_option_values table")
-        database.create_table(sql_values.SQL_CREATE_TEST_CASE_FIELD_TYPE_OPTION_VALUES_TABLE,
-                              "test_case_field__type_option_values")
+        logger.info("-> Creating test_case_custom_field_type_option_values table")
+        database.create_table(sql_values.SQL_CREATE_TEST_CASE_CUSTOM_FIELD_TYPE_OPTION_VALUES_TABLE,
+                              "test_case_custom_field_type_option_values")
 
     except SqliteInterfaceException as interface_except:
         logger.critical("Unable to add add tables, reason: %s",
@@ -161,8 +161,11 @@ def main():
 
     build_database(logger, db)
 
-    add_static_values_field_types(logger, db)
-    add_static_values_field_type_options(logger, db)
+    if not add_static_values_field_types(logger, db):
+        return
+
+    if not add_static_values_field_type_options(logger, db):
+        return
 
 
 if __name__ == "__main__":

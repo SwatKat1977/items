@@ -51,26 +51,26 @@ CREATE TABLE test_cases (
 """
 
 # Type of field - e.g. 'string', 'text', 'int'
-SQL_CREATE_FIELD_TYPES_TABLE: str = """
-CREATE TABLE field_types (
+SQL_CREATE_CUSTOM_FIELD_TYPES_TABLE: str = """
+CREATE TABLE custom_field_types (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL
 );
 """
 
 # Option specific for a field type (e.g. required)
-SQL_CREATE_FIELD_TYPE_OPTIONS_TABLE: str = """
-CREATE TABLE field_type_options (
+SQL_CREATE_CUSTOM_FIELD_TYPE_OPTIONS_TABLE: str = """
+CREATE TABLE custom_field_type_options (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     field_type_id INTEGER NOT NULL,
     option_name TEXT NOT NULL,
-    FOREIGN KEY (field_type_id) REFERENCES field_types(id) ON DELETE CASCADE
+    FOREIGN KEY (field_type_id) REFERENCES custom_field_types(id) ON DELETE CASCADE
 );
 """
 
 # Test Case Fields
-SQL_CREATE_TEST_CASE_FIELDS_TABLE: str = """
-CREATE TABLE test_case_fields (
+SQL_CREATE_TEST_CASE_CUSTOM_FIELDS_TABLE: str = """
+CREATE TABLE test_case_custom_fields (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     field_mame TEXT NOT NULL,
     description TEXT NOT NULL,
@@ -80,18 +80,18 @@ CREATE TABLE test_case_fields (
     enabled INTEGER NOT NULL,
     position INTEGER NOT NULL,
     UNIQUE (field_mame, system_name),
-    FOREIGN KEY (field_type_id) REFERENCES field_types(id)
+    FOREIGN KEY (field_type_id) REFERENCES custom_field_types(id)
 );
 """
 
 # Values for a Test Case field option.
-SQL_CREATE_TEST_CASE_FIELD_TYPE_OPTION_VALUES_TABLE: str = """
-CREATE TABLE test_case_field_type_option_values (
+SQL_CREATE_TEST_CASE_CUSTOM_FIELD_TYPE_OPTION_VALUES_TABLE: str = """
+CREATE TABLE test_case_custom_field_type_option_values (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     case_field_id INTEGER NOT NULL,
     field_type_option_id INTEGER NOT NULL,
     option_value TEXT NOT NULL,
-    FOREIGN KEY (case_field_id) REFERENCES test_case_fields(id),
-    FOREIGN KEY (field_type_option_id) REFERENCES field_type_options(id)
+    FOREIGN KEY (case_field_id) REFERENCES test_case_custom_fields(id),
+    FOREIGN KEY (field_type_option_id) REFERENCES custom_field_type_options(id)
 );
 """
