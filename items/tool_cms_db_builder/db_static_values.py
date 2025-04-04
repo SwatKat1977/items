@@ -66,3 +66,16 @@ STATIC_VALUES_FIELD_TYPE_OPTIONS: list = [
     (15, 8, "Default Value"),
     (16, 8, "Field Required"),
 ]
+
+# (id, field_mame, system_name, field_type_id, entry_type, enabled, position)
+STATIC_VALUES_SYSTEM_FIELDS: list = [
+    # Reference - String field (5)
+    (1, "References", "references", 5, "system", True, 1),
+
+    # Status - The status of the test case. E.g. draft, review, approved
+    (2, "Status", "status", 3, "system", True, 2),
+
+    # Estimate - Estimate of the time it will time to execute the test case
+    #            as a free-form string.
+    (3, "Estimate", "estimate", 5, "system", True, 3)
+]
