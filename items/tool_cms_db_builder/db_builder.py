@@ -115,6 +115,14 @@ def build_database(logger: logging.Logger,
         database.create_table(sql_values.SQL_CREATE_FIELD_TYPE_OPTIONS_TABLE,
                               "field_type_option")
 
+        logger.info("-> Creating test_case_fields table")
+        database.create_table(sql_values.SQL_CREATE_TEST_CASE_FIELDS_TABLE,
+                              "test_case_fields")
+
+        logger.info("-> Creating test_case_field__type_option_values table")
+        database.create_table(sql_values.SQL_CREATE_TEST_CASE_FIELD_TYPE_OPTION_VALUES_TABLE,
+                              "test_case_field__type_option_values")
+
     except SqliteInterfaceException as interface_except:
         logger.critical("Unable to add add tables, reason: %s",
                         str(interface_except))

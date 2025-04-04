@@ -84,23 +84,14 @@ CREATE TABLE test_case_fields (
 );
 """
 
-
-
-
-
-
-
-
-
-
 # Values for a Test Case field option.
-SQL_CREATE_FIELD_TYPE_OPTION_VALUE: str = """
-CREATE TABLE test_case_field_OptionValue (
+SQL_CREATE_TEST_CASE_FIELD_TYPE_OPTION_VALUES_TABLE: str = """
+CREATE TABLE test_case_field_type_option_values (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    caseField_id INTEGER NOT NULL,
-    fieldTypeOption_id INTEGER NOT NULL,
+    case_field_id INTEGER NOT NULL,
+    field_type_option_id INTEGER NOT NULL,
     option_value TEXT NOT NULL,
-    FOREIGN KEY (caseField_id) REFERENCES caseField(id) ON DELETE CASCADE,
-    FOREIGN KEY (fieldTypeOption_id) REFERENCES fieldTypeOption(id) ON DELETE CASCADE
+    FOREIGN KEY (case_field_id) REFERENCES test_case_fields(id),
+    FOREIGN KEY (field_type_option_id) REFERENCES field_type_options(id)
 );
 """
