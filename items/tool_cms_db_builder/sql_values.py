@@ -84,6 +84,15 @@ CREATE TABLE test_case_fields (
 );
 """
 
+
+
+
+
+
+
+
+
+
 # Values for a Test Case field option.
 SQL_CREATE_FIELD_TYPE_OPTION_VALUE: str = """
 CREATE TABLE test_case_field_OptionValue (
@@ -95,11 +104,3 @@ CREATE TABLE test_case_field_OptionValue (
     FOREIGN KEY (fieldTypeOption_id) REFERENCES fieldTypeOption(id) ON DELETE CASCADE
 );
 """
-
-
-
-
-
-
-
-
