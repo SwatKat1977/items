@@ -13,11 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import enum
 import logging
 import typing
 from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
 from service_health_enums import ComponentDegradationLevel
 from state_object import StateObject
+
+
+class CustomFieldMoveDirection(enum.Enum):
+    UP = 0,
+    DOWN = 1
 
 
 class SqliteInterface(BaseSqliteInterface):
@@ -549,5 +555,217 @@ class SqliteInterface(BaseSqliteInterface):
             self._state_object.database_health_state_str = \
                 "hard_delete_project fatal SQL failure"
             return False
+
+        return True
+
+    def is_valid_custom_test_case_field(self, field_id: int) \
+            -> typing.Optional[bool]:
+        """
+        Check if a custom test case field exists in the database.
+
+        This method queries the `test_case_custom_fields` table to determine
+        whether a field with the given `field_id` exists. If the query fails
+        due to a database error, it logs  the critical failure, updates the
+        database health status, and returns `None`.
+
+        Args:
+            field_id (int): The ID of the custom test case field to check.
+
+        Returns:
+            Optional[bool]:
+                - `True` if the field exists.
+                - `False` if the field does not exist.
+                - `None` if a database error occurs.
+        """
+        query: str = "SELECT COUNT(*) FROM test_case_custom_fields WHERE id = ?"
+
+        try:
+            rows: dict = self.query_with_values(query, (field_id,))
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "is_valid_custom_test_case_field fatal SQL failure"
+            return None
+
+        # Returns True if the custom test case field exists, False otherwise
+        return rows[0][0] > 0
+
+    def count_test_case_fields(self) -> int:
+        """
+        Count the number of custom test case fields in the database.
+
+        This method queries the `test_case_custom_fields` table to retrieve the
+        total count of defined custom test case fields. If the query fails due
+        to a database error, it logs the critical error, updates the database
+        health status, and returns -1  to indicate the failure.
+
+        Returns:
+            int:
+                - The number of custom test case fields if the query succeeds.
+                - `-1` if a database error occurs.
+        """
+        query: str = "SELECT COUNT(*) FROM test_case_custom_fields"
+
+        try:
+            rows: dict = self.query_with_values(query)
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "count_test_case_fields fatal SQL failure"
+            return -1
+
+        # Returns the number of  custom test case fields
+        return int(rows[0][0])
+
+    def get_id_for_test_case_custom_field_in_position(self, position: int) \
+            -> int:
+        """
+        Retrieve the ID of the custom test case field at a given position.
+
+        This method queries the `test_case_custom_fields` table to find the
+        ID of the field at the specified `position`. If the query fails due
+        to a database error, it logs the error, updates the database health
+        status, and returns `-1`. If no field is found at the position, it
+        returns `0`.
+
+        Args:
+            position (int): The position of the custom test case field.
+
+        Returns:
+            int:
+                - The ID of the custom test case field if found.
+                - `0` if no field exists at the given position.
+                - `-1` if a database error occurs.
+        """
+        sql: str = "SELECT id FROM test_case_custom_fields WHERE position = ?"
+
+        try:
+            rows: dict = self.query_with_values(sql,
+                                                (position,),
+                                                fetch_one=True)
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "get_id_for_test_case_custom_field_in_position fatal SQL failure"
+            return -1
+
+        # If the field id is not found then return False to represent that.
+        if not rows:
+            return 0
+
+        # Return the id of the custom test case field
+        return int(rows[0])
+
+    def move_test_case_custom_field(self,
+                                    field_id: int,
+                                    direction: CustomFieldMoveDirection) \
+            -> typing.Optional[bool]:
+        """
+        Moves a test case custom field up or down in its positional ordering.
+
+        Retrieves the current position of the custom field specified by `field_id`,
+        calculates the target position based on the `direction` parameter, and
+        attempts to swap positions with the field currently occupying the target
+        position.
+
+        If successful, the fields are swapped and True is returned. If the field
+        does not exist or the move would go out of range, False is returned. If a
+        database error occurs, logs the error, updates the internal database
+        health state, and returns None.
+
+        Parameters:
+            field_id (int): The ID of the custom field to move.
+            direction (CustomFieldMoveDirection): Direction to move the field,
+                either up or down.
+
+        Returns:
+            Optional[bool]: True if the move was successful, False if invalid
+                conditions were encountered (e.g., field not found or out-of-range
+                move), or None if a fatal database error occurred.
+        """
+
+        query: str = "SELECT position FROM test_case_custom_fields WHERE id = ?"
+
+        try:
+            rows: dict = self.query_with_values(query, (field_id,),
+                                                fetch_one=True)
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical(
+                "move_test_case_custom_field query failed, reason: %s",
+                str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "move_test_case_custom_field fatal SQL failure"
+            return None
+
+        # If the field id is not found then return False to represent that.
+        if not rows:
+            return False
+
+        total_fields: int = self.count_test_case_fields()
+
+        if total_fields == -1:
+            self._logger.critical(
+                "move_test_case_custom_field failed to count fields")
+            self._state_object.database_health = \
+                ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "move_test_case_custom_field failed to count fields"
+            return None
+
+        current_position = rows[0]
+        target_position = current_position - 1 \
+            if direction == CustomFieldMoveDirection.UP \
+            else current_position + 1
+
+        # Clamp the position so it doesn't go out of range.
+        if target_position < 1 or target_position > total_fields:
+            return False
+
+        target_field_id = self.get_id_for_test_case_custom_field_in_position(
+            target_position)
+
+        # If target field is None then an exception has been raised
+        if target_field_id == -1:
+            return None
+
+        # If target field is -1 then the target field was notfound
+        if not target_field_id:
+            return False
+
+        # Swap the positions SQL
+        update_sql: str = """
+            UPDATE test_case_custom_fields
+            SET position = CASE
+                WHEN id = ? THEN ?
+                WHEN id = ? THEN ?
+            END
+            WHERE id IN (?, ?)
+        """
+
+        update_parameters: tuple = \
+            (field_id, target_position, target_field_id, current_position,
+             field_id, target_field_id)
+
+        try:
+            rows: dict = self.query(update_sql,
+                                    update_parameters,
+                                    commit=True)
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical(
+                "move_test_case_custom_field query failed, reason: %s",
+                str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "move_test_case_custom_field fatal SQL failure"
+            return None
 
         return True
