@@ -35,9 +35,10 @@ def create_blueprint(logger: logging.Logger, db: SqliteInterface) -> Blueprint:
 
     logger.info("=> admin/move_testcase_custom_field_position [POST]")
 
-    @blueprint.route('/admin/move_testcase_custom_field/<int:field_id>',
-                     methods=['POST'])
-    async def move_testcase_custom_field_request(field_id: int):
-        return await view.move_testcase_custom_field(field_id)
+    @blueprint.route(
+        '/admin/move_testcase_custom_field/<int:field_id>/<string:direction>',
+        methods=['POST'])
+    async def move_testcase_custom_field_request(field_id: int, direction: str):
+        return await view.move_testcase_custom_field(field_id, direction)
 
     return blueprint
