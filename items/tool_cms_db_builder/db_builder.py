@@ -93,7 +93,7 @@ def add_static_values_system_test_case_fields(logger: logging.Logger,
     logger.info("-> Populating system testcase custom fields")
 
     # (id, field_mame, system_name, field_type_id, entry_type, enabled, position)
-    query: str = ("INSERT INTO test_case_custom_fields(id, field_mame, "
+    query: str = ("INSERT INTO test_case_custom_fields(id, field_name, "
                   "system_name, field_type_id, entry_type, enabled, position) "
                   "VALUES(?,?,?,?,?,?,?)")
 
