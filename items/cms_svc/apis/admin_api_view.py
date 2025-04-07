@@ -17,9 +17,10 @@ import http
 import json
 import logging
 import typing
+import interfaces.cms.admin as json_schemas
 
 import quart
-from base_view import BaseView
+from base_view import BaseView, validate_json, ApiResponse
 from sqlite_interface import CustomFieldMoveDirection, SqliteInterface
 
 class AdminApiView(BaseView):
@@ -29,7 +30,8 @@ class AdminApiView(BaseView):
         self._logger = logger.getChild(__name__)
         self._db: SqliteInterface = db
 
-    async def add_testcase_custom_field(self):
+    @validate_json(json_schemas.SCHEMA_ADD_TEST_CASE_CUSTOM_FIELD_REQUEST)
+    async def add_testcase_custom_field(self, request_msg: ApiResponse):
         ...
 
     async def move_testcase_custom_field(self,
@@ -92,15 +94,3 @@ class AdminApiView(BaseView):
         return quart.Response(json.dumps(body),
                               status=http.HTTPStatus.OK,
                               content_type="application/json")
-
-''''
-        return await view.add_testcase_custom_field()
-
-    logger.info("=> admin/move_testcase_custom_field_position [POST]")
-
-    @blueprint.route('/admin/move_testcase_custom_field_position',
-                     methods=['POST'])
-    async def move_testcase_custom_field_position_request():
-        return await move_testcase_custom_field_position_field()
-
-'''
