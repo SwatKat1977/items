@@ -58,16 +58,6 @@ CREATE TABLE custom_field_types (
 );
 """
 
-# Option specific for a field type (e.g. required)
-SQL_CREATE_CUSTOM_FIELD_TYPE_OPTIONS_TABLE: str = """
-CREATE TABLE custom_field_type_options (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    field_type_id INTEGER NOT NULL,
-    option_name TEXT NOT NULL,
-    FOREIGN KEY (field_type_id) REFERENCES custom_field_types(id) ON DELETE CASCADE
-);
-"""
-
 # Test Case Fields
 SQL_CREATE_TEST_CASE_CUSTOM_FIELDS_TABLE: str = """
 CREATE TABLE test_case_custom_fields (
@@ -81,6 +71,18 @@ CREATE TABLE test_case_custom_fields (
     position INTEGER NOT NULL,
     UNIQUE (field_name, system_name),
     FOREIGN KEY (field_type_id) REFERENCES custom_field_types(id)
+);
+"""
+
+
+# Link table between test case custom fields and projects.
+SQL_CREATE_TEST_CASE_CUSTOM_FIELD_PROJECTS_TABLE: str = """
+CREATE TABLE test_case_custom_field_projects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    field_id INTEGER NOT NULL,
+    project_id INTEGER NOT NULL,
+    FOREIGN KEY (field_id) REFERENCES custom_field_types(id) ON DELETE CASCADE,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 );
 """
 

@@ -34,39 +34,6 @@ Future fields:
     Scenarios
 '''
 
-# (id, field_type_id, option_name)
-STATIC_VALUES_FIELD_TYPE_OPTIONS: list = [
-    # Checkbox field type options
-    (1, 1, "Default Value"),
-
-    # Dropdown field type options
-    (2, 3, "Items"),
-    (3, 3, "Default Value"),
-    (4, 3, "Field Required"),
-
-    # Integer field type options
-    (5, 4, "Default Value"),
-    (6, 4, "Field Required"),
-
-    # String field type options
-    (7, 5, "Default Value"),
-    (8, 5, "Field Required"),
-
-    # Text field type options
-    (9,  6, "Text Format"),  # Markdown or Plain
-    (10, 6, "Rows"),
-    (11, 6, "Default Value"),
-    (12, 6, "Field Required"),
-
-    # Url (Link) field type options
-    (13, 7, "Default Value"),
-    (14, 7, "Field Required"),
-
-    # Url (Link) field type options
-    (15, 8, "Default Value"),
-    (16, 8, "Field Required"),
-]
-
 # (id, field_mame, system_name, field_type_id, entry_type, enabled, position)
 STATIC_VALUES_SYSTEM_FIELDS: list = [
     # Reference - String field (5)

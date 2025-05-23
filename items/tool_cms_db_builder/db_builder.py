@@ -29,6 +29,21 @@ DEFAULT_DB_FILENAME: str = "items_cms_svc.db"
 
 
 def open_db(logger: logging.Logger, filename: str) -> BaseSqliteInterface:
+    """Opens a new SQLite database if it does not already exist.
+
+    Logs the process of opening the database. If the file already exists,
+    logs a critical message and returns None. If an error occurs while
+    creating the database, logs the exception and also returns None.
+
+    Args:
+        logger (logging.Logger): Logger instance for logging messages.
+        filename (str): Path to the database file to be created.
+
+    Returns:
+        BaseSqliteInterface: A database interface instance if successful.
+        None: If the file already exists or an error occurs.
+    """
+
     logger.info("Opening database...")
 
     if os.path.exists(filename):
@@ -52,6 +67,19 @@ def open_db(logger: logging.Logger, filename: str) -> BaseSqliteInterface:
 
 def add_static_values_field_types(logger: logging.Logger,
                                   database: BaseSqliteInterface) -> bool:
+    """Populates the custom_field_types table with predefined static values.
+
+    Inserts static field type ID-name pairs into the `custom_field_types` table.
+    Logs the process and handles any exceptions that occur during insertion.
+
+    Args:
+        logger (logging.Logger): Logger instance used for logging messages.
+        database (BaseSqliteInterface): Database interface used to execute the insert queries.
+
+    Returns:
+        bool: True if all values were inserted successfully; False if an error occurred.
+    """
+
     logger.info("-> Populating custom field type static values")
 
     query: str = "INSERT INTO custom_field_types(id, name) VALUES(?,?)"
@@ -68,28 +96,24 @@ def add_static_values_field_types(logger: logging.Logger,
     return True
 
 
-def add_static_values_field_type_options(logger: logging.Logger,
-                                         database: BaseSqliteInterface) -> bool:
-    logger.info("-> Populating custom field type options static values")
-
-    query: str = ("INSERT INTO custom_field_type_options(id, field_type_id, "
-                  "option_name) VALUES(?,?,?)")
-
-    try:
-        for option_id, field_type_id, option_name in db_static_values.STATIC_VALUES_FIELD_TYPE_OPTIONS:
-            database.insert_query(query,
-                                  (option_id, field_type_id, option_name))
-
-    except SqliteInterfaceException as interface_except:
-        logger.critical("Unable to add field type static value, reason: %s",
-                        str(interface_except))
-        return False
-
-    return True
-
-
 def add_static_values_system_test_case_fields(logger: logging.Logger,
                                               database: BaseSqliteInterface) -> bool:
+    """Populates the test_case_custom_fields table with predefined system fields.
+
+    Inserts predefined static values representing system test case fields into
+    the `test_case_custom_fields` table. Each record includes metadata such as
+    field name, system name, field type, entry type, and display position.
+
+    Logs the process and handles any exceptions that occur during insertion.
+
+    Args:
+        logger (logging.Logger): Logger instance used to log messages.
+        database (BaseSqliteInterface): Database interface used to execute the insert queries.
+
+    Returns:
+        bool: True if all values were inserted successfully; False if an error occurred.
+    """
+
     logger.info("-> Populating system testcase custom fields")
 
     # (id, field_mame, system_name, field_type_id, entry_type, enabled, position)
@@ -136,13 +160,13 @@ def build_database(logger: logging.Logger,
         database.create_table(sql_values.SQL_CREATE_CUSTOM_FIELD_TYPES_TABLE,
                               "custom_field_type")
 
-        logger.info("-> Creating custom_field_type_option table")
-        database.create_table(sql_values.SQL_CREATE_CUSTOM_FIELD_TYPE_OPTIONS_TABLE,
-                              "custom_field_type_option")
-
         logger.info("-> Creating test_case_custom_fields table")
         database.create_table(sql_values.SQL_CREATE_TEST_CASE_CUSTOM_FIELDS_TABLE,
                               "test_case_custom_fields")
+
+        logger.info("-> Creating test_case_custom_field_projects table")
+        database.create_table(sql_values.SQL_CREATE_TEST_CASE_CUSTOM_FIELD_PROJECTS_TABLE,
+                              "test_case_custom_field_projects")
 
         logger.info("-> Creating test_case_custom_field_type_option_values table")
         database.create_table(sql_values.SQL_CREATE_TEST_CASE_CUSTOM_FIELD_TYPE_OPTION_VALUES_TABLE,
@@ -157,6 +181,20 @@ def build_database(logger: logging.Logger,
 
 
 def main():
+    """Main entry point for initializing and populating the SQLite database.
+
+    Sets up logging, parses command-line arguments, and creates a new database
+    file (if it does not already exist). If successful, it proceeds to build the
+    database schema and insert predefined static values for field types and
+    system test case fields.
+
+    Command-line Args:
+        -d, --dbFile (str): Optional path to the database file. If not provided,
+        a default filename is used.
+
+    Returns:
+        None
+    """
     logger: logging.Logger = logging.getLogger(__name__)
 
     log_format: logging.Formatter =(
@@ -187,9 +225,6 @@ def main():
     build_database(logger, db)
 
     if not add_static_values_field_types(logger, db):
-        return
-
-    if not add_static_values_field_type_options(logger, db):
         return
 
     if not add_static_values_system_test_case_fields(logger, db):
