@@ -78,18 +78,6 @@ CREATE TABLE test_case_custom_fields (
 );
 """
 
-# Table defines key-value config options for a custom field
-SQL_CREATE_TEST_FIELD_TYPE_OPTIONS_TABLE: str = """
-CREATE TABLE field_type_options (
-    id INTEGER PRIMARY KEY,
-    field_id INTEGER NOT NULL,
-    option_name TEXT NOT NULL,
-    option_value TEXT NOT NULL,
-    FOREIGN KEY(field_id) REFERENCES test_case_custom_fields(id),
-    UNIQUE(field_id, option_name)
-);
-"""
-
 # Table defines the option kinds (e.g. text_format)
 SQL_CREATE_TEST_CASE_CUSTOM_FIELD_OPTION_KINDS_TABLE: str = """
 CREATE TABLE test_case_custom_field_option_kinds (

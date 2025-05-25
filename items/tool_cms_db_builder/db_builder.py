@@ -82,11 +82,18 @@ def add_static_values_field_types(logger: logging.Logger,
 
     logger.info("-> Populating custom field type static values")
 
-    query: str = "INSERT INTO custom_field_types(id, name) VALUES(?,?)"
+    query: str = ("INSERT INTO custom_field_types(id, name, "
+                  "supports_default_value, supports_is_required) "
+                  "VALUES(?,?,?,?)")
 
     try:
-        for field_id, field_name in db_static_values.STATIC_VALUES_FIELD_TYPES:
-            database.insert_query(query, (int(field_id), field_name))
+        for field_id, field_name, default_value, is_required \
+                in db_static_values.STATIC_VALUES_FIELD_TYPES:
+            database.insert_query(query,
+                                  (int(field_id),
+                                   field_name,
+                                   default_value,
+                                   is_required))
 
     except SqliteInterfaceException as interface_except:
         logger.critical("Unable to add custom field type static value, reason: %s",
