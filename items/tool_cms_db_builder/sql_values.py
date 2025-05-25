@@ -54,7 +54,9 @@ CREATE TABLE test_cases (
 SQL_CREATE_CUSTOM_FIELD_TYPES_TABLE: str = """
 CREATE TABLE custom_field_types (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL
+    name TEXT UNIQUE NOT NULL,
+    supports_default_value BOOLEAN NOT NULL DEFAULT 0,
+    supports_is_required BOOLEAN NOT NULL DEFAULT 0
 );
 """
 
@@ -69,11 +71,54 @@ CREATE TABLE test_case_custom_fields (
     entry_type TEXT NOT NULL CHECK(entry_type IN ('system', 'user')),
     enabled INTEGER NOT NULL,
     position INTEGER NOT NULL,
+    is_required BOOLEAN NOT NULL DEFAULT 0,
+    default_value TEXT NOT NULL DEFAULT '',
     UNIQUE (field_name, system_name),
     FOREIGN KEY (field_type_id) REFERENCES custom_field_types(id)
 );
 """
 
+# Table defines key-value config options for a custom field
+SQL_CREATE_TEST_FIELD_TYPE_OPTIONS_TABLE: str = """
+CREATE TABLE field_type_options (
+    id INTEGER PRIMARY KEY,
+    field_id INTEGER NOT NULL,
+    option_name TEXT NOT NULL,
+    option_value TEXT NOT NULL,
+    FOREIGN KEY(field_id) REFERENCES test_case_custom_fields(id),
+    UNIQUE(field_id, option_name)
+);
+"""
+
+# Table defines the option kinds (e.g. text_format)
+SQL_CREATE_TEST_CASE_CUSTOM_FIELD_OPTION_KINDS_TABLE: str = """
+CREATE TABLE test_case_custom_field_option_kinds (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    option_name TEXT NOT NULL UNIQUE
+);
+"""
+
+SQL_CREATE_TEST_CASE_CUSTOM_FIELD_OPTION_KIND_VALUES_TABLE: str = """
+CREATE TABLE test_case_custom_field_option_values (
+    id INTEGER PRIMARY KEY,
+    kind_id INTEGER NOT NULL,
+    value TEXT NOT NULL,
+    FOREIGN KEY (kind_id) REFERENCES test_case_custom_field_option_kinds(id),
+    UNIQUE(kind_id, value)
+);
+"""
+
+SQL_CREATE_TEST_CASE_CUSTOM_FIELD_TYPE_OPTIONS_TABLE: str = """
+CREATE TABLE test_case_custom_field_type_options (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    field_id INTEGER NOT NULL,
+    option_kind_id INTEGER NOT NULL,
+    option_value TEXT NOT NULL,
+    FOREIGN KEY (field_id) REFERENCES test_case_custom_fields(id),
+    FOREIGN KEY (option_kind_id) REFERENCES test_case_custom_field_option_kinds(id),
+    UNIQUE (field_id, option_kind_id)
+);
+"""
 
 # Link table between test case custom fields and projects.
 SQL_CREATE_TEST_CASE_CUSTOM_FIELD_PROJECTS_TABLE: str = """
