@@ -130,3 +130,16 @@ CREATE TABLE test_case_custom_field_type_option_values (
     FOREIGN KEY (field_type_option_id) REFERENCES custom_field_type_options(id)
 );
 """
+
+# Values for a Test Case field option.
+SQL_CREATE_CUSTOM_FIELD_VALUE_FOR_TEST_CASES_TABLE: str = """
+CREATE TABLE custom_field_value_for_test_cases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    test_case_id INTEGER NOT NULL,
+    field_id INTEGER NOT NULL,
+    value TEXT NOT NULL,
+    FOREIGN KEY (test_case_id) REFERENCES test_cases(id) ON DELETE CASCADE,
+    FOREIGN KEY (field_id) REFERENCES test_case_custom_fields(id) ON DELETE CASCADE,
+    UNIQUE(test_case_id, field_id) -- one value per field per test case
+);
+"""
