@@ -18,6 +18,7 @@ import logging
 import os.path
 import sql_values
 import db_static_values
+import db_tables_test_cases as tables_test_cases
 from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
 
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
@@ -200,45 +201,55 @@ def build_database(logger: logging.Logger,
     """
 
     try:
-        logger.info("-> Creating projects table")
-        database.create_table(sql_values.SQL_CREATE_PROJECTS_TABLE,
-                              "projects")
+        logger.info("-> Creating '%s' table",
+                    sql_values.TABLE_NAME_PRJ_PROJECTS)
+        database.create_table(sql_values.TABLE_SQL_PRJ_PROJECTS,
+                              sql_values.TABLE_NAME_PRJ_PROJECTS)
 
-        logger.info("-> Creating test_case_folders table")
-        database.create_table(sql_values.SQL_CREATE_TEST_CASE_FOLDERS_TABLE,
-                              "test_case_folders")
+        logger.info("-> Creating '%s' table",
+                    tables_test_cases.TABLE_NAME_TC_FOLDERS)
+        database.create_table(tables_test_cases.TABLE_SQL_TC_FOLDERS,
+                              tables_test_cases.TABLE_NAME_TC_FOLDERS)
 
-        logger.info("-> Creating test_case_folders table")
-        database.create_table(sql_values.SQL_CREATE_TEST_CASES_TABLE,
-                              "test_cases")
+        logger.info("-> Creating '%s' table",
+                    tables_test_cases.TABLE_NAME_TC_TEST_CASES)
+        database.create_table(tables_test_cases.TABLE_SQL_TC_TEST_CASES,
+                              tables_test_cases.TABLE_NAME_TC_TEST_CASES)
 
-        logger.info("-> Creating custom_field_type table")
-        database.create_table(sql_values.SQL_CREATE_CUSTOM_FIELD_TYPES_TABLE,
-                              "custom_field_type")
+        logger.info("-> Creating '%s' table",
+                    tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_TYPES)
+        database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_TYPES,
+                              tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_TYPES)
 
-        logger.info("-> Creating test_case_custom_fields table")
-        database.create_table(sql_values.SQL_CREATE_TEST_CASE_CUSTOM_FIELDS_TABLE,
-                              "test_case_custom_fields")
+        logger.info("-> Creating '%s' table",
+                    tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELDS)
+        database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELDS,
+                              tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELDS)
 
-        logger.info("-> Creating test_case_custom_field_projects table")
-        database.create_table(sql_values.SQL_CREATE_TEST_CASE_CUSTOM_FIELD_PROJECTS_TABLE,
-                              "test_case_custom_field_projects")
+        logger.info("-> Creating '%s' table",
+                    tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KINDS)
+        database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_OPTION_KINDS,
+                              tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KINDS)
 
-        logger.info("-> Creating test_case_custom_field_type_option_values table")
-        database.create_table(sql_values.SQL_CREATE_TEST_CASE_CUSTOM_FIELD_TYPE_OPTION_VALUES_TABLE,
-                              "test_case_custom_field_type_option_values")
+        logger.info("-> Creating '%s' table",
+                    tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KIND_VALUES)
+        database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_OPTION_KIND_VALUES,
+                              tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KIND_VALUES)
 
-        logger.info("-> Creating test_case_custom_field_option_kinds table")
-        database.create_table(sql_values.SQL_CREATE_TEST_CASE_CUSTOM_FIELD_OPTION_KINDS_TABLE,
-                              "test_case_custom_field_option_kinds")
+        logger.info("-> Creating '%s' table",
+                    tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_TYPE_OPTIONS)
+        database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_TYPE_OPTIONS,
+                              tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_TYPE_OPTIONS)
 
-        logger.info("-> Creating test_case_custom_field_option_values table")
-        database.create_table(sql_values.SQL_CREATE_TEST_CASE_CUSTOM_FIELD_OPTION_KIND_VALUES_TABLE,
-                              "test_case_custom_field_option_values")
+        logger.info("-> Creating '%s' table",
+                    tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_PROJECTS)
+        database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_PROJECTS,
+                              tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_PROJECTS)
 
-        logger.info("-> Creating test_case_custom_field_type_options table")
-        database.create_table(sql_values.SQL_CREATE_TEST_CASE_CUSTOM_FIELD_TYPE_OPTIONS_TABLE,
-                              "test_case_custom_field_type_options")
+        logger.info("-> Creating '%s' table",
+                    tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_TYPE_OPTION_VALUES)
+        database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_TYPE_OPTION_VALUES,
+                              tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_TYPE_OPTION_VALUES)
 
     except SqliteInterfaceException as interface_except:
         logger.critical("Unable to add add tables, reason: %s",

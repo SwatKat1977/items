@@ -14,8 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-SQL_CREATE_PROJECTS_TABLE: str = """
-    CREATE TABLE projects (
+"""
+Table: projects
+
+Represents a project entity which groups test cases and associated
+configurations.
+
+Columns:
+- id (INTEGER PRIMARY KEY AUTOINCREMENT): Unique identifier for the project.
+- name (TEXT NOT NULL UNIQUE): Name of the project. Must be unique across all
+  projects.
+- awaiting_purge (BOOLEAN NOT NULL DEFAULT 0): Flag indicating if the project
+  is scheduled for purging.
+- announcement (TEXT NOT NULL DEFAULT ''): Optional announcement message
+  associated with the project.
+- show_announcement_on_overview (INTEGER NOT NULL DEFAULT 0): Flag (0 or 1) to
+  indicate whether the announcement should be shown on the overview page.
+- creation_date (TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP): The timestamp
+  when the project was created.
+"""
+
+TABLE_NAME_PRJ_PROJECTS: str = "prj_projects"
+TABLE_SQL_PRJ_PROJECTS: str = f"""
+    CREATE TABLE {TABLE_NAME_PRJ_PROJECTS} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
         awaiting_purge BOOLEAN NOT NULL DEFAULT 0,
@@ -23,123 +44,4 @@ SQL_CREATE_PROJECTS_TABLE: str = """
         show_announcement_on_overview INTEGER NOT NULL DEFAULT 0,
         creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
-"""
-
-SQL_CREATE_TEST_CASE_FOLDERS_TABLE: str = """
-    CREATE TABLE test_case_folders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        project_id INTEGER NOT NULL,
-        parent_id INTEGER NULL,
-        name TEXT NOT NULL,
-        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-        FOREIGN KEY (parent_id) REFERENCES test_case_folders(id) ON DELETE CASCADE,
-        UNIQUE (project_id, parent_id, name)
-    );
-"""
-
-SQL_CREATE_TEST_CASES_TABLE: str = """
-CREATE TABLE test_cases (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    project_id INTEGER NOT NULL,
-    folder_id INTEGER NULL,
-    name TEXT NOT NULL,
-    description TEXT,
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-    FOREIGN KEY (folder_id) REFERENCES test_case_folders(id) ON DELETE CASCADE,
-    UNIQUE (project_id, folder_id, name)
-);
-"""
-
-# Type of field - e.g. 'string', 'text', 'int'
-SQL_CREATE_CUSTOM_FIELD_TYPES_TABLE: str = """
-CREATE TABLE custom_field_types (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL,
-    supports_default_value BOOLEAN NOT NULL DEFAULT 0,
-    supports_is_required BOOLEAN NOT NULL DEFAULT 0
-);
-"""
-
-# Test Case Fields
-SQL_CREATE_TEST_CASE_CUSTOM_FIELDS_TABLE: str = """
-CREATE TABLE test_case_custom_fields (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    field_name TEXT NOT NULL,
-    description TEXT NOT NULL DEFAULT '',
-    system_name TEXT NOT NULL,
-    field_type_id INTEGER NOT NULL,
-    entry_type TEXT NOT NULL CHECK(entry_type IN ('system', 'user')),
-    enabled INTEGER NOT NULL,
-    position INTEGER NOT NULL,
-    is_required BOOLEAN NOT NULL DEFAULT 0,
-    default_value TEXT NOT NULL DEFAULT '',
-    UNIQUE (field_name, system_name),
-    FOREIGN KEY (field_type_id) REFERENCES custom_field_types(id)
-);
-"""
-
-# Table defines the option kinds (e.g. text_format)
-SQL_CREATE_TEST_CASE_CUSTOM_FIELD_OPTION_KINDS_TABLE: str = """
-CREATE TABLE test_case_custom_field_option_kinds (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    option_name TEXT NOT NULL UNIQUE
-);
-"""
-
-SQL_CREATE_TEST_CASE_CUSTOM_FIELD_OPTION_KIND_VALUES_TABLE: str = """
-CREATE TABLE test_case_custom_field_option_values (
-    id INTEGER PRIMARY KEY,
-    kind_id INTEGER NOT NULL,
-    value TEXT NOT NULL,
-    FOREIGN KEY (kind_id) REFERENCES test_case_custom_field_option_kinds(id),
-    UNIQUE(kind_id, value)
-);
-"""
-
-SQL_CREATE_TEST_CASE_CUSTOM_FIELD_TYPE_OPTIONS_TABLE: str = """
-CREATE TABLE test_case_custom_field_type_options (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    field_id INTEGER NOT NULL,
-    option_kind_id INTEGER NOT NULL,
-    option_value TEXT NOT NULL,
-    FOREIGN KEY (field_id) REFERENCES test_case_custom_fields(id),
-    FOREIGN KEY (option_kind_id) REFERENCES test_case_custom_field_option_kinds(id),
-    UNIQUE (field_id, option_kind_id)
-);
-"""
-
-# Link table between test case custom fields and projects.
-SQL_CREATE_TEST_CASE_CUSTOM_FIELD_PROJECTS_TABLE: str = """
-CREATE TABLE test_case_custom_field_projects (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    field_id INTEGER NOT NULL,
-    project_id INTEGER NOT NULL,
-    FOREIGN KEY (field_id) REFERENCES custom_field_types(id) ON DELETE CASCADE,
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-);
-"""
-
-# Values for a Test Case field option.
-SQL_CREATE_TEST_CASE_CUSTOM_FIELD_TYPE_OPTION_VALUES_TABLE: str = """
-CREATE TABLE test_case_custom_field_type_option_values (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    case_field_id INTEGER NOT NULL,
-    field_type_option_id INTEGER NOT NULL,
-    option_value TEXT NOT NULL,
-    FOREIGN KEY (case_field_id) REFERENCES test_case_custom_fields(id),
-    FOREIGN KEY (field_type_option_id) REFERENCES custom_field_type_options(id)
-);
-"""
-
-# Values for a Test Case field option.
-SQL_CREATE_CUSTOM_FIELD_VALUE_FOR_TEST_CASES_TABLE: str = """
-CREATE TABLE custom_field_value_for_test_cases (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    test_case_id INTEGER NOT NULL,
-    field_id INTEGER NOT NULL,
-    value TEXT NOT NULL,
-    FOREIGN KEY (test_case_id) REFERENCES test_cases(id) ON DELETE CASCADE,
-    FOREIGN KEY (field_id) REFERENCES test_case_custom_fields(id) ON DELETE CASCADE,
-    UNIQUE(test_case_id, field_id) -- one value per field per test case
-);
 """
