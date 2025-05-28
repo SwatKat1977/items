@@ -20,6 +20,7 @@ import sql_values
 import db_static_values
 import db_tables_test_cases as tables_test_cases
 from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
+import databases.cms_db_tables as cms_db_tables
 
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
 LOGGING_DEFAULT_LOG_LEVEL = logging.DEBUG
@@ -83,7 +84,7 @@ def add_static_td_values_field_types(logger: logging.Logger,
 
     logger.info("-> Populating test cases 'custom field type' static values")
 
-    query: str = (f"INSERT INTO {tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_TYPES}(id, name, "
+    query: str = (f"INSERT INTO {cms_db_tables.TC_CUSTOM_FIELD_TYPES}(id, name, "
                   "supports_default_value, supports_is_required) "
                   "VALUES(?,?,?,?)")
 
@@ -125,7 +126,7 @@ def add_static_values_system_test_case_fields(logger: logging.Logger,
     logger.info("-> Populating system testcase custom fields")
 
     # (id, field_mame, system_name, field_type_id, entry_type, enabled, position)
-    query: str = (f"INSERT INTO {tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELDS}(id, field_name, "
+    query: str = (f"INSERT INTO {cms_db_tables.TC_CUSTOM_FIELDS}(id, field_name, "
                   "system_name, field_type_id, entry_type, enabled, position) "
                   "VALUES(?,?,?,?,?,?,?)")
 
@@ -151,7 +152,7 @@ def add_static_values_test_case_custom_field_option_kinds(
     logger.info("-> Populating test case custom field option kinds")
 
     # (id, field_mame, system_name, field_type_id, entry_type, enabled, position)
-    query: str = (f"INSERT INTO {tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KINDS}(id, "
+    query: str = (f"INSERT INTO {cms_db_tables.TC_CUSTOM_FIELD_OPTION_KINDS}(id, "
                   "option_name) VALUES(?,?)")
 
     try:
@@ -175,7 +176,7 @@ def add_static_values_test_case_custom_field_option_kind_values(
     logger.info("-> Populating test case custom field option kind values")
 
     # (id, field_mame, kind_id, value)
-    query: str = (f"INSERT INTO {tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KIND_VALUES}("
+    query: str = (f"INSERT INTO {cms_db_tables.TC_CUSTOM_FIELD_OPTION_KIND_VALUES}("
                   "id, kind_id, value) VALUES(?,?,?)")
 
     try:
@@ -207,49 +208,49 @@ def build_database(logger: logging.Logger,
                               sql_values.TABLE_NAME_PRJ_PROJECTS)
 
         logger.info("-> Creating '%s' table",
-                    tables_test_cases.TABLE_NAME_TC_FOLDERS)
+                    cms_db_tables.TC_FOLDERS)
         database.create_table(tables_test_cases.TABLE_SQL_TC_FOLDERS,
-                              tables_test_cases.TABLE_NAME_TC_FOLDERS)
+                              cms_db_tables.TC_FOLDERS)
 
         logger.info("-> Creating '%s' table",
-                    tables_test_cases.TABLE_NAME_TC_TEST_CASES)
+                    cms_db_tables.TC_TEST_CASES)
         database.create_table(tables_test_cases.TABLE_SQL_TC_TEST_CASES,
-                              tables_test_cases.TABLE_NAME_TC_TEST_CASES)
+                              cms_db_tables.TC_TEST_CASES)
 
         logger.info("-> Creating '%s' table",
-                    tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_TYPES)
+                    cms_db_tables.TC_CUSTOM_FIELD_TYPES)
         database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_TYPES,
-                              tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_TYPES)
+                              cms_db_tables.TC_CUSTOM_FIELD_TYPES)
 
         logger.info("-> Creating '%s' table",
-                    tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELDS)
+                    cms_db_tables.TC_CUSTOM_FIELDS)
         database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELDS,
-                              tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELDS)
+                              cms_db_tables.TC_CUSTOM_FIELDS)
 
         logger.info("-> Creating '%s' table",
-                    tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KINDS)
+                    cms_db_tables.TC_CUSTOM_FIELD_OPTION_KINDS)
         database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_OPTION_KINDS,
-                              tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KINDS)
+                              cms_db_tables.TC_CUSTOM_FIELD_OPTION_KINDS)
 
         logger.info("-> Creating '%s' table",
-                    tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KIND_VALUES)
+                    cms_db_tables.TC_CUSTOM_FIELD_OPTION_KIND_VALUES)
         database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_OPTION_KIND_VALUES,
-                              tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KIND_VALUES)
+                              cms_db_tables.TC_CUSTOM_FIELD_OPTION_KIND_VALUES)
 
         logger.info("-> Creating '%s' table",
-                    tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_TYPE_OPTIONS)
+                    cms_db_tables.TC_CUSTOM_FIELD_TYPE_OPTIONS)
         database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_TYPE_OPTIONS,
-                              tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_TYPE_OPTIONS)
+                              cms_db_tables.TC_CUSTOM_FIELD_TYPE_OPTIONS)
 
         logger.info("-> Creating '%s' table",
-                    tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_PROJECTS)
+                    cms_db_tables.TC_CUSTOM_FIELD_PROJECTS)
         database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_PROJECTS,
-                              tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_PROJECTS)
+                              cms_db_tables.TC_CUSTOM_FIELD_PROJECTS)
 
         logger.info("-> Creating '%s' table",
-                    tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_TYPE_OPTION_VALUES)
+                    cms_db_tables.TC_CUSTOM_FIELD_TYPE_OPTION_VALUES)
         database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_TYPE_OPTION_VALUES,
-                              tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_TYPE_OPTION_VALUES)
+                              cms_db_tables.TC_CUSTOM_FIELD_TYPE_OPTION_VALUES)
 
     except SqliteInterfaceException as interface_except:
         logger.critical("Unable to add add tables, reason: %s",

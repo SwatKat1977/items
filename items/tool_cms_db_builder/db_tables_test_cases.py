@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import sql_values as misc_tables
+import databases.cms_db_tables as cms_db_tables
 
 # ###############
 # All tables related to Test Cases will be prefixed with 'tc'
@@ -37,37 +38,34 @@ Constraints:
 - UNIQUE (project_id, parent_id, name): Ensures folder names are unique
   within the same parent folder in a given project.
 """
-TABLE_NAME_TC_FOLDERS: str = "tc_folders"
 TABLE_SQL_TC_FOLDERS: str = f"""
-    CREATE TABLE {TABLE_NAME_TC_FOLDERS} (
+    CREATE TABLE {cms_db_tables.TC_FOLDERS} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         project_id INTEGER NOT NULL,
         parent_id INTEGER NULL,
         name TEXT NOT NULL,
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-        FOREIGN KEY (parent_id) REFERENCES {TABLE_NAME_TC_FOLDERS}(id) ON DELETE CASCADE,
+        FOREIGN KEY (parent_id) REFERENCES {cms_db_tables.TC_FOLDERS}(id) ON DELETE CASCADE,
         UNIQUE (project_id, parent_id, name)
     );
 """
 
-TABLE_NAME_TC_TEST_CASES: str = "tc_test_cases"
 TABLE_SQL_TC_TEST_CASES: str = f"""
-CREATE TABLE {TABLE_NAME_TC_TEST_CASES} (
+CREATE TABLE {cms_db_tables.TC_TEST_CASES} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL,
     folder_id INTEGER NULL,
     name TEXT NOT NULL,
     description TEXT,
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-    FOREIGN KEY (folder_id) REFERENCES {TABLE_NAME_TC_FOLDERS}(id) ON DELETE CASCADE,
+    FOREIGN KEY (folder_id) REFERENCES {cms_db_tables.TC_FOLDERS}(id) ON DELETE CASCADE,
     UNIQUE (project_id, folder_id, name)
 );
 """
 
 # Type of field - e.g. 'string', 'text', 'int'
-TABLE_NAME_TC_CUSTOM_FIELD_TYPES: str = "tc_custom_field_types"
 TABLE_SQL_TC_CUSTOM_FIELD_TYPES: str = f"""
-CREATE TABLE {TABLE_NAME_TC_CUSTOM_FIELD_TYPES} (
+CREATE TABLE {cms_db_tables.TC_CUSTOM_FIELD_TYPES} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,
     supports_default_value BOOLEAN NOT NULL DEFAULT 0,
@@ -76,9 +74,8 @@ CREATE TABLE {TABLE_NAME_TC_CUSTOM_FIELD_TYPES} (
 """
 
 # Test Case Fields
-TABLE_NAME_TC_CUSTOM_FIELDS: str = "tc_custom_fields"
 TABLE_SQL_TC_CUSTOM_FIELDS: str = f"""
-CREATE TABLE {TABLE_NAME_TC_CUSTOM_FIELDS} (
+CREATE TABLE {cms_db_tables.TC_CUSTOM_FIELDS} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     field_name TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
@@ -90,14 +87,13 @@ CREATE TABLE {TABLE_NAME_TC_CUSTOM_FIELDS} (
     is_required BOOLEAN NOT NULL DEFAULT 0,
     default_value TEXT NOT NULL DEFAULT '',
     UNIQUE (field_name, system_name),
-    FOREIGN KEY (field_type_id) REFERENCES {TABLE_NAME_TC_CUSTOM_FIELD_TYPES}(id)
+    FOREIGN KEY (field_type_id) REFERENCES {cms_db_tables.TC_CUSTOM_FIELD_TYPES}(id)
 );
 """
 
 # Table defines the option kinds (e.g. text_format)
-TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KINDS: str = "tc_custom_field_option_kinds"
 TABLE_SQL_TC_CUSTOM_FIELD_OPTION_KINDS: str = f"""
-CREATE TABLE {TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KINDS} (
+CREATE TABLE {cms_db_tables.TC_CUSTOM_FIELD_OPTION_KINDS} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     option_name TEXT NOT NULL UNIQUE
 );
@@ -105,65 +101,60 @@ CREATE TABLE {TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KINDS} (
 
 # If a custom field option has a specific series of values, they will be
 # defined in this table.
-TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KIND_VALUES: str = "tc_custom_field_option_kind_values"
 TABLE_SQL_TC_CUSTOM_FIELD_OPTION_KIND_VALUES: str = f"""
-CREATE TABLE {TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KIND_VALUES} (
+CREATE TABLE {cms_db_tables.TC_CUSTOM_FIELD_OPTION_KIND_VALUES} (
     id INTEGER PRIMARY KEY,
     kind_id INTEGER NOT NULL,
     value TEXT NOT NULL,
-    FOREIGN KEY (kind_id) REFERENCES {TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KINDS}(id),
+    FOREIGN KEY (kind_id) REFERENCES {cms_db_tables.TC_CUSTOM_FIELD_OPTION_KINDS}(id),
     UNIQUE(kind_id, value)
 );
 """
 
-TABLE_NAME_TC_CUSTOM_FIELD_TYPE_OPTIONS: str = "tc_custom_field_type_options"
 TABLE_SQL_TC_CUSTOM_FIELD_TYPE_OPTIONS: str = f"""
-CREATE TABLE {TABLE_NAME_TC_CUSTOM_FIELD_TYPE_OPTIONS} (
+CREATE TABLE {cms_db_tables.TC_CUSTOM_FIELD_TYPE_OPTIONS} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     field_id INTEGER NOT NULL,
     option_kind_id INTEGER NOT NULL,
     option_value TEXT NOT NULL,
-    FOREIGN KEY (field_id) REFERENCES {TABLE_NAME_TC_CUSTOM_FIELDS}(id),
-    FOREIGN KEY (option_kind_id) REFERENCES {TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KINDS}(id),
+    FOREIGN KEY (field_id) REFERENCES {cms_db_tables.TC_CUSTOM_FIELDS}(id),
+    FOREIGN KEY (option_kind_id) REFERENCES {cms_db_tables.TC_CUSTOM_FIELD_OPTION_KINDS}(id),
     UNIQUE (field_id, option_kind_id)
 );
 """
 
 # Link table between test case custom fields and projects.
-TABLE_NAME_TC_CUSTOM_FIELD_PROJECTS: str = "tc_custom_field_projects"
 TABLE_SQL_TC_CUSTOM_FIELD_PROJECTS: str = f"""
-CREATE TABLE {TABLE_NAME_TC_CUSTOM_FIELD_PROJECTS} (
+CREATE TABLE {cms_db_tables.TC_CUSTOM_FIELD_PROJECTS} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     field_id INTEGER NOT NULL,
     project_id INTEGER NOT NULL,
-    FOREIGN KEY (field_id) REFERENCES {TABLE_NAME_TC_CUSTOM_FIELD_TYPES}(id) ON DELETE CASCADE,
+    FOREIGN KEY (field_id) REFERENCES {cms_db_tables.TC_CUSTOM_FIELD_TYPES}(id) ON DELETE CASCADE,
     FOREIGN KEY (project_id) REFERENCES {misc_tables.TABLE_NAME_PRJ_PROJECTS}(id) ON DELETE CASCADE
 );
 """
 
 # Values for a Test Case field option.
-TABLE_NAME_TC_CUSTOM_FIELD_TYPE_OPTION_VALUES: str = "tc_custom_field_type_option_values"
 TABLE_SQL_TC_CUSTOM_FIELD_TYPE_OPTION_VALUES: str = f"""
 CREATE TABLE test_case_custom_field_type_option_values (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     case_field_id INTEGER NOT NULL,
     field_type_option_id INTEGER NOT NULL,
     option_value TEXT NOT NULL,
-    FOREIGN KEY (case_field_id) REFERENCES {TABLE_NAME_TC_CUSTOM_FIELDS}(id),
-    FOREIGN KEY (field_type_option_id) REFERENCES custom_field_type_options(id)
+    FOREIGN KEY (case_field_id) REFERENCES {cms_db_tables.TC_CUSTOM_FIELDS}(id),
+    FOREIGN KEY (field_type_option_id) REFERENCES {cms_db_tables.TC_CUSTOM_FIELD_TYPE_OPTIONS}(id)
 );
 """
 
 # Values for a Test Case field option.
-TABLE_NAME_TC_CUSTOM_FIELD_OPTION_VALUES: str = "tc_custom_field_option_values"
-TABLE_SQL_TC_CUSTOM_FIELD_OPTION_VALUES: str = """
-CREATE TABLE custom_field_value_for_test_cases (
+TABLE_SQL_TC_CUSTOM_FIELD_OPTION_VALUES: str = f"""
+CREATE TABLE {cms_db_tables.TC_CUSTOM_FIELD_OPTION_VALUES} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     test_case_id INTEGER NOT NULL,
     field_id INTEGER NOT NULL,
     value TEXT NOT NULL,
-    FOREIGN KEY (test_case_id) REFERENCES {TABLE_NAME_TC_TEST_CASES}(id) ON DELETE CASCADE,
-    FOREIGN KEY (field_id) REFERENCES {TABLE_NAME_TC_CUSTOM_FIELDS}(id) ON DELETE CASCADE,
+    FOREIGN KEY (test_case_id) REFERENCES {cms_db_tables.TC_TEST_CASES}(id) ON DELETE CASCADE,
+    FOREIGN KEY (field_id) REFERENCES {cms_db_tables.TC_CUSTOM_FIELDS}(id) ON DELETE CASCADE,
     UNIQUE(test_case_id, field_id) -- one value per field per test case
 );
 """
