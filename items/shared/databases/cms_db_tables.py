@@ -15,6 +15,12 @@ limitations under the License.
 """
 
 # ###############
+# All tables related to Projects will be prefixed with 'prj'
+# ###############
+
+PRJ_PROJECTS: str = "prj_projects"
+
+# ###############
 # All tables related to Test Cases will be prefixed with 'tc'
 # ###############
 

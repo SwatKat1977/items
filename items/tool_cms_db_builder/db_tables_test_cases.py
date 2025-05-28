@@ -130,7 +130,7 @@ CREATE TABLE {cms_db_tables.TC_CUSTOM_FIELD_PROJECTS} (
     field_id INTEGER NOT NULL,
     project_id INTEGER NOT NULL,
     FOREIGN KEY (field_id) REFERENCES {cms_db_tables.TC_CUSTOM_FIELD_TYPES}(id) ON DELETE CASCADE,
-    FOREIGN KEY (project_id) REFERENCES {misc_tables.TABLE_NAME_PRJ_PROJECTS}(id) ON DELETE CASCADE
+    FOREIGN KEY (project_id) REFERENCES {cms_db_tables.PRJ_PROJECTS}(id) ON DELETE CASCADE
 );
 """
 

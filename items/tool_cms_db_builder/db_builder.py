@@ -203,9 +203,9 @@ def build_database(logger: logging.Logger,
 
     try:
         logger.info("-> Creating '%s' table",
-                    sql_values.TABLE_NAME_PRJ_PROJECTS)
+                    cms_db_tables.PRJ_PROJECTS)
         database.create_table(sql_values.TABLE_SQL_PRJ_PROJECTS,
-                              sql_values.TABLE_NAME_PRJ_PROJECTS)
+                              cms_db_tables.PRJ_PROJECTS)
 
         logger.info("-> Creating '%s' table",
                     cms_db_tables.TC_FOLDERS)

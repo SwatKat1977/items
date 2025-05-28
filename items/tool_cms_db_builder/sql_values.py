@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import databases.cms_db_tables as cms_db_tables
 
 """
 Table: projects
@@ -33,10 +34,8 @@ Columns:
 - creation_date (TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP): The timestamp
   when the project was created.
 """
-
-TABLE_NAME_PRJ_PROJECTS: str = "prj_projects"
 TABLE_SQL_PRJ_PROJECTS: str = f"""
-    CREATE TABLE {TABLE_NAME_PRJ_PROJECTS} (
+    CREATE TABLE {cms_db_tables.PRJ_PROJECTS} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
         awaiting_purge BOOLEAN NOT NULL DEFAULT 0,
