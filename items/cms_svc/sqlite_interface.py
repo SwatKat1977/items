@@ -19,6 +19,7 @@ import typing
 from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
 from service_health_enums import ComponentDegradationLevel
 from state_object import StateObject
+import databases.cms_db_tables as cms_tables
 
 
 class CustomFieldMoveDirection(enum.Enum):
@@ -54,7 +55,7 @@ class SqliteInterface(BaseSqliteInterface):
             boolean status
         """
 
-        query: str = "SELECT id FROM projects WHERE id = ?"
+        query: str = f"SELECT id FROM {cms_tables.PRJ_PROJECTS} WHERE id = ?"
 
         try:
             rows: typing.Optional[dict] = self.query_with_values(
@@ -101,16 +102,16 @@ class SqliteInterface(BaseSqliteInterface):
         """
 
         # Query for folders with levels
-        folders_query: str = """
+        folders_query: str = f"""
             WITH RECURSIVE folder_hierarchy AS (
                 SELECT id, parent_id, name, project_id
-                FROM test_case_folders
+                FROM {cms_tables.TC_FOLDERS}
                 WHERE parent_id IS NULL AND project_id = ?
 
                 UNION ALL
 
                 SELECT f.id, f.parent_id, f.name, f.project_id
-                FROM test_case_folders f
+                FROM {cms_tables.TC_FOLDERS} f
                 JOIN folder_hierarchy h ON f.parent_id = h.id
             )
             SELECT
@@ -121,9 +122,9 @@ class SqliteInterface(BaseSqliteInterface):
             ORDER BY parent_id, id;
         """
 
-        cases_query: str = """
+        cases_query: str = f"""
             SELECT id, folder_id, name
-            FROM test_cases WHERE project_id =?
+            FROM {cms_tables.TC_TEST_CASES} WHERE project_id =?
             ORDER BY folder_id, id;
         """
 
@@ -184,7 +185,8 @@ class SqliteInterface(BaseSqliteInterface):
               if an SqliteInterfaceException occurs.
         """
         query: str = ("SELECT id, folder_id, name, description "
-                      "FROM test_cases WHERE id=? AND project_id=?")
+                      f"FROM {cms_tables.TC_TEST_CASES} WHERE id=? "
+                      "AND project_id=?")
 
         try:
             rows: typing.Optional[dict] = self.query_with_values(
@@ -224,7 +226,7 @@ class SqliteInterface(BaseSqliteInterface):
             - Critical error if the SQL query fails.
         """
         sql: str = ("SELECT id, name, awaiting_purge, announcement, "
-                    "show_announcement_on_overview FROM projects "
+                    f"show_announcement_on_overview FROM {cms_tables.PRJ_PROJECTS} "
                     f"WHERE id={project_id}")
 
         try:
@@ -277,7 +279,7 @@ class SqliteInterface(BaseSqliteInterface):
                          otherwise `None` if an error occurs.
         """
 
-        query = f"SELECT {fields} FROM projects"
+        query = f"SELECT {fields} FROM {cms_tables.PRJ_PROJECTS}"
 
         try:
             rows: dict = self.query_with_values(query)
@@ -325,7 +327,7 @@ class SqliteInterface(BaseSqliteInterface):
               message.
         """
 
-        query: str = "SELECT COUNT(*) FROM projects WHERE name = ?"
+        query: str = f"SELECT COUNT(*) FROM {cms_tables.PRJ_PROJECTS} WHERE name = ?"
 
         try:
             rows: dict = self.query_with_values(query, (project_name,))
@@ -360,7 +362,7 @@ class SqliteInterface(BaseSqliteInterface):
               message.
         """
 
-        query: str = "SELECT COUNT(*) FROM projects WHERE id = ?"
+        query: str = f"SELECT COUNT(*) FROM {cms_tables.PRJ_PROJECTS} WHERE id = ?"
 
         try:
             rows: dict = self.query_with_values(query, (project_id,))
@@ -394,7 +396,7 @@ class SqliteInterface(BaseSqliteInterface):
         name: str = details["project_name"]
         announcement: str = details["announcement"]
         announcement_on_overview: str = details["announcement_on_overview"]
-        sql: str = ("INSERT INTO projects(name, announcement, "
+        sql: str = (f"INSERT INTO {cms_tables.PRJ_PROJECTS}(name, announcement, "
                     "show_announcement_on_overview) VALUES(?,?,?)")
 
         try:
@@ -465,14 +467,14 @@ class SqliteInterface(BaseSqliteInterface):
         announcement_on_overview: str = details["announcement_on_overview"]
 
         if "project_name" not in details:
-            sql: str = ("UPDATE projects SET announcement=?,"
+            sql: str = (f"UPDATE {cms_tables.PRJ_PROJECTS} SET announcement=?,"
                         "show_announcement_on_overview=? WHERE id=?")
             sql_values: tuple = (announcement,
                                  announcement_on_overview,
                                  project_id)
 
         else:
-            sql: str = ("UPDATE projects SET name=?, announcement=?,"
+            sql: str = (f"UPDATE {cms_tables.PRJ_PROJECTS} SET name=?, announcement=?,"
                         "show_announcement_on_overview=?  WHERE id=?")
             name: str = details["project_name"]
             sql_values: tuple = (name,
@@ -511,7 +513,8 @@ class SqliteInterface(BaseSqliteInterface):
             bool: `True` if the project was successfully marked, `False` on
                   error.
         """
-        sql: str = "UPDATE projects SET awaiting_purge = 1 WHERE id = ?"
+        sql: str = (f"UPDATE {cms_tables.PRJ_PROJECTS} "
+                    "SET awaiting_purge = 1 WHERE id = ?")
 
         try:
             self.query(sql, (project_id,), commit=True)
@@ -544,7 +547,7 @@ class SqliteInterface(BaseSqliteInterface):
                   error occurred.
         """
 
-        sql: str = "DELETE FROM projects WHERE id = ?"
+        sql: str = f"DELETE FROM {cms_tables.PRJ_PROJECTS} WHERE id = ?"
 
         try:
             self.delete_query(sql, (project_id,))
@@ -577,7 +580,8 @@ class SqliteInterface(BaseSqliteInterface):
                 - `False` if the field does not exist.
                 - `None` if a database error occurs.
         """
-        query: str = "SELECT COUNT(*) FROM test_case_custom_fields WHERE id = ?"
+        query: str = (f"SELECT COUNT(*) FROM {cms_tables.TC_CUSTOM_FIELDS} "
+                      "WHERE id = ?")
 
         try:
             rows: dict = self.query_with_values(query, (field_id,))
@@ -606,7 +610,7 @@ class SqliteInterface(BaseSqliteInterface):
                 - The number of custom test case fields if the query succeeds.
                 - `-1` if a database error occurs.
         """
-        query: str = "SELECT COUNT(*) FROM test_case_custom_fields"
+        query: str = f"SELECT COUNT(*) FROM {cms_tables.TC_CUSTOM_FIELDS}"
 
         try:
             rows: dict = self.query_with_values(query)
@@ -641,7 +645,8 @@ class SqliteInterface(BaseSqliteInterface):
                 - `0` if no field exists at the given position.
                 - `-1` if a database error occurs.
         """
-        sql: str = "SELECT id FROM test_case_custom_fields WHERE position = ?"
+        sql: str = (f"SELECT id FROM {{cms_tables.TC_CUSTOM_FIELDS}} "
+                    "WHERE position = ?")
 
         try:
             rows: dict = self.query_with_values(sql,
@@ -690,7 +695,8 @@ class SqliteInterface(BaseSqliteInterface):
                 move), or None if a fatal database error occurred.
         """
 
-        query: str = "SELECT position FROM test_case_custom_fields WHERE id = ?"
+        query: str = (f"SELECT position FROM {cms_tables.TC_CUSTOM_FIELDS} "
+                      "WHERE id = ?")
 
         try:
             rows: dict = self.query_with_values(query, (field_id,),
@@ -741,8 +747,8 @@ class SqliteInterface(BaseSqliteInterface):
             return False
 
         # Swap the positions SQL
-        update_sql: str = """
-            UPDATE test_case_custom_fields
+        update_sql: str = f"""
+            UPDATE {cms_tables.TC_CUSTOM_FIELDS}
             SET position = CASE
                 WHEN id = ? THEN ?
                 WHEN id = ? THEN ?
