@@ -23,7 +23,14 @@ import databases.cms_db_tables as cms_tables
 
 
 class CustomFieldMoveDirection(enum.Enum):
-    UP = 0,
+    """
+    Enum representing the direction in which a custom field can be moved.
+
+    Attributes:
+        UP (int): Indicates the custom field should be moved up (0).
+        DOWN (int): Indicates the custom field should be moved down (1).
+    """
+    UP = 0
     DOWN = 1
 
 
@@ -645,7 +652,7 @@ class SqliteInterface(BaseSqliteInterface):
                 - `0` if no field exists at the given position.
                 - `-1` if a database error occurs.
         """
-        sql: str = (f"SELECT id FROM {{cms_tables.TC_CUSTOM_FIELDS}} "
+        sql: str = (f"SELECT id FROM {cms_tables.TC_CUSTOM_FIELDS} "
                     "WHERE position = ?")
 
         try:
@@ -694,6 +701,7 @@ class SqliteInterface(BaseSqliteInterface):
                 conditions were encountered (e.g., field not found or out-of-range
                 move), or None if a fatal database error occurred.
         """
+        # pylint: disable=too-many-return-statements
 
         query: str = (f"SELECT position FROM {cms_tables.TC_CUSTOM_FIELDS} "
                       "WHERE id = ?")
