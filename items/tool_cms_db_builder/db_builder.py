@@ -66,11 +66,11 @@ def open_db(logger: logging.Logger, filename: str) -> BaseSqliteInterface:
     return db
 
 
-def add_static_values_field_types(logger: logging.Logger,
-                                  database: BaseSqliteInterface) -> bool:
-    """Populates the custom_field_types table with predefined static values.
+def add_static_td_values_field_types(logger: logging.Logger,
+                                     database: BaseSqliteInterface) -> bool:
+    """Populates the tc custom field types table with predefined static values.
 
-    Inserts static field type ID-name pairs into the `custom_field_types` table.
+    Inserts static field type ID-name pairs into the custom field types table.
     Logs the process and handles any exceptions that occur during insertion.
 
     Args:
@@ -81,9 +81,9 @@ def add_static_values_field_types(logger: logging.Logger,
         bool: True if all values were inserted successfully; False if an error occurred.
     """
 
-    logger.info("-> Populating custom field type static values")
+    logger.info("-> Populating test cases 'custom field type' static values")
 
-    query: str = ("INSERT INTO custom_field_types(id, name, "
+    query: str = (f"INSERT INTO {tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_TYPES}(id, name, "
                   "supports_default_value, supports_is_required) "
                   "VALUES(?,?,?,?)")
 
@@ -125,7 +125,7 @@ def add_static_values_system_test_case_fields(logger: logging.Logger,
     logger.info("-> Populating system testcase custom fields")
 
     # (id, field_mame, system_name, field_type_id, entry_type, enabled, position)
-    query: str = ("INSERT INTO test_case_custom_fields(id, field_name, "
+    query: str = (f"INSERT INTO {tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELDS}(id, field_name, "
                   "system_name, field_type_id, entry_type, enabled, position) "
                   "VALUES(?,?,?,?,?,?,?)")
 
@@ -151,7 +151,7 @@ def add_static_values_test_case_custom_field_option_kinds(
     logger.info("-> Populating test case custom field option kinds")
 
     # (id, field_mame, system_name, field_type_id, entry_type, enabled, position)
-    query: str = ("INSERT INTO test_case_custom_field_option_kinds(id, "
+    query: str = (f"INSERT INTO {tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KINDS}(id, "
                   "option_name) VALUES(?,?)")
 
     try:
@@ -175,7 +175,7 @@ def add_static_values_test_case_custom_field_option_kind_values(
     logger.info("-> Populating test case custom field option kind values")
 
     # (id, field_mame, kind_id, value)
-    query: str = (f"INSERT INTO test_case_custom_field_option_values("
+    query: str = (f"INSERT INTO {tables_test_cases.TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KIND_VALUES}("
                   "id, kind_id, value) VALUES(?,?,?)")
 
     try:
@@ -303,7 +303,7 @@ def main():
 
     build_database(logger, db)
 
-    if not add_static_values_field_types(logger, db):
+    if not add_static_td_values_field_types(logger, db):
         return
 
     if not add_static_values_system_test_case_fields(logger, db):

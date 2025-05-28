@@ -103,7 +103,9 @@ CREATE TABLE {TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KINDS} (
 );
 """
 
-TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KIND_VALUES: str = "tc_custom_field_option_values"
+# If a custom field option has a specific series of values, they will be
+# defined in this table.
+TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KIND_VALUES: str = "tc_custom_field_option_kind_values"
 TABLE_SQL_TC_CUSTOM_FIELD_OPTION_KIND_VALUES: str = f"""
 CREATE TABLE {TABLE_NAME_TC_CUSTOM_FIELD_OPTION_KIND_VALUES} (
     id INTEGER PRIMARY KEY,
