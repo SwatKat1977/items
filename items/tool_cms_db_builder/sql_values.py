@@ -35,12 +35,12 @@ Columns:
   when the project was created.
 """
 TABLE_SQL_PRJ_PROJECTS: str = f"""
-    CREATE TABLE {cms_db_tables.PRJ_PROJECTS} (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        awaiting_purge BOOLEAN NOT NULL DEFAULT 0,
-        announcement TEXT NOT NULL DEFAULT '',
-        show_announcement_on_overview INTEGER NOT NULL DEFAULT 0,
-        creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
+CREATE TABLE {cms_db_tables.PRJ_PROJECTS} (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    awaiting_purge BOOLEAN NOT NULL DEFAULT 0,
+    announcement TEXT NOT NULL DEFAULT '',
+    show_announcement_on_overview INTEGER NOT NULL DEFAULT 0,
+    creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 """
