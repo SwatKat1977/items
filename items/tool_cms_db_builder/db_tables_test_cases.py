@@ -82,10 +82,11 @@ CREATE TABLE {cms_db_tables.TC_CUSTOM_FIELDS} (
     system_name TEXT NOT NULL,
     field_type_id INTEGER NOT NULL,
     entry_type TEXT NOT NULL CHECK(entry_type IN ('system', 'user')),
-    enabled INTEGER NOT NULL,
+    enabled BOOLEAN NOT NULL,
     position INTEGER NOT NULL,
     is_required BOOLEAN NOT NULL DEFAULT 0,
     default_value TEXT NOT NULL DEFAULT '',
+    applies_to_all_projects BOOLEAN NOT NULL DEFAULT 0,
     UNIQUE (field_name, system_name),
     FOREIGN KEY (field_type_id) REFERENCES {cms_db_tables.TC_CUSTOM_FIELD_TYPES}(id)
 );

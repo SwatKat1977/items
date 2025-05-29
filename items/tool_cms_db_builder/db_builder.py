@@ -125,17 +125,18 @@ def add_static_values_system_test_case_fields(logger: logging.Logger,
 
     logger.info("-> Populating system testcase custom fields")
 
-    # (id, field_mame, system_name, field_type_id, entry_type, enabled, position)
+    # (id, field_mame, system_name, field_type_id, entry_type, enabled,
+    # position, applies_to_all_projects)
     query: str = (f"INSERT INTO {cms_db_tables.TC_CUSTOM_FIELDS}(id, field_name, "
-                  "system_name, field_type_id, entry_type, enabled, position) "
-                  "VALUES(?,?,?,?,?,?,?)")
+                  "system_name, field_type_id, entry_type, enabled, position, "
+                  "applies_to_all_projects) VALUES(?,?,?,?,?,?,?,?)")
 
     try:
         for field_id, field_mame, system_name, field_type_id, entry_type, \
                 enabled, position in db_static_values.STATIC_VALUES_SYSTEM_FIELDS:
 
             values = (field_id, field_mame, system_name, field_type_id, entry_type,
-                      enabled, position)
+                      enabled, position, True)
             database.insert_query(query, values)
 
     except SqliteInterfaceException as interface_except:
