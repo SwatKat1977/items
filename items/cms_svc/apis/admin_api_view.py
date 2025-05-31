@@ -17,9 +17,8 @@ import http
 import json
 import logging
 import typing
-import interfaces.cms.admin as json_schemas
-
 import quart
+import interfaces.cms.admin as json_schemas
 from base_view import BaseView, validate_json, ApiResponse
 from sqlite_interface import CustomFieldMoveDirection, SqliteInterface
 
@@ -32,7 +31,89 @@ class AdminApiView(BaseView):
 
     @validate_json(json_schemas.SCHEMA_ADD_TEST_CASE_CUSTOM_FIELD_REQUEST)
     async def add_testcase_custom_field(self, request_msg: ApiResponse):
-        ...
+
+        # Check to see if the field name is already in use, None means an
+        # internal error and True means it already exists/
+        field_name_exists = self._db.tc_custom_field_name_exists(
+            request_msg.body.field_name)
+        if field_name_exists is None:
+            response_json = {
+                'status': 0,
+                'error': "Internal error"}
+            return quart.Response(json.dumps(response_json),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
+        if field_name_exists:
+            response_json = {
+                'status': 0,
+                'error': "Duplicate field_name"}
+            return quart.Response(json.dumps(response_json),
+                                  status=http.HTTPStatus.OK,
+                                  content_type="application/json")
+
+        # Check to see if the system name is already in use, None means an
+        # internal error and True means it already exists/
+        system_name_exists = self._db.tc_custom_field_system_name_exists(
+            request_msg.body.system_name)
+        if system_name_exists is None:
+            response_json = {
+                'status': 0,
+                'error': "Internal error"}
+            return quart.Response(json.dumps(response_json),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
+        if system_name_exists:
+            response_json = {
+                'status': 0,
+                'error': "Duplicate system_name"}
+            return quart.Response(json.dumps(response_json),
+                                  status=http.HTTPStatus.OK,
+                                  content_type="application/json")
+
+        projects = request_msg.body.projects if request_msg.body.projects \
+            else None
+        if projects:
+            if len(projects) != len(set(projects)):
+                response_json = {
+                    'status': 0,
+                    'error': "Duplicate projects"}
+                return quart.Response(json.dumps(response_json),
+                                      status=http.HTTPStatus.OK,
+                                      content_type="application/json")
+
+        custom_field_id: int = self._db.add_custom_test_case_custom_field(
+            request_msg.body.field_name, request_msg.body.description,
+            request_msg.body.system_name, request_msg.body.field_type,
+            request_msg.body.enabled, request_msg.body.is_required,
+            request_msg.body.default_value,
+            request_msg.body.applies_to_all_projects,
+            request_msg.body.projects)
+
+        if not custom_field_id:
+            response_json = {
+                'status': 0,
+                'error': "Internal error"}
+            return quart.Response(json.dumps(response_json),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
+        # ===========================================
+        # TO BE DONE: Upon failing to add projects (if there are any) we should
+        #             perform some form of roll-back on custom field add.
+        # ===========================================
+
+        if projects and len(projects):
+            self._db.assign_projects_to_custom_tc_field(custom_field_id, projects)
+
+        response_json = {
+            'status': 0,
+            'error': "Placeholder"
+        }
+        return quart.Response(json.dumps(response_json),
+                              status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                              content_type="application/json")
 
     async def move_testcase_custom_field(self,
                                          field_id: int,

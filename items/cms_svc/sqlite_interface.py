@@ -349,6 +349,25 @@ class SqliteInterface(BaseSqliteInterface):
         # Returns True if the project exists, False otherwise
         return rows[0][0] > 0
 
+    def get_project_id_by_name(self, project_name: str) -> typing.Optional[int]:
+        query: str = f"SELECT ID FROM {cms_tables.PRJ_PROJECTS} WHERE name = ?"
+
+        try:
+            rows: dict = self.query_with_values(query, (project_name,))
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "get_project_id_by_name fatal SQL failure"
+            return None
+
+        # Returns True if the project exists, False otherwise
+        if not rows:
+            return 0
+
+        return int(rows[0][0])
+
     def project_id_exists(self, project_id: int) -> typing.Optional[bool]:
         """
         Check if a project with the given id exists in the database.
@@ -783,3 +802,189 @@ class SqliteInterface(BaseSqliteInterface):
             return None
 
         return True
+
+    def add_custom_test_case_custom_field(self,
+                                          field_name: str,
+                                          description: str,
+                                          system_name: str,
+                                          field_type: str,
+                                          enabled: bool,
+                                          is_required: bool,
+                                          default_value: str,
+                                          applies_to_all_projects: bool,
+                                          projects: list = None) -> int:
+        """
+        Adds a custom test case field to the database.
+
+        Parameters:
+            field_name (str): The name of the custom field.
+            description (str): A description of the custom field.
+            system_name (str): Internal system name (lowercase with underscores).
+            field_type (str): The type of the field (e.g., 'String').
+            enabled (bool): Whether the field is enabled.
+            is_required (bool): Whether the field is required for test cases.
+            default_value (str): The default value for the field.
+            applies_to_all_projects (bool): If True, applies to all projects.
+            projects (list, optional): List of project IDs if not applied to all.
+
+        Returns:
+            int: value > 1 if the field was added successfully, 0 otherwise.
+        """
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
+        # pylint: disable=too-many-locals
+
+        max_position = self.__get_test_case_custom_field_max_position()
+        if max_position is None:
+            return 0
+
+        max_position += 1
+
+        sql: str = (f"INSERT INTO {cms_tables.TC_CUSTOM_FIELDS}("
+                    "field_name, description, system_name, field_type_id,"
+                    "entry_type, enabled, position, is_required,"
+                    "default_value) VALUES(?,?,?,?,?,?,?,?,?)")
+
+        field_type_info = self.__get_tc_custom_field_type_info(field_type)
+        if field_type_info is None:
+            return 0
+
+        # field_type_info = id, supports_default_value, supports_is_required
+        type_id, supports_default_value, supports_is_required = field_type_info
+        print((f"type_id: {type_id} ~ supports_default_value: {supports_default_value}, "
+               f"supports_is_required: {supports_is_required}"))
+        sql_values = (field_name, description, system_name, type_id,
+                      'user', enabled, is_required, default_value,
+                      applies_to_all_projects)
+
+        try:
+            custom_field_id: int = self.insert_query(sql, sql_values)
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "Insert of custom tc field SQL failed"
+            return 0
+
+        return custom_field_id
+
+    def assign_projects_to_custom_tc_field(self, tc_field_id: int,
+                                           projects: list) -> typing.Optional[bool]:
+        ...
+        print("Assigning....", projects)
+
+        for name in projects:
+            project_id: int = self.get_project_id_by_name(name)
+            print(f"[NAME] {name} | id = {project_id}")
+
+        return False
+
+    def __get_test_case_custom_field_max_position(self) -> typing.Optional[int]:
+        """
+        Returns the highest value of 'position' in the 'tc_custom_fields' table.
+        If the table is empty, returns None.
+        """
+        query = f"SELECT MAX(position) FROM {cms_tables.TC_CUSTOM_FIELDS}"
+
+        try:
+            rows: dict = self.query_with_values(query, fetch_one=True)
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "__get_test_case_custom_field_max_position fatal SQL failure"
+            return None
+
+        return int(rows[0])
+
+    def __get_tc_custom_field_type_info(self, field_type: str) \
+            -> typing.Optional[tuple[int, bool, bool]]:
+        """
+        Retrieves the ID, supports_default_value, and supports_is_required for
+        the given field type name.
+        Raises ValueError if the field type is not found.
+        """
+        query = f"""
+            SELECT id, supports_default_value, supports_is_required
+            FROM {cms_tables.TC_CUSTOM_FIELD_TYPES}
+            WHERE name = ?
+        """
+
+        try:
+            rows: dict = self.query_with_values(query, (field_type,))
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "__get_tc_custom_field_type_info fatal SQL failure"
+            return None
+
+        if not rows:
+            self._logger.warning("Invalid field type name '%s'", field_type)
+            return None
+
+        # Returns the number of  custom test case fields
+        return_tuple: tuple[int, bool, bool] = (int(rows[0][0]),
+                                                bool(rows[0][1]),
+                                                bool(rows[0][1]))
+        return return_tuple
+
+    def tc_custom_field_name_exists(self, field_name: str) \
+            -> typing.Optional[bool]:
+        """
+        Check if a field name exists in the TC_CUSTOM_FIELDS table.
+
+        Case-insensitive match.
+
+        Parameters:
+            field_name (str): The name to check.
+
+        Returns:
+            bool: True if exists, False otherwise.
+        """
+        sql: str = (f"SELECT 1 FROM {cms_tables.TC_CUSTOM_FIELDS} "
+                    "WHERE LOWER(field_name) = LOWER(?) "
+                    "LIMIT 1")
+
+        try:
+            rows: dict = self.query_with_values(sql, (field_name,))
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "tc_custom_field_name_exists fatal SQL failure"
+            return None
+
+        return bool(rows)
+
+    def tc_custom_field_system_name_exists(self, system_name: str) \
+            -> typing.Optional[bool]:
+        """
+        Check if a system name exists in the TC_CUSTOM_FIELDS table.
+
+        Case-insensitive match.
+
+        Parameters:
+            system_name (str): The system name to check.
+
+        Returns:
+            bool: True if exists, False otherwise.
+        """
+        sql: str = (f"SELECT 1 FROM {cms_tables.TC_CUSTOM_FIELDS} "
+                    "WHERE LOWER(system_name) = LOWER(?) "
+                    "LIMIT 1")
+
+        try:
+            rows: dict = self.query_with_values(sql, (system_name,))
+
+        except SqliteInterfaceException as ex:
+            self._logger.critical("Query failed, reason: %s", str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = \
+                "tc_custom_field_system_name_exists fatal SQL failure"
+            return None
+
+        return bool(rows)
