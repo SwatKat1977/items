@@ -350,6 +350,22 @@ class SqliteInterface(BaseSqliteInterface):
         return rows[0][0] > 0
 
     def get_project_id_by_name(self, project_name: str) -> typing.Optional[int]:
+        """
+        Retrieve the project ID for a given project name.
+
+        This function queries the PRJ_PROJECTS table to find the ID of a project
+        matching the provided project_name. If the project is not found, it returns
+        0. If a database error occurs, it logs the error, updates internal state,
+        and returns None.
+
+        Args:
+            project_name (str): The name of the project to search for.
+
+        Returns:
+            Optional[int]: The project ID if found, 0 if not found, or None on
+            database error.
+        """
+
         query: str = f"SELECT ID FROM {cms_tables.PRJ_PROJECTS} WHERE name = ?"
 
         try:
@@ -811,8 +827,8 @@ class SqliteInterface(BaseSqliteInterface):
                                           enabled: bool,
                                           is_required: bool,
                                           default_value: str,
-                                          applies_to_all_projects: bool,
-                                          projects: list = None) -> int:
+                                          applies_to_all_projects: bool) \
+            -> int:
         """
         Adds a custom test case field to the database.
 
@@ -825,7 +841,6 @@ class SqliteInterface(BaseSqliteInterface):
             is_required (bool): Whether the field is required for test cases.
             default_value (str): The default value for the field.
             applies_to_all_projects (bool): If True, applies to all projects.
-            projects (list, optional): List of project IDs if not applied to all.
 
         Returns:
             int: value > 1 if the field was added successfully, 0 otherwise.
@@ -870,12 +885,18 @@ class SqliteInterface(BaseSqliteInterface):
 
     def assign_projects_to_custom_tc_field(self, tc_field_id: int,
                                            projects: list) -> typing.Optional[bool]:
-        ...
-        print("Assigning....", projects)
+        print(f"Assigning tc custom fields to {tc_field_id} : {projects}")
+
+        project_ids: typing.List[int] = []
 
         for name in projects:
             project_id: int = self.get_project_id_by_name(name)
-            print(f"[NAME] {name} | id = {project_id}")
+            if not project_id:
+                return False
+
+            project_ids.append(project_id)
+
+        print(f"[DEBUG] Project IDs :  {project_ids}")
 
         return False
 
