@@ -325,5 +325,3 @@ class SqlProjects(ExtendedSqlInterface):
             return False
 
         return True if row_count else False
-
-#   LINES 345
