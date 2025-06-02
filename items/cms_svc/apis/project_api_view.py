@@ -330,12 +330,26 @@ class ProjectApiView(BaseView):
 
         if hard_delete:
             self._logger.info("Project %d is being hard-deleted", project_id)
-            self._db.projects.hard_delete_project(project_id)
+            if not self._db.projects.hard_delete_project(project_id):
+                response_body: dict = {
+                    "status": 0,
+                    "error_msg": "Internal error in CMS"
+                }
+                return quart.Response(json.dumps(response_body),
+                                      status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                      content_type="application/json")
 
         else:
             self._logger.info("Project %d is being marked as 'awaiting purge",
                               project_id)
-            self._db.projects.mark_project_for_awaiting_purge(project_id)
+            if not self._db.projects.mark_project_for_awaiting_purge(project_id):
+                response_body: dict = {
+                    "status": 0,
+                    "error_msg": "Internal error in CMS"
+                }
+                return quart.Response(json.dumps(response_body),
+                                      status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                      content_type="application/json")
 
         return quart.Response(json.dumps({}),
                               status=http.HTTPStatus.OK,
