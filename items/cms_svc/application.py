@@ -69,12 +69,7 @@ class Application(BaseApplication):
                           Configuration().logging_log_level)
         self._logger.setLevel(Configuration().logging_log_level)
 
-        # Open databases.
-        if not self._open_database():
-            return False
-
-        admin_blueprint = admin_api.create_blueprint(self._logger,
-                                                     self._db)
+        admin_blueprint = admin_api.create_blueprint(self._logger, None)
         self._quart_instance.register_blueprint(admin_blueprint)
 
         health_blueprint = health_api.create_blueprint(self._logger,
@@ -82,7 +77,7 @@ class Application(BaseApplication):
         self._quart_instance.register_blueprint(health_blueprint)
 
         project_blueprint = project_api.create_blueprint(self._logger,
-                                                       self._db)
+                                                         self._state_object)
         self._quart_instance.register_blueprint(project_blueprint)
 
         testcases_blueprint = testcases_api.create_blueprint(self._logger,
@@ -144,25 +139,3 @@ class Application(BaseApplication):
                           Configuration().backend_db_filename)
 
         return True
-
-    def _open_database(self) -> bool:
-        self._logger.info("Opening internal database...")
-
-        status: bool = False
-
-        filename: str = Configuration().backend_db_filename
-
-        self._db = SqliteInterface(self._logger, filename, self._state_object)
-
-        try:
-            self._db.open()
-
-        except SqliteInterfaceException as ex:
-            self._logger.critical("Unable to open '%s', reason: %s",
-                                  filename, str(ex))
-
-        else:
-            self._logger.info("Database '%s' opened successful", filename)
-            status = True
-
-        return status
