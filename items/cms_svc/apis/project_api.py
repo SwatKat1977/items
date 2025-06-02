@@ -19,7 +19,7 @@ from apis.project_api_view import ProjectApiView
 from sqlite_interface import SqliteInterface
 
 
-def create_blueprint(logger: logging.Logger, db: SqliteInterface) -> Blueprint:
+def create_blueprint(logger: logging.Logger) -> Blueprint:
     """
     Creates and returns a Quart Blueprint for the project API.
 
@@ -29,12 +29,11 @@ def create_blueprint(logger: logging.Logger, db: SqliteInterface) -> Blueprint:
     Args:
         logger (logging.Logger): The logger instance used for logging API
                                  registration.
-        db (SqliteInterface): Database interface instance.
 
     Returns:
         Blueprint: A Quart Blueprint instance with the registered routes.
     """
-    view = ProjectApiView(logger, db)
+    view = ProjectApiView(logger)
 
     blueprint = Blueprint('project_api', __name__)
 
