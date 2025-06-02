@@ -17,10 +17,12 @@ import logging
 from quart import Blueprint
 from apis.admin_api_view import AdminApiView
 from sqlite_interface import SqliteInterface
+from state_object import StateObject
 
 
-def create_blueprint(logger: logging.Logger, db: SqliteInterface) -> Blueprint:
-    view = AdminApiView(logger, db)
+def create_blueprint(logger: logging.Logger,
+                     state_object: StateObject) -> Blueprint:
+    view = AdminApiView(logger, state_object)
 
     blueprint = Blueprint('admin_api', __name__)
 

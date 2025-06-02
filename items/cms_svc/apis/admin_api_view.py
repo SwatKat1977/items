@@ -20,21 +20,25 @@ import typing
 import quart
 import interfaces.cms.admin as json_schemas
 from base_view import BaseView, validate_json, ApiResponse
-from sqlite_interface import CustomFieldMoveDirection, SqliteInterface
+from sql.sql_tc_custom_fields import CustomFieldMoveDirection, ExtendedSqlInterface
+from sql.sql_interface import SqlInterface
+from state_object import StateObject
+
 
 class AdminApiView(BaseView):
     __slots__ = ['_logger']
 
-    def __init__(self, logger: logging.Logger, db: SqliteInterface) -> None:
+    def __init__(self, logger: logging.Logger,
+                 state_object: StateObject) -> None:
         self._logger = logger.getChild(__name__)
-        self._db: SqliteInterface = db
+        self._db: SqlInterface = SqlInterface(logger, state_object)
 
     @validate_json(json_schemas.SCHEMA_ADD_TEST_CASE_CUSTOM_FIELD_REQUEST)
     async def add_testcase_custom_field(self, request_msg: ApiResponse):
 
         # Check to see if the field name is already in use, None means an
         # internal error and True means it already exists/
-        field_name_exists = self._db.tc_custom_field_name_exists(
+        field_name_exists = self._db.tc_custom_fields.tc_custom_field_name_exists(
             request_msg.body.field_name)
         if field_name_exists is None:
             response_json = {
@@ -72,10 +76,9 @@ class AdminApiView(BaseView):
                                   status=http.HTTPStatus.OK,
                                   content_type="application/json")
 
-        projects = request_msg.body.projects if request_msg.body.projects \
-            else None
-        if projects:
-            if len(projects) != len(set(projects)):
+        if request_msg.body.projects:
+            if len(request_msg.body.projects) \
+                    != len(set(request_msg.body.projects)):
                 response_json = {
                     'status': 0,
                     'error': "Duplicate projects"}
@@ -88,8 +91,7 @@ class AdminApiView(BaseView):
             request_msg.body.system_name, request_msg.body.field_type,
             request_msg.body.enabled, request_msg.body.is_required,
             request_msg.body.default_value,
-            request_msg.body.applies_to_all_projects,
-            request_msg.body.projects)
+            request_msg.body.applies_to_all_projects)
 
         if not custom_field_id:
             response_json = {
@@ -104,8 +106,9 @@ class AdminApiView(BaseView):
         #             perform some form of roll-back on custom field add.
         # ===========================================
 
-        if projects and len(projects):
-            self._db.assign_projects_to_custom_tc_field(custom_field_id, projects)
+        if request_msg.body.projects and len(request_msg.body.projects):
+            self._db.assign_projects_to_custom_tc_field(
+                custom_field_id, request_msg.body.projects)
 
         response_json = {
             'status': 0,
@@ -149,7 +152,8 @@ class AdminApiView(BaseView):
         direction_enum: CustomFieldMoveDirection = \
             CustomFieldMoveDirection.UP if direction == "up" \
             else CustomFieldMoveDirection.DOWN
-        result = self._db.move_test_case_custom_field(field_id, direction_enum)
+        result = self._db.tc_custom_fields.move_custom_field(field_id,
+                                                             direction_enum)
 
         if result is None:
             body: dict = {

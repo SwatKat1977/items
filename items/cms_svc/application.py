@@ -69,7 +69,8 @@ class Application(BaseApplication):
                           Configuration().logging_log_level)
         self._logger.setLevel(Configuration().logging_log_level)
 
-        admin_blueprint = admin_api.create_blueprint(self._logger, None)
+        admin_blueprint = admin_api.create_blueprint(self._logger,
+                                                     self._state_object)
         self._quart_instance.register_blueprint(admin_blueprint)
 
         health_blueprint = health_api.create_blueprint(self._logger,
