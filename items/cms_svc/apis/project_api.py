@@ -16,10 +16,11 @@ limitations under the License.
 import logging
 from quart import Blueprint
 from apis.project_api_view import ProjectApiView
-from sqlite_interface import SqliteInterface
+from state_object import StateObject
 
 
-def create_blueprint(logger: logging.Logger) -> Blueprint:
+def create_blueprint(logger: logging.Logger,
+                     state_object: StateObject) -> Blueprint:
     """
     Creates and returns a Quart Blueprint for the project API.
 
@@ -29,11 +30,12 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
     Args:
         logger (logging.Logger): The logger instance used for logging API
                                  registration.
+        state_object (StateObject): Instance of state object.
 
     Returns:
         Blueprint: A Quart Blueprint instance with the registered routes.
     """
-    view = ProjectApiView(logger)
+    view = ProjectApiView(logger, state_object)
 
     blueprint = Blueprint('project_api', __name__)
 

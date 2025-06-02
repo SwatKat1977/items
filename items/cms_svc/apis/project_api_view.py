@@ -19,8 +19,10 @@ import logging
 import typing
 import quart
 from base_view import BaseView, validate_json, ApiResponse
-from sqlite_interface import SqliteInterface
+from sql.sql_interface import SqlInterface
 import interfaces.cms.project as json_schemas
+from state_object import StateObject
+
 
 class ProjectApiView(BaseView):
     __slots__ = ['_logger']
@@ -40,9 +42,10 @@ class ProjectApiView(BaseView):
     VALID_TRUE_VALUES = {"true", "1", "yes"}
     VALID_FALSE_VALUES = {"false", "0", "no"}
 
-    def __init__(self, logger: logging.Logger, db: SqliteInterface) -> None:
+    def __init__(self, logger: logging.Logger,
+                 state_object: StateObject) -> None:
         self._logger = logger.getChild(__name__)
-        self._db: SqliteInterface = db
+        self._db: SqlInterface = SqlInterface(logger, state_object)
 
     async def project_details(self, project_id: int):
         details: typing.Optional[dict] = self._db.get_project_details(
@@ -106,7 +109,7 @@ class ProjectApiView(BaseView):
         requested_fields.insert(0, 'id')
         query_fields = ",".join(requested_fields)
 
-        project_rows = self._db.get_projects_details(query_fields)
+        project_rows = self._db.projects.get_projects_details(query_fields)
         for row in project_rows:
             project: dict = {}
 
@@ -119,11 +122,11 @@ class ProjectApiView(BaseView):
             project_id: int = int(project["id"])
             if count_no_of_milestones:
                 project["no_of_milestones"] = \
-                    self._db.get_no_of_milestones_for_project(project_id)
+                    self._db.projects.get_no_of_milestones_for_project(project_id)
 
             if count_no_of_test_runs:
                 project["no_of_test_runs"] = \
-                    self._db.get_no_of_testruns_for_project(project_id)
+                    self._db.projects.get_no_of_testruns_for_project(project_id)
 
             projects.append(project)
 
@@ -140,7 +143,7 @@ class ProjectApiView(BaseView):
 
         name: str = request_msg.body.name
 
-        exists = self._db.project_name_exists(name)
+        exists = self._db.projects.project_name_exists(name)
         if exists is None:
             response_body: dict = {
                 "status": 0,
@@ -165,7 +168,7 @@ class ProjectApiView(BaseView):
             "announcement_on_overview":
                 request_msg.body.announcement_on_overview
         }
-        new_project_id: typing.Optional[int] = self._db.add_project(
+        new_project_id: typing.Optional[int] = self._db.projects.add_project(
             add_project_dict)
         if new_project_id is None:
             response_body: dict = {

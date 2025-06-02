@@ -14,12 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
-class StateObject:
-from base_sqlite_interface import BaseSqliteInterface
+from state_object import StateObject
+from sql.extended_sql_interface import ExtendedSqlInterface
+from sql.sql_projects import SqlProjects
 
-class SqliteInterface(BaseSqliteInterface):
-    def __init__(self, logger: logging.Logger, db_file: str,
+
+class SqlInterface(ExtendedSqlInterface):
+    def __init__(self, logger: logging.Logger,
                  state_object: StateObject) -> None:
-        super().__init__(db_file)
-        self._logger = logger.getChild(__name__)
-        self._state_object: StateObject = state_object
+        super().__init__(logger, state_object)
+
+        self.projects: SqlProjects = SqlProjects(logger, state_object)
