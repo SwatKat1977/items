@@ -59,3 +59,32 @@ class ExtendedSqlInterface(BaseSqliteInterface):
             self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
             self._state_object.database_health_state_str = "Fatal SQL failure"
             return None
+
+    def safe_insert_query(self,
+                          query: str,
+                          values: tuple,
+                          error_message: str,
+                          log_level: int = logging.CRITICAL
+                          ) -> typing.Optional[int]:
+        """
+        Safely execute an INSERT query and return the last inserted row ID.
+
+        Args:
+            query (str): The INSERT SQL statement.
+            values (tuple): Parameters for the query.
+            error_message (str): Description for the logger on failure.
+            log_level (int): Logging level (e.g., logging.CRITICAL).
+
+        Returns:
+            Optional[int]: ID of the last inserted row, or None on failure.
+        """
+        with self._lock, self._get_connection() as conn:
+            try:
+                cursor = conn.execute(query, values)
+                conn.commit()
+                return cursor.lastrowid
+            except sqlite3.Error as ex:
+                self._logger.log(log_level, "%s, reason: %s", error_message, str(ex))
+                self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+                self._state_object.database_health_state_str = "Fatal SQL failure"
+                return None
