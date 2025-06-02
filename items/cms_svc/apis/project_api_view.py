@@ -223,7 +223,7 @@ class ProjectApiView(BaseView):
             }
             ```
         """
-        existing_details = self._db.get_project_details(project_id)
+        existing_details = self._db.projects.get_project_details(project_id)
         if existing_details is None:
             response_body: dict = {
                 "status": 0,
@@ -250,7 +250,7 @@ class ProjectApiView(BaseView):
         }
 
         if body.name != existing_details["name"]:
-            exists = self._db.project_name_exists(body.name)
+            exists = self._db.projects.project_name_exists(body.name)
 
             if exists is None:
                 response_body: dict = {
@@ -273,7 +273,7 @@ class ProjectApiView(BaseView):
 
             updated_details["project_name"] = body.name
 
-        status = self._db.modify_project(project_id, updated_details)
+        status = self._db.projects.modify_project(project_id, updated_details)
 
         return quart.Response(json.dumps({ "status": 1}),
                               status=http.HTTPStatus.OK,
@@ -301,7 +301,7 @@ class ProjectApiView(BaseView):
                                       status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
                                       content_type="application/json")
 
-        exists = self._db.project_id_exists(project_id)
+        exists = self._db.projects.project_id_exists(project_id)
         if exists is None:
             response_body: dict = {
                 "status": 0,
@@ -322,12 +322,12 @@ class ProjectApiView(BaseView):
 
         if hard_delete:
             self._logger.info("Project %d is being hard-deleted", project_id)
-            self._db.hard_delete_project(project_id)
+            self._db.projects.hard_delete_project(project_id)
 
         else:
             self._logger.info("Project %d is being marked as 'awaiting purge",
                               project_id)
-            self._db.mark_project_for_awaiting_purge(project_id)
+            self._db.projects.mark_project_for_awaiting_purge(project_id)
 
         return quart.Response(json.dumps({}),
                               status=http.HTTPStatus.OK,

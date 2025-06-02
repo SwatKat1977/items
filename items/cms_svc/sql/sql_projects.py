@@ -203,8 +203,7 @@ class SqlProjects(ExtendedSqlInterface):
                                       sql_values,
                                       "Query failed adding a new project")
 
-    def modify_project(self, project_id: int, details: dict) \
-            -> typing.Optional[bool]:
+    def modify_project(self, project_id: int, details: dict) -> bool:
         """
         Update the details of a project in the database.
 
@@ -220,13 +219,9 @@ class SqlProjects(ExtendedSqlInterface):
                                                   if it is being changed.
 
         Returns:
-            Optional[bool]:
+            bool:
                 - `True` if the project details were successfully updated.
                 - `False` if the update failed due to a database error.
-                - `None` if no update was performed (this case is not
-                         explicitly handled,
-                  but a return value of `None` could indicate no data or
-                  unexpected behavior).
 
         Behavior:
             - If `project_name` is provided, it updates the project name along
@@ -274,17 +269,12 @@ class SqlProjects(ExtendedSqlInterface):
                                  announcement_on_overview,
                                  project_id)
 
-        try:
-            self.query(sql, sql_values, commit=True)
-
-        except SqliteInterfaceException as ex:
-            self._logger.critical(
-                "modify_project %d query failed, reason: %s",
-                project_id, str(ex))
-            self._state_object.database_health = \
-                ComponentDegradationLevel.FULLY_DEGRADED
-            self._state_object.database_health_state_str = \
-                "modify_project fatal SQL failure"
+        row_count = self.safe_query(sql,
+                                    sql_values,
+                                    "Query failed adding a new project",
+                                    commit=True)
+        if row_count is None:
             return False
 
-        return True
+        print("ROW rouns :", row_count)
+        return True if row_count else False
