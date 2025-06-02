@@ -118,47 +118,43 @@ class BaseSqliteInterface:
                   query: str,
                   params: tuple = (),
                   fetch_one: bool = False,
-                  commit: bool = False) -> Optional[Any]:
+                  commit: bool = False) -> Any:
         """
-        Execute a SQL query on the database with support for fetching results
-        or committing changes.
+        Execute a SQL query with optional fetching or committing.
 
         Args:
-            query (str): The SQL query string to execute.
-            params (tuple): Parameters to bind to the query placeholders.
-            fetch_one (bool): If True, fetch and return a single row (used with
-                              SELECT queries).
-            commit (bool): If True, commit the transaction (used with
-                           INSERT/UPDATE/DELETE).
+            query (str): SQL query to execute.
+            params (tuple): Query parameters.
+            fetch_one (bool): If True, return one row.
+            commit (bool): If True, commit the transaction.
 
         Returns:
-            Optional[Any]:
-                - If commit is True: returns the number of rows affected (int).
-                - If fetch_one is True: returns a single row as a tuple or None
-                  if no result.
-                - If the query returns multiple rows (e.g., SELECT): returns a
-                  list of rows.
-                - If the query returns no results and no commit: returns None.
+            Any:
+                - If commit: returns number of affected rows (int).
+                - If fetch_one: returns tuple if a row exists, else an empty tuple ().
+                - If SELECT: returns list of rows (may be empty).
+                - Otherwise: returns None.
 
         Raises:
-            SqliteInterfaceException: If the query execution fails (e.g., bad
-            SQL or connection error).
+            SqliteInterfaceException: On SQLite error.
         """
         with self._lock, self._get_connection() as conn:
             try:
                 cursor = conn.execute(query, params)
                 if commit:
                     conn.commit()
-                    return cursor.rowcount
+                    return cursor.rowcount  # int (0 if nothing changed)
+
                 if fetch_one:
-                    return cursor.fetchone()
+                    row = cursor.fetchone()
+                    return row if row is not None else ()  # Always return something
+
                 if cursor.description:
-                    return cursor.fetchall()
+                    return cursor.fetchall()  # May return empty list
+
                 return None
             except sqlite3.Error as ex:
-                raise SqliteInterfaceException(
-                    f"Query error: {str(ex)}"
-                ) from ex
+                raise SqliteInterfaceException(f"Query error: {str(ex)}") from ex
 
     def insert_query(self, query: str, params: tuple = ()) -> Optional[int]:
         """

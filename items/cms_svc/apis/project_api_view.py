@@ -110,6 +110,14 @@ class ProjectApiView(BaseView):
         query_fields = ",".join(requested_fields)
 
         project_rows = self._db.projects.get_projects_details(query_fields)
+        if project_rows is None:
+            response_body: dict = {
+                "error": "Internal error in CMS"
+            }
+            return quart.Response(json.dumps(response_body),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
         for row in project_rows:
             project: dict = {}
 
@@ -301,7 +309,7 @@ class ProjectApiView(BaseView):
                                       status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
                                       content_type="application/json")
 
-        exists = self._db.projects.project_id_exists(project_id)
+        exists = self._db.projects.is_valid_project_id(project_id)
         if exists is None:
             response_body: dict = {
                 "status": 0,

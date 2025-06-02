@@ -42,10 +42,7 @@ class SqlProjects(ExtendedSqlInterface):
                               (project_id,),
                               "Query failed during project ID check",
                               fetch_one=True)
-        if row is None:
-            return None
-
-        return bool(row)
+        return None if row is None else bool(row)
 
     def get_project_details(self, project_id: int) -> typing.Optional[dict]:
         """
@@ -118,9 +115,7 @@ class SqlProjects(ExtendedSqlInterface):
             dict | None: A dictionary containing the query results if successful,
                          otherwise `None` if an error occurs.
         """
-
         sql = f"SELECT {fields} FROM {cms_tables.PRJ_PROJECTS}"
-
         rows = self.safe_query(sql,
                                (),
                                "Query failed getting projects details")
@@ -271,10 +266,64 @@ class SqlProjects(ExtendedSqlInterface):
 
         row_count = self.safe_query(sql,
                                     sql_values,
-                                    "Query failed adding a new project",
+                                    "Query failed modifying a project",
                                     commit=True)
         if row_count is None:
             return False
 
-        print("ROW rouns :", row_count)
         return True if row_count else False
+
+    def mark_project_for_awaiting_purge(self, project_id: int) -> bool:
+        """
+        Marks a project as awaiting purge in the database.
+
+        This method updates the `awaiting_purge` flag for the specified project
+        in the `projects` table. If the update fails due to a database error,
+        it logs the failure, updates the database health status, and returns
+        `False`. Otherwise, it returns `True` upon successful update.
+
+        Args:
+            project_id (int): The unique identifier of the project to update.
+
+        Returns:
+            bool: `True` if the project was successfully marked, `False` on
+                  error.
+        """
+        sql: str = (f"UPDATE {cms_tables.PRJ_PROJECTS} "
+                    "SET awaiting_purge = 1 WHERE id = ?")
+        row_count = self.safe_query(
+            sql, (project_id,),
+            "Query failed marking project awaiting purge", commit=True)
+        if row_count is None:
+            return False
+
+        return True if row_count else False
+
+    def hard_delete_project(self, project_id: int) -> bool:
+        """
+        Permanently deletes a project from the database.
+
+        This method attempts to delete a project from the `projects` table
+        based on the given project ID. If the deletion fails due to a database
+        error, it logs the critical failure, updates the database health
+        status, and returns `False`. Otherwise, it returns `True` upon
+        successful deletion.
+
+        Args:
+            project_id (int): The unique identifier of the project to be
+                              deleted.
+
+        Returns:
+            bool: `True` if the project was successfully deleted, `False` if an
+                  error occurred.
+        """
+        sql: str = f"DELETE FROM {cms_tables.PRJ_PROJECTS} WHERE id = ?"
+        row_count = self.safe_query(
+            sql, (project_id,),
+            "Query failed hard deleting a project", commit=True)
+        if row_count is None:
+            return False
+
+        return True if row_count else False
+
+#   LINES 345
