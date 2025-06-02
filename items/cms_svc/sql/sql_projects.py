@@ -88,7 +88,7 @@ class SqlProjects(ExtendedSqlInterface):
         # If 'awaiting_purge' flag is set then treat it the project the same as
         # if it didn't exist.
         if awaiting_purge == 1:
-            return None
+            return {}
 
         project_details: dict = {
             "id": project_id,
