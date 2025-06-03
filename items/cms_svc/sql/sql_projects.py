@@ -328,3 +328,33 @@ class SqlProjects(ExtendedSqlInterface):
             return False
 
         return True if row_count else False
+
+    def get_project_id_by_name(self, project_name: str) -> typing.Optional[int]:
+        """
+        Retrieve the project ID for a given project name.
+
+        This function queries the PRJ_PROJECTS table to find the ID of a project
+        matching the provided project_name. If the project is not found, it returns
+        0. If a database error occurs, it logs the error, updates internal state,
+        and returns None.
+
+        Args:
+            project_name (str): The name of the project to search for.
+
+        Returns:
+            Optional[int]: The project ID if found, 0 if not found, or None on
+            database error.
+        """
+        sql: str = f"SELECT ID FROM {cms_tables.PRJ_PROJECTS} WHERE name = ?"
+
+        row = self.safe_query(sql, (project_name,),
+                              "get_project_id_by_name fatal SQL failure",
+                              fetch_one=True)
+        if row is None:
+            return None
+
+        if not row:
+            return 0
+
+        # Returns True if the project exists, False otherwise
+        return 0 if not row else int(row[0])
