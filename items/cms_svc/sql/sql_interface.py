@@ -25,6 +25,6 @@ class SqlInterface(ExtendedSqlInterface):
                  state_object: StateObject) -> None:
         super().__init__(logger, state_object)
 
-        self.projects: SqlProjects = SqlProjects(logger, state_object)
+        self.projects: SqlProjects = SqlProjects(logger, state_object, self)
         self.tc_custom_fields: SqlTCCustomFields = SqlTCCustomFields(
-            logger, state_object)
+            logger, state_object, self)

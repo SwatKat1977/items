@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from __future__ import annotations
 import logging
 import typing
 from sql.extended_sql_interface import ExtendedSqlInterface
@@ -22,8 +23,10 @@ import databases.cms_db_tables as cms_tables
 
 class SqlProjects(ExtendedSqlInterface):
     def __init__(self, logger: logging.Logger,
-                 state_object: StateObject) -> None:
+                 state_object: StateObject,
+                 parent: SqlInterface) -> None:
         super().__init__(logger, state_object)
+        self._parent = parent
 
     def is_valid_project_id(self, project_id: int) -> typing.Optional[bool]:
         """
