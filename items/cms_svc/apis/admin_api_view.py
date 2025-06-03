@@ -38,7 +38,7 @@ class AdminApiView(BaseView):
 
         # Check to see if the field name is already in use, None means an
         # internal error and True means it already exists/
-        field_name_exists = self._db.tc_custom_fields.tc_custom_field_name_exists(
+        field_name_exists = self._db.tc_custom_fields.custom_field_name_exists(
             request_msg.body.field_name)
         if field_name_exists is None:
             response_json = {
@@ -58,7 +58,7 @@ class AdminApiView(BaseView):
 
         # Check to see if the system name is already in use, None means an
         # internal error and True means it already exists/
-        system_name_exists = self._db.tc_custom_field_system_name_exists(
+        system_name_exists = self._db.tc_custom_fields.custom_field_name_exists(
             request_msg.body.system_name)
         if system_name_exists is None:
             response_json = {
@@ -86,7 +86,7 @@ class AdminApiView(BaseView):
                                       status=http.HTTPStatus.OK,
                                       content_type="application/json")
 
-        custom_field_id: int = self._db.add_custom_test_case_custom_field(
+        custom_field_id: int = self._db.tc_custom_fields.add_custom_field(
             request_msg.body.field_name, request_msg.body.description,
             request_msg.body.system_name, request_msg.body.field_type,
             request_msg.body.enabled, request_msg.body.is_required,
