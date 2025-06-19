@@ -180,6 +180,31 @@ class BaseSqliteInterface:
                     f"Insert query failed: {str(ex)}"
                 ) from ex
 
+    def bulk_insert_query(self,
+                          query: str,
+                          value_sets: list[tuple]) -> bool:
+        """
+        Execute a bulk INSERT operation using a single transaction.
+
+        Args:
+            query (str): The INSERT SQL statement with placeholders.
+            value_sets (list[tuple]): List of parameter tuples to insert.
+
+        Returns:
+            bool: True if the insert succeeds, False otherwise.
+
+        Raises:
+            SqliteInterfaceException: If the insert operation fails.
+        """
+        with self._lock, self._get_connection() as conn:
+            try:
+                cursor = conn.executemany(query, value_sets)
+                conn.commit()
+                return True
+            except sqlite3.Error as ex:
+                raise SqliteInterfaceException(
+                    f"Bulk insert query failed: {str(ex)}") from ex
+
     def delete_query(self, query: str, params: tuple = ()) -> None:
         """
         Execute a DELETE query, enforcing foreign key constraints.
