@@ -107,7 +107,7 @@ class AdminApiView(BaseView):
         # ===========================================
 
         if request_msg.body.projects and len(request_msg.body.projects):
-            self._db.assign_projects_to_custom_tc_field(
+            status = self._db.tc_custom_fields.assign_custom_field_to_project(
                 custom_field_id, request_msg.body.projects)
 
         response_json = {

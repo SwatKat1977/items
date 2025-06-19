@@ -89,3 +89,29 @@ class ExtendedSqlInterface(BaseSqliteInterface):
                 self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
                 self._state_object.database_health_state_str = "Fatal SQL failure"
                 return None
+
+    def safe_bulk_insert(self,
+                         query: str,
+                         value_sets: list[tuple],
+                         error_message: str,
+                         log_level: int = logging.CRITICAL) -> bool:
+        """
+        Safely execute a bulk INSERT operation with standardized exception handling.
+
+        Args:
+            query (str): SQL INSERT statement with placeholders.
+            value_sets (list[tuple]): List of parameter tuples to insert.
+            error_message (str): Error message for logging if insert fails.
+            log_level (int): Logging level (default: logging.CRITICAL).
+
+        Returns:
+            bool: True on success, False on failure.
+        """
+        try:
+            return self.bulk_insert_query(query, value_sets)
+
+        except sqlite3.Error as ex:
+            self._logger.log(log_level, "%s, reason: %s", error_message, str(ex))
+            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
+            self._state_object.database_health_state_str = "Fatal SQL failure"
+            return False

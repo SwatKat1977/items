@@ -169,41 +169,6 @@ class SqliteInterface(BaseSqliteInterface):
 
         return rows
 
-    def get_project_id_by_name(self, project_name: str) -> typing.Optional[int]:
-        """
-        Retrieve the project ID for a given project name.
-
-        This function queries the PRJ_PROJECTS table to find the ID of a project
-        matching the provided project_name. If the project is not found, it returns
-        0. If a database error occurs, it logs the error, updates internal state,
-        and returns None.
-
-        Args:
-            project_name (str): The name of the project to search for.
-
-        Returns:
-            Optional[int]: The project ID if found, 0 if not found, or None on
-            database error.
-        """
-
-        query: str = f"SELECT ID FROM {cms_tables.PRJ_PROJECTS} WHERE name = ?"
-
-        try:
-            rows: dict = self.query_with_values(query, (project_name,))
-
-        except SqliteInterfaceException as ex:
-            self._logger.critical("Query failed, reason: %s", str(ex))
-            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
-            self._state_object.database_health_state_str = \
-                "get_project_id_by_name fatal SQL failure"
-            return None
-
-        # Returns True if the project exists, False otherwise
-        if not rows:
-            return 0
-
-        return int(rows[0][0])
-
     def is_valid_custom_test_case_field(self, field_id: int) \
             -> typing.Optional[bool]:
         """
@@ -239,23 +204,6 @@ class SqliteInterface(BaseSqliteInterface):
         # Returns True if the custom test case field exists, False otherwise
         return rows[0][0] > 0
 
-    def assign_projects_to_custom_tc_field(self, tc_field_id: int,
-                                           projects: list) -> typing.Optional[bool]:
-        print(f"Assigning tc custom fields to {tc_field_id} : {projects}")
-
-        project_ids: typing.List[int] = []
-
-        for name in projects:
-            project_id: int = self.get_project_id_by_name(name)
-            if not project_id:
-                return False
-
-            project_ids.append(project_id)
-
-        print(f"[DEBUG] Project IDs :  {project_ids}")
-
-        return False
-
     def tc_custom_field_system_name_exists(self, system_name: str) \
             -> typing.Optional[bool]:
         """
@@ -284,3 +232,4 @@ class SqliteInterface(BaseSqliteInterface):
             return None
 
         return bool(rows)
+## 279

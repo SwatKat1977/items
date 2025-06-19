@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from __future__ import annotations
 import enum
 import logging
 import typing
@@ -35,8 +36,10 @@ class CustomFieldMoveDirection(enum.Enum):
 
 class SqlTCCustomFields(ExtendedSqlInterface):
     def __init__(self, logger: logging.Logger,
-                 state_object: StateObject) -> None:
+                 state_object: StateObject,
+                 parent: SqlInterface) -> None:
         super().__init__(logger, state_object)
+        self._parent = parent
 
     def move_custom_field(self,
                           field_id: int,
@@ -238,6 +241,26 @@ class SqlTCCustomFields(ExtendedSqlInterface):
             return -1
 
         return row_id
+
+    def assign_custom_field_to_project(self, tc_field_id: int,
+                                       projects: list) \
+            -> typing.Union[bool, str]:
+        insert_values: typing.List[tuple] = []
+
+        for name in projects:
+            project_id: int = self._parent.projects.get_project_id_by_name(name)
+            if not project_id:
+                return f"Project '{name}' is not valid"
+
+            insert_values.append((tc_field_id, project_id))
+
+        insert_sql: str = (f"INSERT INTO {cms_tables.TC_CUSTOM_FIELD_PROJECTS}"
+                           "(field_id, project_id) VALUES (?, ?)")
+
+        return self.safe_bulk_insert(
+            insert_sql,
+            insert_values,
+            "Failed to assign custom field to projects")
 
     def __count_custom_fields(self) -> int:
         """
