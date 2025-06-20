@@ -24,7 +24,7 @@ import interfaces.cms.project as json_schemas
 from state_object import StateObject
 
 
-class ProjectApiView(BaseView):
+class ProjectsApiView(BaseView):
     __slots__ = ['_logger']
 
     # Allowed fields
