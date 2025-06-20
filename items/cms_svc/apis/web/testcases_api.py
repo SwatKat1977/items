@@ -15,11 +15,12 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from apis.testcases_api_view import TestCasesApiView
-from sqlite_interface import SqliteInterface
+from state_object import StateObject
+from .testcases_api_view import TestCasesApiView
 
 
-def create_blueprint(logger: logging.Logger, db: SqliteInterface) -> Blueprint:
+def create_blueprint(logger: logging.Logger,
+                     state_object: StateObject) -> Blueprint:
     """
     Creates and returns a Quart Blueprint for the test cases API.
 
@@ -29,27 +30,27 @@ def create_blueprint(logger: logging.Logger, db: SqliteInterface) -> Blueprint:
     Args:
         logger (logging.Logger): The logger instance used for logging API
                                  registration.
-        db (SqliteInterface): Database interface instance.
+        state_object (StateObject): StateObject instance for database.
 
     Returns:
         Blueprint: A Quart Blueprint instance with the registered health status
                    route.
     """
-    view = TestCasesApiView(logger, db)
+    view = TestCasesApiView(logger, state_object)
 
     blueprint = Blueprint('testcases_api', __name__)
 
-    logger.info("Registering Test Cases API:")
+    logger.debug("Registering WEB test cases routes:")
 
     logger.info("=> /testcases/testcase_details [POST]")
 
-    @blueprint.route('/testcases/details', methods=['POST'])
+    @blueprint.route('/details', methods=['POST'])
     async def testcase_details():
         return await view.testcase_details()
 
-    logger.info("=> /testcases/case/<case_id> [POST]")
+    logger.info("=> /case/<case_id> [POST]")
 
-    @blueprint.route('/testcases/get_case/<case_id>', methods=['POST'])
+    @blueprint.route('/get_case/<case_id>', methods=['POST'])
     async def testcase_get_case(case_id: int):
         return await view.testcase_get_case(case_id)
 

@@ -19,21 +19,23 @@ import logging
 import quart
 from base_view import ApiResponse, BaseView, validate_json
 import interfaces.cms.testcases as json_schemas
-from sqlite_interface import SqliteInterface
+from sql.sql_interface import SqlInterface
+from state_object import StateObject
 
 
 class TestCasesApiView(BaseView):
     __slots__ = ['_logger']
 
-    def __init__(self, logger: logging.Logger, db: SqliteInterface) -> None:
+    def __init__(self, logger: logging.Logger,
+                 state_object: StateObject) -> None:
         self._logger = logger.getChild(__name__)
-        self._db: SqliteInterface = db
+        self._db: SqlInterface = SqlInterface(logger, state_object)
 
     @validate_json(json_schemas.SCHEMA_TESTCASES_DETAILS_REQUEST)
     async def testcase_details(self, request_msg: ApiResponse):
         project_id: int = request_msg.body.project_id
 
-        if not self._db.is_valid_project_id(project_id):
+        if not self._db.projects.is_valid_project_id(project_id):
             response_json = {
                 'status': 0,
                 'error': "Invalid project id"
