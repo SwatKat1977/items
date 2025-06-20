@@ -18,6 +18,7 @@ from state_object import StateObject
 from sql.extended_sql_interface import ExtendedSqlInterface
 from sql.sql_projects import SqlProjects
 from sql.sql_tc_custom_fields import SqlTCCustomFields
+from sql.sql_testcases import SqlTestcases
 
 
 class SqlInterface(ExtendedSqlInterface):
@@ -28,3 +29,4 @@ class SqlInterface(ExtendedSqlInterface):
         self.projects: SqlProjects = SqlProjects(logger, state_object, self)
         self.tc_custom_fields: SqlTCCustomFields = SqlTCCustomFields(
             logger, state_object, self)
+        self.testcases: SqlTestcases = SqlTestcases(logger, state_object, self)
