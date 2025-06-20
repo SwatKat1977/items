@@ -21,6 +21,7 @@ from service_health_enums import ComponentDegradationLevel
 from state_object import StateObject
 import databases.cms_db_tables as cms_tables
 
+
 class SqliteInterface(BaseSqliteInterface):
     """
     Interface for interacting with a SQLite database, extending the
