@@ -18,7 +18,6 @@ import logging
 import os
 import typing
 from base_application import BaseApplication
-from base_sqlite_interface import SqliteInterfaceException
 from configuration_layout import CONFIGURATION_LAYOUT
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
                            LOGGING_DEFAULT_LOG_LEVEL, \
@@ -27,10 +26,7 @@ from sqlite_interface import SqliteInterface
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
-from apis import admin_api
-from apis import health_api
-from apis import project_api
-from apis import testcases_api
+from apis.web import create_web_routes
 from state_object import StateObject
 
 
@@ -69,21 +65,9 @@ class Application(BaseApplication):
                           Configuration().logging_log_level)
         self._logger.setLevel(Configuration().logging_log_level)
 
-        admin_blueprint = admin_api.create_blueprint(self._logger,
-                                                     self._state_object)
-        self._quart_instance.register_blueprint(admin_blueprint)
-
-        health_blueprint = health_api.create_blueprint(self._logger,
-                                                       self._state_object)
-        self._quart_instance.register_blueprint(health_blueprint)
-
-        project_blueprint = project_api.create_blueprint(self._logger,
-                                                         self._state_object)
-        self._quart_instance.register_blueprint(project_blueprint)
-
-        testcases_blueprint = testcases_api.create_blueprint(self._logger,
-                                                             self._db)
-        self._quart_instance.register_blueprint(testcases_blueprint)
+        self._quart_instance.register_blueprint(
+            create_web_routes(self._logger, self._state_object),
+            url_prefix="/web")
 
         return True
 

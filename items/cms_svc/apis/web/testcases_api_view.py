@@ -57,6 +57,15 @@ class TestCasesApiView(BaseView):
 
         case_details: dict = self._db.testcases.get_testcase(case_id, project_id)
 
+        if not case_details:
+            response_json = {
+                'status': 0,
+                'error': "Internal error"
+            }
+            return quart.Response(json.dumps(response_json),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
         return quart.Response(json.dumps(case_details),
                               status=http.HTTPStatus.OK,
                               content_type="application/json")

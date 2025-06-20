@@ -42,13 +42,13 @@ def create_blueprint(logger: logging.Logger,
 
     logger.debug("Registering WEB test cases routes:")
 
-    logger.info("=> /testcases/testcase_details [POST]")
+    logger.debug("=> /testcases/testcase_details [POST]")
 
     @blueprint.route('/details', methods=['POST'])
     async def testcase_details():
         return await view.testcase_details()
 
-    logger.info("=> /case/<case_id> [POST]")
+    logger.debug("=> /case/<case_id> [POST]")
 
     @blueprint.route('/get_case/<case_id>', methods=['POST'])
     async def testcase_get_case(case_id: int):
