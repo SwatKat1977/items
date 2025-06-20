@@ -44,7 +44,7 @@ class TestCasesApiView(BaseView):
                                   status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
                                   content_type="application/json")
 
-        test_suites: list = self._db.get_testcase_overviews(project_id)
+        test_suites: list = self._db.testcases.get_testcase_overviews(project_id)
 
         test_suites = [] if not test_suites else test_suites
         return quart.Response(json.dumps(test_suites),
@@ -55,7 +55,7 @@ class TestCasesApiView(BaseView):
     async def testcase_get_case(self, request_msg: ApiResponse, case_id: int):
         project_id: int = request_msg.body.project_id
 
-        case_details: dict = self._db.get_testcase(case_id, project_id)
+        case_details: dict = self._db.testcases.get_testcase(case_id, project_id)
 
         return quart.Response(json.dumps(case_details),
                               status=http.HTTPStatus.OK,
