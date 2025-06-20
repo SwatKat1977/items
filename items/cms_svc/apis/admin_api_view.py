@@ -16,11 +16,10 @@ limitations under the License.
 import http
 import json
 import logging
-import typing
 import quart
 import interfaces.cms.admin as json_schemas
 from base_view import BaseView, validate_json, ApiResponse
-from sql.sql_tc_custom_fields import CustomFieldMoveDirection, ExtendedSqlInterface
+from sql.sql_tc_custom_fields import CustomFieldMoveDirection
 from sql.sql_interface import SqlInterface
 from state_object import StateObject
 
@@ -111,11 +110,10 @@ class AdminApiView(BaseView):
                 custom_field_id, request_msg.body.projects)
 
         response_json = {
-            'status': 0,
-            'error': "Placeholder"
+            'status': 1
         }
         return quart.Response(json.dumps(response_json),
-                              status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                              status=http.HTTPStatus.OK,
                               content_type="application/json")
 
     async def move_testcase_custom_field(self,
