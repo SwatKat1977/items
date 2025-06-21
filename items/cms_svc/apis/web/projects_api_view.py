@@ -19,10 +19,12 @@ import logging
 import typing
 import quart
 from base_view import BaseView, validate_json, ApiResponse
-from sqlite_interface import SqliteInterface
+from sql.sql_interface import SqlInterface
 import interfaces.cms.project as json_schemas
+from state_object import StateObject
 
-class ProjectApiView(BaseView):
+
+class ProjectsApiView(BaseView):
     __slots__ = ['_logger']
 
     # Allowed fields
@@ -40,15 +42,15 @@ class ProjectApiView(BaseView):
     VALID_TRUE_VALUES = {"true", "1", "yes"}
     VALID_FALSE_VALUES = {"false", "0", "no"}
 
-    def __init__(self, logger: logging.Logger, db: SqliteInterface) -> None:
+    def __init__(self, logger: logging.Logger,
+                 state_object: StateObject) -> None:
         self._logger = logger.getChild(__name__)
-        self._db: SqliteInterface = db
+        self._db: SqlInterface = SqlInterface(logger, state_object)
 
     async def project_details(self, project_id: int):
-        details: typing.Optional[dict] = self._db.get_project_details(
+        details: typing.Optional[dict] = self._db.projects.get_project_details(
             project_id)
-
-        if not details:
+        if details is None:
             return quart.Response(json.dumps({}),
                                   status=http.HTTPStatus.BAD_REQUEST,
                                   content_type="application/json")
@@ -106,7 +108,15 @@ class ProjectApiView(BaseView):
         requested_fields.insert(0, 'id')
         query_fields = ",".join(requested_fields)
 
-        project_rows = self._db.get_projects_details(query_fields)
+        project_rows = self._db.projects.get_projects_details(query_fields)
+        if project_rows is None:
+            response_body: dict = {
+                "error": "Internal error in CMS"
+            }
+            return quart.Response(json.dumps(response_body),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
         for row in project_rows:
             project: dict = {}
 
@@ -119,11 +129,11 @@ class ProjectApiView(BaseView):
             project_id: int = int(project["id"])
             if count_no_of_milestones:
                 project["no_of_milestones"] = \
-                    self._db.get_no_of_milestones_for_project(project_id)
+                    self._db.projects.get_no_of_milestones_for_project(project_id)
 
             if count_no_of_test_runs:
                 project["no_of_test_runs"] = \
-                    self._db.get_no_of_testruns_for_project(project_id)
+                    self._db.projects.get_no_of_testruns_for_project(project_id)
 
             projects.append(project)
 
@@ -140,7 +150,7 @@ class ProjectApiView(BaseView):
 
         name: str = request_msg.body.name
 
-        exists = self._db.project_name_exists(name)
+        exists = self._db.projects.project_name_exists(name)
         if exists is None:
             response_body: dict = {
                 "status": 0,
@@ -165,7 +175,7 @@ class ProjectApiView(BaseView):
             "announcement_on_overview":
                 request_msg.body.announcement_on_overview
         }
-        new_project_id: typing.Optional[int] = self._db.add_project(
+        new_project_id: typing.Optional[int] = self._db.projects.add_project(
             add_project_dict)
         if new_project_id is None:
             response_body: dict = {
@@ -220,7 +230,7 @@ class ProjectApiView(BaseView):
             }
             ```
         """
-        existing_details = self._db.get_project_details(project_id)
+        existing_details = self._db.projects.get_project_details(project_id)
         if existing_details is None:
             response_body: dict = {
                 "status": 0,
@@ -247,7 +257,7 @@ class ProjectApiView(BaseView):
         }
 
         if body.name != existing_details["name"]:
-            exists = self._db.project_name_exists(body.name)
+            exists = self._db.projects.project_name_exists(body.name)
 
             if exists is None:
                 response_body: dict = {
@@ -270,7 +280,7 @@ class ProjectApiView(BaseView):
 
             updated_details["project_name"] = body.name
 
-        status = self._db.modify_project(project_id, updated_details)
+        status = self._db.projects.modify_project(project_id, updated_details)
 
         return quart.Response(json.dumps({ "status": 1}),
                               status=http.HTTPStatus.OK,
@@ -298,7 +308,7 @@ class ProjectApiView(BaseView):
                                       status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
                                       content_type="application/json")
 
-        exists = self._db.project_id_exists(project_id)
+        exists = self._db.projects.is_valid_project_id(project_id)
         if exists is None:
             response_body: dict = {
                 "status": 0,
@@ -319,12 +329,26 @@ class ProjectApiView(BaseView):
 
         if hard_delete:
             self._logger.info("Project %d is being hard-deleted", project_id)
-            self._db.hard_delete_project(project_id)
+            if not self._db.projects.hard_delete_project(project_id):
+                response_body: dict = {
+                    "status": 0,
+                    "error_msg": "Internal error in CMS"
+                }
+                return quart.Response(json.dumps(response_body),
+                                      status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                      content_type="application/json")
 
         else:
             self._logger.info("Project %d is being marked as 'awaiting purge",
                               project_id)
-            self._db.mark_project_for_awaiting_purge(project_id)
+            if not self._db.projects.mark_project_for_awaiting_purge(project_id):
+                response_body: dict = {
+                    "status": 0,
+                    "error_msg": "Internal error in CMS"
+                }
+                return quart.Response(json.dumps(response_body),
+                                      status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                      content_type="application/json")
 
         return quart.Response(json.dumps({}),
                               status=http.HTTPStatus.OK,

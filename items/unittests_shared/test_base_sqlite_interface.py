@@ -1,263 +1,122 @@
 import os
 import sqlite3
-import unittest
-from unittest.mock import call, MagicMock
 import tempfile
+import unittest
 from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
 
 
 class TestBaseSqliteInterface(unittest.TestCase):
-
     def setUp(self):
-        """
-        Set up a temporary SQLite database file for testing.
-        """
-        self.temp_file = tempfile.NamedTemporaryFile(delete=False)
-        self.temp_file.close()
-        self.interface = BaseSqliteInterface(self.temp_file.name)
+        # Create a valid SQLite temp file for most tests
+        self.db_fd, self.db_path = tempfile.mkstemp()
+        os.close(self.db_fd)
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT);")
 
-        connection = sqlite3.connect(self.temp_file.name)
-        connection.execute("CREATE TABLE IF NOT EXISTS test (id INTEGER PRIMARY KEY)")
-        connection.close()
+        self.interface = BaseSqliteInterface(self.db_path)
 
     def tearDown(self):
-        """
-        Clean up the temporary SQLite database file after testing.
-        """
-        if os.path.exists(self.temp_file.name):
-            os.remove(self.temp_file.name)
+        if os.path.exists(self.db_path):
+            os.unlink(self.db_path)
 
-    def test_is_valid_database_with_valid_file(self):
-        """
-        Test that is_valid_database returns True for a valid SQLite database.
-        """
-        self.interface.open()  # Open the database to initialize it
-        self.interface.close()
+    def test_is_valid_database_true(self):
         self.assertTrue(self.interface.is_valid_database())
 
-    def test_is_valid_database_with_invalid_file(self):
-        """
-        Test that is_valid_database returns False for an invalid SQLite file.
-        """
-        with open(self.temp_file.name, "wb") as f:
-            f.write(b"Invalid content")
-        self.assertFalse(self.interface.is_valid_database())
+    def test_is_valid_database_false(self):
+        with tempfile.NamedTemporaryFile(delete=False) as temp:
+            temp.write(b"Not a SQLite DB")
+            temp_path = temp.name
+        iface = BaseSqliteInterface(temp_path)
+        self.assertFalse(iface.is_valid_database())
+        os.unlink(temp_path)
 
-    def test_is_valid_database_with_missing_file(self):
-        """
-        Test that is_valid_database returns False if the file is missing.
-        """
-        os.remove(self.temp_file.name)
-        self.assertFalse(self.interface.is_valid_database())
+    def test_ensure_valid_valid_file(self):
+        self.interface.ensure_valid()  # Should not raise
 
-    def test_open_and_close_connection(self):
-        """
-        Test that the open and close methods work correctly.
-        """
-        self.interface.open()
-        self.assertTrue(self.interface.is_connected())
-        self.interface.close()
-        self.assertFalse(self.interface.is_connected())
+    def test_ensure_valid_missing_file(self):
+        os.unlink(self.db_path)
+        with self.assertRaises(SqliteInterfaceException) as ctx:
+            self.interface.ensure_valid()
+        self.assertEqual(str(ctx.exception), "Database file does not exist")
 
-    def test_open_with_invalid_file(self):
-        """
-        Test that opening an invalid file raises SqliteInterfaceException.
-        """
-        with open(self.temp_file.name, "wb") as f:
-            f.write(b"Invalid content")
-        with self.assertRaises(SqliteInterfaceException) as context:
-            self.interface.open()
-        self.assertIn("Database file format is not valid", str(context.exception))
-
-    def test_open_with_missing_file(self):
-        """
-        Test that opening a missing file raises SqliteInterfaceException.
-        """
-        os.remove(self.temp_file.name)
-        with self.assertRaises(SqliteInterfaceException) as context:
-            self.interface.open()
-        self.assertIn("Database file cannot be opened", str(context.exception))
+    def test_ensure_valid_invalid_file(self):
+        with open(self.db_path, 'wb') as f:
+            f.write(b"invalid")
+        with self.assertRaises(SqliteInterfaceException) as ctx:
+            self.interface.ensure_valid()
+        self.assertEqual(str(ctx.exception), "Database file format is not valid")
 
     def test_create_table_success(self):
-        """
-        Test that a table can be created successfully.
-        """
-        self.interface.open()
-        table_schema = "CREATE TABLE test_table (id INTEGER PRIMARY KEY, name TEXT)"
-        self.interface.create_table(table_schema, "test_table")
-        self.interface.close()
+        schema = "CREATE TABLE test2 (id INTEGER);"
+        self.interface.create_table(schema, "test2")
+        result = self.interface.run_query("SELECT name FROM sqlite_master WHERE type='table';")
+        table_names = [row[0] for row in result]
+        self.assertIn("test2", table_names)
 
     def test_create_table_failure(self):
-        """
-        Test that creating a table with an invalid schema raises an exception.
-        """
-        self.interface.open()
-        invalid_schema = "CREATE TABLED test_table (id PRIMARY KEY, name)"
-        with self.assertRaises(SqliteInterfaceException) as context:
-            self.interface.create_table(invalid_schema, "test_table")
-        self.assertIn("Create table failure", str(context.exception))
-        self.interface.close()
+        with self.assertRaises(SqliteInterfaceException) as ctx:
+            self.interface.create_table("INVALID SQL", "bad_table")
+        self.assertIn("Create table failure", str(ctx.exception))
 
-    def test_insert_query(self):
-        """
-        Test that an INSERT query works correctly.
-        """
-        self.interface.open()
-        self.interface.create_table("CREATE TABLE insert_query_test (id INTEGER PRIMARY KEY, name TEXT)", "test")
-        last_row_id = self.interface.insert_query("INSERT INTO insert_query_test (name) VALUES (?)", ("Alice",))
-        self.assertIsNotNone(last_row_id)
-        self.interface.close()
+    def test_run_query_commit(self):
+        rows = self.interface.run_query("INSERT INTO test (name) VALUES (?)", ("Alice",), commit=True)
+        self.assertEqual(rows, 1)
+
+    def test_run_query_fetch_one(self):
+        self.interface.run_query("INSERT INTO test (name) VALUES (?)", ("Bob",), commit=True)
+        row = self.interface.run_query("SELECT * FROM test WHERE name=?", ("Bob",), fetch_one=True)
+        self.assertEqual(row[1], "Bob")
+
+    def test_run_query_fetch_all(self):
+        self.interface.run_query("INSERT INTO test (name) VALUES (?)", ("Eve",), commit=True)
+        rows = self.interface.run_query("SELECT * FROM test")
+        self.assertTrue(len(rows) > 0)
+
+    def test_run_query_none_result(self):
+        result = self.interface.run_query("PRAGMA foreign_keys;")
+        self.assertIsInstance(result, list)
+
+    def test_run_query_failure(self):
+        with self.assertRaises(SqliteInterfaceException) as ctx:
+            self.interface.run_query("INVALID SQL")
+        self.assertIn("Query error", str(ctx.exception))
+
+    def test_insert_query_success(self):
+        last_id = self.interface.insert_query("INSERT INTO test (name) VALUES (?)", ("Charlie",))
+        self.assertIsInstance(last_id, int)
 
     def test_insert_query_failure(self):
-        """
-        Test that an invalid INSERT query raises an exception.
-        """
-        self.interface.open()
-        with self.assertRaises(SqliteInterfaceException) as context:
-            self.interface.insert_query("INSERT INTO non_existing_table (name) VALUES (?)", ("Alice",))
-        self.assertIn("Unable perform insert query", str(context.exception))
-        self.interface.close()
+        with self.assertRaises(SqliteInterfaceException) as ctx:
+            self.interface.insert_query("INVALID SQL")
+        self.assertIn("Insert query failed", str(ctx.exception))
 
-    def test_query_with_values_fetch_all(self):
-        """
-        Test that query_with_values fetches all rows correctly.
-        """
-        self.interface.open()
-        self.interface.create_table("CREATE TABLE fetch_all_test (id INTEGER PRIMARY KEY, name TEXT)", "test")
-        self.interface.insert_query("INSERT INTO fetch_all_test (name) VALUES (?)", ("Alice",))
-        self.interface.insert_query("INSERT INTO fetch_all_test (name) VALUES (?)", ("Bob",))
-        results = self.interface.query_with_values("SELECT * FROM fetch_all_test")
-        self.assertEqual(len(results), 2)
-        self.interface.close()
+    def test_bulk_insert_query_success(self):
+        values = [("Name1",), ("Name2",)]
+        self.interface.bulk_insert_query("INSERT INTO test (name) VALUES (?)", values)
+        rows = self.interface.run_query("SELECT * FROM test")
+        self.assertEqual(len(rows), 2)
 
-    def test_query_with_values_fetch_one(self):
-        """
-        Test that query_with_values fetches one row correctly.
-        """
-        self.interface.open()
-        self.interface.create_table("CREATE TABLE fetch_one_test (id INTEGER PRIMARY KEY, name TEXT)", "test")
-        self.interface.insert_query("INSERT INTO fetch_one_test (name) VALUES (?)", ("Alice",))
-        result = self.interface.query_with_values("SELECT * FROM fetch_one_test", fetch_one=True)
-        self.assertEqual(result[1], "Alice")
-        self.interface.close()
-
-    def test_query_with_invalid_query(self):
-        """
-        Test that an invalid query raises SqliteInterfaceException.
-        """
-        self.interface.open()
-        with self.assertRaises(SqliteInterfaceException) as context:
-            self.interface.query_with_values("SELECT * FROM non_existing_table")
-        self.assertIn("Error performing query", str(context.exception))
-        self.interface.close()
-
-    def test_open_raises_exception_if_already_open(self):
-        """
-        Test that the open method raises a SqliteInterfaceException if the database is already open.
-        """
-        self.interface.open()  # Open the database
-        with self.assertRaises(SqliteInterfaceException) as context:
-            self.interface.open()  # Attempt to open again while already open
-        self.assertEqual(str(context.exception), "Database is already open")
-
-    def test_create_table_raises_exception_if_not_open(self):
-        """
-        Test that create_table raises a SqliteInterfaceException if the database is not open.
-        """
-        table_schema = "CREATE TABLE test (id INTEGER PRIMARY KEY)"
-        table_name = "test"
-
-        with self.assertRaises(SqliteInterfaceException) as context:
-            self.interface.create_table(table_schema, table_name)  # Attempt to create table without opening the DB
-
-        self.assertEqual(str(context.exception), "Database is not open")
+    def test_bulk_insert_query_failure(self):
+        with self.assertRaises(SqliteInterfaceException) as ctx:
+            self.interface.bulk_insert_query("BAD SQL", [("a",)])
+        self.assertIn("Bulk insert query failed", str(ctx.exception))
 
     def test_delete_query_success(self):
-        """Test delete_query executes successfully with foreign key constraints enabled."""
-        query = "DELETE FROM projects WHERE id = ?"
-        params = (1,)
-
-        mock_connection = MagicMock()
-        mock_cursor = MagicMock()
-        mock_connection.cursor.return_value = mock_cursor
-        self.interface._connection = mock_connection
-
-        # Call delete_query
-        self.interface.delete_query(query, params)
-
-        # Ensure the foreign key check and delete query were executed
-        expected_calls = [
-            call.execute("PRAGMA foreign_keys = ON;"),
-            call.execute(query, params)
-        ]
-        mock_cursor.execute.assert_has_calls(expected_calls)
-        self.assertEqual(mock_connection.commit.call_count, 2)  # Ensures both commits occurred
+        self.interface.insert_query("INSERT INTO test (name) VALUES (?)", ("Temp",))
+        self.interface.delete_query("DELETE FROM test WHERE name=?", ("Temp",))
+        rows = self.interface.run_query("SELECT * FROM test WHERE name=?", ("Temp",))
+        self.assertEqual(len(rows), 0)
 
     def test_delete_query_failure(self):
-        """Test delete_query raises SqliteInterfaceException on database error."""
-        query = "DELETE FROM projects WHERE id = ?"
-        params = (1,)
+        with self.assertRaises(SqliteInterfaceException) as ctx:
+            self.interface.delete_query("BAD SQL")
+        self.assertIn("Delete query failed", str(ctx.exception))
 
-        mock_connection = MagicMock()
-        mock_cursor = MagicMock()
-        mock_connection.cursor.return_value = mock_cursor
-        self.interface._connection = mock_connection
+    def test_is_valid_database_missing_file(self):
+        iface = BaseSqliteInterface("/nonexistent/path/to/db.sqlite")
+        self.assertFalse(iface.is_valid_database())
 
-        # Simulate an SQL execution failure
-        mock_cursor.execute.side_effect = sqlite3.Error("Simulated error")
-
-        with self.assertRaises(SqliteInterfaceException) as context:
-            self.interface.delete_query(query, params)
-
-        self.assertIn("Error performing query", str(context.exception))
-        mock_cursor.execute.assert_called_once_with("PRAGMA foreign_keys = ON;")  # Foreign key enabling was attempted
-
-    def test_query_success_no_commit(self):
-        """Test query executes successfully without commit."""
-        query = "UPDATE projects SET name = ? WHERE id = ?"
-        params = ("New Project Name", 1)
-
-        mock_connection = MagicMock()
-        mock_cursor = MagicMock()
-        mock_connection.cursor.return_value = mock_cursor
-        self.interface._connection = mock_connection
-
-        self.interface.query(query, params)
-
-        mock_cursor.execute.assert_called_once_with(query, params)
-        mock_connection.commit.assert_not_called()  # Ensure commit is NOT called
-
-    def test_query_success_with_commit(self):
-        """Test query executes successfully with commit."""
-        query = "UPDATE projects SET name = ? WHERE id = ?"
-        params = ("Updated Project", 2)
-
-        mock_connection = MagicMock()
-        mock_cursor = MagicMock()
-        mock_connection.cursor.return_value = mock_cursor
-        self.interface._connection = mock_connection
-
-        self.interface.query(query, params, commit=True)
-
-        mock_cursor.execute.assert_called_once_with(query, params)
-        mock_connection.commit.assert_called_once()  # Ensure commit is called
-
-    def test_query_failure(self):
-        """Test query raises SqliteInterfaceException on database error."""
-        query = "UPDATE projects SET name = ? WHERE id = ?"
-        params = ("Failure Test", 3)
-
-        mock_connection = MagicMock()
-        mock_cursor = MagicMock()
-        mock_connection.cursor.return_value = mock_cursor
-        self.interface._connection = mock_connection
-
-        # Simulate an SQL execution failure
-        mock_cursor.execute.side_effect = sqlite3.Error("Simulated SQL error")
-
-        with self.assertRaises(SqliteInterfaceException) as context:
-            self.interface.query(query, params)
-
-        self.assertIn("Error performing query", str(context.exception))
-        mock_cursor.execute.assert_called_once_with(query, params)
-        mock_connection.commit.assert_not_called()  # Ensure commit was never attempted
+    def test_run_query_returns_none_for_non_select_non_commit(self):
+        # Use a no-op PRAGMA statement that returns no data
+        result = self.interface.run_query("PRAGMA foreign_keys = OFF;")
+        self.assertIsNone(result)

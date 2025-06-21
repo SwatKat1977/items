@@ -15,7 +15,7 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from apis.health_api_view import HealthApiView
+from .health_api_view import HealthApiView
 from state_object import StateObject
 
 
@@ -42,10 +42,11 @@ def create_blueprint(logger: logging.Logger,
 
     blueprint = Blueprint('health_api', __name__)
 
-    logger.info("Registering Health Status API:")
-    logger.info("=> health/status [GET]")
+    logger.debug("Registering WEB health status routes:")
 
-    @blueprint.route('/health/status', methods=['GET'])
+    logger.debug("=> /status [GET]")
+
+    @blueprint.route('/status', methods=['GET'])
     async def authenticate_request():
         return await view.health()
 

@@ -13,39 +13,34 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import databases.cms_db_tables as cms_db_tables
 
-SQL_CREATE_PROJECTS_TABLE: str = """
-    CREATE TABLE projects (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        awaiting_purge BOOLEAN NOT NULL DEFAULT 0,
-        announcement TEXT NOT NULL DEFAULT '',
-        show_announcement_on_overview INTEGER NOT NULL DEFAULT 0,
-        creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
 """
+Table: projects
 
-SQL_CREATE_TEST_CASE_FOLDERS_TABLE: str = """
-    CREATE TABLE test_case_folders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        project_id INTEGER NOT NULL,
-        parent_id INTEGER NULL,
-        name TEXT NOT NULL,
-        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-        FOREIGN KEY (parent_id) REFERENCES test_case_folders(id) ON DELETE CASCADE,
-        UNIQUE (project_id, parent_id, name)
-    );
+Represents a project entity which groups test cases and associated
+configurations.
+
+Columns:
+- id (INTEGER PRIMARY KEY AUTOINCREMENT): Unique identifier for the project.
+- name (TEXT NOT NULL UNIQUE): Name of the project. Must be unique across all
+  projects.
+- awaiting_purge (BOOLEAN NOT NULL DEFAULT 0): Flag indicating if the project
+  is scheduled for purging.
+- announcement (TEXT NOT NULL DEFAULT ''): Optional announcement message
+  associated with the project.
+- show_announcement_on_overview (INTEGER NOT NULL DEFAULT 0): Flag (0 or 1) to
+  indicate whether the announcement should be shown on the overview page.
+- creation_date (TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP): The timestamp
+  when the project was created.
 """
-
-SQL_CREATE_TEST_CASES_TABLE: str = """
-CREATE TABLE test_cases (
+TABLE_SQL_PRJ_PROJECTS: str = f"""
+CREATE TABLE {cms_db_tables.PRJ_PROJECTS} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    project_id INTEGER NOT NULL,
-    folder_id INTEGER NULL,
-    name TEXT NOT NULL,
-    description TEXT,
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-    FOREIGN KEY (folder_id) REFERENCES test_case_folders(id) ON DELETE CASCADE,
-    UNIQUE (project_id, folder_id, name)
+    name TEXT NOT NULL UNIQUE,
+    awaiting_purge BOOLEAN NOT NULL DEFAULT 0,
+    announcement TEXT NOT NULL DEFAULT '',
+    show_announcement_on_overview INTEGER NOT NULL DEFAULT 0,
+    creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 """
