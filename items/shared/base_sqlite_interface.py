@@ -198,7 +198,7 @@ class BaseSqliteInterface:
         """
         with self._lock, self._get_connection() as conn:
             try:
-                cursor = conn.executemany(query, value_sets)
+                conn.executemany(query, value_sets)
                 conn.commit()
                 return True
             except sqlite3.Error as ex:
