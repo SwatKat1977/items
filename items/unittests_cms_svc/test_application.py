@@ -24,21 +24,27 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
 
     def test_initialise_success(self):
         """Test _initialise when configuration management succeeds."""
-        # Mock constants
+        # Patch version constants
         patch("application.RELEASE_VERSION", "1.0.0").start()
         patch("application.BUILD_VERSION", "123").start()
         patch("application.BUILD_TAG", "-alpha").start()
 
+        # Mock config values
         self.mock_config_instance.logging_log_level = "DEBUG"
 
-        # Mock database opening success
+        # Ensure _manage_configuration returns True
+        self.application._manage_configuration = MagicMock(return_value=True)
+
+        # Also mock _open_database or any other used method if relevant
         self.application._open_database = MagicMock(return_value=True)
 
-        # Call _initialise
+        # Call method under test
         result = self.application._initialise()
 
-        # Assertions
+        # Assert that we hit return True
         self.assertTrue(result, "Initialization should succeed")
+
+        # Validate logging occurred
         self.mock_logger_instance.info.assert_any_call(
             'ITEMS CMS Microservice %s', "V1.0.0-123-alpha"
         )
