@@ -16,7 +16,6 @@ limitations under the License.
 import asyncio
 import logging
 import os
-import typing
 from base_application import BaseApplication
 from configuration_layout import CONFIGURATION_LAYOUT
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
