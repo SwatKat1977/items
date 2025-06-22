@@ -8,6 +8,7 @@ from test_create_web_routes import TestCreateWebRoutes
 from test_sql_sql_projects import TestSqlSqlProjects
 from test_sql_sql_tc_custom_fields import TestSqlSqlTCCustomFields
 from test_sql_sql_testcases import TestSqlTestcases
+from test_extended_sql_interface import TestExtendedSqlInterface
 
 if __name__ == "__main__":
     unittest.main()
