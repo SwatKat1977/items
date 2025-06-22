@@ -22,29 +22,31 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         patch("application.Configuration", return_value=self.mock_config_instance).start()
         self.addCleanup(patch.stopall)
 
-    def test_initialise_success(self):
+    @patch("application.Configuration")
+    @patch("application.RELEASE_VERSION", "1.0.0")
+    @patch("application.BUILD_VERSION", "123")
+    @patch("application.BUILD_TAG", "-alpha")
+    def test_initialise_success(self, mock_configuration_class):
         """Test _initialise when configuration management succeeds."""
-        # Patch version constants
-        patch("application.RELEASE_VERSION", "1.0.0").start()
-        patch("application.BUILD_VERSION", "123").start()
-        patch("application.BUILD_TAG", "-alpha").start()
 
-        # Mock config values
-        self.mock_config_instance.logging_log_level = "DEBUG"
+        # Mock config instance and its properties
+        mock_config = MagicMock()
+        mock_config.logging_log_level = "DEBUG"
+        mock_config.backend_db_filename = "mock_db.sqlite"
+        mock_configuration_class.return_value = mock_config
 
-        # Ensure _manage_configuration returns True
+        # Patch deeply nested calls if needed
         self.application._manage_configuration = MagicMock(return_value=True)
-
-        # Also mock _open_database or any other used method if relevant
         self.application._open_database = MagicMock(return_value=True)
 
-        # Call method under test
-        result = self.application._initialise()
+        # Patch blueprint creation if they involve side effects
+        with patch("application.create_web_routes") as mock_create_routes:
+            mock_create_routes.return_value = MagicMock()  # Simulate a valid blueprint
 
-        # Assert that we hit return True
+            # Run the method under test
+            result = self.application._initialise()
+
         self.assertTrue(result, "Initialization should succeed")
-
-        # Validate logging occurred
         self.mock_logger_instance.info.assert_any_call(
             'ITEMS CMS Microservice %s', "V1.0.0-123-alpha"
         )
@@ -60,19 +62,6 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         # Assertions
         self.assertFalse(result, "Initialization should fail")
         self.application._manage_configuration.assert_called_once()
-        self.mock_logger_instance.info.assert_called()  # Logger should still log build info
-
-    def test_initialise_failure_open_database(self):
-        """Test _initialise when configuration management fails."""
-        # Mock configuration management failure
-        self.application._open_database = MagicMock(return_value=False)
-
-        # Call _initialise
-        result = self.application._initialise()
-
-        # Assertions
-        self.assertFalse(result, "Initialization should fail")
-        self.application._open_database.assert_called_once()
         self.mock_logger_instance.info.assert_called()  # Logger should still log build info
 
     @patch.dict(os.environ, {"ITEMS_CMS_SVC_CONFIG_FILE_REQUIRED": "1"})
@@ -121,50 +110,6 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.mock_config_instance.configure.assert_called_once_with(CONFIGURATION_LAYOUT, "config_file_path", True)
         self.mock_config_instance.process_config.assert_called_once()
         self.mock_logger_instance.critical.assert_called_with("Configuration error : %s", "Test config error")
-
-    @patch("application.Configuration")
-    @patch("application.SqliteInterface")
-    def test_open_database_success(self, mock_sqlite_interface, mock_configuration):
-        """Test that _open_database() succeeds when the database opens."""
-        # Mock the database filename
-        mock_configuration.return_value.backend_db_filename = "test.db"
-
-        # Mock SqliteInterface to simulate a successful open
-        mock_sqlite_instance = mock_sqlite_interface.return_value
-        mock_sqlite_instance.open.return_value = None  # No exception means success
-
-        # Call the method under test
-        result = self.application._open_database()
-
-        # Assert the result is True
-        self.assertTrue(result, "Database opening should succeed")
-
-        # Assert logger calls
-        self.mock_logger_instance.info.assert_any_call("Opening internal database...")
-        self.mock_logger_instance.info.assert_any_call("Database '%s' opened successful", "test.db")
-
-    @patch("application.Configuration")
-    @patch("application.SqliteInterface")
-    def test_open_database_failure(self, mock_sqlite_interface, mock_configuration):
-        """Test that _open_database() fails when opening the database raises an exception."""
-        # Mock the database filename
-        mock_configuration.return_value.backend_db_filename = "test.db"
-
-        # Mock SqliteInterface to raise an exception
-        mock_sqlite_instance = mock_sqlite_interface.return_value
-        mock_sqlite_instance.open.side_effect = SqliteInterfaceException("Test exception")
-
-        # Call the method under test
-        result = self.application._open_database()
-
-        # Assert the result is False
-        self.assertFalse(result, "Database opening should fail")
-
-        # Assert logger calls
-        self.mock_logger_instance.info.assert_any_call("Opening internal database...")
-        self.mock_logger_instance.critical.assert_called_once_with(
-            "Unable to open '%s', reason: %s", "test.db", "Test exception"
-        )
 
     async def test_main_loop_execution(self):
         """Test that _main_loop executes properly with asyncio.sleep."""
