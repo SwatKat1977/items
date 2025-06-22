@@ -96,8 +96,11 @@ class TestSqlSqlTCCustomFields(unittest.TestCase):
 
     def test_type_info_empty(self):
         self.iface.safe_query = MagicMock(return_value=[])
-        with self.assertLogs(self.iface._logger, level='WARNING'):
-            self.assertIsNone(self.iface._SqlTCCustomFields__get_custom_field_type_info("str"))
+        # Patch the iface._logger to a real logger for assertLogs to work
+        with patch.object(self.iface, '_logger', logging.getLogger('test_logger')):
+            with self.assertLogs('test_logger', level='WARNING'):
+                result = self.iface._SqlTCCustomFields__get_custom_field_type_info("str")
+                self.assertIsNone(result)
 
     def test_type_info_valid(self):
         self.iface.safe_query = MagicMock(return_value=(2, 0, 1))
@@ -140,7 +143,7 @@ class TestSqlSqlTCCustomFields(unittest.TestCase):
         with patch.object(self.iface, 'safe_query', return_value=[]):
             result = self.iface._SqlTCCustomFields__get_custom_field_type_info("nonexistent_type")
             self.assertIsNone(result)
-            self.logger.warning.assert_called_once_with(
+            self.iface._logger.warning.assert_called_once_with(
                 "Invalid field type name '%s'", "nonexistent_type"
             )
 
