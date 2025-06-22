@@ -7,6 +7,7 @@ from test_apis_testcases_api_view import TestApiTestCasesApiView
 from test_create_web_routes import TestCreateWebRoutes
 from test_sql_sql_projects import TestSqlSqlProjects
 from test_sql_sql_tc_custom_fields import TestSqlSqlTCCustomFields
+from test_sql_sql_testcases import TestSqlTestcases
 
 if __name__ == "__main__":
     unittest.main()
