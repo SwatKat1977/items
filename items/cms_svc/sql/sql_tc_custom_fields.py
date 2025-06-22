@@ -213,7 +213,7 @@ class SqlTCCustomFields(ExtendedSqlInterface):
         # pylint: disable=too-many-locals
 
         max_position = self.__get_custom_field_max_position()
-        if max_position is -1:
+        if max_position == -1:
             return 0
 
         new_position = max_position + 1
