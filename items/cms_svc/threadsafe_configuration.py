@@ -25,11 +25,11 @@ class ThreadSafeConfiguration(ConfigurationManager,
     @property
     def logging_log_level(self) -> str:
         """ Configuration property : Logging | log level """
-        return ThreadSafeConfiguration().get_entry(
+        return self.get_entry(
             consts.SECTION_LOGGING, consts.ITEM_LOGGING_LOG_LEVEL)
 
     @property
     def backend_db_filename(self) -> str:
         """ Configuration property : Backend | database filename """
-        return ThreadSafeConfiguration().get_entry(
+        return self.get_entry(
             consts.SECTION_BACKEND, consts.ITEM_BACKEND_DB_FILENAME)
