@@ -3,8 +3,8 @@ omit =
     items/unittests_shared/*
     items/unittests_cms_svc/*
     items/shared/*
-    items/cms_svc/apis/health_api.py
-    items/cms_svc/apis/project_api.py
-    items/cms_svc/apis/testcases_api.py
+    items/cms_svc/apis/web/health_api.py
+    items/cms_svc/apis/web/project_api.py
+    items/cms_svc/apis/web/testcases_api.py
     /opt/homebrew/*
     /usr/lib/python3/*
