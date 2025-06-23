@@ -196,5 +196,5 @@ class TestApiTestCasesApiView(unittest.IsolatedAsyncioTestCase):
 
             data = await response.get_json()
             self.assertEqual(data["status"], 0, 'Status should be 0')
-            self.assertEqual(data["error"], "Internal Error",
+            self.assertEqual(data["error"], "Internal error",
                              "Error should be should be 'Internal Error'")
