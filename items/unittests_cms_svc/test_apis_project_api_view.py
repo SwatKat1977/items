@@ -166,12 +166,10 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         mock_db.projects.project_name_exists.return_value = False
         mock_db.projects.add_project.return_value = 42
         mock_sql_interface.return_value = mock_db
-        # mock_db.projects.get_no_of_testruns_for_project.return_value = 3
 
         view = ProjectsApiView(self.mock_logger, self.mock_state_object)
 
         # Register route for testing
-
         self.app.add_url_rule('/web/projects/add',
                               view_func=view.add_project,
                               methods=['POST'])
@@ -197,10 +195,19 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status_code, http.HTTPStatus.OK)
             self.assertEqual(data, {"project_id": 42})
 
-    '''
-    async def test_add_project_name_exists(self):
+    @patch('apis.web.projects_api_view.SqlInterface')
+    async def test_add_project_name_exists(self, mock_sql_interface):
         """Test when the project name already exists."""
-        self.mock_db.project_name_exists = MagicMock(return_value=True)
+        mock_db = MagicMock()
+        mock_db.projects.project_name_exists.return_value = True
+        mock_sql_interface.return_value = mock_db
+
+        view = ProjectsApiView(self.mock_logger, self.mock_state_object)
+
+        # Register route for testing
+        self.app.add_url_rule('/web/projects/add',
+                              view_func=view.add_project,
+                              methods=['POST'])
 
         test_json_body: dict = {
             "name": "Project Delta_4",
@@ -213,10 +220,10 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         mock_call_api_post.return_value = MagicMock(
             status_code=http.HTTPStatus.BAD_REQUEST,
             json=AsyncMock(return_value={"status": 0, "error_msg": "Project name already exists"}))
-        self.view._call_api_post = mock_call_api_post
+        view._call_api_post = mock_call_api_post
 
         async with self.client as client:
-            response = await client.post('/project/add',
+            response = await client.post('/web/projects/add',
                                          json=test_json_body)
 
             # Assert response status
@@ -224,9 +231,19 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(json.loads(await response.get_data()),
                              {'error_msg': 'Project name already exists', 'status': 0})
 
-    async def test_add_project_query_failure_checking_name(self):
+    @patch('apis.web.projects_api_view.SqlInterface')
+    async def test_add_project_query_failure_checking_name(self, mock_sql_interface):
         """Test database query failure while checking if project name exists."""
-        self.mock_db.project_name_exists = MagicMock(return_value=None)
+        mock_db = MagicMock()
+        mock_db.projects.project_name_exists.return_value = None
+        mock_sql_interface.return_value = mock_db
+
+        view = ProjectsApiView(self.mock_logger, self.mock_state_object)
+
+        # Register route for testing
+        self.app.add_url_rule('/web/projects/add',
+                              view_func=view.add_project,
+                              methods=['POST'])
 
         test_json_body: dict = {
             "name": "Project Delta_4",
@@ -234,7 +251,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
             "announcement_on_overview": True
         }
         async with self.client as client:
-            response = await client.post('/project/add',
+            response = await client.post('/web/projects/add',
                                          json=test_json_body)
 
             # Assert response status
@@ -242,10 +259,20 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(json.loads(await response.get_data()),
                              {'error_msg': 'Internal error in CMS', 'status': 0})
 
-    async def test_add_project_query_failure_adding_project(self):
+    @patch('apis.web.projects_api_view.SqlInterface')
+    async def test_add_project_query_failure_adding_project(self, mock_sql_interface):
         """Test database query failure when inserting a new project."""
-        self.mock_db.project_name_exists = MagicMock(return_value=False)
-        self.mock_db.add_project = MagicMock(return_value=None)
+        mock_db = MagicMock()
+        mock_db.projects.project_name_exists.return_value = False
+        mock_db.projects.add_project.return_value = None
+        mock_sql_interface.return_value = mock_db
+
+        view = ProjectsApiView(self.mock_logger, self.mock_state_object)
+
+        # Register route for testing
+        self.app.add_url_rule('/web/projects/add',
+                              view_func=view.add_project,
+                              methods=['POST'])
 
         test_json_body: dict = {
             "name": "Project Delta_4",
@@ -258,10 +285,10 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         mock_call_api_post.return_value = MagicMock(
             status_code=http.HTTPStatus.BAD_REQUEST,
             json=AsyncMock(return_value={"status": 0, "error_msg": "Project name already exists"}))
-        self.view._call_api_post = mock_call_api_post
+        view._call_api_post = mock_call_api_post
 
         async with self.client as client:
-            response = await client.post('/project/add',
+            response = await client.post('/web/projects/add',
                                          json=test_json_body)
 
             # Assert response status
@@ -269,35 +296,59 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(json.loads(await response.get_data()),
                              {'error_msg': 'Internal SQL error in CMS', 'status': 0})
 
-    async def test_delete_project_default_soft_delete(self):
+    @patch('apis.web.projects_api_view.SqlInterface')
+    async def test_delete_project_default_soft_delete(self, mock_sql_interface):
         """Test default case when 'hard_delete' param is missing (soft delete)."""
-        self.mock_db.project_id_exists.return_value = True
+        mock_db = MagicMock()
+        mock_db.projects.is_valid_project_id.return_value = True
+        mock_sql_interface.return_value = mock_db
+
+        view = ProjectsApiView(self.mock_logger, self.mock_state_object)
+
+        self.app.add_url_rule('/web/projects/delete/<int:project_id>',
+                              view_func=view.delete_project,
+                              methods=['DELETE'])
 
         async with self.client as client:
-            response = await client.delete("/project/delete/1")
-
-            self.mock_db.project_id_exists.assert_called_once_with(1)
-            self.mock_db.mark_project_for_awaiting_purge.assert_called_once_with(1)
-            self.mock_db.hard_delete_project.assert_not_called()
+            response = await client.delete("/web/projects/delete/1")
             self.assertEqual(response.status_code, http.HTTPStatus.OK)
+            self.assertEqual(json.loads(await response.get_data()), {})
+            mock_db.projects.is_valid_project_id.assert_called_once_with(1)
+            mock_db.projects.mark_project_for_awaiting_purge.assert_called_once_with(1)
+            mock_db.projects.hard_delete_project.assert_not_called()
 
-    async def test_delete_project_hard_delete(self):
+    @patch('apis.web.projects_api_view.SqlInterface')
+    async def test_delete_project_hard_delete(self, mock_sql_interface):
         """Test when 'hard_delete' param is set to 'true' (hard delete)."""
-        self.mock_db.project_id_exists.return_value = True
+        mock_db = MagicMock()
+        mock_db.projects.is_valid_project_id.return_value = True
+        mock_sql_interface.return_value = mock_db
+
+        view = ProjectsApiView(self.mock_logger, self.mock_state_object)
+
+        self.app.add_url_rule('/web/projects/delete/<int:project_id>',
+                              view_func=view.delete_project,
+                              methods=['DELETE'])
 
         async with self.client as client:
-            response = await client.delete("/project/delete/1?hard_delete=true")
+            response = await client.delete("/web/projects/delete/1?hard_delete=true")
 
-            self.mock_db.project_id_exists.assert_called_once_with(1)
-            self.mock_db.hard_delete_project.assert_called_once_with(1)
-            self.mock_db.mark_project_for_awaiting_purge.assert_not_called()
+            mock_db.projects.is_valid_project_id.assert_called_once_with(1)
+            mock_db.projects.hard_delete_project.assert_called_once_with(1)
+            mock_db.projects.mark_project_for_awaiting_purge.assert_not_called()
             self.assertEqual(response.status_code, http.HTTPStatus.OK)
 
     async def test_delete_project_invalid_hard_delete_param(self):
         """Test when 'hard_delete' param is invalid."""
 
+        view = ProjectsApiView(self.mock_logger, self.mock_state_object)
+
+        self.app.add_url_rule('/web/projects/delete/<int:project_id>',
+                              view_func=view.delete_project,
+                              methods=['DELETE'])
+
         async with self.client as client:
-            response = await client.delete("/project/delete/1?hard_delete=invalid")
+            response = await client.delete("/web/projects/delete/1?hard_delete=invalid")
             response_data = await response.get_json()
 
         self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -305,41 +356,70 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response_data["error_msg"],
                          "Invalid parameter for hard_delete argument")
 
-    async def test_delete_project_db_error(self):
+    @patch('apis.web.projects_api_view.SqlInterface')
+    async def test_delete_project_db_error(self, mock_sql_interface):
         """Test when project_id_exists returns None (database failure)."""
-        self.mock_db.project_id_exists.return_value = None
+        mock_db = MagicMock()
+        mock_db.projects.is_valid_project_id.return_value = None
+        mock_sql_interface.return_value = mock_db
+
+        view = ProjectsApiView(self.mock_logger, self.mock_state_object)
+
+        self.app.add_url_rule('/web/projects/delete/<int:project_id>',
+                              view_func=view.delete_project,
+                              methods=['DELETE'])
 
         async with self.client as client:
-            response = await client.delete("/project/delete/1")
+            response = await client.delete("/web/projects/delete/1")
             response_data = await response.get_json()
 
-        self.mock_db.project_id_exists.assert_called_once_with(1)
+        mock_db.projects.is_valid_project_id.assert_called_once_with(1)
         self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertEqual(response_data["error_msg"], "Internal error in CMS")
 
-    async def test_delete_project_id_not_found(self):
+    @patch('apis.web.projects_api_view.SqlInterface')
+    async def test_delete_project_id_not_found(self, mock_sql_interface):
         """Test when project_id_exists returns False (invalid project)."""
-        self.mock_db.project_id_exists.return_value = False
+        mock_db = MagicMock()
+        mock_db.projects.is_valid_project_id.return_value = False
+        mock_sql_interface.return_value = mock_db
+
+        view = ProjectsApiView(self.mock_logger, self.mock_state_object)
+
+        self.app.add_url_rule('/web/projects/delete/<int:project_id>',
+                              view_func=view.delete_project,
+                              methods=['DELETE'])
 
         async with self.client as client:
-            response = await client.delete("/project/delete/1")
+            response = await client.delete("/web/projects/delete/1")
             response_data = await response.get_json()
 
-        self.mock_db.project_id_exists.assert_called_once_with(1)
+        mock_db.projects.is_valid_project_id.assert_called_once_with(1)
         self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
         self.assertEqual(response_data["error_msg"], "Project id is invalid")
 
-    async def test_delete_project_soft_delete(self):
+    @patch('apis.web.projects_api_view.SqlInterface')
+    async def test_delete_project_soft_delete(self, mock_sql_interface):
         """Test when 'hard_delete' param is set to 'false' (soft delete)."""
-        self.mock_db.project_id_exists.return_value = True
+        mock_db = MagicMock()
+        mock_db.projects.is_valid_project_id.return_value = True
+        mock_sql_interface.return_value = mock_db
+
+        view = ProjectsApiView(self.mock_logger, self.mock_state_object)
+
+        self.app.add_url_rule('/web/projects/delete/<int:project_id>',
+                              view_func=view.delete_project,
+                              methods=['DELETE'])
 
         async with self.client as client:
-            response = await client.delete("/project/delete/1?hard_delete=false")
+            response = await client.delete("/web/projects/delete/1?hard_delete=false")
 
-        self.mock_db.project_id_exists.assert_called_once_with(1)
-        self.mock_db.mark_project_for_awaiting_purge.assert_called_once_with(1)
-        self.mock_db.hard_delete_project.assert_not_called()
+        mock_db.projects.is_valid_project_id.assert_called_once_with(1)
+        mock_db.projects.mark_project_for_awaiting_purge.assert_called_once_with(1)
+        mock_db.projects.hard_delete_project.assert_not_called()
         self.assertEqual(response.status_code, http.HTTPStatus.OK)
+
+    '''
 
     async def test_project_details_has_details(self):
         returned_response_body: dict = {
