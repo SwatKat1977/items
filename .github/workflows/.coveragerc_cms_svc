@@ -6,5 +6,6 @@ omit =
     items/cms_svc/apis/web/health_api.py
     items/cms_svc/apis/web/projects_api.py
     items/cms_svc/apis/web/testcases_api.py
+    items/cms_svc/apis/web/testcase_custom_fields_api.py
     /opt/homebrew/*
     /usr/lib/python3/*
