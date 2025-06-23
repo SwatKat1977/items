@@ -57,7 +57,7 @@ class TestCasesApiView(BaseView):
 
         case_details: dict = self._db.testcases.get_testcase(case_id, project_id)
 
-        if not case_details:
+        if case_details is None:
             response_json = {
                 'status': 0,
                 'error': "Internal error"
