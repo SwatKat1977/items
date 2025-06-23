@@ -316,6 +316,52 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
             mock_db.projects.hard_delete_project.assert_not_called()
 
     @patch('apis.web.projects_api_view.SqlInterface')
+    async def test_delete_project_soft_delete_mark_project_for_awaiting_purge_fails(self, mock_sql_interface):
+        """Test default case when 'hard_delete' param is missing (soft delete)."""
+        mock_db = MagicMock()
+        mock_db.projects.is_valid_project_id.return_value = True
+        mock_db.projects.mark_project_for_awaiting_purge.return_value = None
+        mock_sql_interface.return_value = mock_db
+
+        view = ProjectsApiView(self.mock_logger, self.mock_state_object)
+
+        self.app.add_url_rule('/web/projects/delete/<int:project_id>',
+                              view_func=view.delete_project,
+                              methods=['DELETE'])
+
+        async with self.client as client:
+            response = await client.delete("/web/projects/delete/1")
+            self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
+            self.assertEqual(json.loads(await response.get_data()),
+                             {'error_msg': 'Internal error in CMS', 'status': 0})
+            mock_db.projects.is_valid_project_id.assert_called_once_with(1)
+            mock_db.projects.mark_project_for_awaiting_purge.assert_called_once_with(1)
+            mock_db.projects.hard_delete_project.assert_not_called()
+
+    @patch('apis.web.projects_api_view.SqlInterface')
+    async def test_delete_project_hard_delete_hard_delete_sql_error(self, mock_sql_interface):
+        """Test when 'hard_delete' param is set to 'true' (hard delete)."""
+        mock_db = MagicMock()
+        mock_db.projects.is_valid_project_id.return_value = True
+        mock_db.projects.hard_delete_project.return_value = None
+
+        mock_sql_interface.return_value = mock_db
+
+        view = ProjectsApiView(self.mock_logger, self.mock_state_object)
+
+        self.app.add_url_rule('/web/projects/delete/<int:project_id>',
+                              view_func=view.delete_project,
+                              methods=['DELETE'])
+
+        async with self.client as client:
+            response = await client.delete("/web/projects/delete/1?hard_delete=true")
+
+            mock_db.projects.is_valid_project_id.assert_called_once_with(1)
+            mock_db.projects.hard_delete_project.assert_called_once_with(1)
+            mock_db.projects.mark_project_for_awaiting_purge.assert_not_called()
+            self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    @patch('apis.web.projects_api_view.SqlInterface')
     async def test_delete_project_hard_delete(self, mock_sql_interface):
         """Test when 'hard_delete' param is set to 'true' (hard delete)."""
         mock_db = MagicMock()
@@ -338,7 +384,6 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
     async def test_delete_project_invalid_hard_delete_param(self):
         """Test when 'hard_delete' param is invalid."""
-
         view = ProjectsApiView(self.mock_logger, self.mock_state_object)
 
         self.app.add_url_rule('/web/projects/delete/<int:project_id>',
