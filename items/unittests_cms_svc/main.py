@@ -10,6 +10,7 @@ from test_sql_sql_tc_custom_fields import TestSqlSqlTCCustomFields
 from test_sql_sql_testcases import TestSqlTestcases
 from test_sql_sql_interface import TestSqlInterface
 from test_extended_sql_interface import TestExtendedSqlInterface
+from test_create_admin_routes import TestCreateAdminRoutes
 
 
 if __name__ == "__main__":
