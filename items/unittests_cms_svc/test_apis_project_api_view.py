@@ -117,6 +117,27 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(data["projects"], [{"id": 1, "name": "Test Project", "no_of_milestones": 5}])
 
     @patch('apis.web.projects_api_view.SqlInterface')
+    async def test_project_overviews_get_projects_details_failure(self, mock_sql_interface):
+        """Test count_fields including test runs"""
+        mock_db = MagicMock()
+        mock_db.projects.get_projects_details.return_value = None
+        mock_sql_interface.return_value = mock_db
+        mock_db.projects.get_no_of_testruns_for_project.return_value = 3
+
+        #  47-48, 51-58, 64-146,
+        view = ProjectsApiView(self.mock_logger, self.mock_state_object)
+
+        # Register route for testing
+        self.app.add_url_rule('/web/projects/overviews',
+                              view_func=view.project_overviews,
+                              methods=['GET'])
+
+        response = await self.client.get("/web/projects/overviews?count_fields=no_of_test_runs")
+        data = await response.get_json()
+        self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
+        self.assertEqual(data, {'error': 'Internal error in CMS'})
+
+    @patch('apis.web.projects_api_view.SqlInterface')
     async def test_project_overviews_with_test_runs(self, mock_sql_interface):
         """Test count_fields including test runs"""
         mock_db = MagicMock()
@@ -420,6 +441,23 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
             response = await client.get("/web/projects/details/1")
             self.assertEqual(response.status_code, http.HTTPStatus.OK)
             self.assertEqual(await response.get_json(), returned_response_body)
+
+    @patch('apis.web.projects_api_view.SqlInterface')
+    async def test_project_details_sql_error(self, mock_sql_interface):
+        mock_db = MagicMock()
+        mock_db.projects.get_project_details.return_value = None
+        mock_sql_interface.return_value = mock_db
+
+        view = ProjectsApiView(self.mock_logger, self.mock_state_object)
+
+        self.app.add_url_rule('/web/projects/details/<project_id>',
+                              view_func=view.project_details,
+                              methods=['GET'])
+
+        async with self.client as client:
+            response = await client.get("/web/projects/details/1")
+            self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
+            self.assertEqual(await response.get_json(), {})
 
     @patch('apis.web.projects_api_view.SqlInterface')
     async def test_project_details_no_details(self, mock_sql_interface):
