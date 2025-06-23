@@ -1,4 +1,5 @@
 import http
+import json
 import unittest
 from unittest.mock import AsyncMock, patch, MagicMock
 import quart
@@ -15,11 +16,6 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.mock_state_object = MagicMock()
 
         self.app = quart.Quart(__name__)
-
-        '''
-        self.mock_db = MagicMock(spec=SqliteInterface)
-        self.view = ProjectApiView(self.mock_logger, self.mock_db)
-        '''
 
         # Patch configuration
         patcher = patch.object(
@@ -134,22 +130,31 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         view = ProjectsApiView(self.mock_logger, self.mock_state_object)
 
         # Register route for testing
-        self.app.add_url_rule('/web/project/overviews',
+        self.app.add_url_rule('/web/projects/overviews',
                               view_func=view.project_overviews,
                               methods=['GET'])
 
-        response = await self.client.get("/web/project/overviews?count_fields=no_of_milestones")
+        response = await self.client.get("/web/projects/overviews?count_fields=no_of_milestones")
         data = await response.get_json()
-        print(f"[DEBUG] Data = {data}")
         self.assertEqual(response.status_code, http.HTTPStatus.OK)
         self.assertEqual(data["projects"], [{"id": 1, "name": "Test Project", "no_of_milestones": 5}])
 
     @patch('apis.web.projects_api_view.SqlInterface')
     async def test_project_overviews_with_test_runs(self, mock_sql_interface):
         """Test count_fields including test runs"""
-        self.mock_db.get_projects_details.return_value = [(1, "Test Project")]
-        self.mock_db.get_no_of_testruns_for_project.return_value = 3
-        response = await self.client.get("/project/overviews?count_fields=no_of_test_runs")
+        mock_db = MagicMock()
+        mock_db.projects.get_projects_details.return_value = [(1, "Test Project")]
+        mock_sql_interface.return_value = mock_db
+        mock_db.projects.get_no_of_testruns_for_project.return_value = 3
+
+        view = ProjectsApiView(self.mock_logger, self.mock_state_object)
+
+        # Register route for testing
+        self.app.add_url_rule('/web/projects/overviews',
+                              view_func=view.project_overviews,
+                              methods=['GET'])
+
+        response = await self.client.get("/web/projects/overviews?count_fields=no_of_test_runs")
         data = await response.get_json()
         self.assertEqual(response.status_code, http.HTTPStatus.OK)
         self.assertEqual(data["projects"], [{"id": 1, "name": "Test Project", "no_of_test_runs": 3}])
@@ -157,8 +162,19 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
     @patch('apis.web.projects_api_view.SqlInterface')
     async def test_add_project_success(self, mock_sql_interface):
         """Test successful project creation."""
-        self.mock_db.project_name_exists = MagicMock(return_value=False)
-        self.mock_db.add_project = MagicMock(return_value=42)
+        mock_db = MagicMock()
+        mock_db.projects.project_name_exists.return_value = False
+        mock_db.projects.add_project.return_value = 42
+        mock_sql_interface.return_value = mock_db
+        # mock_db.projects.get_no_of_testruns_for_project.return_value = 3
+
+        view = ProjectsApiView(self.mock_logger, self.mock_state_object)
+
+        # Register route for testing
+
+        self.app.add_url_rule('/web/projects/add',
+                              view_func=view.add_project,
+                              methods=['POST'])
 
         test_json_body: dict = {
             "name": "Project Delta_4",
@@ -171,18 +187,15 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         mock_call_api_post.return_value = MagicMock(
             status_code=http.HTTPStatus.OK,
             json=AsyncMock(return_value={"status": 1, "token": "mock_token"}))
-        self.view._call_api_post = mock_call_api_post
-
-        self.mock_db.project_name_exists.return_value = False
+        view._call_api_post = mock_call_api_post
 
         async with self.client as client:
-            response = await client.post('/project/add',
+            response = await client.post('/web/projects/add',
                                          json=test_json_body)
-
+            data = await response.get_json()
             # Assert response status
             self.assertEqual(response.status_code, http.HTTPStatus.OK)
-            self.assertEqual(json.loads(await response.get_data()),
-                             {"project_id": 42})
+            self.assertEqual(data, {"project_id": 42})
 
     '''
     async def test_add_project_name_exists(self):
