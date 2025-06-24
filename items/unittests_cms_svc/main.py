@@ -11,7 +11,7 @@ from test_sql_sql_testcases import TestSqlTestcases
 from test_sql_sql_interface import TestSqlInterface
 from test_extended_sql_interface import TestExtendedSqlInterface
 from test_create_admin_routes import TestCreateAdminRoutes
-
+from test_apis_testcase_custom_fields_api_view import TestApisTestcaseCustomFieldsApiView
 
 if __name__ == "__main__":
     unittest.main()
