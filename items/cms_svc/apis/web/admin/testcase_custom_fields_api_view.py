@@ -74,15 +74,14 @@ class TestcaseCustomFieldsApiView(BaseView):
             return quart.Response(json.dumps(response_json),
                                   status=http.HTTPStatus.OK,
                                   content_type="application/json")
-
-        if request_msg.body.projects:
+        if isinstance(request_msg.body.projects, list):
             if len(request_msg.body.projects) \
                     != len(set(request_msg.body.projects)):
                 response_json = {
                     'status': 0,
                     'error': "Duplicate projects"}
                 return quart.Response(json.dumps(response_json),
-                                      status=http.HTTPStatus.OK,
+                                      status=http.HTTPStatus.BAD_REQUEST,
                                       content_type="application/json")
 
         custom_field_id: int = self._db.tc_custom_fields.add_custom_field(
