@@ -16,20 +16,15 @@ limitations under the License.
 import asyncio
 import logging
 import os
-import typing
 from base_application import BaseApplication
-from base_sqlite_interface import SqliteInterfaceException
 from configuration_layout import CONFIGURATION_LAYOUT
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
                            LOGGING_DEFAULT_LOG_LEVEL, \
                            LOGGING_LOG_FORMAT_STRING
-from sqlite_interface import SqliteInterface
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
-from apis import health_api
-from apis import project_api
-from apis import testcases_api
+from apis.web import create_web_routes
 from state_object import StateObject
 
 
@@ -39,7 +34,6 @@ class Application(BaseApplication):
     def __init__(self, quart_instance):
         super().__init__()
         self._quart_instance = quart_instance
-        self._db: typing.Optional[SqliteInterface] = None
         self._state_object: StateObject = StateObject()
 
         self._logger = logging.getLogger(__name__)
@@ -68,21 +62,9 @@ class Application(BaseApplication):
                           Configuration().logging_log_level)
         self._logger.setLevel(Configuration().logging_log_level)
 
-        # Open databases.
-        if not self._open_database():
-            return False
-
-        health_blueprint = health_api.create_blueprint(self._logger,
-                                                       self._state_object)
-        self._quart_instance.register_blueprint(health_blueprint)
-
-        project_blueprint = project_api.create_blueprint(self._logger,
-                                                       self._db)
-        self._quart_instance.register_blueprint(project_blueprint)
-
-        testcases_blueprint = testcases_api.create_blueprint(self._logger,
-                                                             self._db)
-        self._quart_instance.register_blueprint(testcases_blueprint)
+        self._quart_instance.register_blueprint(
+            create_web_routes(self._logger, self._state_object),
+            url_prefix="/web")
 
         return True
 
@@ -139,25 +121,3 @@ class Application(BaseApplication):
                           Configuration().backend_db_filename)
 
         return True
-
-    def _open_database(self) -> bool:
-        self._logger.info("Opening internal database...")
-
-        status: bool = False
-
-        filename: str = Configuration().backend_db_filename
-
-        self._db = SqliteInterface(self._logger, filename, self._state_object)
-
-        try:
-            self._db.open()
-
-        except SqliteInterfaceException as ex:
-            self._logger.critical("Unable to open '%s', reason: %s",
-                                  filename, str(ex))
-
-        else:
-            self._logger.info("Database '%s' opened successful", filename)
-            status = True
-
-        return status

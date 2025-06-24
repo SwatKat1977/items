@@ -19,21 +19,23 @@ import logging
 import quart
 from base_view import ApiResponse, BaseView, validate_json
 import interfaces.cms.testcases as json_schemas
-from sqlite_interface import SqliteInterface
+from sql.sql_interface import SqlInterface
+from state_object import StateObject
 
 
 class TestCasesApiView(BaseView):
     __slots__ = ['_logger']
 
-    def __init__(self, logger: logging.Logger, db: SqliteInterface) -> None:
+    def __init__(self, logger: logging.Logger,
+                 state_object: StateObject) -> None:
         self._logger = logger.getChild(__name__)
-        self._db: SqliteInterface = db
+        self._db: SqlInterface = SqlInterface(logger, state_object)
 
     @validate_json(json_schemas.SCHEMA_TESTCASES_DETAILS_REQUEST)
     async def testcase_details(self, request_msg: ApiResponse):
         project_id: int = request_msg.body.project_id
 
-        if not self._db.is_valid_project_id(project_id):
+        if not self._db.projects.is_valid_project_id(project_id):
             response_json = {
                 'status': 0,
                 'error': "Invalid project id"
@@ -42,7 +44,7 @@ class TestCasesApiView(BaseView):
                                   status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
                                   content_type="application/json")
 
-        test_suites: list = self._db.get_testcase_overviews(project_id)
+        test_suites: list = self._db.testcases.get_testcase_overviews(project_id)
 
         test_suites = [] if not test_suites else test_suites
         return quart.Response(json.dumps(test_suites),
@@ -53,7 +55,16 @@ class TestCasesApiView(BaseView):
     async def testcase_get_case(self, request_msg: ApiResponse, case_id: int):
         project_id: int = request_msg.body.project_id
 
-        case_details: dict = self._db.get_testcase(case_id, project_id)
+        case_details: dict = self._db.testcases.get_testcase(case_id, project_id)
+
+        if case_details is None:
+            response_json = {
+                'status': 0,
+                'error': "Internal error"
+            }
+            return quart.Response(json.dumps(response_json),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
 
         return quart.Response(json.dumps(case_details),
                               status=http.HTTPStatus.OK,

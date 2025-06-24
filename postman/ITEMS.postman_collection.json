@@ -13,6 +13,65 @@
 					"name": "Project API",
 					"item": [
 						{
+							"name": "Modify Project",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Project Gamma\",\n    \"announcement\": \"This is test project Gamma\",\n    \"announcement_on_overview\": false\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{GATEWAY_SVC_URL}}/project/modify/3",
+									"host": [
+										"{{GATEWAY_SVC_URL}}"
+									],
+									"path": [
+										"project",
+										"modify",
+										"3"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Project Details",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Project Gamma\",\n    \"announcement\": \"This is test project Gamma\",\n    \"announcement_on_overview\": false\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{GATEWAY_SVC_URL}}/project/details/3",
+									"host": [
+										"{{GATEWAY_SVC_URL}}"
+									],
+									"path": [
+										"project",
+										"details",
+										"3"
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "Projects Overviews",
 							"request": {
 								"method": "GET",
@@ -208,12 +267,13 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/project/overviews?count_fields=no_of_test_runs",
+									"raw": "{{CMS_SVC_URL}}/web/projects/overviews?count_fields=no_of_test_runs",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
-										"project",
+										"web",
+										"projects",
 										"overviews"
 									],
 									"query": [
@@ -233,7 +293,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"Project Delta_4\",\n    \"announcement\": \"hello world!\",\n    \"announcement_on_overview\": true\n}",
+									"raw": "{\n    \"name\": \"Project Beta_30000\",\n    \"announcement\": \"hello world!\",\n    \"announcement_on_overview\": true\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -241,13 +301,43 @@
 									}
 								},
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/project/add",
+									"raw": "{{CMS_SVC_URL}}/web/projects/add",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
-										"project",
+										"web",
+										"projects",
 										"add"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Modify Project",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Epsilon Project\",\n    \"announcement\": \"This is a test for Epsilon\",\n    \"announcement_on_overview\": false\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{CMS_SVC_URL}}/web/projects/modify/3",
+									"host": [
+										"{{CMS_SVC_URL}}"
+									],
+									"path": [
+										"web",
+										"projects",
+										"modify",
+										"3"
 									]
 								}
 							},
@@ -268,12 +358,13 @@
 									}
 								},
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/project/delete/8?hard_delete=false",
+									"raw": "{{CMS_SVC_URL}}/web/projects/delete/8?hard_delete=false",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
-										"project",
+										"web",
+										"projects",
 										"delete",
 										"8"
 									],
@@ -282,6 +373,26 @@
 											"key": "hard_delete",
 											"value": "false"
 										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Project Details",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{CMS_SVC_URL}}/web/projects/details/1",
+									"host": [
+										"{{CMS_SVC_URL}}"
+									],
+									"path": [
+										"web",
+										"projects",
+										"details",
+										"1"
 									]
 								}
 							},
@@ -307,11 +418,12 @@
 									}
 								},
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/testcases/details",
+									"raw": "{{CMS_SVC_URL}}/web/testcases/details",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
+										"web",
 										"testcases",
 										"details"
 									]
@@ -334,14 +446,95 @@
 									}
 								},
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/testcases/get_case/3",
+									"raw": "{{CMS_SVC_URL}}/web/testcases/get_case/3",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
+										"web",
 										"testcases",
 										"get_case",
 										"3"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Test Case Custom Fields",
+					"item": [
+						{
+							"name": "Move Custom Test case field",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"url": {
+									"raw": "{{CMS_SVC_URL}}/web/admin/testcase_custom_fields/testcase_custom_fields/2/down",
+									"host": [
+										"{{CMS_SVC_URL}}"
+									],
+									"path": [
+										"web",
+										"admin",
+										"testcase_custom_fields",
+										"testcase_custom_fields",
+										"2",
+										"down"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Add Custom Test case Field",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": " {\n    \"field_name\": \"new type string\",\n    \"description\": \"default\",\n    \"system_name\": \"new_system_name\",\n    \"field_type\": \"String\",\n    \"enabled\": true,\n    \"is_required\": false,\n    \"default_value\": \"\",\n    \"applies_to_all_projects\": false,\n    \"projects\": [\n          \"Project Delta_1\",\n          \"Project Beta_2\"\n    ]\n}\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{CMS_SVC_URL}}/web/admin/testcase_custom_fields/testcase_custom_fields",
+									"host": [
+										"{{CMS_SVC_URL}}"
+									],
+									"path": [
+										"web",
+										"admin",
+										"testcase_custom_fields",
+										"testcase_custom_fields"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Health",
+					"item": [
+						{
+							"name": "Status",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{CMS_SVC_URL}}/web/health/status",
+									"host": [
+										"{{CMS_SVC_URL}}"
+									],
+									"path": [
+										"web",
+										"health",
+										"status"
 									]
 								}
 							},
