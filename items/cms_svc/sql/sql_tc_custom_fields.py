@@ -184,6 +184,31 @@ class SqlTCCustomFields(ExtendedSqlInterface):
 
         return None if row is None else bool(row)
 
+    def system_name_exists(self, system_name: str) \
+            -> typing.Optional[bool]:
+        """
+        Check if a system name exists in the TC_CUSTOM_FIELDS table.
+
+        Case-insensitive match.
+
+        Parameters:
+            system_name (str): The name to check.
+
+        Returns:
+            bool: True if exists, False otherwise.
+        """
+        sql: str = (f"SELECT 1 FROM {cms_tables.TC_CUSTOM_FIELDS} "
+                    "WHERE LOWER(system_name) = LOWER(?) "
+                    "LIMIT 1")
+        row = self.safe_query(
+            sql,
+            (system_name,),
+            "Query failed for custom_field_system_name_exists",
+            logging.CRITICAL,
+            fetch_one=True)
+
+        return None if row is None else bool(row)
+
     def add_custom_field(self,
                          field_name: str,
                          description: str,

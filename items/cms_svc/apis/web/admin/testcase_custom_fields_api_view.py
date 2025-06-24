@@ -57,7 +57,7 @@ class TestcaseCustomFieldsApiView(BaseView):
 
         # Check to see if the system name is already in use, None means an
         # internal error and True means it already exists/
-        system_name_exists = self._db.tc_custom_fields.custom_field_name_exists(
+        system_name_exists = self._db.tc_custom_fields.system_name_exists(
             request_msg.body.system_name)
         if system_name_exists is None:
             response_json = {
