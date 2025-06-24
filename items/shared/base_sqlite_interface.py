@@ -77,7 +77,8 @@ class BaseSqliteInterface:
                 "Database file format is not valid"
             )
 
-    def _get_connection(self) -> sqlite3.Connection:
+    def _get_connection(self,
+                        validate: bool = True) -> sqlite3.Connection:
         """
         Create a fresh SQLite connection for the current operation.
 
@@ -87,7 +88,9 @@ class BaseSqliteInterface:
         Raises:
             SqliteInterfaceException: If database is invalid or missing.
         """
-        self.ensure_valid()
+        if validate:
+            self.ensure_valid()
+
         return sqlite3.connect(
             self._db_filename,
             check_same_thread=False,
@@ -106,7 +109,7 @@ class BaseSqliteInterface:
         Raises:
             SqliteInterfaceException: If table creation fails.
         """
-        with self._lock, self._get_connection() as conn:
+        with self._lock, self._get_connection(validate=False) as conn:
             try:
                 conn.execute(schema)
             except sqlite3.Error as ex:

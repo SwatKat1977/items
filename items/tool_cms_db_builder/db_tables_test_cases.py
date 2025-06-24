@@ -77,9 +77,9 @@ CREATE TABLE {cms_db_tables.TC_CUSTOM_FIELD_TYPES} (
 TABLE_SQL_TC_CUSTOM_FIELDS: str = f"""
 CREATE TABLE {cms_db_tables.TC_CUSTOM_FIELDS} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    field_name TEXT NOT NULL,
+    field_name TEXT NOT NULL UNIQUE,
     description TEXT NOT NULL DEFAULT '',
-    system_name TEXT NOT NULL,
+    system_name TEXT NOT NULL UNIQUE,
     field_type_id INTEGER NOT NULL,
     entry_type TEXT NOT NULL CHECK(entry_type IN ('system', 'user')),
     enabled BOOLEAN NOT NULL,
@@ -87,7 +87,6 @@ CREATE TABLE {cms_db_tables.TC_CUSTOM_FIELDS} (
     is_required BOOLEAN NOT NULL DEFAULT 0,
     default_value TEXT NOT NULL DEFAULT '',
     applies_to_all_projects BOOLEAN NOT NULL DEFAULT 0,
-    UNIQUE (field_name, system_name),
     FOREIGN KEY (field_type_id) REFERENCES {cms_db_tables.TC_CUSTOM_FIELD_TYPES}(id)
 );
 """

@@ -53,16 +53,7 @@ def open_db(logger: logging.Logger, filename: str) -> BaseSqliteInterface:
         return None
 
     db = BaseSqliteInterface(filename)
-
-    try:
-        db.open(create_mode=True)
-
-    except SqliteInterfaceException as ex:
-        logger.critical(ex)
-        db = None
-
-    else:
-        logger.info("Database '%s' opened successful", filename)
+    logger.info("Database '%s' opened successful", filename)
 
     return db
 
