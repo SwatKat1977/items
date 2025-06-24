@@ -213,13 +213,6 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
             "announcement_on_overview": True
         }
 
-        # Mock _call_api_post to simulate a valid API call response
-        mock_call_api_post = AsyncMock()
-        mock_call_api_post.return_value = MagicMock(
-            status_code=http.HTTPStatus.BAD_REQUEST,
-            json=AsyncMock(return_value={"status": 0, "error_msg": "Project name already exists"}))
-        view._call_api_post = mock_call_api_post
-
         async with self.client as client:
             response = await client.post('/web/projects/add',
                                          json=test_json_body)
