@@ -71,6 +71,14 @@ class TestSqlSqlTCCustomFields(unittest.TestCase):
         self.iface.safe_query = MagicMock(return_value=(1,))
         self.assertTrue(self.iface.custom_field_name_exists("x"))
 
+    def test_system_name_exists_none(self):
+        self.iface.safe_query = MagicMock(return_value=None)
+        self.assertIsNone(self.iface.system_name_exists("x"))
+
+    def test_system_name_exists_true(self):
+        self.iface.safe_query = MagicMock(return_value=(1,))
+        self.assertTrue(self.iface.system_name_exists("x"))
+
     # __count_custom_fields
     def test_count_none(self):
         self.iface.safe_query = MagicMock(return_value=None)
