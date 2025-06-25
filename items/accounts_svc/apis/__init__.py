@@ -20,7 +20,19 @@ from .authentication_api import create_blueprint as create_auth_bp
 
 
 def create_routes(logger: logging.Logger, state: StateObject) -> quart.Blueprint:
+    """
+    Create and configure the API route blueprint for the application.
 
+    This function initializes a Quart blueprint for the API routes and registers
+    sub-blueprints, such as the authentication API, under appropriate URL prefixes.
+
+    Args:
+        logger (logging.Logger): Logger instance for logging within the route views.
+        state (StateObject): Shared application state object passed to route views.
+
+    Returns:
+        quart.Blueprint: The configured API blueprint with registered sub-routes.
+    """
     api_bp = quart.Blueprint("api_routes", __name__)
 
     api_bp.register_blueprint(create_auth_bp(logger, state), url_prefix="/authentication")

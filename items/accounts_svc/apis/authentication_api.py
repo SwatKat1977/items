@@ -42,6 +42,7 @@ def create_blueprint(logger: logging.Logger,
 
     logger.debug("=> /authentication/basic [POST]")
 
+    # pylint: disable=no-value-for-parameter
     @blueprint.route('/basic', methods=['POST'])
     async def authenticate_basic_request():
         return await view.authenticate_basic()
