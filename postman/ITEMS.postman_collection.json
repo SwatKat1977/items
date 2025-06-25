@@ -7,6 +7,66 @@
 	},
 	"item": [
 		{
+			"name": "Accounts Service",
+			"item": [
+				{
+					"name": "Authentication",
+					"item": [
+						{
+							"name": "Authentication : Basic",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email_address\": \"admin@localhost\",\n    \"password\": \"item_admin_2025\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{ACCOUNTS_SVC_URL}}/authentication/basic",
+									"host": [
+										"{{ACCOUNTS_SVC_URL}}"
+									],
+									"path": [
+										"authentication",
+										"basic"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Health",
+					"item": [
+						{
+							"name": "Health Status",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{ACCOUNTS_SVC_URL}}/health/status",
+									"host": [
+										"{{ACCOUNTS_SVC_URL}}"
+									],
+									"path": [
+										"health",
+										"status"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
 			"name": "Gateway Service",
 			"item": [
 				{

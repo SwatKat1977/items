@@ -16,22 +16,35 @@ limitations under the License.
 from http import HTTPStatus
 import json
 import logging
-from quart import request, Response
+from quart import Response
 from account_logon_type import AccountLogonType
 import interfaces.accounts.basic_authentication as basic_auth
-from base_view import ApiResponse, BaseView
-from sqlite_interface import SqliteInterface
+from base_view import ApiResponse, BaseView, validate_json
+from state_object import StateObject
+from sql.sqlite_interface import SqliteInterface
 
 
-class BasicAuthenticationApiView(BaseView):
-    __slots__ = ['_logger', '_sql_interface']
+class AuthenticationApiView(BaseView):
+    """
+    Provides API endpoints related to user authentication for the service.
 
-    def __init__(self, sql_interface : SqliteInterface,
-                 logger : logging.Logger) -> None:
-        self._sql_interface = sql_interface
+    This class handles authentication logic including validating credentials
+    for different authentication mechanisms such as basic authentication.
+    It uses the provided logger for logging and an instance of SqliteInterface
+    to interact with the underlying SQLite database.
+
+    Attributes:
+        _logger (logging.Logger): Logger instance for recording operational details.
+        _db (SqliteInterface): Interface to handle database interactions.
+    """
+
+    def __init__(self, logger: logging.Logger,
+                 state_object: StateObject) -> None:
         self._logger = logger.getChild(__name__)
+        self._db: SqliteInterface = SqliteInterface(logger, state_object)
 
-    async def authenticate(self):
+    @validate_json(basic_auth.SCHEMA_BASIC_AUTHENTICATE_REQUEST)
+    async def authenticate_basic(self, request_msg: ApiResponse):
         """
         Handles authentication requests for basic authentication.
 
@@ -79,24 +92,11 @@ class BasicAuthenticationApiView(BaseView):
             - The method uses `self._sql_interface` for database interactions.
             - Relies on `basic_auth.SCHEMA_BASIC_AUTHENTICATE_REQUEST` for request validation.
         """
+        query_result = self._db.valid_user_to_logon(
+            request_msg.body.email_address, AccountLogonType.BASIC.value)
+        user_id, err_str = query_result
 
-        response: ApiResponse = self._validate_json_body(
-            await request.get_data(),
-            basic_auth.SCHEMA_BASIC_AUTHENTICATE_REQUEST)
-
-        if response.status_code != HTTPStatus.OK:
-            response_json = {
-                'status': 0,
-                'error': response.exception_msg
-            }
-            return Response(json.dumps(response_json),
-                            status=HTTPStatus.INTERNAL_SERVER_ERROR,
-                            content_type="application/json")
-
-        query_result = self._sql_interface.valid_user_to_logon(
-            response.body.email_address, AccountLogonType.BASIC.value)
-
-        if not query_result:
+        if user_id is None:
             response_json = {
                 'status': 0,
                 'error': "Internal server error"
@@ -105,11 +105,9 @@ class BasicAuthenticationApiView(BaseView):
                             status=HTTPStatus.INTERNAL_SERVER_ERROR,
                             content_type="application/json")
 
-        user_id, err_str = query_result
-
         if user_id:
-            status, err_str = self._sql_interface.basic_user_authenticate(
-                user_id, response.body.password)
+            status, err_str = self._db.basic_user_authenticate(
+                user_id, request_msg.body.password)
 
             response_json = {
                 'status':  1 if status else 0,

@@ -42,10 +42,10 @@ def create_blueprint(logger: logging.Logger,
 
     blueprint = Blueprint('health_api', __name__)
 
-    logger.info("Registering Health Status API:")
-    logger.info("=> health/status [GET]")
+    logger.debug("Registering Health Status API:")
+    logger.debug("=> health/status [GET]")
 
-    @blueprint.route('/health/status', methods=['GET'])
+    @blueprint.route('/status', methods=['GET'])
     async def authenticate_request():
         return await view.health()
 
