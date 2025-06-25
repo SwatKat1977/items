@@ -17,9 +17,7 @@ from hashlib import sha256
 import logging
 from typing import Optional, Tuple
 from account_status import AccountStatus
-from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
 from state_object import StateObject
-from service_health_enums import ComponentDegradationLevel
 from sql.extended_sql_interface import ExtendedSqlInterface
 
 
