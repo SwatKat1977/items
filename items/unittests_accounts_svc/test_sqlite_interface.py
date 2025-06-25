@@ -80,7 +80,7 @@ class TestSqliteInterface(unittest.TestCase):
 
         user_id, error_str = interface.valid_user_to_logon('test@example.com', 2)
 
-        self.assertEqual(user_id, None)
+        self.assertEqual(user_id, 0)
         self.assertEqual(error_str, 'Incorrect logon type')
 
     def test_valid_user_to_logon_account_not_active(self):
@@ -93,7 +93,7 @@ class TestSqliteInterface(unittest.TestCase):
 
         user_id, error_str = interface.valid_user_to_logon('test@example.com', 2)
 
-        self.assertEqual(user_id, None)
+        self.assertEqual(user_id, 0)
         self.assertEqual(error_str, 'Account is not active')
 
     def test_valid_user_to_logon_unknown_email(self):
@@ -106,7 +106,7 @@ class TestSqliteInterface(unittest.TestCase):
 
         user_id, error_str = interface.valid_user_to_logon('unknown@example.com', 2)
 
-        self.assertIsNone(user_id)
+        self.assertEqual(user_id, 0)
         self.assertEqual(error_str, "Username/password don't match")
 
     def test_valid_user_to_logon_query_failed(self):
