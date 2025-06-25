@@ -4,9 +4,8 @@ ITEMS is a web-based test management tool written in Python that can be used by 
 
 ## News  
 
-### 24th June 2025
+### 25th June 2025
 Due to ongoing changes main is broken:
-- Accounts service won't start due to reworking of SQL interface to make it make it more thread-safe.
 - Gateway will not communicate with accounts or CMS service.
 
 The issues are currently being addressed.

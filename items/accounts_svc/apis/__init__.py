@@ -17,6 +17,7 @@ import logging
 import quart
 from state_object import StateObject
 from .authentication_api import create_blueprint as create_auth_bp
+from .health_api import create_blueprint as create_health_bp
 
 
 def create_routes(logger: logging.Logger, state: StateObject) -> quart.Blueprint:
@@ -36,5 +37,6 @@ def create_routes(logger: logging.Logger, state: StateObject) -> quart.Blueprint
     api_bp = quart.Blueprint("api_routes", __name__)
 
     api_bp.register_blueprint(create_auth_bp(logger, state), url_prefix="/authentication")
+    api_bp.register_blueprint(create_health_bp(logger, state), url_prefix="/health")
 
     return api_bp
