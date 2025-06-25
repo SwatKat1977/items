@@ -166,24 +166,26 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.mock_logger_instance.info.assert_any_call("[Backend]")
         self.mock_logger_instance.info.assert_any_call("=> Database filename : %s", "mock_db.sqlite")
 
-    '''
     @patch.dict(os.environ, {"ITEMS_ACCOUNTS_SVC_CONFIG_FILE": "config_file_path"})
     @patch.dict(os.environ, {"ITEMS_ACCOUNTS_SVC_CONFIG_FILE_REQUIRED": "1"})
-    def test_manage_configuration_process_config_exception(self):
+    @patch("application.Configuration")
+    def test_manage_configuration_process_config_exception(self, mock_configuration_class):
         """Test _manage_configuration when Configuration.process_config throws ValueError."""
+
+        # Mock config instance and its properties
+        mock_config = MagicMock()
+        mock_config.logging_log_level = "DEBUG"
+        mock_config.backend_db_filename = "mock_db.sqlite"
+        mock_config.process_config = MagicMock(side_effect=ValueError("Test config error"))
+        mock_configuration_class.return_value = mock_config
+
         application = Application(self.mock_quart_instance)
         application._logger = self.mock_logger_instance
 
-        self.mock_config_instance.configure = MagicMock()
-        self.mock_config_instance.process_config = MagicMock(side_effect=ValueError("Test config error"))
-
-        result = self.application._manage_configuration()
+        result = application._manage_configuration()
 
         self.assertFalse(result, "Configuration should fail if process_config raises an exception")
-        self.mock_config_instance.configure.assert_called_once_with(CONFIGURATION_LAYOUT, "config_file_path", True)
-        self.mock_config_instance.process_config.assert_called_once()
         self.mock_logger_instance.critical.assert_called_with("Configuration error : %s", "Test config error")
-    '''
 
     async def test_main_loop_execution(self):
         """Test that _main_loop executes properly with asyncio.sleep."""
