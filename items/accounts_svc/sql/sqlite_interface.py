@@ -63,7 +63,6 @@ class SqliteInterface(ExtendedSqlInterface):
             return None, "Internal error"
 
         if not row:
-            error_str = "Username/password don't match"
             return 0, "Username/password don't match"
 
         user_id, account_logon_type, account_status = row
