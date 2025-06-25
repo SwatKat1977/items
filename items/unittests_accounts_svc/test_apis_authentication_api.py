@@ -3,9 +3,10 @@ from unittest.mock import MagicMock
 from http import HTTPStatus
 from quart import Quart
 from base_view import ApiResponse
-from apis.basic_authentication_api_view import BasicAuthenticationApiView as View
+from apis.authentication_api_view import AuthenticationApiView as View
 
-class TestBasicAuthAPI(unittest.IsolatedAsyncioTestCase):
+
+class TestAuthenticationAPI(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         """Set up Quart test client and mock dependencies."""
         self.app = Quart(__name__)

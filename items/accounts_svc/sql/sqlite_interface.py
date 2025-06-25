@@ -77,7 +77,7 @@ class SqliteInterface(ExtendedSqlInterface):
         return user_id, error_str
 
     def basic_user_authenticate(self, user_id: int, password: str) -> \
-            Optional[Tuple[bool, str]]:
+            Tuple[bool, str]:
         """
         Authenticate a user using basic authentication (email address and a
         password.
@@ -89,7 +89,6 @@ class SqliteInterface(ExtendedSqlInterface):
         returns:
             tuple : (status, error string)
         """
-
         return_status: bool = False
         return_status_str: str = ""
 
@@ -102,7 +101,7 @@ class SqliteInterface(ExtendedSqlInterface):
                               fetch_one=True)
 
         if row is None:
-            return None
+            return False, "Internal error"
 
         if not row:
             return False, 'Invalid user id'
