@@ -20,9 +20,10 @@ from account_status import AccountStatus
 from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
 from state_object import StateObject
 from service_health_enums import ComponentDegradationLevel
+from sql.extended_sql_interface import ExtendedSqlInterface
 
 
-class SqliteInterface(BaseSqliteInterface):
+class SqliteInterface(ExtendedSqlInterface):
     """
     Interface for interacting with a SQLite database, extending the
     functionality of the `BaseSqliteInterface`. Provides methods for verifying
@@ -33,14 +34,12 @@ class SqliteInterface(BaseSqliteInterface):
         db_file (str): Path to the SQLite database file.
     """
 
-    def __init__(self, logger: logging.Logger, db_file: str,
+    def __init__(self, logger: logging.Logger,
                  state_object: StateObject) -> None:
-        super().__init__(db_file)
-        self._logger = logger.getChild(__name__)
-        self._state_object: StateObject = state_object
+        super().__init__(logger, state_object)
 
     def valid_user_to_logon(self, email_address: str, logon_type: int) \
-            -> Optional[Tuple[Optional[int], str]]:
+            -> Tuple[Optional[int], str]:
         """
         Check to see if a user is able to logon based on email address and the
         logon type.
@@ -57,29 +56,25 @@ class SqliteInterface(BaseSqliteInterface):
                       "FROM user_profile "
                       "WHERE email_address = ?")
 
-        try:
-            rows: Optional[dict] = self.query_with_values(
-                query, (email_address,))
+        row = self.safe_query(query, (email_address,),
+                              "Query failed for basic user auth",
+                              logging.CRITICAL,
+                              fetch_one=True)
 
-        except SqliteInterfaceException as ex:
-            self._logger.critical("Query failed, reason: %s", str(ex))
-            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
-            self._state_object.database_health_state_str = "Fatal SQL failure"
-            return None
+        if row is None:
+            return None, "Internal error"
 
-        if rows:
-            user_id: int = rows[0][0]
-            account_logon_type: int = rows[0][1]
-            account_status: int = rows[0][2]
+        if row:
+            user_id, account_logon_type, account_status = row
 
             if account_logon_type != logon_type:
-                return 0, "Incorrect logon type"
+                return None, "Incorrect logon type"
 
             if account_status != AccountStatus.ACTIVE.value:
-                return 0, "Account not active"
+                return None, "Account is not active"
 
         else:
-            error_str = 'Unknown e-mail address'
+            error_str = "Username/password don't match"
 
         return user_id, error_str
 
@@ -103,20 +98,18 @@ class SqliteInterface(BaseSqliteInterface):
         query: str = ("SELECT password, password_salt FROM user_auth_details "
                       "WHERE user_id = ?")
 
-        try:
-            rows: dict = self.query_with_values(query, (user_id,))
+        row = self.safe_query(query, (user_id,),
+                              "Query failed for basic user auth",
+                              logging.CRITICAL,
+                              fetch_one=True)
 
-        except SqliteInterfaceException as ex:
-            self._logger.critical("Query failed, reason: %s", str(ex))
-            self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
-            self._state_object.database_health_state_str = "Fatal SQL failure"
+        if row is None:
             return None
 
-        if not rows:
-            raise SqliteInterfaceException('Invalid user id')
+        if not row:
+            return False, 'Invalid user id'
 
-        recv_password = rows[0][0]
-        recv_password_salt = rows[0][1]
+        recv_password, recv_password_salt = row
 
         password_hash = f"{password}{recv_password_salt}".encode('UTF-8')
         password_hash = sha256(password_hash).hexdigest()

@@ -15,43 +15,35 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from sqlite_interface import SqliteInterface
-from apis.basic_authentication_api_view import BasicAuthenticationApiView
+from apis.authentication_api_view import AuthenticationApiView
+from state_object import StateObject
 
 
-def create_blueprint(sql_interface: SqliteInterface,
-                     logger: logging.Logger) -> Blueprint:
+def create_blueprint(logger: logging.Logger,
+                     state_object: StateObject) -> Blueprint:
     """
-    Creates and registers a Flask Blueprint for handling basic authentication API routes.
+    Creates and registers a Quart Blueprint for handling authentication.
 
-    This function initializes a `View` object with the provided SQL interface and logger,
-    and then defines an API endpoint for authentication. It registers the route
-    `/basic_auth/authenticate` with the POST method to handle authentication requests.
+    This function initializes a `View` object with the provided logger, and
+    then defines an API endpoints for authentication.
 
     Args:
-        sql_interface (SqliteInterface): An instance of the `SqliteInterface` class used for
-                                         database operations.
         logger (logging.Logger): A logger instance for logging messages.
+        state_object (StateObject): A StateObject instance.
 
     Returns:
         Blueprint: A Flask `Blueprint` object containing the registered route.
-
-    Example:
-        >>> from flask import Flask
-        >>> from your_module import create_blueprint
-        >>> app = Flask(__name__)
-        >>> blueprint = create_blueprint(sql_interface, logger)
-        >>> app.register_blueprint(blueprint)
     """
-    view = BasicAuthenticationApiView(sql_interface, logger)
+    view = AuthenticationApiView(logger, state_object)
 
-    blueprint = Blueprint('basic_auth_api', __name__)
+    blueprint = Blueprint('authentication_api', __name__)
 
-    logger.info("Registering Basic Authentication API:")
-    logger.info("=> basic_auth/authenticate [POST]")
+    logger.debug("Registering Authentication API routes:")
 
-    @blueprint.route('/basic_auth/authenticate', methods=['POST'])
-    async def authenticate_request():
-        return await view.authenticate()
+    logger.debug("=> /authentication/basic [POST]")
+
+    @blueprint.route('/basic', methods=['POST'])
+    async def authenticate_basic_request():
+        return await view.authenticate_basic()
 
     return blueprint

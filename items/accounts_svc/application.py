@@ -16,20 +16,16 @@ limitations under the License.
 import asyncio
 import logging
 import os
-import typing
 from base_application import BaseApplication
 from configuration_layout import CONFIGURATION_LAYOUT
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
                            LOGGING_DEFAULT_LOG_LEVEL, \
                            LOGGING_LOG_FORMAT_STRING
-from sqlite_interface import SqliteInterface
-from base_sqlite_interface import SqliteInterfaceException
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
-from apis import basic_authentication_api as basic_auth_api
-from apis import health_api
 from state_object import StateObject
+from apis import create_routes
 
 
 class Application(BaseApplication):
@@ -38,12 +34,11 @@ class Application(BaseApplication):
     def __init__(self, quart_instance):
         super().__init__()
         self._quart_instance = quart_instance
-        self._db: typing.Optional[SqliteInterface] = None
         self._state_object: StateObject = StateObject()
 
         self._logger = logging.getLogger(__name__)
-        log_format= logging.Formatter(LOGGING_LOG_FORMAT_STRING,
-                                      LOGGING_DATETIME_FORMAT_STRING)
+        log_format = logging.Formatter(LOGGING_LOG_FORMAT_STRING,
+                                       LOGGING_DATETIME_FORMAT_STRING)
         console_stream = logging.StreamHandler()
         console_stream.setFormatter(log_format)
         self._logger.setLevel(LOGGING_DEFAULT_LOG_LEVEL)
@@ -67,17 +62,13 @@ class Application(BaseApplication):
                           Configuration().logging_log_level)
         self._logger.setLevel(Configuration().logging_log_level)
 
-        # Open databases.
-        if not self._open_database():
+        if not os.path.isfile(Configuration().backend_db_filename):
+            self._logger.critical("Configuratuin file '%s' is missing!",
+                                  Configuration().backend_db_filename)
             return False
 
-        basic_auth_blueprint = basic_auth_api.create_blueprint(
-            self._db, self._logger)
-        self._quart_instance.register_blueprint(basic_auth_blueprint)
-
-        health_blueprint = health_api.create_blueprint(self._logger,
-                                                       self._state_object)
-        self._quart_instance.register_blueprint(health_blueprint)
+        self._quart_instance.register_blueprint(
+            create_routes(self._logger, self._state_object))
 
         return True
 
@@ -134,25 +125,3 @@ class Application(BaseApplication):
                           Configuration().backend_db_filename)
 
         return True
-
-    def _open_database(self) -> bool:
-        self._logger.info("Opening internal database...")
-
-        status: bool = False
-
-        filename: str = Configuration().backend_db_filename
-
-        self._db = SqliteInterface(self._logger, filename, self._state_object)
-
-        try:
-            self._db.open()
-
-        except SqliteInterfaceException as ex:
-            self._logger.critical("Unable to open '%s', reason: %s",
-                                  filename, str(ex))
-
-        else:
-            self._logger.info("Database '%s' opened successful", filename)
-            status = True
-
-        return status
