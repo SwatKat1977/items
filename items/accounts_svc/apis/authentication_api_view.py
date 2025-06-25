@@ -19,7 +19,7 @@ import logging
 from quart import request, Response
 from account_logon_type import AccountLogonType
 import interfaces.accounts.basic_authentication as basic_auth
-from base_view import ApiResponse, BaseView
+from base_view import ApiResponse, BaseView, validate_json
 from state_object import StateObject
 from sql.sqlite_interface import SqliteInterface
 
@@ -31,7 +31,8 @@ class AuthenticationApiView(BaseView):
         self._logger = logger.getChild(__name__)
         self._db: SqliteInterface = SqliteInterface(logger, state_object)
 
-    async def authenticate_basic(self):
+    @validate_json(basic_auth.SCHEMA_BASIC_AUTHENTICATE_REQUEST)
+    async def authenticate_basic(self, request_msg: ApiResponse):
         """
         Handles authentication requests for basic authentication.
 
@@ -79,22 +80,8 @@ class AuthenticationApiView(BaseView):
             - The method uses `self._sql_interface` for database interactions.
             - Relies on `basic_auth.SCHEMA_BASIC_AUTHENTICATE_REQUEST` for request validation.
         """
-
-        response: ApiResponse = self._validate_json_body(
-            await request.get_data(),
-            basic_auth.SCHEMA_BASIC_AUTHENTICATE_REQUEST)
-
-        if response.status_code != HTTPStatus.OK:
-            response_json = {
-                'status': 0,
-                'error': response.exception_msg
-            }
-            return Response(json.dumps(response_json),
-                            status=HTTPStatus.INTERNAL_SERVER_ERROR,
-                            content_type="application/json")
-
         query_result = self._db.valid_user_to_logon(
-            response.body.email_address, AccountLogonType.BASIC.value)
+            request_msg.body.email_address, AccountLogonType.BASIC.value)
         user_id, err_str = query_result
 
         if user_id is None:
@@ -108,7 +95,7 @@ class AuthenticationApiView(BaseView):
 
         if user_id:
             status, err_str = self._db.basic_user_authenticate(
-                user_id, response.body.password)
+                user_id, request_msg.body.password)
 
             response_json = {
                 'status':  1 if status else 0,
