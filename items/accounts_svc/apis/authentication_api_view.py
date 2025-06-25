@@ -20,18 +20,18 @@ from quart import request, Response
 from account_logon_type import AccountLogonType
 import interfaces.accounts.basic_authentication as basic_auth
 from base_view import ApiResponse, BaseView
-from sqlite_interface import SqliteInterface
+from state_object import StateObject
+from sql.sqlite_interface import SqliteInterface
 
 
-class BasicAuthenticationApiView(BaseView):
-    __slots__ = ['_logger', '_sql_interface']
+class AuthenticationApiView(BaseView):
 
-    def __init__(self, sql_interface : SqliteInterface,
-                 logger : logging.Logger) -> None:
-        self._sql_interface = sql_interface
+    def __init__(self, logger: logging.Logger,
+                 state_object: StateObject) -> None:
         self._logger = logger.getChild(__name__)
+        self._db: SqliteInterface = SqliteInterface(logger, state_object)
 
-    async def authenticate(self):
+    async def authenticate_basic(self):
         """
         Handles authentication requests for basic authentication.
 
@@ -93,10 +93,11 @@ class BasicAuthenticationApiView(BaseView):
                             status=HTTPStatus.INTERNAL_SERVER_ERROR,
                             content_type="application/json")
 
-        query_result = self._sql_interface.valid_user_to_logon(
+        query_result = self._db.valid_user_to_logon(
             response.body.email_address, AccountLogonType.BASIC.value)
+        user_id, err_str = query_result
 
-        if not query_result:
+        if not user_id and err_str == 'Internal error' :
             response_json = {
                 'status': 0,
                 'error': "Internal server error"
@@ -105,10 +106,8 @@ class BasicAuthenticationApiView(BaseView):
                             status=HTTPStatus.INTERNAL_SERVER_ERROR,
                             content_type="application/json")
 
-        user_id, err_str = query_result
-
         if user_id:
-            status, err_str = self._sql_interface.basic_user_authenticate(
+            status, err_str = self._db.basic_user_authenticate(
                 user_id, response.body.password)
 
             response_json = {
