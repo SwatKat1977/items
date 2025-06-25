@@ -16,21 +16,13 @@ limitations under the License.
 import logging
 import quart
 from state_object import StateObject
+from .authentication_api import create_blueprint as create_auth_bp
 
 
 def create_routes(logger: logging.Logger, state: StateObject) -> quart.Blueprint:
-    from .authentication_api import create_blueprint as create_auth_bp
 
-    basic_auth_blueprint = create_auth_bp(logger)
-    self._quart_instance.register_blueprint(basic_auth_blueprint)
+    api_bp = quart.Blueprint("api_routes", __name__)
 
-    health_blueprint = health_api.create_blueprint(self._logger,
-                                                   self._state_object)
-    self._quart_instance.register_blueprint(health_blueprint)
+    api_bp.register_blueprint(create_auth_bp(logger, state), url_prefix="/authentication")
 
-
-
-
-    admin_bp = quart.Blueprint("admin_routes", __name__)
-    admin_bp.register_blueprint(create_cf_bp(logger, state), url_prefix="/testcase_custom_fields")
-    return admin_bp
+    return api_bp

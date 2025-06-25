@@ -24,15 +24,43 @@ import service_health_enums as health_enums
 
 
 class HealthApiView(BaseView):
+    """
+    A view that provides health check information for the application.
+
+    This includes the health status of core components like the database and microservices,
+    system uptime, and application version.
+
+    Attributes:
+        _logger (logging.Logger): Logger instance for recording events.
+        _state_object (StateObject): Shared state object containing health and version info.
+    """
     __slots__ = ['_logger']
 
     def __init__(self, logger: logging.Logger,
                  state_object: StateObject) -> None:
+        """
+        Initializes the HealthApiView with logging and application state.
+
+        Args:
+            logger (logging.Logger): Logger for emitting structured health
+                                     check logs.
+            state_object (StateObject): Application-wide state for tracking
+                                        health, startup time, etc.
+        """
         self._logger = logger.getChild(__name__)
         self._state_object = state_object
 
     async def health(self):
+        """
+        Performs a health check and returns a JSON response with system status.
 
+        Checks the health of the database and the microservice components,
+        calculates system uptime, and reports any degraded statuses.
+
+        Returns:
+            quart.Response: A JSON-formatted HTTP response indicating the overall health,
+                            dependency statuses, current issues (if any), uptime, and version.
+        """
         uptime: int = int(time.time()) - self._state_object.startup_time
 
         issues: list = []

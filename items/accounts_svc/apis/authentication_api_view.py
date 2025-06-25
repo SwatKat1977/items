@@ -16,7 +16,7 @@ limitations under the License.
 from http import HTTPStatus
 import json
 import logging
-from quart import request, Response
+from quart import Response
 from account_logon_type import AccountLogonType
 import interfaces.accounts.basic_authentication as basic_auth
 from base_view import ApiResponse, BaseView, validate_json
@@ -25,6 +25,18 @@ from sql.sqlite_interface import SqliteInterface
 
 
 class AuthenticationApiView(BaseView):
+    """
+    Provides API endpoints related to user authentication for the service.
+
+    This class handles authentication logic including validating credentials
+    for different authentication mechanisms such as basic authentication.
+    It uses the provided logger for logging and an instance of SqliteInterface
+    to interact with the underlying SQLite database.
+
+    Attributes:
+        _logger (logging.Logger): Logger instance for recording operational details.
+        _db (SqliteInterface): Interface to handle database interactions.
+    """
 
     def __init__(self, logger: logging.Logger,
                  state_object: StateObject) -> None:
