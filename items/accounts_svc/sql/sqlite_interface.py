@@ -62,17 +62,17 @@ class SqliteInterface(ExtendedSqlInterface):
         if row is None:
             return None, "Internal error"
 
-        if row:
-            user_id, account_logon_type, account_status = row
-
-            if account_logon_type != logon_type:
-                return None, "Incorrect logon type"
-
-            if account_status != AccountStatus.ACTIVE.value:
-                return None, "Account is not active"
-
-        else:
+        if not row:
             error_str = "Username/password don't match"
+            return 0, "Username/password don't match"
+
+        user_id, account_logon_type, account_status = row
+
+        if account_logon_type != logon_type:
+            return 0, "Incorrect logon type"
+
+        if account_status != AccountStatus.ACTIVE.value:
+            return 0, "Account is not active"
 
         return user_id, error_str
 
@@ -112,6 +112,7 @@ class SqliteInterface(ExtendedSqlInterface):
         password_hash = sha256(password_hash).hexdigest()
 
         if password_hash != recv_password:
+            return_status = False
             return_status_str = "Username/password don't match"
 
         else:
