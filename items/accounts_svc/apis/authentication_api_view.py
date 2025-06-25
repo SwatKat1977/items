@@ -97,7 +97,7 @@ class AuthenticationApiView(BaseView):
             response.body.email_address, AccountLogonType.BASIC.value)
         user_id, err_str = query_result
 
-        if not user_id and err_str == 'Internal error' :
+        if user_id is None:
             response_json = {
                 'status': 0,
                 'error': "Internal server error"
