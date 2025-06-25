@@ -6,7 +6,8 @@ from threadsafe_configuration import ThreadSafeConfiguration
 
 
 class TestThreadSafeConfiguration(unittest.TestCase):
-    @patch.object(ConfigurationManager, 'get_entry')
+
+    @patch.object(ThreadSafeConfiguration, 'get_entry')
     def test_logging_log_level(self, mock_get_entry):
         """Test logging_log_level property"""
         # Set up mock return value for the get_entry method
@@ -26,7 +27,7 @@ class TestThreadSafeConfiguration(unittest.TestCase):
         # Assert that the logging_log_level property returns the correct value
         self.assertEqual(log_level, "DEBUG")
 
-    @patch.object(ConfigurationManager, 'get_entry')
+    @patch.object(ThreadSafeConfiguration, 'get_entry')
     def test_backend_db_filename(self, mock_get_entry):
         """Test backend_db_filename property"""
         # Set up mock return value for the get_entry method
@@ -46,7 +47,7 @@ class TestThreadSafeConfiguration(unittest.TestCase):
         # Assert that the backend_db_filename property returns the correct value
         self.assertEqual(db_filename, "/path/to/database.db")
 
-    @patch.object(ConfigurationManager, 'get_entry')
+    @patch.object(ThreadSafeConfiguration, 'get_entry')
     def test_logging_log_level_default(self, mock_get_entry):
         """Test logging_log_level property when default value is returned"""
         # Set up mock return value for the get_entry method (no value provided)
@@ -66,7 +67,7 @@ class TestThreadSafeConfiguration(unittest.TestCase):
         # Assert that the logging_log_level property returns the correct value
         self.assertEqual(log_level, "INFO")
 
-    @patch.object(ConfigurationManager, 'get_entry')
+    @patch.object(ThreadSafeConfiguration, 'get_entry')
     def test_backend_db_filename_default(self, mock_get_entry):
         """Test backend_db_filename property when default value is returned"""
         # Set up mock return value for the get_entry method (no value provided)
