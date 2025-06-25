@@ -6,6 +6,7 @@ from base_view import ApiResponse
 from apis.authentication_api_view import AuthenticationApiView as View
 from threadsafe_configuration import ThreadSafeConfiguration
 
+
 class TestAuthenticationAPI(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         """Set up Quart test client and mock dependencies."""
