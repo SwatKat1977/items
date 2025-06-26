@@ -327,12 +327,11 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/web/projects/overviews?count_fields=no_of_test_runs",
+									"raw": "{{CMS_SVC_URL}}/projects/overviews?count_fields=no_of_test_runs",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
-										"web",
 										"projects",
 										"overviews"
 									],
@@ -361,12 +360,11 @@
 									}
 								},
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/web/projects/add",
+									"raw": "{{CMS_SVC_URL}}/projects/add",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
-										"web",
 										"projects",
 										"add"
 									]
@@ -389,12 +387,11 @@
 									}
 								},
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/web/projects/modify/3",
+									"raw": "{{CMS_SVC_URL}}/projects/modify/3",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
-										"web",
 										"projects",
 										"modify",
 										"3"
@@ -418,12 +415,11 @@
 									}
 								},
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/web/projects/delete/8?hard_delete=false",
+									"raw": "{{CMS_SVC_URL}}/projects/delete/8?hard_delete=false",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
-										"web",
 										"projects",
 										"delete",
 										"8"
@@ -444,12 +440,11 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/web/projects/details/1",
+									"raw": "{{CMS_SVC_URL}}/projects/details/1",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
-										"web",
 										"projects",
 										"details",
 										"1"
@@ -478,12 +473,11 @@
 									}
 								},
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/web/testcases/details",
+									"raw": "{{CMS_SVC_URL}}/testcases/details",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
-										"web",
 										"testcases",
 										"details"
 									]
@@ -506,15 +500,14 @@
 									}
 								},
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/web/testcases/get_case/3",
+									"raw": "{{CMS_SVC_URL}}/testcases/get_case/1",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
-										"web",
 										"testcases",
 										"get_case",
-										"3"
+										"1"
 									]
 								}
 							},
@@ -531,12 +524,11 @@
 								"method": "PATCH",
 								"header": [],
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/web/admin/testcase_custom_fields/testcase_custom_fields/2/down",
+									"raw": "{{CMS_SVC_URL}}/admin/testcase_custom_fields/testcase_custom_fields/2/down",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
-										"web",
 										"admin",
 										"testcase_custom_fields",
 										"testcase_custom_fields",
@@ -554,7 +546,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": " {\n    \"field_name\": \"new type string\",\n    \"description\": \"default\",\n    \"system_name\": \"new_system_name\",\n    \"field_type\": \"String\",\n    \"enabled\": true,\n    \"is_required\": false,\n    \"default_value\": \"\",\n    \"applies_to_all_projects\": false,\n    \"projects\": [\n          \"Project Delta_1\",\n          \"Project Beta_2\"\n    ]\n}\n",
+									"raw": " {\n    \"field_name\": \"new type stringb\",\n    \"description\": \"default\",\n    \"system_name\": \"new_system_name_sdf\",\n    \"field_type\": \"String\",\n    \"enabled\": true,\n    \"is_required\": false,\n    \"default_value\": \"\",\n    \"applies_to_all_projects\": false,\n    \"projects\": [\n          \"Project Delta_1\",\n          \"Project Beta_2\"\n    ]\n}\n",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -562,12 +554,11 @@
 									}
 								},
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/web/admin/testcase_custom_fields/testcase_custom_fields",
+									"raw": "{{CMS_SVC_URL}}/admin/testcase_custom_fields/testcase_custom_fields",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
-										"web",
 										"admin",
 										"testcase_custom_fields",
 										"testcase_custom_fields"
@@ -587,12 +578,11 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/web/health/status",
+									"raw": "{{CMS_SVC_URL}}/health/status",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
-										"web",
 										"health",
 										"status"
 									]
