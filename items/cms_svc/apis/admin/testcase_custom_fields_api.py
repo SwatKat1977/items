@@ -37,7 +37,7 @@ def create_blueprint(logger: logging.Logger,
 
     blueprint = Blueprint('admin_api', __name__)
 
-    logger.debug("Registering WEB/ADMIN testcase custom fields routes:")
+    logger.debug("Registering ADMIN testcase custom fields routes:")
 
     logger.debug("=> /testcase_custom_fields [POST] : Add new field")
 

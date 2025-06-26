@@ -42,7 +42,7 @@ def create_blueprint(logger: logging.Logger,
 
     blueprint = Blueprint('health_api', __name__)
 
-    logger.debug("Registering WEB health status routes:")
+    logger.debug("Registering health status routes:")
 
     logger.debug("=> /status [GET]")
 

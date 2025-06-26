@@ -39,7 +39,7 @@ def create_blueprint(logger: logging.Logger,
 
     blueprint = Blueprint('project_api', __name__)
 
-    logger.debug("Registering WEB projects routes:")
+    logger.debug("Registering projects routes:")
 
     logger.debug("=> /details/<int:project_id> [GET]")
 

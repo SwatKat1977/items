@@ -40,7 +40,7 @@ def create_blueprint(logger: logging.Logger,
 
     blueprint = Blueprint('testcases_api', __name__)
 
-    logger.debug("Registering WEB test cases routes:")
+    logger.debug("Registering test cases routes:")
 
     logger.debug("=> /testcases/testcase_details [POST]")
 
