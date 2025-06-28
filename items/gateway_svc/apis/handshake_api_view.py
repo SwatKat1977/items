@@ -72,7 +72,7 @@ class HandshakeApiView(BaseView):
                 "password": request_msg.body.password
             }
             auth_url: str = (f"{accounts_svc}"
-                             "/basic_auth/authenticate")
+                             "authentication/basic")
 
             response = await self._call_api_post(auth_url, auth_request)
 
