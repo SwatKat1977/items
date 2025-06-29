@@ -25,10 +25,28 @@ from state_object import StateObject
 
 
 class TestcaseCustomFieldsApiView(BaseView):
+    """
+    API view for managing custom fields associated with test cases.
+
+    This class provides methods to handle API operations related to custom
+    fields used in test case definitions or execution metadata.
+    """
     __slots__ = ['_logger']
 
     def __init__(self, logger: logging.Logger,
                  state_object: StateObject) -> None:
+        """
+        Initialize the TestcaseCustomFieldsApiView.
+
+        Args:
+            logger (logging.Logger): The application-wide logger instance.
+            state_object (StateObject): The state or configuration object used
+                to initialize the database interface and other stateful components.
+
+        Attributes:
+            _logger (logging.Logger): Logger scoped to this class/module.
+            _db (SqlInterface): Interface for interacting with the database.
+        """
         self._logger = logger.getChild(__name__)
         self._db: SqlInterface = SqlInterface(logger, state_object)
 
