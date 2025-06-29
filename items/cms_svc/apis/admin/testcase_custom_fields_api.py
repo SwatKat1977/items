@@ -18,18 +18,12 @@ from quart import Blueprint
 from .testcase_custom_fields_api_view import TestcaseCustomFieldsApiView
 from state_object import StateObject
 
-'''
-# For users
-GET    /api/web/testcases/123/custom-fields
-
 # For admins
-POST   /api/web/admin/testcase_custom_fields          # create new
-PUT    /api/web/admin/testcase_custom_fields/45       # update existing
-DELETE /api/web/admin/testcase_custom_fields/45       # delete (optional)
-GET    /api/web/admin/testcase_custom_fields          # list all (optional)
-
-PATCH /api/wb/admin/testcase_custom_fields/45         # Move field position
-'''
+# POST   /api/web/admin/testcase_custom_fields          # create new
+# PUT    /api/web/admin/testcase_custom_fields/45       # update existing
+# DELETE /api/web/admin/testcase_custom_fields/45       # delete (optional)
+# GET    /api/web/admin/testcase_custom_fields          # list all (optional)
+# PATCH /api/wb/admin/testcase_custom_fields/45         # Move field position
 
 def create_blueprint(logger: logging.Logger,
                      state_object: StateObject) -> Blueprint:

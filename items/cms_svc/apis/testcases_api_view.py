@@ -24,15 +24,43 @@ from state_object import StateObject
 
 
 class TestCasesApiView(BaseView):
+    """
+    API view for handling test case-related requests.
+
+    Provides endpoints to retrieve test case overviews and details
+    for a specific project. All requests are validated against predefined
+    JSON schemas before processing.
+    """
     __slots__ = ['_logger']
 
     def __init__(self, logger: logging.Logger,
                  state_object: StateObject) -> None:
+        """
+        Initialize the TestCasesApiView.
+
+        Args:
+            logger (logging.Logger): The application logger instance.
+            state_object (StateObject): Shared application state containing
+                                        configuration or runtime data.
+        """
         self._logger = logger.getChild(__name__)
         self._db: SqlInterface = SqlInterface(logger, state_object)
 
     @validate_json(json_schemas.SCHEMA_TESTCASES_DETAILS_REQUEST)
     async def testcase_details(self, request_msg: ApiResponse):
+        """
+        Retrieve test case overviews for a given project.
+
+        Args:
+            request_msg (ApiResponse): The incoming request object, expected
+                                       to contain a valid `project_id` in the
+                                       body.
+
+        Returns:
+            quart.Response: A JSON response containing a list of test case
+                            overviews, or an error message if the project ID is
+                            invalid.
+        """
         project_id: int = request_msg.body.project_id
 
         if not self._db.projects.is_valid_project_id(project_id):
@@ -53,6 +81,19 @@ class TestCasesApiView(BaseView):
 
     @validate_json(json_schemas.SCHEMA_TESTCASES_CASE_REQUEST)
     async def testcase_get_case(self, request_msg: ApiResponse, case_id: int):
+        """
+        Retrieve the full details of a specific test case.
+
+        Args:
+            request_msg (ApiResponse): The incoming request object, containing
+            `                          project_id` in the body.
+            case_id (int): The unique ID of the test case to retrieve.
+
+        Returns:
+            quart.Response: A JSON response containing the test case details,
+                            or an error message if the case is not found or an
+                            internal error occurs.
+        """
         project_id: int = request_msg.body.project_id
 
         case_details: dict = self._db.testcases.get_testcase(case_id, project_id)

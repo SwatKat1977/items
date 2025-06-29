@@ -25,6 +25,12 @@ from state_object import StateObject
 
 
 class ProjectsApiView(BaseView):
+    """
+    API view for managing project data.
+
+    Provides endpoints to retrieve project details, list project overviews
+    with optional count metrics, and add new projects to the system.
+    """
     __slots__ = ['_logger']
 
     # Allowed fields
@@ -44,10 +50,27 @@ class ProjectsApiView(BaseView):
 
     def __init__(self, logger: logging.Logger,
                  state_object: StateObject) -> None:
+        """
+        Initialize the ProjectsApiView.
+
+        Args:
+            logger (logging.Logger): Logger instance for emitting logs.
+            state_object (StateObject): Global application state object, used to
+                initialize shared services like the database interface.
+        """
         self._logger = logger.getChild(__name__)
         self._db: SqlInterface = SqlInterface(logger, state_object)
 
     async def project_details(self, project_id: int):
+        """
+        Retrieve full details for a specific project by ID.
+
+        Args:
+            project_id (int): The ID of the project to look up.
+
+        Returns:
+            Response: JSON response containing project details or an error if not found.
+        """
         details: typing.Optional[dict] = self._db.projects.get_project_details(
             project_id)
         if details is None:
@@ -60,6 +83,19 @@ class ProjectsApiView(BaseView):
                               content_type="application/json")
 
     async def project_overviews(self):
+        """
+        Retrieve a list of projects with optional field-based filtering and metric counts.
+
+        Query Parameters:
+            value_fields (str, optional): Comma-separated list of fields to include
+                (e.g., "name").
+            count_fields (str, optional): Comma-separated list of metrics to calculate
+                (e.g., "no_of_milestones,no_of_test_runs").
+
+        Returns:
+            Response: JSON response containing project overviews with optional count fields,
+            or an error response if invalid fields are requested.
+        """
         # Get fields from query parameters
         value_fields = quart.request.args.get("value_fields")
         count_fields = quart.request.args.get("count_fields")
