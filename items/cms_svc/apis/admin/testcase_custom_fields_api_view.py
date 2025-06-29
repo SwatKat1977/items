@@ -50,8 +50,11 @@ class TestcaseCustomFieldsApiView(BaseView):
         self._logger = logger.getChild(__name__)
         self._db: SqlInterface = SqlInterface(logger, state_object)
 
+    # NOTE: add_custom_field is a good candidate for refactoring in the
+    #       future, far too many returns.
     @validate_json(json_schemas.SCHEMA_ADD_TEST_CASE_CUSTOM_FIELD_REQUEST)
     async def add_custom_field(self, request_msg: ApiResponse):
+        # pylint: disable=too-many-return-statements
         """
         Add a new custom field to the test case system.
 
@@ -139,7 +142,7 @@ class TestcaseCustomFieldsApiView(BaseView):
         # ===========================================
 
         if request_msg.body.projects and len(request_msg.body.projects):
-            status = self._db.tc_custom_fields.assign_custom_field_to_project(
+            self._db.tc_custom_fields.assign_custom_field_to_project(
                 custom_field_id, request_msg.body.projects)
 
         response_json = {
