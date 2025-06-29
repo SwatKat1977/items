@@ -24,7 +24,7 @@ from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
-from apis.web import create_web_routes
+from apis import create_api_routes
 from state_object import StateObject
 
 
@@ -63,8 +63,7 @@ class Application(BaseApplication):
         self._logger.setLevel(Configuration().logging_log_level)
 
         self._quart_instance.register_blueprint(
-            create_web_routes(self._logger, self._state_object),
-            url_prefix="/web")
+            create_api_routes(self._logger, self._state_object), url_prefix="")
 
         return True
 

@@ -25,15 +25,52 @@ from state_object import StateObject
 
 
 class TestcaseCustomFieldsApiView(BaseView):
+    """
+    API view for managing custom fields associated with test cases.
+
+    This class provides methods to handle API operations related to custom
+    fields used in test case definitions or execution metadata.
+    """
     __slots__ = ['_logger']
 
     def __init__(self, logger: logging.Logger,
                  state_object: StateObject) -> None:
+        """
+        Initialize the TestcaseCustomFieldsApiView.
+
+        Args:
+            logger (logging.Logger): The application-wide logger instance.
+            state_object (StateObject): The state or configuration object used
+                to initialize the database interface and other stateful components.
+
+        Attributes:
+            _logger (logging.Logger): Logger scoped to this class/module.
+            _db (SqlInterface): Interface for interacting with the database.
+        """
         self._logger = logger.getChild(__name__)
         self._db: SqlInterface = SqlInterface(logger, state_object)
 
+    # NOTE: add_custom_field is a good candidate for refactoring in the
+    #       future, far too many returns.
     @validate_json(json_schemas.SCHEMA_ADD_TEST_CASE_CUSTOM_FIELD_REQUEST)
     async def add_custom_field(self, request_msg: ApiResponse):
+        # pylint: disable=too-many-return-statements
+        """
+        Add a new custom field to the test case system.
+
+        This endpoint validates the uniqueness of both the field name and
+        system name, checks for duplicate project assignments, and adds the
+        custom field to the database. If project assignments are specified,
+        it associates the new custom field with those projects.
+
+        Args:
+            request_msg (ApiResponse): The API request containing the custom
+            field details in the JSON body.
+
+        Returns:
+            quart.Response: A JSON response with a status flag indicating
+            success or error, along with a message if applicable.
+        """
 
         # Check to see if the field name is already in use, None means an
         # internal error and True means it already exists/
@@ -105,7 +142,7 @@ class TestcaseCustomFieldsApiView(BaseView):
         # ===========================================
 
         if request_msg.body.projects and len(request_msg.body.projects):
-            status = self._db.tc_custom_fields.assign_custom_field_to_project(
+            self._db.tc_custom_fields.assign_custom_field_to_project(
                 custom_field_id, request_msg.body.projects)
 
         response_json = {

@@ -16,11 +16,26 @@ limitations under the License.
 import logging
 import quart
 from state_object import StateObject
+from .testcase_custom_fields_api import create_blueprint as create_cf_bp
 
 
-def create_admin_routes(logger: logging.Logger, state: StateObject) -> quart.Blueprint:
-    from .testcase_custom_fields_api import create_blueprint as create_cf_bp
+def create_admin_routes(logger: logging.Logger,
+                        state: StateObject) -> quart.Blueprint:
+    """
+    Create and register admin-related API route blueprints.
 
+    This function sets up the admin routes for the application by
+    initializing an admin blueprint and registering the blueprint for
+    managing custom testcase fields under the '/testcase_custom_fields'
+    prefix.
+
+    Args:
+        logger (logging.Logger): Logger instance for admin logging.
+        state (StateObject): Shared application state and configuration.
+
+    Returns:
+        quart.Blueprint: The admin API blueprint with registered routes.
+    """
     admin_bp = quart.Blueprint("admin_routes", __name__)
     admin_bp.register_blueprint(create_cf_bp(logger, state), url_prefix="/testcase_custom_fields")
     return admin_bp

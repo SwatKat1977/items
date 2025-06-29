@@ -39,13 +39,13 @@ class ProjectApiView(BaseView):
             else ""
         joiner_str = "&" if value_fields and count_fields else ""
         cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
-        url: str = f"{cms_svc}project/overviews?{value_fields_str}" + \
+        url: str = f"{cms_svc}projects/overviews?{value_fields_str}" + \
                    f"{joiner_str}{count_fields_str}"
 
         api_response = await self._call_api_get(url)
 
         if api_response.status_code != http.HTTPStatus.OK:
-            self._logger.critical("CMS svc /project/overviews request invalid"
+            self._logger.critical("CMS SVC /projects/overviews request invalid"
                                   " - Reason: %s",api_response.exception_msg)
             response_json = {
                 "status": 0,
@@ -61,7 +61,7 @@ class ProjectApiView(BaseView):
 
     async def project_details(self, project_id: int):
         cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
-        url: str = f"{cms_svc}project/details/{project_id}"
+        url: str = f"{cms_svc}projects/details/{project_id}"
 
         api_response = await self._call_api_get(url)
 
@@ -75,7 +75,7 @@ class ProjectApiView(BaseView):
                                   content_type="application/json")
 
         if api_response.status_code != http.HTTPStatus.OK:
-            self._logger.critical("CMS svc /project/details request invalid"
+            self._logger.critical("CMS SVC /projects/details request invalid"
                                   " - Reason: %s",api_response.exception_msg)
             response_json = {
                 "status": 0,
@@ -93,7 +93,7 @@ class ProjectApiView(BaseView):
     async def add_project(self, request_msg: ApiResponse):
 
         cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
-        url: str = f"{cms_svc}project/add"
+        url: str = f"{cms_svc}projects/add"
 
         cms_request: dict = {
             "name": request_msg.body.name,
@@ -104,7 +104,7 @@ class ProjectApiView(BaseView):
         api_response = await self._call_api_post(url, cms_request)
 
         if api_response.status_code != http.HTTPStatus.OK:
-            self._logger.critical("CMS svc /project/add request invalid"
+            self._logger.critical("CMS SVC /projects/add request invalid"
                                   " - Reason: %s",api_response.exception_msg)
             response_json = {
                 "status": 0,
@@ -124,7 +124,7 @@ class ProjectApiView(BaseView):
                              request_msg: ApiResponse,
                              project_id: int):
         cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
-        url: str = f"{cms_svc}project/modify/{project_id}"
+        url: str = f"{cms_svc}projects/modify/{project_id}"
 
         cms_request: dict = {
             "name": request_msg.body.name,
@@ -135,7 +135,7 @@ class ProjectApiView(BaseView):
         api_response = await self._call_api_post(url, cms_request)
 
         if api_response.status_code != http.HTTPStatus.OK:
-            self._logger.critical("CMS svc /project/modify request invalid"
+            self._logger.critical("CMS SVC /projects/modify request invalid"
                                   " - Reason: %s",api_response.exception_msg)
             response_json = {
                 "status": 0,
@@ -152,7 +152,7 @@ class ProjectApiView(BaseView):
 
     async def delete_project(self, project_id: int):
         cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
-        url: str = f"{cms_svc}project/delete/{project_id}?hard_delete=true"
+        url: str = f"{cms_svc}projects/delete/{project_id}?hard_delete=true"
 
         api_response = await self._call_api_delete(url)
 
@@ -163,7 +163,7 @@ class ProjectApiView(BaseView):
 
         if api_response.status_code != http.HTTPStatus.OK:
             self._logger.critical(
-                "CMS svc %s request invalid - Reason: %s",
+                "CMS SVC %s request invalid - Reason: %s",
                 url, api_response.exception_msg)
             response_json = {
                 "status": 0,

@@ -15,8 +15,8 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from .projects_api_view import ProjectsApiView
 from state_object import StateObject
+from .projects_api_view import ProjectsApiView
 
 
 def create_blueprint(logger: logging.Logger,
@@ -39,7 +39,7 @@ def create_blueprint(logger: logging.Logger,
 
     blueprint = Blueprint('project_api', __name__)
 
-    logger.debug("Registering WEB projects routes:")
+    logger.debug("Registering projects routes:")
 
     logger.debug("=> /details/<int:project_id> [GET]")
 
@@ -57,12 +57,14 @@ def create_blueprint(logger: logging.Logger,
 
     @blueprint.route('/add', methods=['POST'])
     async def add_project():
+        # pylint: disable=no-value-for-parameter
         return await view.add_project()
 
     logger.debug("=> /modify [POST]")
 
     @blueprint.route('/modify/<int:project_id>', methods=['POST'])
     async def modify_project(project_id: int):
+        # pylint: disable=no-value-for-parameter
         return await view.modify_project(project_id)
 
     logger.debug("=> /project/delete [DELETE]")
