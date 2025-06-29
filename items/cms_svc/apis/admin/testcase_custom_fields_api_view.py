@@ -52,6 +52,22 @@ class TestcaseCustomFieldsApiView(BaseView):
 
     @validate_json(json_schemas.SCHEMA_ADD_TEST_CASE_CUSTOM_FIELD_REQUEST)
     async def add_custom_field(self, request_msg: ApiResponse):
+        """
+        Add a new custom field to the test case system.
+
+        This endpoint validates the uniqueness of both the field name and
+        system name, checks for duplicate project assignments, and adds the
+        custom field to the database. If project assignments are specified,
+        it associates the new custom field with those projects.
+
+        Args:
+            request_msg (ApiResponse): The API request containing the custom
+            field details in the JSON body.
+
+        Returns:
+            quart.Response: A JSON response with a status flag indicating
+            success or error, along with a message if applicable.
+        """
 
         # Check to see if the field name is already in use, None means an
         # internal error and True means it already exists/

@@ -46,12 +46,14 @@ def create_blueprint(logger: logging.Logger,
 
     @blueprint.route('/details', methods=['POST'])
     async def testcase_details():
+        # pylint: disable=no-value-for-parameter
         return await view.testcase_details()
 
     logger.debug("=> /case/<case_id> [POST]")
 
     @blueprint.route('/get_case/<case_id>', methods=['POST'])
     async def testcase_get_case(case_id: int):
+        # pylint: disable=no-value-for-parameter
         return await view.testcase_get_case(case_id)
 
     return blueprint

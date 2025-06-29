@@ -16,15 +16,29 @@ limitations under the License.
 import logging
 import quart
 from state_object import StateObject
+from .health_api import create_blueprint as create_heath_bp
+from .projects_api import create_blueprint as create_projects_bp
+from .testcases_api import create_blueprint as create_testcases_bp
+from .admin import create_admin_routes
 
 
 def create_api_routes(logger: logging.Logger,
                       state: StateObject) -> quart.Blueprint:
-    from .health_api import create_blueprint as create_heath_bp
-    from .projects_api import create_blueprint as create_projects_bp
-    from .testcases_api import create_blueprint as create_testcases_bp
-    from .admin import create_admin_routes
+    """
+    Create and register all API route blueprints for the application.
 
+    This function initializes a Quart Blueprint and registers sub-blueprints
+    for health checks, project management, test case handling, and admin
+    routes. Each sub-blueprint is assigned an appropriate URL prefix.
+
+    Args:
+        logger (logging.Logger): Logger instance for route logging.
+        state (StateObject): Shared application state and configuration.
+
+    Returns:
+        quart.Blueprint: The assembled API blueprint with all routes
+        registered.
+    """
     web_bp = quart.Blueprint("api_routes", __name__)
 
     web_bp.register_blueprint(create_heath_bp(logger, state), url_prefix="/health")

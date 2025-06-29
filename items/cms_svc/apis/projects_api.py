@@ -57,12 +57,14 @@ def create_blueprint(logger: logging.Logger,
 
     @blueprint.route('/add', methods=['POST'])
     async def add_project():
+        # pylint: disable=no-value-for-parameter
         return await view.add_project()
 
     logger.debug("=> /modify [POST]")
 
     @blueprint.route('/modify/<int:project_id>', methods=['POST'])
     async def modify_project(project_id: int):
+        # pylint: disable=no-value-for-parameter
         return await view.modify_project(project_id)
 
     logger.debug("=> /project/delete [DELETE]")
