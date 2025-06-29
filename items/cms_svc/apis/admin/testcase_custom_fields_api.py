@@ -15,8 +15,8 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from .testcase_custom_fields_api_view import TestcaseCustomFieldsApiView
 from state_object import StateObject
+from .testcase_custom_fields_api_view import TestcaseCustomFieldsApiView
 
 # For admins
 # POST   /api/web/admin/testcase_custom_fields          # create new
@@ -25,8 +25,29 @@ from state_object import StateObject
 # GET    /api/web/admin/testcase_custom_fields          # list all (optional)
 # PATCH /api/wb/admin/testcase_custom_fields/45         # Move field position
 
+
 def create_blueprint(logger: logging.Logger,
                      state_object: StateObject) -> Blueprint:
+    """
+    Creates a Quart blueprint that defines admin API routes for managing
+    testcase custom fields.
+
+    Registers the following routes:
+      - POST /testcase_custom_fields:
+        Adds a new custom field to the system.
+
+      - PATCH /testcase_custom_fields/<field_id>/<direction>:
+        Moves a custom field up or down in the ordering.
+
+    Args:
+        logger (logging.Logger): Logger instance for debugging and info logs.
+        state_object (StateObject): Shared application state object used by
+            the view.
+
+    Returns:
+        Blueprint: A configured Quart Blueprint with admin API routes.
+    """
+    # pylint: disable=no-value-for-parameter
     view = TestcaseCustomFieldsApiView(logger, state_object)
 
     blueprint = Blueprint('admin_api', __name__)

@@ -82,6 +82,7 @@ class ProjectsApiView(BaseView):
                               status=http.HTTPStatus.OK,
                               content_type="application/json")
 
+    # pylint: disable=too-many-locals
     async def project_overviews(self):
         """
         Retrieve a list of projects with optional field-based filtering and metric counts.
@@ -183,7 +184,22 @@ class ProjectsApiView(BaseView):
 
     @validate_json(json_schemas.SCHEMA_ADD_PROJECT_REQUEST)
     async def add_project(self, request_msg: ApiResponse):
+        """
+        Add a new project to the system.
 
+        This method checks for the existence of a project with the given name.
+        If the name is unique, it inserts a new project into the database with
+        optional announcement metadata. Returns the new project ID if
+        successful.
+
+        Args:
+            request_msg (ApiResponse): The API request containing project
+            details in the JSON body.
+
+        Returns:
+            quart.Response: A JSON response with either the new project ID or
+            an error message, along with the appropriate HTTP status code.
+        """
         name: str = request_msg.body.name
 
         exists = self._db.projects.project_name_exists(name)
@@ -277,7 +293,7 @@ class ProjectsApiView(BaseView):
                                   status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
                                   content_type="application/json")
 
-        elif not existing_details:
+        if not existing_details:
             response_body: dict = {
                 "status": 0,
                 "error_msg": "Invalid project ID"
@@ -316,14 +332,32 @@ class ProjectsApiView(BaseView):
 
             updated_details["project_name"] = body.name
 
-        status = self._db.projects.modify_project(project_id, updated_details)
+        self._db.projects.modify_project(project_id, updated_details)
 
         return quart.Response(json.dumps({ "status": 1}),
                               status=http.HTTPStatus.OK,
                               content_type="application/json")
 
     async def delete_project(self, project_id: int):
+        """
+        Deletes or marks a project for purge based on the 'hard_delete'
+        query parameter.
 
+        If 'hard_delete' is set to a truthy value, the project is permanently
+        deleted. Otherwise, it is marked as 'awaiting purge'.
+
+        Args:
+            project_id (int): The ID of the project to delete or mark.
+
+        Query Parameters:
+            hard_delete (str, optional): A truthy or falsy string
+            ("true", "1", "false", etc.) indicating whether to perform a hard
+            delete. Defaults to False if not provided or invalid.
+
+        Returns:
+            quart.Response: A JSON response indicating success or failure,
+            with appropriate HTTP status codes.
+        """
         hard_delete_param = quart.request.args.get("hard_delete")
 
         if hard_delete_param is None:

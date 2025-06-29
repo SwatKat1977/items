@@ -15,8 +15,8 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from .projects_api_view import ProjectsApiView
 from state_object import StateObject
+from .projects_api_view import ProjectsApiView
 
 
 def create_blueprint(logger: logging.Logger,
