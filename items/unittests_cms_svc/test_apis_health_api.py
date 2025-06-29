@@ -5,7 +5,7 @@ import logging
 import time
 from quart import Response
 from http import HTTPStatus
-from apis.web.health_api_view import HealthApiView
+from apis.health_api_view import HealthApiView
 from state_object import StateObject
 import service_health_enums as health_enums
 

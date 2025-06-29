@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import AsyncMock, patch, MagicMock
 import quart
 from threadsafe_configuration import ThreadSafeConfiguration
-from apis.web.admin.testcase_custom_fields_api_view import TestcaseCustomFieldsApiView
+from apis.admin.testcase_custom_fields_api_view import TestcaseCustomFieldsApiView
 
 
 class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
@@ -27,7 +27,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
 
         self.client = self.app.test_client()
 
-    @patch('apis.web.admin.testcase_custom_fields_api_view.SqlInterface')
+    @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
     async def test_add_custom_field_custom_field_name_exists_failure(self, mock_sql_interface):
         mock_db = MagicMock()
         mock_db.tc_custom_fields.custom_field_name_exists.return_value = None
@@ -64,7 +64,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(data,
                              {"status": 0, "error": "Internal error"})
 
-    @patch('apis.web.admin.testcase_custom_fields_api_view.SqlInterface')
+    @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
     async def test_add_custom_field_field_name_exists(self, mock_sql_interface):
         mock_db = MagicMock()
         mock_db.tc_custom_fields.custom_field_name_exists.return_value = True
@@ -101,7 +101,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(data,
                              {'error': 'Duplicate field_name', 'status': 0})
 
-    @patch('apis.web.admin.testcase_custom_fields_api_view.SqlInterface')
+    @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
     async def test_add_custom_field_system_name_exists(self, mock_sql_interface):
         mock_db = MagicMock()
         mock_db.tc_custom_fields.custom_field_name_exists.return_value = False
@@ -139,7 +139,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(data,
                              {'error': 'Duplicate system_name', 'status': 0})
 
-    @patch('apis.web.admin.testcase_custom_fields_api_view.SqlInterface')
+    @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
     async def test_add_custom_field_system_exists_failure(self, mock_sql_interface):
         mock_db = MagicMock()
         mock_db.tc_custom_fields.custom_field_name_exists.return_value = False
@@ -177,7 +177,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(data,
                              {"status": 0, "error": "Internal error"})
 
-    @patch('apis.web.admin.testcase_custom_fields_api_view.SqlInterface')
+    @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
     async def test_add_custom_field_duplicate_projects(self, mock_sql_interface):
         mock_db = MagicMock()
         mock_db.tc_custom_fields.custom_field_name_exists.return_value = False
@@ -216,7 +216,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(data,
                              {'error': 'Duplicate projects', 'status': 0})
 
-    @patch('apis.web.admin.testcase_custom_fields_api_view.SqlInterface')
+    @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
     async def test_add_custom_field_add_custom_field_failure(self, mock_sql_interface):
         mock_db = MagicMock()
         mock_db.tc_custom_fields.custom_field_name_exists.return_value = False
@@ -254,7 +254,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(data,
                              {'error': 'Internal error', 'status': 0})
 
-    @patch('apis.web.admin.testcase_custom_fields_api_view.SqlInterface')
+    @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
     async def test_add_custom_field_successful(self, mock_sql_interface):
         mock_db = MagicMock()
         mock_db.tc_custom_fields.custom_field_name_exists.return_value = False
@@ -292,7 +292,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status_code, http.HTTPStatus.OK)
             self.assertEqual(data, {'status': 1})
 
-    @patch('apis.web.admin.testcase_custom_fields_api_view.SqlInterface')
+    @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
     async def test_move_custom_field_invalid_direction(self, mock_sql_interface):
         mock_db = MagicMock()
 
@@ -313,7 +313,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
                              {'error': "Invalid direction. Must be 'up' or 'down'.",
                               'status': 0})
 
-    @patch('apis.web.admin.testcase_custom_fields_api_view.SqlInterface')
+    @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
     async def test_move_custom_field_db_failed(self, mock_sql_interface):
         mock_db = MagicMock()
         mock_db.tc_custom_fields.move_custom_field.return_value = None
@@ -332,7 +332,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
             self.assertEqual(data,{'error': "Internal error", 'status': 0})
 
-    @patch('apis.web.admin.testcase_custom_fields_api_view.SqlInterface')
+    @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
     async def test_move_custom_field_invalid_move(self, mock_sql_interface):
         mock_db = MagicMock()
         mock_db.tc_custom_fields.move_custom_field.return_value = False
@@ -351,7 +351,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status_code, http.HTTPStatus.OK)
             self.assertEqual(data,{'error': "Invalid field or move operation", 'status': 0})
 
-    @patch('apis.web.admin.testcase_custom_fields_api_view.SqlInterface')
+    @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
     async def test_move_custom_field_valid_move(self, mock_sql_interface):
         mock_db = MagicMock()
         mock_db.tc_custom_fields.move_custom_field.return_value = True

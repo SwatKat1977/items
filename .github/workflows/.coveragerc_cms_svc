@@ -3,9 +3,9 @@ omit =
     items/unittests_shared/*
     items/unittests_cms_svc/*
     items/shared/*
-    items/cms_svc/apis/web/health_api.py
-    items/cms_svc/apis/web/projects_api.py
-    items/cms_svc/apis/web/testcases_api.py
-    items/cms_svc/apis/web/admin/testcase_custom_fields_api.py
+    items/cms_svc/apis/health_api.py
+    items/cms_svc/apis/projects_api.py
+    items/cms_svc/apis/testcases_api.py
+    items/cms_svc/apis/admin/testcase_custom_fields_api.py
     /opt/homebrew/*
     /usr/lib/python3/*
