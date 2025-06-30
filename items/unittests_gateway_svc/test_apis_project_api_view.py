@@ -192,7 +192,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         # Verify URL was correctly constructed
         mock_call_api_post.assert_called_once_with(
-            "http://localhost/project/modify/123", request_body)
+            "http://localhost/projects/modify/123", request_body)
 
     @patch.object(ThreadSafeConfiguration, "apis_cms_svc", "http://localhost/")
     async def test_modify_project_failure(self):
@@ -219,25 +219,8 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
             "error": "Invalid Project Name"
         })
         mock_call_api_post.assert_called_once_with(
-            "http://localhost/project/modify/123", request_body
+            "http://localhost/projects/modify/123", request_body
         )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     @patch.object(ThreadSafeConfiguration, "apis_cms_svc", "http://localhost/")
     async def test_project_details_success(self):
@@ -250,7 +233,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(response.status_code, http.HTTPStatus.OK)
         self.assertEqual(await response.get_json(), {"id": 123, "name": "Test Project"})
-        mock_call_api_get.assert_called_once_with("http://localhost/project/details/123")
+        mock_call_api_get.assert_called_once_with("http://localhost/projects/details/123")
 
     @patch.object(ThreadSafeConfiguration, "apis_cms_svc", "http://localhost/")
     async def test_project_details_invalid_project_id(self):
@@ -263,7 +246,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertEqual(await response.get_json(), {"status": 0, "error": "Invalid project ID"})
-        mock_call_api_get.assert_called_once_with("http://localhost/project/details/999")
+        mock_call_api_get.assert_called_once_with("http://localhost/projects/details/999")
 
     @patch.object(ThreadSafeConfiguration, "apis_cms_svc", "http://localhost/")
     async def test_project_details_internal_error(self):
@@ -277,8 +260,8 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertEqual(await response.get_json(), {"status": 0, "error": "Internal error!"})
-        mock_call_api_get.assert_called_once_with("http://localhost/project/details/456")
+        mock_call_api_get.assert_called_once_with("http://localhost/projects/details/456")
         self.view._logger.critical.assert_called_once_with(
-            "CMS svc /project/details request invalid - Reason: %s",
+            "CMS SVC /projects/details request invalid - Reason: %s",
             "Database Error"
         )

@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import patch
 from configuration_layout import ConfigurationConstants as consts
-from configuration.configuration_manager import ConfigurationManager
 from threadsafe_configuration import ThreadSafeConfiguration
 
 

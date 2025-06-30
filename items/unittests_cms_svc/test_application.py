@@ -40,7 +40,7 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.application._open_database = MagicMock(return_value=True)
 
         # Patch blueprint creation if they involve side effects
-        with patch("application.create_web_routes") as mock_create_routes:
+        with patch("application.create_api_routes") as mock_create_routes:
             mock_create_routes.return_value = MagicMock()  # Simulate a valid blueprint
 
             # Run the method under test
