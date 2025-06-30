@@ -4,19 +4,16 @@ ITEMS is a web-based test management tool written in Python that can be used by 
 
 ## News  
 
-### 25th June 2025
-Due to ongoing changes main is broken:
-- Gateway will not communicate with accounts or CMS service.
-
-The issues are currently being addressed.
+### 30th June 20025
+Gateway and CMS build issues are now resolved and work again.
 
 ### Previous News
 - Important Information: The version is currently at V0.0.0 [MVP] on the main branch
 whilst we are still in early development.
 - Follow the [changelog](ChangeLog) for new features and bug fixes.
 
-Currently there are no nightly or release Docker images for the ITEMS services,
-this is on the TODO list.
+Currently, there are no nightly or release Docker images for the ITEMS services.
+This is on the TODO list.
 
 ## Documentation
 
