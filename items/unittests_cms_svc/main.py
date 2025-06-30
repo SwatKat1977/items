@@ -4,7 +4,7 @@ from test_threadsafe_configuration import TestThreadSafeConfiguration
 from test_apis_health_api import TestApiHealthApiView
 from test_apis_project_api_view import TestApiProjectApiView
 from test_apis_testcases_api_view import TestApiTestCasesApiView
-from test_create_web_routes import TestCreateWebRoutes
+from test_create_web_routes import TestCreateApiRoutes
 from test_sql_sql_projects import TestSqlSqlProjects
 from test_sql_sql_tc_custom_fields import TestSqlSqlTCCustomFields
 from test_sql_sql_testcases import TestSqlTestcases
