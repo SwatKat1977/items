@@ -340,6 +340,39 @@ class SqlTCCustomFields(ExtendedSqlInterface):
         return [] if not rows else rows
 
     def get_all_fields(self):
+        """
+        Retrieves all custom fields from the database, including their
+        associated metadata and any project associations for fields that do
+        not apply globally.
+
+        This method performs a SQL query joining `tc_custom_fields` with
+        `tc_custom_field_types`, `tc_custom_field_projects`, and
+        `prj_projects` to fetch a complete list of custom fields.
+        For fields where `applies_to_all_projects` is false (0), it
+        collects the list of linked projects as a string in the format
+        `"project_id:project_name,..."`.
+
+        Returns:
+            list[sqlite3.Row] or list[dict]: A list of custom field records.
+                                             Each record includes:
+                - id: int
+                - field_name: str
+                - description: str
+                - system_name: str
+                - field_type_name: str
+                - entry_type: str ('system' or 'user')
+                - enabled: bool
+                - position: int
+                - is_required: bool
+                - default_value: str
+                - applies_to_all_projects: bool
+                - linked_projects: Optional[str]
+                      (e.g. "1:ProjectA,2:ProjectB") if not global, else
+                      None
+
+            Returns an empty list if no fields exist, or `None` if the
+            query fails.
+        """
         query: str = """
             SELECT
                 cf.id,
