@@ -164,3 +164,30 @@ class TestSqlSqlTCCustomFields(unittest.TestCase):
             result = self.iface.move_custom_field(field_id=1,
                                                   direction=CustomFieldMoveDirection.UP)
             self.assertIsNone(result)
+
+    def test_get_fields_for_project_returns_none_on_query_failure(self):
+        self.iface.safe_query = MagicMock(return_value=None)
+
+        result = self.iface.get_fields_for_project(project_id=1)
+
+        self.assertIsNone(result)
+        self.iface.safe_query.assert_called_once()
+
+    def test_get_fields_for_project_returns_empty_list_if_no_results(self):
+        self.iface.safe_query = MagicMock(return_value=[])
+
+        result = self.iface.get_fields_for_project(project_id=1)
+
+        self.assertEqual(result, [])
+        self.iface.safe_query.assert_called_once()
+
+    def test_get_fields_for_project_returns_fields(self):
+        expected_rows = [
+            (1, 'Priority', 'Desc', 'priority', 'Text', 'system', 1, 0, 0, '', 1)
+        ]
+        self.iface.safe_query = MagicMock(return_value=expected_rows)
+
+        result = self.iface.get_fields_for_project(project_id=1)
+
+        self.assertEqual(result, expected_rows)
+        self.iface.safe_query.assert_called_once()
