@@ -339,6 +339,49 @@ class SqlTCCustomFields(ExtendedSqlInterface):
 
         return [] if not rows else rows
 
+    def get_all_fields(self):
+        query: str = """
+            SELECT
+                cf.id,
+                cf.field_name,
+                cf.description,
+                cf.system_name,
+                ft.name AS field_type_name,
+                cf.entry_type,
+                cf.enabled,
+                cf.position,
+                cf.is_required,
+                cf.default_value,
+                cf.applies_to_all_projects,
+                CASE
+                    WHEN cf.applies_to_all_projects = 0 THEN
+                         GROUP_CONCAT(p.id || ':' || p.name)
+                    ELSE NULL
+                END AS linked_projects
+            FROM
+                tc_custom_fields AS cf
+            LEFT JOIN
+                tc_custom_field_types AS ft ON cf.field_type_id = ft.id
+            LEFT JOIN
+                tc_custom_field_projects AS cfp ON cf.id = cfp.field_id
+            LEFT JOIN
+                prj_projects AS p ON cfp.project_id = p.id
+            GROUP BY
+                cf.id
+            ORDER BY
+                cf.position;
+        """
+
+        rows = self.safe_query(query,
+                               (),
+                               "Query failed getting all custom fields",
+                               logging.CRITICAL)
+
+        if rows is None:
+            return
+
+        return [] if not rows else rows
+
     def __count_custom_fields(self) -> int:
         """
         Count the number of custom test case fields in the database.
