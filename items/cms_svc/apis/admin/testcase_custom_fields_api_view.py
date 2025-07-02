@@ -213,3 +213,167 @@ class TestcaseCustomFieldsApiView(BaseView):
         return quart.Response(json.dumps(body),
                               status=http.HTTPStatus.OK,
                               content_type="application/json")
+
+    async def get_project_custom_fields(self, project_id: int):
+        """
+        Asynchronously retrieves custom fields relevant to the given project ID
+        and returns them as a JSON response.
+
+        Fields returned include:
+        - Global fields (`applies_to_all_projects = 1`)
+        - Fields specifically assigned to the project via mapping
+
+        Args:
+            project_id (int): The ID of the project for which custom fields
+                              should be retrieved.
+
+        Returns:
+            quart.Response: A JSON response containing a list of matching custom
+            fields in the format:
+                {
+                    "custom_fields": [
+                        {
+                            "id": int,
+                            "field_name": str,
+                            "description": str,
+                            "system_name": str,
+                            "field_type": str,
+                            "entry_type": str,
+                            "enabled": bool,
+                            "position": int,
+                            "is_required": bool,
+                            "default_value": str
+                        },
+                        ...
+                    ]
+                }
+
+        If the database query fails, returns a 500 Internal Server Error with:
+            {
+                "status": 0,
+                "error": "Internal error"
+            }
+        """
+        fields = self._db.tc_custom_fields.get_fields_for_project(project_id)
+
+        if fields is None:
+            body: dict = {
+                "status": 0,
+                "error": "Internal error"
+            }
+            return quart.Response(json.dumps(body),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
+        custom_fields_list: list = []
+
+        for field in fields:
+            field_entry = {
+                'id': field[0],
+                'field_name': field[1],
+                'description': field[2],
+                'system_name': field[3],
+                'field_type': field[4],
+                'entry_type': field[5],
+                'enabled': field[6],
+                'position': field[7],
+                'is_required': field[8],
+                'default_value': field[9],
+            }
+            custom_fields_list.append(field_entry)
+
+        json_response = {
+            'custom_fields': custom_fields_list
+        }
+        return quart.Response(json.dumps(json_response),
+                              status=http.HTTPStatus.OK,
+                              content_type="application/json")
+
+    async def get_all_custom_fields(self):
+        """
+        Asynchronously retrieves all custom fields from the database and
+        returns them as a JSON response.
+
+        Custom fields include both global fields (where
+        `applies_to_all_projects = 1`) and project-specific fields. For fields
+        that are not global, a list of associated projects is included as
+        tuples of (project_id, project_name).
+
+        Returns:
+            quart.Response: A JSON response with a list of custom fields in
+            the following format:
+                {
+                    "custom_fields": [
+                        {
+                            "id": int,
+                            "field_name": str,
+                            "description": str,
+                            "system_name": str,
+                            "field_type": str,
+                            "entry_type": str,
+                            "enabled": bool,
+                            "position": int,
+                            "is_required": bool,
+                            "default_value": str,
+                            "applies_to_all_projects": bool,
+                            "assigned_projects": List[Tuple[str, str]]
+                        },
+                        ...
+                    ]
+                }
+
+        If an internal error occurs while querying the database, returns a
+        500 Internal Server Error response:
+            {
+                "status": 0,
+                "error": "Internal error"
+            }
+        """
+        fields = self._db.tc_custom_fields.get_all_fields()
+
+        if fields is None:
+            body: dict = {
+                "status": 0,
+                "error": "Internal error"
+            }
+            return quart.Response(json.dumps(body),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
+        custom_fields_list: list = []
+
+        for field in fields:
+            assigned_projects: list = []
+
+            assigned_projects_raw = field[11]
+            if assigned_projects_raw is not None:
+                projects = assigned_projects_raw.split(',')
+
+                for project in projects:
+                    project_id, project_name = project.split(':', 1)
+                    project_entry = {"id": project_id, "name": project_name}
+                    assigned_projects.append(project_entry)
+
+            field_entry = {
+                'id': field[0],
+                'field_name': field[1],
+                'description': field[2],
+                'system_name': field[3],
+                'field_type': field[4],
+                'entry_type': field[5],
+                'enabled': field[6],
+                'position': field[7],
+                'is_required': field[8],
+                'default_value': field[9],
+                'applies_to_all_projects': field[10],
+                'assigned_projects': assigned_projects
+            }
+
+            custom_fields_list.append(field_entry)
+
+        json_response = {
+            'custom_fields': custom_fields_list
+        }
+        return quart.Response(json.dumps(json_response),
+                              status=http.HTTPStatus.OK,
+                              content_type="application/json")

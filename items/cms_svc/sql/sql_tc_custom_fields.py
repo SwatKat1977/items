@@ -287,6 +287,134 @@ class SqlTCCustomFields(ExtendedSqlInterface):
             insert_values,
             "Failed to assign custom field to projects")
 
+    def get_fields_for_project(self, project_id: int):
+        """
+        Retrieve all custom fields applicable to a specific project.
+
+        This method returns all custom fields that either:
+        - Apply to all projects (i.e., `applies_to_all_projects` is True), or
+        - Are explicitly linked to the given project via the
+          `TC_CUSTOM_FIELD_PROJECTS` table.
+
+        Args:
+            project_id (int): The ID of the project for which to retrieve
+            applicable custom fields.
+
+        Returns:
+            list[sqlite3.Row] | None: A list of rows representing custom fields
+                                      if found;
+                                      an empty list if no matching fields exist;
+                                      or None if the query fails.
+        """
+        sql: str = """
+            SELECT
+                cf.id,
+                cf.field_name,
+                cf.description,
+                cf.system_name,
+                ft.name AS field_type_name,
+                cf.entry_type,
+                cf.enabled,
+                cf.position,
+                cf.is_required,
+                cf.default_value,
+                cf.applies_to_all_projects
+            FROM
+                tc_custom_fields AS cf
+            LEFT JOIN
+                tc_custom_field_projects AS cfp ON cf.id = cfp.field_id AND cfp.project_id = ?
+            LEFT JOIN
+                tc_custom_field_types AS ft ON cf.field_type_id = ft.id
+            WHERE
+                cf.applies_to_all_projects = 1 OR cfp.project_id IS NOT NULL
+        """
+
+        rows = self.safe_query(sql,
+                               (project_id,),
+                               "Query failed getting project custom fields",
+                               logging.CRITICAL)
+
+        if rows is None:
+            return
+
+        return [] if not rows else rows
+
+    def get_all_fields(self):
+        """
+        Retrieves all custom fields from the database, including their
+        associated metadata and any project associations for fields that do
+        not apply globally.
+
+        This method performs a SQL query joining `tc_custom_fields` with
+        `tc_custom_field_types`, `tc_custom_field_projects`, and
+        `prj_projects` to fetch a complete list of custom fields.
+        For fields where `applies_to_all_projects` is false (0), it
+        collects the list of linked projects as a string in the format
+        `"project_id:project_name,..."`.
+
+        Returns:
+            list[sqlite3.Row] or list[dict]: A list of custom field records.
+                                             Each record includes:
+                - id: int
+                - field_name: str
+                - description: str
+                - system_name: str
+                - field_type_name: str
+                - entry_type: str ('system' or 'user')
+                - enabled: bool
+                - position: int
+                - is_required: bool
+                - default_value: str
+                - applies_to_all_projects: bool
+                - linked_projects: Optional[str]
+                      (e.g. "1:ProjectA,2:ProjectB") if not global, else
+                      None
+
+            Returns an empty list if no fields exist, or `None` if the
+            query fails.
+        """
+        query: str = """
+            SELECT
+                cf.id,
+                cf.field_name,
+                cf.description,
+                cf.system_name,
+                ft.name AS field_type_name,
+                cf.entry_type,
+                cf.enabled,
+                cf.position,
+                cf.is_required,
+                cf.default_value,
+                cf.applies_to_all_projects,
+                CASE
+                    WHEN cf.applies_to_all_projects = 0 THEN
+                         GROUP_CONCAT(p.id || ':' || p.name)
+                    ELSE NULL
+                END AS linked_projects
+            FROM
+                tc_custom_fields AS cf
+            LEFT JOIN
+                tc_custom_field_types AS ft ON cf.field_type_id = ft.id
+            LEFT JOIN
+                tc_custom_field_projects AS cfp ON cf.id = cfp.field_id
+            LEFT JOIN
+                prj_projects AS p ON cfp.project_id = p.id
+            GROUP BY
+                cf.id
+            ORDER BY
+                cf.position;
+        """
+
+        rows = self.safe_query(query,
+                               (),
+                               "Query failed getting all custom fields",
+                               logging.CRITICAL)
+
+        if rows is None:
+            return
+
+        return [] if not rows else rows
+
     def __count_custom_fields(self) -> int:
         """
         Count the number of custom test case fields in the database.

@@ -68,4 +68,17 @@ def create_blueprint(logger: logging.Logger,
     async def move_testcase_custom_field_request(field_id: int, direction: str):
         return await view.move_testcase_custom_field(field_id, direction)
 
+    logger.debug("=> /testcase_custom_fields/<int:project_id> [GET]")
+
+    @blueprint.route('/testcase_custom_fields/<int:project_id>',
+                     methods=['GET'])
+    async def get_project_custom_fields_request(project_id: int):
+        return await view.get_project_custom_fields(project_id)
+
+    logger.debug("=> /testcase_custom_fields [GET]")
+
+    @blueprint.route('/testcase_custom_fields', methods=['GET'])
+    async def get_all_custom_fields_request():
+        return await view.get_all_custom_fields()
+
     return blueprint
