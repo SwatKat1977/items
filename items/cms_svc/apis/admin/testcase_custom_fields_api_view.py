@@ -213,3 +213,72 @@ class TestcaseCustomFieldsApiView(BaseView):
         return quart.Response(json.dumps(body),
                               status=http.HTTPStatus.OK,
                               content_type="application/json")
+
+    async def get_project_custom_fields(self, project_id: int):
+        fields = self._db.tc_custom_fields.get_fields_for_project(project_id)
+
+        if fields is None:
+            body: dict = {
+                "status": 0,
+                "error": "Internal error"
+            }
+            return quart.Response(json.dumps(body),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
+        custom_fields_list: list = []
+
+        for field in fields:
+            field_entry = {
+                'id': field[0],
+                'field_name': field[1],
+                'description': field[2],
+                'system_name': field[3],
+                'field_type': field[4],
+                'entry_type': field[5],
+                'enabled': field[6],
+                'position': field[7],
+                'is_required': field[8],
+                'default_value': field[9],
+            }
+            custom_fields_list.append(field_entry)
+
+        json_response = {
+            'custom_fields': custom_fields_list
+        }
+        return quart.Response(json.dumps(json_response),
+                              status=http.HTTPStatus.OK,
+                              content_type="application/json")
+
+    async def get_all_custom_fields(self):
+        fields = self._db.tc_custom_fields.get_all_fields()
+
+        if fields is None:
+            body: dict = {
+                "status": 0,
+                "error": "Internal error"
+            }
+            return quart.Response(json.dumps(body),
+                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                  content_type="application/json")
+
+        print("FIELDS:", fields)
+
+    '''
+        return await view.get_projects_custom_fields(project_id)
+
+    logger.debug("=> /testcase_custom_fields [GET]")
+
+    @blueprint.route('/testcase_custom_fields', methods=['GET'])
+    async def get_all_custom_fields_request():
+        return await view.get_all_custom_fields()
+
+    '''
+
+    '''
+    'applies_to_all_projects': field[10]
+
+}
+print("[DEBUG]:", field_entry)
+    '''
+
