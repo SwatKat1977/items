@@ -351,7 +351,7 @@ class TestcaseCustomFieldsApiView(BaseView):
 
                 for project in projects:
                     project_id, project_name = project.split(':', 1)
-                    project_entry = (project_id, project_name)
+                    project_entry = {"id": project_id, "name": project_name}
                     assigned_projects.append(project_entry)
 
             field_entry = {
