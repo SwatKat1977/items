@@ -287,6 +287,43 @@ class SqlTCCustomFields(ExtendedSqlInterface):
             insert_values,
             "Failed to assign custom field to projects")
 
+    def get_fields_for_project(self, project_id: int):
+        """
+        Retrieve all custom fields applicable to a specific project.
+
+        This method returns all custom fields that either:
+        - Apply to all projects (i.e., `applies_to_all_projects` is True), or
+        - Are explicitly linked to the given project via the
+          `TC_CUSTOM_FIELD_PROJECTS` table.
+
+        Args:
+            project_id (int): The ID of the project for which to retrieve
+            applicable custom fields.
+
+        Returns:
+            list[sqlite3.Row] | None: A list of rows representing custom fields
+                                      if found;
+                                      an empty list if no matching fields exist;
+                                      or None if the query fails.
+        """
+        sql: str = """
+            SELECT cf.*
+            FROM TC_CUSTOM_FIELDS AS cf
+            LEFT JOIN TC_CUSTOM_FIELD_PROJECTS AS cfp
+                ON cf.id = cfp.field_id AND cfp.project_id = ?
+            WHERE cf.applies_to_all_projects = 1 OR
+                  cfp.project_id IS NOT NULL;"""
+
+        rows = self.safe_query(sql,
+                               (project_id,),
+                               "Query failed getting project custom fields",
+                               logging.CRITICAL)
+
+        if rows is None:
+            return
+
+        return [] if not rows else rows
+
     def __count_custom_fields(self) -> int:
         """
         Count the number of custom test case fields in the database.
