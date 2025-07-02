@@ -520,3 +520,103 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
 
 
 
+    @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
+    async def test_get_project_custom_fields_returns_500_on_internal_error(self,
+                                                                           mock_sql_interface):
+        mock_db = MagicMock()
+        mock_db.tc_custom_fields.get_fields_for_project.return_value = None
+        mock_sql_interface.return_value = mock_db
+
+        view = TestcaseCustomFieldsApiView(self.mock_logger, self.mock_state_object)
+
+        # Register route for testing
+        self.app.add_url_rule('/testcase_custom_fields/testcase_custom_fields/<int:project_id>',
+                              view_func=view.get_project_custom_fields,
+                              methods=['GET'])
+
+        async with self.client as client:
+            response = await client.get('/testcase_custom_fields/testcase_custom_fields/1')
+            data = await response.get_json()
+            self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
+            self.assertEqual(data["status"], 0)
+            self.assertIn("error", data)
+            self.assertEqual(data["error"], "Internal error")
+
+    @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
+    async def test_get_project_custom_fields_returns_empty_list_when_no_fields_found(
+            self, mock_sql_interface):
+        mock_db = MagicMock()
+        mock_db.tc_custom_fields.get_fields_for_project.return_value = []
+        mock_sql_interface.return_value = mock_db
+
+        view = TestcaseCustomFieldsApiView(self.mock_logger, self.mock_state_object)
+
+        # Register route for testing
+        self.app.add_url_rule('/testcase_custom_fields/testcase_custom_fields/<int:project_id>',
+                              view_func=view.get_project_custom_fields,
+                              methods=['GET'])
+
+        async with self.client as client:
+            response = await client.get('/testcase_custom_fields/testcase_custom_fields/1')
+            data = await response.get_json()
+            self.assertEqual(response.status_code, http.HTTPStatus.OK)
+            self.assertIn("custom_fields", data)
+            self.assertEqual(data["custom_fields"], [])
+
+
+
+
+
+
+    @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
+    async def test_get_project_custom_fields_returns_fields_correctly_when_present(
+            self, mock_sql_interface):
+        mock_fields = [
+            (1, "Field A", "A desc", "sysA", "typeA", "entryA", True, 1, True, "defaultA"),
+            (2, "Field B", "B desc", "sysB", "typeB", "entryB", False, 2, False, "defaultB")
+        ]
+        mock_db = MagicMock()
+        mock_db.tc_custom_fields.get_fields_for_project.return_value = mock_fields
+        mock_sql_interface.return_value = mock_db
+
+        view = TestcaseCustomFieldsApiView(self.mock_logger, self.mock_state_object)
+
+        # Register route for testing
+        self.app.add_url_rule('/testcase_custom_fields/testcase_custom_fields/<int:project_id>',
+                              view_func=view.get_project_custom_fields,
+                              methods=['GET'])
+
+        expected_fields = [
+            {
+                'id': 1,
+                'field_name': "Field A",
+                'description': "A desc",
+                'system_name': "sysA",
+                'field_type': "typeA",
+                'entry_type': "entryA",
+                'enabled': True,
+                'position': 1,
+                'is_required': True,
+                'default_value': "defaultA",
+            },
+            {
+                'id': 2,
+                'field_name': "Field B",
+                'description': "B desc",
+                'system_name': "sysB",
+                'field_type': "typeB",
+                'entry_type': "entryB",
+                'enabled': False,
+                'position': 2,
+                'is_required': False,
+                'default_value': "defaultB",
+            }
+        ]
+
+        async with self.client as client:
+            response = await client.get('/testcase_custom_fields/testcase_custom_fields/1')
+            data = await response.get_json()
+            self.assertEqual(response.status_code, http.HTTPStatus.OK)
+            self.assertIn("custom_fields", data)
+            self.assertEqual(len(data["custom_fields"]), 2)
+            self.assertEqual(data["custom_fields"], expected_fields)
