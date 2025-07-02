@@ -307,12 +307,27 @@ class SqlTCCustomFields(ExtendedSqlInterface):
                                       or None if the query fails.
         """
         sql: str = """
-            SELECT cf.*
-            FROM TC_CUSTOM_FIELDS AS cf
-            LEFT JOIN TC_CUSTOM_FIELD_PROJECTS AS cfp
-                ON cf.id = cfp.field_id AND cfp.project_id = ?
-            WHERE cf.applies_to_all_projects = 1 OR
-                  cfp.project_id IS NOT NULL;"""
+            SELECT
+                cf.id,
+                cf.field_name,
+                cf.description,
+                cf.system_name,
+                ft.name AS field_type_name,
+                cf.entry_type,
+                cf.enabled,
+                cf.position,
+                cf.is_required,
+                cf.default_value,
+                cf.applies_to_all_projects
+            FROM
+                tc_custom_fields AS cf
+            LEFT JOIN
+                tc_custom_field_projects AS cfp ON cf.id = cfp.field_id AND cfp.project_id = ?
+            LEFT JOIN
+                tc_custom_field_types AS ft ON cf.field_type_id = ft.id
+            WHERE
+                cf.applies_to_all_projects = 1 OR cfp.project_id IS NOT NULL
+        """
 
         rows = self.safe_query(sql,
                                (project_id,),
