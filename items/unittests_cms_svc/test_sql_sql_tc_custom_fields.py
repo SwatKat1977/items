@@ -191,3 +191,63 @@ class TestSqlSqlTCCustomFields(unittest.TestCase):
 
         self.assertEqual(result, expected_rows)
         self.iface.safe_query.assert_called_once()
+
+    def test_get_all_fields_success(self):
+        # Simulate safe_query returning a list of rows (dict-like or sqlite3.Row)
+        self.iface.safe_query = MagicMock()
+
+        mock_rows = [
+            {
+                "id": 1,
+                "field_name": "Field1",
+                "description": "Desc1",
+                "system_name": "sys1",
+                "field_type_name": "type1",
+                "entry_type": "system",
+                "enabled": True,
+                "position": 1,
+                "is_required": False,
+                "default_value": "default1",
+                "applies_to_all_projects": True,
+                "linked_projects": None,
+            },
+            {
+                "id": 2,
+                "field_name": "Field2",
+                "description": "Desc2",
+                "system_name": "sys2",
+                "field_type_name": "type2",
+                "entry_type": "user",
+                "enabled": False,
+                "position": 2,
+                "is_required": True,
+                "default_value": "default2",
+                "applies_to_all_projects": False,
+                "linked_projects": "1:ProjectA,2:ProjectB",
+            },
+        ]
+        self.iface.safe_query.return_value = mock_rows
+
+        result = self.iface.get_all_fields()
+        self.iface.safe_query.assert_called_once()
+        self.assertEqual(result, mock_rows)
+
+    def test_get_all_fields_empty(self):
+        # safe_query returns empty list
+        self.iface.safe_query = MagicMock()
+
+        self.iface.safe_query.return_value = []
+
+        result = self.iface.get_all_fields()
+        self.iface.safe_query.assert_called_once()
+        self.assertEqual(result, [])
+
+    def test_get_all_fields_failure(self):
+        # safe_query returns None, simulating a failure
+        self.iface.safe_query = MagicMock()
+
+        self.iface.safe_query.return_value = None
+
+        result = self.iface.get_all_fields()
+        self.iface.safe_query.assert_called_once()
+        self.assertIsNone(result)
