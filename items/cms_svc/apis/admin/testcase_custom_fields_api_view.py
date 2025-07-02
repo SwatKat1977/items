@@ -262,23 +262,40 @@ class TestcaseCustomFieldsApiView(BaseView):
                                   status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
                                   content_type="application/json")
 
-        print("FIELDS:", fields)
+        custom_fields_list: list = []
 
-    '''
-        return await view.get_projects_custom_fields(project_id)
+        for field in fields:
+            assigned_projects: list = []
 
-    logger.debug("=> /testcase_custom_fields [GET]")
+            assigned_projects_raw = field[11]
+            if assigned_projects_raw is not None:
+                projects = assigned_projects_raw.split(',')
 
-    @blueprint.route('/testcase_custom_fields', methods=['GET'])
-    async def get_all_custom_fields_request():
-        return await view.get_all_custom_fields()
+                for project in projects:
+                    project_id, project_name = project.split(':', 1)
+                    project_entry = (project_id, project_name)
+                    assigned_projects.append(project_entry)
 
-    '''
+            field_entry = {
+                'id': field[0],
+                'field_name': field[1],
+                'description': field[2],
+                'system_name': field[3],
+                'field_type': field[4],
+                'entry_type': field[5],
+                'enabled': field[6],
+                'position': field[7],
+                'is_required': field[8],
+                'default_value': field[9],
+                'applies_to_all_projects': field[10],
+                'assigned_projects': assigned_projects
+            }
 
-    '''
-    'applies_to_all_projects': field[10]
+            custom_fields_list.append(field_entry)
 
-}
-print("[DEBUG]:", field_entry)
-    '''
-
+        json_response = {
+            'custom_fields': custom_fields_list
+        }
+        return quart.Response(json.dumps(json_response),
+                              status=http.HTTPStatus.OK,
+                              content_type="application/json")
