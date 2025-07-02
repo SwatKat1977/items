@@ -215,6 +215,45 @@ class TestcaseCustomFieldsApiView(BaseView):
                               content_type="application/json")
 
     async def get_project_custom_fields(self, project_id: int):
+        """
+        Asynchronously retrieves custom fields relevant to the given project ID
+        and returns them as a JSON response.
+
+        Fields returned include:
+        - Global fields (`applies_to_all_projects = 1`)
+        - Fields specifically assigned to the project via mapping
+
+        Args:
+            project_id (int): The ID of the project for which custom fields
+                              should be retrieved.
+
+        Returns:
+            quart.Response: A JSON response containing a list of matching custom
+            fields in the format:
+                {
+                    "custom_fields": [
+                        {
+                            "id": int,
+                            "field_name": str,
+                            "description": str,
+                            "system_name": str,
+                            "field_type": str,
+                            "entry_type": str,
+                            "enabled": bool,
+                            "position": int,
+                            "is_required": bool,
+                            "default_value": str
+                        },
+                        ...
+                    ]
+                }
+
+        If the database query fails, returns a 500 Internal Server Error with:
+            {
+                "status": 0,
+                "error": "Internal error"
+            }
+        """
         fields = self._db.tc_custom_fields.get_fields_for_project(project_id)
 
         if fields is None:
@@ -251,6 +290,45 @@ class TestcaseCustomFieldsApiView(BaseView):
                               content_type="application/json")
 
     async def get_all_custom_fields(self):
+        """
+        Asynchronously retrieves all custom fields from the database and
+        returns them as a JSON response.
+
+        Custom fields include both global fields (where
+        `applies_to_all_projects = 1`) and project-specific fields. For fields
+        that are not global, a list of associated projects is included as
+        tuples of (project_id, project_name).
+
+        Returns:
+            quart.Response: A JSON response with a list of custom fields in
+            the following format:
+                {
+                    "custom_fields": [
+                        {
+                            "id": int,
+                            "field_name": str,
+                            "description": str,
+                            "system_name": str,
+                            "field_type": str,
+                            "entry_type": str,
+                            "enabled": bool,
+                            "position": int,
+                            "is_required": bool,
+                            "default_value": str,
+                            "applies_to_all_projects": bool,
+                            "assigned_projects": List[Tuple[str, str]]
+                        },
+                        ...
+                    ]
+                }
+
+        If an internal error occurs while querying the database, returns a
+        500 Internal Server Error response:
+            {
+                "status": 0,
+                "error": "Internal error"
+            }
+        """
         fields = self._db.tc_custom_fields.get_all_fields()
 
         if fields is None:
