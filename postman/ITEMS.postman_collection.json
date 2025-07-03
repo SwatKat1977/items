@@ -79,7 +79,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"Project Gamma\",\n    \"announcement\": \"This is test project Gamma\",\n    \"announcement_on_overview\": false\n}",
+									"raw": "{\n    \"name\": \"Project bob\",\n    \"announcement\": \"This is test project Gamma\",\n    \"announcement_on_overview\": false\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -87,14 +87,14 @@
 									}
 								},
 								"url": {
-									"raw": "{{GATEWAY_SVC_URL}}/project/modify/3",
+									"raw": "{{GATEWAY_SVC_URL}}/project/modify/1",
 									"host": [
 										"{{GATEWAY_SVC_URL}}"
 									],
 									"path": [
 										"project",
 										"modify",
-										"3"
+										"1"
 									]
 								}
 							},
@@ -165,12 +165,12 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "{{GATEWAY_SVC_URL}}/10/delete_project",
+									"raw": "{{GATEWAY_SVC_URL}}/4/delete_project",
 									"host": [
 										"{{GATEWAY_SVC_URL}}"
 									],
 									"path": [
-										"10",
+										"4",
 										"delete_project"
 									]
 								}
@@ -221,7 +221,7 @@
 									}
 								],
 								"url": {
-									"raw": "http://127.0.0.1:5000/webhook/get_metadata?nonce=1000",
+									"raw": "http://127.0.0.1:3000/webhook/get_metadata?nonce=1000",
 									"protocol": "http",
 									"host": [
 										"127",
@@ -229,7 +229,7 @@
 										"0",
 										"1"
 									],
-									"port": "5000",
+									"port": "3000",
 									"path": [
 										"webhook",
 										"get_metadata"
@@ -534,6 +534,45 @@
 										"testcase_custom_fields",
 										"2",
 										"down"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Custom Fields for project",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{CMS_SVC_URL}}/admin/testcase_custom_fields/testcase_custom_fields/2",
+									"host": [
+										"{{CMS_SVC_URL}}"
+									],
+									"path": [
+										"admin",
+										"testcase_custom_fields",
+										"testcase_custom_fields",
+										"2"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get All Custom Fields",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{CMS_SVC_URL}}/admin/testcase_custom_fields/testcase_custom_fields",
+									"host": [
+										"{{CMS_SVC_URL}}"
+									],
+									"path": [
+										"admin",
+										"testcase_custom_fields",
+										"testcase_custom_fields"
 									]
 								}
 							},
