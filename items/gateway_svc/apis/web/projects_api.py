@@ -15,11 +15,11 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from apis.project_api_view import ProjectApiView
+from .projects_api_view import ProjectsApiView
 
 
 def create_blueprint(logger: logging.Logger) -> Blueprint:
-    view = ProjectApiView(logger)
+    view = ProjectsApiView(logger)
 
     blueprint = Blueprint('project_api', __name__)
 

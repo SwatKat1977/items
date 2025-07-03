@@ -22,7 +22,7 @@ from threadsafe_configuration import ThreadSafeConfiguration
 import interfaces.gateway.project as json_schemas
 
 
-class ProjectApiView(BaseView):
+class ProjectsApiView(BaseView):
     __slots__ = ['_logger']
 
     def __init__(self, logger : logging.Logger) -> None:
