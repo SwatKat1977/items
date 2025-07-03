@@ -221,15 +221,10 @@
 									}
 								],
 								"url": {
-									"raw": "http://127.0.0.1:3000/webhook/get_metadata?nonce=1000",
-									"protocol": "http",
+									"raw": "{{GATEWAY_SVC_URL}}/webhook/get_metadata?nonce=109",
 									"host": [
-										"127",
-										"0",
-										"0",
-										"1"
+										"{{GATEWAY_SVC_URL}}"
 									],
-									"port": "3000",
 									"path": [
 										"webhook",
 										"get_metadata"
@@ -237,7 +232,7 @@
 									"query": [
 										{
 											"key": "nonce",
-											"value": "1000"
+											"value": "109"
 										}
 									]
 								}
