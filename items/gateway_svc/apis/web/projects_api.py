@@ -18,36 +18,38 @@ from quart import Blueprint
 from .projects_api_view import ProjectsApiView
 
 
-def create_blueprint(logger: logging.Logger) -> Blueprint:
+def create_blueprint(logger: logging.Logger, prefix: str) -> Blueprint:
     view = ProjectsApiView(logger)
 
     blueprint = Blueprint('project_api', __name__)
 
-    logger.info("Registering Project endpoint:")
+    logger.debug("Registering Project endpoint:")
 
-    logger.info("=> /project/overviews [GET]")
+    logger.debug("=> %s/overviews [GET]", prefix)
 
-    @blueprint.route('/project/overviews', methods=['GET'])
+    @blueprint.route('/overviews', methods=['GET'])
     async def project_overviews_request():
         return await view.project_overviews()
 
-    @blueprint.route('/project/details/<project_id>', methods=['GET'])
+    logger.debug("=> %s/details/<project_id> [GET]", prefix)
+
+    @blueprint.route('/details/<project_id>', methods=['GET'])
     async def project_details_request(project_id: int):
         return await view.project_details(project_id)
 
-    logger.info("=> /project/add [POST]")
+    logger.debug("=> %s/add [POST]", prefix)
 
-    @blueprint.route('/project/add', methods=['POST'])
+    @blueprint.route('/add', methods=['POST'])
     async def add_project_request():
         return await view.add_project()
 
-    logger.info("=> /project/modify/<int:project_id> [POST]")
+    logger.debug("=> %s/modify/<int:project_id> [POST]", prefix)
 
-    @blueprint.route('/project/modify/<int:project_id>', methods=['POST'])
+    @blueprint.route('/modify/<int:project_id>', methods=['POST'])
     async def modify_project_request(project_id: int):
         return await view.modify_project(project_id)
 
-    logger.info("=> /<project_id>/delete_project [DELETE]")
+    logger.debug("=> %s/<project_id>/delete_project [DELETE]", prefix)
 
     @blueprint.route('/<project_id>/delete_project', methods=['DELETE'])
     async def delete_project_request(project_id: int):
