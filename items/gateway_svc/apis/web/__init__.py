@@ -17,10 +17,9 @@ import logging
 import quart
 from metadata_handler import MetadataHandler
 from sessions import Sessions
-# from .health_api import create_blueprint as create_heath_bp
-from .handshake_api import create_blueprint as create_handshake_bp
+from .session_api import create_blueprint as create_session_bp
 from .projects_api import create_blueprint as create_projects_bp
-# from .testcases_api import create_blueprint as create_testcases_bp
+from .testcases_api import create_blueprint as create_testcases_bp
 from .webhook_api import create_blueprint as create_webhook_bp
 # from .admin import create_admin_routes
 
@@ -31,19 +30,16 @@ def create_web_routes(logger: logging.Logger,
                       prefix: str) -> quart.Blueprint:
     web_bp = quart.Blueprint("web_routes", __name__)
 
-    # Handshake API routes
-    web_bp.register_blueprint(create_handshake_bp(logger,
-                                                  sessions,
-                                                  f"{prefix}/handshake"),
-                              url_prefix="/handshake")
+    # Session API routes
+    web_bp.register_blueprint(create_session_bp(logger, sessions))
 
-    # web_bp.register_blueprint(create_heath_bp(logger, state), url_prefix="/health")
-    web_bp.register_blueprint(create_projects_bp(logger,
-                                                 f"{prefix}/projects"),
-                              url_prefix="/projects")
+    # Projects API routes
+    web_bp.register_blueprint(create_projects_bp(logger))
 
-    # web_bp.register_blueprint(create_testcases_bp(logger, state), url_prefix="/testcases")
+    # Test cases API routes
+    web_bp.register_blueprint(create_testcases_bp(logger, sessions))
 
+    # Webhook API routes
     web_bp.register_blueprint(create_webhook_bp(logger,
                                                 metadata_handler,
                                                 f"{prefix}/webhook"),
