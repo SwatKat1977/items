@@ -25,33 +25,36 @@ def create_blueprint(logger: logging.Logger, prefix: str) -> Blueprint:
 
     logger.debug("Registering Project endpoint:")
 
-    logger.debug("=> %s/overviews [GET]", prefix)
+    logger.debug(f"=> {'List all projects'.ljust(30)}GET /web/projects")
 
-    @blueprint.route('/overviews', methods=['GET'])
+    @blueprint.route('/projects', methods=['GET'])
     async def project_overviews_request():
-        return await view.project_overviews()
+        return await view.list_all_projects()
 
-    logger.debug("=> %s/details/<project_id> [GET]", prefix)
+    logger.debug(f"=> {'Retrieve a project'.ljust(30)}"
+                 "GET /web/projects/<project_id>")
 
-    @blueprint.route('/details/<project_id>', methods=['GET'])
+    @blueprint.route('/projects/<project_id>', methods=['GET'])
     async def project_details_request(project_id: int):
-        return await view.project_details(project_id)
+        return await view.retrieve_a_project(project_id)
 
-    logger.debug("=> %s/add [POST]", prefix)
+    logger.debug(f"=> {'Add a project'.ljust(30)}" "POST /web/projects")
 
-    @blueprint.route('/add', methods=['POST'])
+    @blueprint.route('/projects', methods=['POST'])
     async def add_project_request():
         return await view.add_project()
 
-    logger.debug("=> %s/modify/<int:project_id> [POST]", prefix)
+    logger.debug(f"=> {'Update a project'.ljust(30)}"
+                 "PATCH /projects/<int:project_id>")
 
-    @blueprint.route('/modify/<int:project_id>', methods=['POST'])
+    @blueprint.route('/projects/<int:project_id>', methods=['PATCH'])
     async def modify_project_request(project_id: int):
         return await view.modify_project(project_id)
 
-    logger.debug("=> %s/<project_id>/delete_project [DELETE]", prefix)
+    logger.debug(f"=> {'Delete a project'.ljust(30)}"
+                 "DELETE /projects/<int:project_id>")
 
-    @blueprint.route('/<project_id>/delete_project', methods=['DELETE'])
+    @blueprint.route('/projects/<project_id>', methods=['DELETE'])
     async def delete_project_request(project_id: int):
         return await view.delete_project(project_id)
 

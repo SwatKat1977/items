@@ -28,8 +28,7 @@ class ProjectsApiView(BaseView):
     def __init__(self, logger : logging.Logger) -> None:
         self._logger = logger.getChild(__name__)
 
-    async def project_overviews(self):
-
+    async def list_all_projects(self):
         # Get fields from query parameters
         value_fields = quart.request.args.get("value_fields")
         count_fields = quart.request.args.get("count_fields")
@@ -59,7 +58,7 @@ class ProjectsApiView(BaseView):
                               status=http.HTTPStatus.OK,
                               content_type="application/json")
 
-    async def project_details(self, project_id: int):
+    async def retrieve_a_project(self, project_id: int):
         cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
         url: str = f"{cms_svc}projects/details/{project_id}"
 
