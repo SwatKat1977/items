@@ -6,7 +6,7 @@ from http import HTTPStatus
 from quart import Quart
 from sessions import Sessions
 from base_view import ApiResponse
-from apis.handshake_api_view import HandshakeApiView
+from apis.web.session_api_view import SessionApiView
 from configuration.configuration_manager import ConfigurationManager
 
 class TestHandshakeApiView(unittest.IsolatedAsyncioTestCase):

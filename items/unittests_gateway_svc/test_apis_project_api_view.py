@@ -4,14 +4,14 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 from quart import Quart
 from configuration.configuration_manager import ConfigurationManager
-from apis.project_api_view import ProjectApiView
+from apis.web.projects_api_view import ProjectsApiView
 from threadsafe_configuration import ThreadSafeConfiguration
 
 
 class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.mock_logger = MagicMock(spec=logging.Logger)
-        self.view = ProjectApiView(self.mock_logger)
+        self.view = ProjectsApiView(self.mock_logger)
 
         # Set up Quart test client and mock dependencies.
         self.app = Quart(__name__)

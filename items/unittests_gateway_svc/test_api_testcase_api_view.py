@@ -4,7 +4,7 @@ import json
 import logging
 import http
 import requests
-from apis.testcase_api_view import TestCaseApiView
+from apis.web.testcases_api_view import TestCasesApiView
 from threadsafe_configuration import ThreadSafeConfiguration
 
 class TestApiTestcaseApiView(unittest.IsolatedAsyncioTestCase):
