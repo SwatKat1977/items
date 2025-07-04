@@ -18,7 +18,7 @@ from quart import Blueprint
 from .projects_api_view import ProjectsApiView
 
 
-def create_blueprint(logger: logging.Logger, prefix: str) -> Blueprint:
+def create_blueprint(logger: logging.Logger) -> Blueprint:
     view = ProjectsApiView(logger)
 
     blueprint = Blueprint('project_api', __name__)
