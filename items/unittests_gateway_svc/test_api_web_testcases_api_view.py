@@ -11,7 +11,7 @@ class TestApiTestcaseApiView(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.logger = MagicMock()
         self.sessions = MagicMock()  # Mocking Sessions
-        self.view = TestCaseApiView(self.logger, self.sessions)
+        self.view = TestCasesApiView(self.logger, self.sessions)
         self.view._logger = self.logger
         self.project_id = 123
 
