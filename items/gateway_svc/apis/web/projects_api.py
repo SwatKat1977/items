@@ -45,14 +45,14 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
         return await view.add_project()
 
     logger.debug(f"=> {'Update a project'.ljust(30)}"
-                 "PATCH /projects/<int:project_id>")
+                 "PATCH /web/projects/<int:project_id>")
 
     @blueprint.route('/projects/<int:project_id>', methods=['PATCH'])
     async def modify_project_request(project_id: int):
         return await view.modify_project(project_id)
 
     logger.debug(f"=> {'Delete a project'.ljust(30)}"
-                 "DELETE /projects/<int:project_id>")
+                 "DELETE /web/projects/<int:project_id>")
 
     @blueprint.route('/projects/<project_id>', methods=['DELETE'])
     async def delete_project_request(project_id: int):

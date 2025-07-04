@@ -31,7 +31,6 @@ from configuration_layout import CONFIGURATION_LAYOUT
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from interfaces.accounts.health import SCHEMA_ACCOUNTS_SVC_HEALTH_RESPONSE
 from interfaces.cms.health import SCHEMA_CMS_SVC_HEALTH_RESPONSE
-from apis import testcase_api
 import service_health_enums as health_enums
 from sessions import Sessions
 from metadata_handler import MetadataHandler
@@ -79,16 +78,6 @@ class Application(BaseApplication):
 
         if not self._check_cms_svc_api_status(version_info):
             return False
-
-        '''
-        handshake_blueprint = handshake_api.create_blueprint(
-            self._logger, self._sessions)
-        self._quart_instance.register_blueprint(handshake_blueprint)
-        '''
-
-        testcase_blueprint = testcase_api.create_blueprint(
-            self._logger, self._sessions)
-        self._quart_instance.register_blueprint(testcase_blueprint)
 
         self._quart_instance.register_blueprint(
             create_web_routes(self._logger,

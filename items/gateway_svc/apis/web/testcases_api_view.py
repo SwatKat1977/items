@@ -23,7 +23,7 @@ from base_view import ApiResponse, BaseView, validate_json
 from threadsafe_configuration import ThreadSafeConfiguration
 
 
-class TestCaseApiView(BaseView):
+class TestCasesApiView(BaseView):
     __slots__ = ['_logger']
 
     def __init__(self, logger: logging.Logger, sessions: Sessions) -> None:
