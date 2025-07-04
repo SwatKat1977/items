@@ -15,21 +15,22 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from apis.webhook_api_view import WebhookApiView
+from .webhook_api_view import WebhookApiView
 from metadata_handler import MetadataHandler
 
 
 def create_blueprint(logger: logging.Logger,
-                     metadata_handler: MetadataHandler) -> Blueprint:
+                     metadata_handler: MetadataHandler,
+                     prefix: str) -> Blueprint:
     view = WebhookApiView(logger, metadata_handler)
 
     blueprint = Blueprint('webhook_api', __name__)
 
-    logger.info("Registering Webhook endpoints:")
+    logger.debug("Registering WEB Webhook endpoints:")
 
-    logger.info("=> /webhook/get_metadata [GET]")
+    logger.debug("=> %s/get_metadata [GET]", prefix)
 
-    @blueprint.route('/webhook/get_metadata', methods=['GET'])
+    @blueprint.route('/get_metadata', methods=['GET'])
     async def get_metadata_request():
         return await view.get_metadata()
 

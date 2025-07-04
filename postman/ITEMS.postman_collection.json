@@ -79,7 +79,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"Project Gamma\",\n    \"announcement\": \"This is test project Gamma\",\n    \"announcement_on_overview\": false\n}",
+									"raw": "{\n    \"name\": \"Project bob\",\n    \"announcement\": \"This is test project Gamma\",\n    \"announcement_on_overview\": false\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -87,14 +87,15 @@
 									}
 								},
 								"url": {
-									"raw": "{{GATEWAY_SVC_URL}}/project/modify/3",
+									"raw": "{{GATEWAY_SVC_URL}}/web/projects/modify/1",
 									"host": [
 										"{{GATEWAY_SVC_URL}}"
 									],
 									"path": [
-										"project",
+										"web",
+										"projects",
 										"modify",
-										"3"
+										"1"
 									]
 								}
 							},
@@ -118,12 +119,13 @@
 									}
 								},
 								"url": {
-									"raw": "{{GATEWAY_SVC_URL}}/project/details/3",
+									"raw": "{{GATEWAY_SVC_URL}}/web/projects/details/3",
 									"host": [
 										"{{GATEWAY_SVC_URL}}"
 									],
 									"path": [
-										"project",
+										"web",
+										"projects",
 										"details",
 										"3"
 									]
@@ -137,12 +139,13 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{GATEWAY_SVC_URL}}/project/overviews?value_fields=name&count_fields=no_of_test_runs,no_of_milestones",
+									"raw": "{{GATEWAY_SVC_URL}}/web/projects/overviews?value_fields=name&count_fields=no_of_test_runs,no_of_milestones",
 									"host": [
 										"{{GATEWAY_SVC_URL}}"
 									],
 									"path": [
-										"project",
+										"web",
+										"projects",
 										"overviews"
 									],
 									"query": [
@@ -165,12 +168,14 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "{{GATEWAY_SVC_URL}}/10/delete_project",
+									"raw": "{{GATEWAY_SVC_URL}}/web/projects/4/delete_project",
 									"host": [
 										"{{GATEWAY_SVC_URL}}"
 									],
 									"path": [
-										"10",
+										"web",
+										"projects",
+										"4",
 										"delete_project"
 									]
 								}
@@ -192,12 +197,13 @@
 									}
 								},
 								"url": {
-									"raw": "{{GATEWAY_SVC_URL}}/project/add",
+									"raw": "{{GATEWAY_SVC_URL}}/web/projects/add",
 									"host": [
 										"{{GATEWAY_SVC_URL}}"
 									],
 									"path": [
-										"project",
+										"web",
+										"projects",
 										"add"
 									]
 								}
@@ -221,23 +227,19 @@
 									}
 								],
 								"url": {
-									"raw": "http://127.0.0.1:5000/webhook/get_metadata?nonce=1000",
-									"protocol": "http",
+									"raw": "{{GATEWAY_SVC_URL}}/web/webhook/get_metadata?nonce=109",
 									"host": [
-										"127",
-										"0",
-										"0",
-										"1"
+										"{{GATEWAY_SVC_URL}}"
 									],
-									"port": "5000",
 									"path": [
+										"web",
 										"webhook",
 										"get_metadata"
 									],
 									"query": [
 										{
 											"key": "nonce",
-											"value": "1000"
+											"value": "109"
 										}
 									]
 								}
@@ -534,6 +536,45 @@
 										"testcase_custom_fields",
 										"2",
 										"down"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Custom Fields for project",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{CMS_SVC_URL}}/admin/testcase_custom_fields/testcase_custom_fields/2",
+									"host": [
+										"{{CMS_SVC_URL}}"
+									],
+									"path": [
+										"admin",
+										"testcase_custom_fields",
+										"testcase_custom_fields",
+										"2"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get All Custom Fields",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{CMS_SVC_URL}}/admin/testcase_custom_fields/testcase_custom_fields",
+									"host": [
+										"{{CMS_SVC_URL}}"
+									],
+									"path": [
+										"admin",
+										"testcase_custom_fields",
+										"testcase_custom_fields"
 									]
 								}
 							},

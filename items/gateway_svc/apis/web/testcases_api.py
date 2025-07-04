@@ -15,25 +15,27 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from apis.testcase_api_view import TestCaseApiView
+from .testcases_api_view import TestCasesApiView
 from sessions import Sessions
 
 
 def create_blueprint(logger: logging.Logger, sessions: Sessions) -> Blueprint:
-    view = TestCaseApiView(logger, sessions)
+    view = TestCasesApiView(logger, sessions)
 
     blueprint = Blueprint('testcase_api', __name__)
 
-    logger.info("Registering Testcase endpoint:")
+    logger.debug("Registering WEB Testcase endpoint:")
 
-    logger.info("=> /<project_id>/testcase/testcase_details [POST]")
+    logger.debug(f"=> {'Get all testcase for projects'.ljust(30)}"
+                 "POST /web/<project_id>/testcase/testcase_details")
 
     @blueprint.route('/<int:project_id>/testcase/testcases_details',
                      methods=['POST'])
     async def testcases_details_request(project_id: int):
         return await view.testcases_details(project_id)
 
-    logger.info("=> /<project_id>/testcase/get_case/<case_id> [POST]")
+    logger.debug(f"=> {'Get testcase details'.ljust(30)}"
+                 "POST /web/<int:project_id>/testcase/get_case/<int:case_id>")
 
     @blueprint.route('/<int:project_id>/testcase/get_case/<int:case_id>',
                      methods=['POST'])

@@ -15,41 +15,46 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from apis.project_api_view import ProjectApiView
+from .projects_api_view import ProjectsApiView
 
 
 def create_blueprint(logger: logging.Logger) -> Blueprint:
-    view = ProjectApiView(logger)
+    view = ProjectsApiView(logger)
 
     blueprint = Blueprint('project_api', __name__)
 
-    logger.info("Registering Project endpoint:")
+    logger.debug("Registering Project endpoint:")
 
-    logger.info("=> /project/overviews [GET]")
+    logger.debug(f"=> {'List all projects'.ljust(30)}GET /web/projects")
 
-    @blueprint.route('/project/overviews', methods=['GET'])
+    @blueprint.route('/projects', methods=['GET'])
     async def project_overviews_request():
-        return await view.project_overviews()
+        return await view.list_all_projects()
 
-    @blueprint.route('/project/details/<project_id>', methods=['GET'])
+    logger.debug(f"=> {'Retrieve a project'.ljust(30)}"
+                 "GET /web/projects/<project_id>")
+
+    @blueprint.route('/projects/<project_id>', methods=['GET'])
     async def project_details_request(project_id: int):
-        return await view.project_details(project_id)
+        return await view.retrieve_a_project(project_id)
 
-    logger.info("=> /project/add [POST]")
+    logger.debug(f"=> {'Add a project'.ljust(30)}" "POST /web/projects")
 
-    @blueprint.route('/project/add', methods=['POST'])
+    @blueprint.route('/projects', methods=['POST'])
     async def add_project_request():
         return await view.add_project()
 
-    logger.info("=> /project/modify/<int:project_id> [POST]")
+    logger.debug(f"=> {'Update a project'.ljust(30)}"
+                 "PATCH /web/projects/<int:project_id>")
 
-    @blueprint.route('/project/modify/<int:project_id>', methods=['POST'])
+    @blueprint.route('/projects/<int:project_id>', methods=['PATCH'])
     async def modify_project_request(project_id: int):
         return await view.modify_project(project_id)
 
-    logger.info("=> /<project_id>/delete_project [DELETE]")
+    logger.debug(f"=> {'Delete a project'.ljust(30)}"
+                 "DELETE /web/projects/<int:project_id>")
 
-    @blueprint.route('/<project_id>/delete_project', methods=['DELETE'])
+    @blueprint.route('/projects/<project_id>', methods=['DELETE'])
     async def delete_project_request(project_id: int):
         return await view.delete_project(project_id)
 

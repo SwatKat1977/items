@@ -15,11 +15,12 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from apis.handshake_api_view import HandshakeApiView
+from .session_api_view import SessionApiView
 from sessions import Sessions
 
 
-def create_blueprint(logger: logging.Logger, sessions: Sessions) -> Blueprint:
+def create_blueprint(logger: logging.Logger,
+                     sessions: Sessions) -> Blueprint:
     """
     Creates and registers a Flask Blueprint for handling authentication
     handshake API routes.
@@ -30,33 +31,37 @@ def create_blueprint(logger: logging.Logger, sessions: Sessions) -> Blueprint:
     Args:
         logger (logging.Logger): A logger instance for logging messages.
         sessions (Sessions): A sessions instance,
+        prefix (str): API prefix (.e.g. /handshake)
 
     Returns:
         Blueprint: A Flask `Blueprint` object containing the registered route.
     """
-    view = HandshakeApiView(logger, sessions)
+    view = SessionApiView(logger, sessions)
 
-    blueprint = Blueprint('handshake_api', __name__)
+    blueprint = Blueprint('session_api', __name__)
 
-    logger.info("Registering handshake endpoint:")
+    logger.debug("Registering session endpoint:")
 
-    logger.info("=> /handshake/basic_authenticate [POST]")
+    logger.debug(f"=> {'Log in/create new session'.ljust(30)}"
+                 "POST /web/session")
 
-    @blueprint.route('/handshake/basic_authenticate', methods=['POST'])
-    async def basic_authenticate_request():
-        return await view.basic_authenticate()
+    @blueprint.route('/session', methods=['POST'])
+    async def create_new_session_request():
+        return await view.create_new_session()
 
-    logger.info("=> handshake/is_token_valid [POST]")
+    logger.debug(f"=> {'Check if session is valid'.ljust(30)}"
+                 "GET /web/session/validate")
 
-    @blueprint.route('/handshake/is_token_valid', methods=['POST'])
-    async def is_token_valid():
+    @blueprint.route('/session/validate', methods=['POST'])
+    async def session_validate_request():
         # pylint: disable=unused-variable
-        return await view.is_token_valid()
+        return await view.validate_session()
 
-    logger.info("=> handshake/logout [POST]")
+    logger.debug(f"=> {'Log out (invalidate session)'.ljust(30)}"
+                 "DELETE /web/session")
 
-    @blueprint.route('/handshake/logout', methods=['POST'])
+    @blueprint.route('/session', methods=['DELETE'])
     async def logout_user():
         # pylint: disable=unused-variable
-        return await view.logout_user()
+        return await view.delete_session()
     return blueprint

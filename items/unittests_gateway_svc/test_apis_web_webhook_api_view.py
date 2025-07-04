@@ -5,7 +5,7 @@ import quart
 from threadsafe_configuration import ThreadSafeConfiguration
 from base_view import BaseView
 from metadata_handler import MetadataHandler
-from apis.webhook_api_view import WebhookApiView
+from apis.web.webhook_api_view import WebhookApiView
 
 
 class TestWebhookApiProjectApiView(unittest.IsolatedAsyncioTestCase):
