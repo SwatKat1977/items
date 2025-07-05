@@ -121,11 +121,12 @@ class AuthApiView(BaseWebView):
                                            error_msg=error_msg)
 
         auth_body: dict = {
+                "type": "basic",
                 "email_address": user_email,
                 "password": password
         }
         base_url: str = ThreadSafeConfiguration().apis_gateway_svc
-        url = f"{base_url}handshake/basic_authenticate"
+        url = f"{base_url}web/session"
 
         response: ApiResponse = await self._call_api_post(url, auth_body)
 
