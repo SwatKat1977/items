@@ -34,7 +34,7 @@ class ProjectsApiView(BaseWebView):
     async def test_cases(self, project_id: int):
         gateway_svc: str = ThreadSafeConfiguration().apis_gateway_svc
 
-        url: str = f"{gateway_svc}{project_id}/testcase/testcases_details"
+        url: str = f"{gateway_svc}web/{project_id}/testcase/testcases_details"
 
         response = await self._call_api_post(url)
 

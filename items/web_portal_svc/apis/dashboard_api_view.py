@@ -173,8 +173,8 @@ class DashboardApiView(BaseWebView):
                 "announcement": form.get('announcement'),
                 "announcement_on_overview": form.get('show_announcement') == 'on'
             }
-            response: ApiResponse = await self._call_api_post(url,
-                                                              request_data)
+            response: ApiResponse = await self._call_api_patch(url,
+                                                               request_data)
             if response.status_code != http.HTTPStatus.OK:
                 request_data: dict = {
                     "project_name": form.get('project_name'),
@@ -197,7 +197,7 @@ class DashboardApiView(BaseWebView):
             redirect = self._generate_redirect('admin/projects')
             return await quart.make_response(redirect)
 
-        url = f"{base_url}/project/details/{project_id}"
+        url = f"{base_url}/web/projects/{project_id}"
 
         api_response = await self._call_api_get(url)
 
