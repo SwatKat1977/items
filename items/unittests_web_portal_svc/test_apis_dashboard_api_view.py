@@ -322,8 +322,8 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
     async def test_admin_modify_project_post_success(self, mock_get_entry):
         mock_get_entry.return_value = "http://localhost"
 
-        self.view._call_api_post = AsyncMock()
-        self.view._call_api_post.return_value = ApiResponse(
+        self.view._call_api_patch = AsyncMock()
+        self.view._call_api_patch.return_value = ApiResponse(
             status_code=http.HTTPStatus.OK
         )
         self.view._generate_redirect.return_value = "Redirected to admin/projects"
@@ -337,8 +337,8 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
         async with self.client as client:
             response = await client.post('/admin/123/modify_project', form=request_data)
 
-        self.view._call_api_post.assert_called_once_with(
-            "http://localhost/project/modify/123",
+        self.view._call_api_patch.assert_called_once_with(
+            "http://localhost/web/projects/123",
             {
                 "name": "Updated Project",
                 "announcement": "Updated Announcement",
@@ -351,8 +351,8 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
     async def test_admin_modify_project_post_fail(self, mock_get_entry):
         mock_get_entry.return_value = "http://localhost"
 
-        self.view._call_api_post = AsyncMock()
-        self.view._call_api_post.return_value = ApiResponse(
+        self.view._call_api_patch = AsyncMock()
+        self.view._call_api_patch.return_value = ApiResponse(
             status_code=http.HTTPStatus.BAD_REQUEST,
             body={"error": "Invalid data"}
         )
@@ -367,8 +367,8 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
         async with self.client as client:
             response = await client.post('/admin/123/modify_project', form=request_data)
 
-        self.view._call_api_post.assert_called_once_with(
-            "http://localhost/project/modify/123",
+        self.view._call_api_patch.assert_called_once_with(
+            "http://localhost/web/projects/123",
             {
                 "name": "Invalid Project",
                 "announcement": "Invalid Announcement",
