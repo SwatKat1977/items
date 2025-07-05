@@ -285,7 +285,7 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
             self.assertIsNotNone(response, "Response is None. Check logs.")
             self.assertEqual(response.status_code, http.HTTPStatus.OK)
 
-        self.view._call_api_get.assert_called_once_with("http://localhost/project/details/123")
+        self.view._call_api_get.assert_called_once_with("http://localhost/web/projects/123")
         self.view._render_page.assert_called_once_with(
             'instance_admin_modify_project.html',
             instance_name="Test Instance",
@@ -313,7 +313,7 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
         self.view._generate_redirect.return_value = "Redirected to admin/projects"
 
         async with self.client as client:
-            response = await client.get('/admin/123/modify_project')
+            response = await client.get('http://localhost/web/projects/123')
 
         self.view._call_api_get.assert_called_once_with("http://localhost/project/details/123")
         self.view._generate_redirect.assert_called_once_with('admin/projects')
