@@ -313,9 +313,9 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
         self.view._generate_redirect.return_value = "Redirected to admin/projects"
 
         async with self.client as client:
-            response = await client.get('http://localhost/web/projects/123')
+            response = await client.get('http://localhost/admin/123/modify_project')
 
-        self.view._call_api_get.assert_called_once_with("http://localhost/project/details/123")
+        self.view._call_api_get.assert_called_once_with("http://localhost/web/projects/123")
         self.view._generate_redirect.assert_called_once_with('admin/projects')
 
     @patch.object(ConfigurationManager, 'get_entry')
