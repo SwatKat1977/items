@@ -53,7 +53,7 @@ class AuthApiView(BaseWebView):
             return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
         base_url: str = ThreadSafeConfiguration().apis_gateway_svc
-        url = f"{base_url}/project/overviews?value_fields=name&" + \
+        url = f"{base_url}/web/projects?value_fields=name&" + \
               "count_fields=no_of_test_runs,no_of_milestones"
         response: ApiResponse = await self._call_api_get(url)
 
