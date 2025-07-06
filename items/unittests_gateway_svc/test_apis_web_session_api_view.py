@@ -6,23 +6,23 @@ from http import HTTPStatus
 from quart import Quart
 from sessions import Sessions
 from base_view import ApiResponse
-from apis.handshake_api_view import HandshakeApiView
+from apis.web.session_api_view import SessionApiView
 from configuration.configuration_manager import ConfigurationManager
 
 class TestHandshakeApiView(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.mock_logger = MagicMock(spec=logging.Logger)
         self.mock_sessions = MagicMock(spec=Sessions)
-        self.view = HandshakeApiView(self.mock_logger, self.mock_sessions)
+        self.view = SessionApiView(self.mock_logger, self.mock_sessions)
 
         # Set up Quart test client and mock dependencies.
         self.app = Quart(__name__)
         self.client = self.app.test_client()
 
         # Register route for testing
-        self.app.add_url_rule('/handshake/basic_authenticate', view_func=self.view.basic_authenticate, methods=['POST'])
-        self.app.add_url_rule('/handshake/logout', view_func=self.view.logout_user, methods=['POST'])
-        self.app.add_url_rule('/handshake/is_token_valid', view_func=self.view.is_token_valid, methods=['POST'])
+        self.app.add_url_rule('/web/session', view_func=self.view.create_new_session, methods=['POST'])
+        self.app.add_url_rule('/web/session', view_func=self.view.delete_session, methods=['DELETE'])
+        self.app.add_url_rule('/web/session/validate', view_func=self.view.validate_session, methods=['POST'])
 
     @patch.object(ConfigurationManager, 'get_entry')
     async def test_basic_authenticate_invalid_status_from_accounts(self, mock_get_entry):
@@ -43,8 +43,8 @@ class TestHandshakeApiView(unittest.IsolatedAsyncioTestCase):
         self.view._call_api_post = mock_call_api_post
 
         async with self.client as client:
-            response = await client.post('/handshake/basic_authenticate',
-                                         json={"email_address": "test@example.com",
+            response = await client.post('/web/session',
+                                         json={"type": "basic", "email_address": "test@example.com",
                                                "password": "mysecretpassword"})
 
             # Check response status
@@ -74,8 +74,8 @@ class TestHandshakeApiView(unittest.IsolatedAsyncioTestCase):
         self.view._call_api_post = mock_call_api_post
 
         async with self.client as client:
-            response = await client.post('/handshake/basic_authenticate',
-                                         json={"email_address": "test@example.com",
+            response = await client.post('/web/session',
+                                         json={"type": "basic", "email_address": "test@example.com",
                                                "password": "mysecretpassword"})
 
             # Check response status
@@ -106,8 +106,8 @@ class TestHandshakeApiView(unittest.IsolatedAsyncioTestCase):
         self.view._call_api_post = mock_call_api_post
 
         async with self.client as client:
-            response = await client.post('/handshake/basic_authenticate',
-                                         json={"email_address": "test@example.com",
+            response = await client.post('/web/session',
+                                         json={"type": "basic", "email_address": "test@example.com",
                                                "password": "mysecretpassword"})
 
             # Check response status
@@ -127,7 +127,7 @@ class TestHandshakeApiView(unittest.IsolatedAsyncioTestCase):
         ))
 
         async with self.client as client:
-            response = await client.post('/handshake/basic_authenticate', json={})
+            response = await client.post('/web/session', json={})
 
             # Validate the response
             self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -155,8 +155,8 @@ class TestHandshakeApiView(unittest.IsolatedAsyncioTestCase):
         self.view._call_api_post = mock_call_api_post
 
         async with self.client as client:
-            response = await client.post('/handshake/basic_authenticate',
-                                         json={"email_address": "test@example.com",
+            response = await client.post('/web/session',
+                                         json={"type": "basic", "email_address": "test@example.com",
                                                "password": "mysecretpassword"})
 
             # Check response status
@@ -177,7 +177,7 @@ class TestHandshakeApiView(unittest.IsolatedAsyncioTestCase):
         self.view._sessions.is_valid_session.return_value = True
 
         async with self.client as client:
-            response = await client.post('/handshake/logout',
+            response = await client.delete('/web/session',
                                          json={"email_address": "test@example.com",
                                                "token": "TestTokens"})
 
@@ -198,7 +198,7 @@ class TestHandshakeApiView(unittest.IsolatedAsyncioTestCase):
         self.view._sessions.is_valid_session.return_value = False
 
         async with self.client as client:
-            response = await client.post('/handshake/logout',
+            response = await client.delete('/web/session',
                                          json={"email_address": "test@example.com",
                                                "token": "TestTokens"})
 
@@ -219,7 +219,7 @@ class TestHandshakeApiView(unittest.IsolatedAsyncioTestCase):
         ))
 
         async with self.client as client:
-            response = await client.post('/handshake/logout', json={})
+            response = await client.delete('/web/session', json={})
 
             # Validate the response
             self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -240,7 +240,7 @@ class TestHandshakeApiView(unittest.IsolatedAsyncioTestCase):
 
         #     "required": ["email_address", "token"],
         async with self.client as client:
-            response = await client.post('/handshake/is_token_valid',
+            response = await client.post('/web/session/validate',
                                          json={"email_address": "test@example.com",
                                                "token": "TestTokens"})
 
@@ -263,7 +263,7 @@ class TestHandshakeApiView(unittest.IsolatedAsyncioTestCase):
 
         #     "required": ["email_address", "token"],
         async with self.client as client:
-            response = await client.post('/handshake/is_token_valid',
+            response = await client.post('/web/session/validate',
                                          json={"email_address": "test@example.com",
                                                "token": "TestTokens"})
 

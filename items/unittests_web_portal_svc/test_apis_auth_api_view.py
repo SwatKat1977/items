@@ -228,8 +228,8 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
 
                     # Ensure the mock API call was made correctly
                     self.auth_api_view._call_api_post.assert_awaited_once_with(
-                        "https://mocked-url.com/handshake/basic_authenticate",
-                        {"email_address": "test", "password": "pass"}
+                        "https://mocked-url.com/web/session",
+                        {"type": "basic", "email_address": "test", "password": "pass"}
                     )
 
                     self.assertEqual(result.status_code, HTTPStatus.OK)
@@ -257,8 +257,8 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
 
                     # Ensure the mock API call was made correctly
                     self.auth_api_view._call_api_post.assert_awaited_once_with(
-                        "https://mocked-url.com/handshake/basic_authenticate",
-                        {"email_address": "test", "password": "pass"}
+                        "https://mocked-url.com/web/session",
+                        {"type": "basic", "email_address": "test", "password": "pass"}
                     )
 
                     self.auth_api_view._render_page.assert_awaited_once_with(
@@ -271,7 +271,7 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
                   "get_entry",
                   return_value="https://mocked-url.com/")
     @patch.object(BaseWebView, '_process_post_form_data',
-                  return_value={"user_email": "test", "password": "pass"})
+                  return_value={"type": "basic", "user_email": "test", "password": "pass"})
     async def test_login_page_post_invalid_username_or_password(self,
                                                mock_process_post_form_data,
                                                mock_config):
@@ -288,8 +288,8 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
 
                     # Ensure the mock API call was made correctly
                     self.auth_api_view._call_api_post.assert_awaited_once_with(
-                        "https://mocked-url.com/handshake/basic_authenticate",
-                        {"email_address": "test", "password": "pass"}
+                        "https://mocked-url.com/web/session",
+                        {"type": "basic", "email_address": "test", "password": "pass"}
                     )
 
                     self.auth_api_view._render_page.assert_awaited_once_with(

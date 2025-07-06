@@ -186,7 +186,7 @@ class Application(BaseApplication):
         # Generate number used once (NONCE)
         nonce = str(uuid.uuid4())
 
-        string_to_sign: str = f"/webhook/get_metadata:{nonce}"
+        string_to_sign: str = f"/web/webhook/get_metadata:{nonce}"
         secret: bytes = Configuration().general_api_signing_secret.encode()
         signature: str = BaseView.generate_api_signature(secret, string_to_sign)
         headers = {
@@ -195,7 +195,7 @@ class Application(BaseApplication):
         }
 
         base_path: str = Configuration().apis_gateway_svc
-        url: str = f"{base_path}webhook/get_metadata?nonce={nonce}"
+        url: str = f"{base_path}web/webhook/get_metadata?nonce={nonce}"
 
         while perform_update != 0:
             try:

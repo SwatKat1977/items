@@ -294,6 +294,29 @@ class BaseView:
 
         return api_return
 
+    async def _call_api_patch(self, url: str,
+                              json_data: dict = None,
+                              timeout: int = 2) -> ApiResponse:
+        try:
+            async with aiohttp.ClientSession(
+                    timeout=aiohttp.ClientTimeout(total=timeout)) as session:
+                async with session.patch(url, json=json_data) as resp:
+                    body = await resp.json() \
+                        if resp.content_type == self.CONTENT_TYPE_JSON \
+                        else await resp.text()
+                    api_return = ApiResponse(
+                        status_code=resp.status,
+                        body=body,
+                        content_type=resp.content_type)
+
+        except (aiohttp.ClientConnectionError, aiohttp.ClientError) as ex:
+            api_return = ApiResponse(exception_msg=str(ex))
+
+        except asyncio.TimeoutError as ex:
+            api_return = ApiResponse(exception_msg=str(ex))
+
+        return api_return
+
     @staticmethod
     def verify_api_signature(secret_key: bytes,
                              data: any, received_signature) -> bool:

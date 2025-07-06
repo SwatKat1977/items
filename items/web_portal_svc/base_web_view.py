@@ -22,7 +22,7 @@ from quart import request, render_template
 from base_view import BaseView
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from base_items_exception import BaseItemsException
-from interfaces.gateway.handshake import SCHEMA_IS_VALID_TOKEN_RESPONSE
+from interfaces.gateway.handshake import SCHEMA_SESSION_VALIDATE_RESPONSE
 import page_locations as pages
 
 
@@ -52,7 +52,7 @@ class BaseWebView(BaseView):
         token = request.cookies.get(self.COOKIE_TOKEN)
         username = request.cookies.get(self.COOKIE_USER)
 
-        url = f"{Configuration().apis_gateway_svc}/handshake/is_token_valid"
+        url = f"{Configuration().apis_gateway_svc}web/session/validate"
 
         request_body: dict = {
             "email_address": username,
@@ -68,19 +68,19 @@ class BaseWebView(BaseView):
 
         if response is None:
             raise BaseItemsException(
-                "Missing/invalid JSON body for gateway svc is_token_valid")
+                "Missing/invalid JSON body for gateway svc session validate")
 
         try:
             json_data = json.loads(response.text)
 
         except (TypeError, json.JSONDecodeError) as ex:
             raise BaseItemsException(
-                "Invalid JSON body type for gateway svc is_token_valid")\
+                "Invalid JSON body type for gateway svc session validate")\
                 from ex
 
         try:
             jsonschema.validate(instance=json_data,
-                                schema=SCHEMA_IS_VALID_TOKEN_RESPONSE)
+                                schema=SCHEMA_SESSION_VALIDATE_RESPONSE)
 
         except jsonschema.exceptions.ValidationError as ex:
             raise BaseItemsException(

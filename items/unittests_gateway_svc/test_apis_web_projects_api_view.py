@@ -4,35 +4,35 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 from quart import Quart
 from configuration.configuration_manager import ConfigurationManager
-from apis.project_api_view import ProjectApiView
+from apis.web.projects_api_view import ProjectsApiView
 from threadsafe_configuration import ThreadSafeConfiguration
 
 
 class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.mock_logger = MagicMock(spec=logging.Logger)
-        self.view = ProjectApiView(self.mock_logger)
+        self.view = ProjectsApiView(self.mock_logger)
 
         # Set up Quart test client and mock dependencies.
         self.app = Quart(__name__)
         self.client = self.app.test_client()
 
         # Register route for testing
-        self.app.add_url_rule('/project/details/<project_id>',
-                              view_func=self.view.project_details,
+        self.app.add_url_rule('/web/projects/<project_id>',
+                              view_func=self.view.retrieve_a_project,
                               methods=['GET'])
-        self.app.add_url_rule('/project/overviews',
-                              view_func=self.view.project_overviews,
+        self.app.add_url_rule('/web/projects',
+                              view_func=self.view.list_all_projects,
                               methods=['GET'])
-        self.app.add_url_rule('/project/add',
+        self.app.add_url_rule('/web/projects',
                               view_func=self.view.add_project,
                               methods=['POST'])
-        self.app.add_url_rule('/<project_id>/delete_project',
+        self.app.add_url_rule('/web/projects/<project_id>',
                               view_func=self.view.delete_project,
                               methods=['DELETE'])
-        self.app.add_url_rule('/project/modify/<project_id>',
+        self.app.add_url_rule('/web/projects/<project_id>',
                               view_func=self.view.modify_project,
-                              methods=['POST'])
+                              methods=['PATCH'])
 
     @patch.object(ConfigurationManager, 'get_entry')
     async def test_project_overviews_internal_error(self, mock_get_entry):
@@ -44,7 +44,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.view._call_api_get = mock_call_api_get
 
         async with self.client as client:
-            response = await client.get('/project/overviews')
+            response = await client.get('/web/projects')
 
             # Check response status
             self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -74,7 +74,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.view._call_api_get = mock_call_api_get
 
         async with self.client as client:
-            response = await client.get('/project/overviews')
+            response = await client.get('/web/projects')
 
             # Check response status
             self.assertEqual(response.status_code, http.HTTPStatus.OK)
@@ -94,7 +94,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.view._call_api_delete = mock_call_api_delete
 
         async with self.client as client:
-            response = await client.delete('/1/delete_project')
+            response = await client.delete('/web/projects/1')
 
             # Check response status
             self.assertEqual(response.status_code, http.HTTPStatus.OK)
@@ -110,7 +110,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.view._call_api_delete = mock_call_api_delete
 
         async with self.client as client:
-            response = await client.delete('/1/delete_project')
+            response = await client.delete('/web/projects/1')
 
             # Check response status
             self.assertEqual(response.status_code,
@@ -127,7 +127,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.view._call_api_delete = mock_call_api_delete
 
         async with self.client as client:
-            response = await client.delete('/1/delete_project')
+            response = await client.delete('/web/projects/1')
 
             # Check response status
             self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
@@ -147,7 +147,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
             "announcement_on_overview": False
         }
         async with self.client as client:
-            response = await client.post('/project/add',
+            response = await client.post('/web/projects',
                                          json=request_body)
 
             # Check response status
@@ -166,7 +166,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
             "announcement_on_overview": False
         }
         async with self.client as client:
-            response = await client.post('/project/add',
+            response = await client.post('/web/projects',
                                          json=request_body)
 
             self.assertEqual(response.status_code,
@@ -185,7 +185,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         }
 
         async with self.client as client:
-            response = await client.post('/project/modify/123', json=request_body)
+            response = await client.patch('/web/projects/123', json=request_body)
 
         self.assertEqual(response.status_code, http.HTTPStatus.OK)
         self.assertEqual(await response.get_json(), {"status": 1})
@@ -211,7 +211,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         }
 
         async with self.client as client:
-            response = await client.post('/project/modify/123', json=request_body)
+            response = await client.patch('/web/projects/123', json=request_body)
 
         self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
         self.assertEqual(await response.get_json(), {
@@ -229,7 +229,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.view._call_api_get = mock_call_api_get
 
         async with self.client as client:
-            response = await client.get('/project/details/123')
+            response = await client.get('/web/projects/123')
 
         self.assertEqual(response.status_code, http.HTTPStatus.OK)
         self.assertEqual(await response.get_json(), {"id": 123, "name": "Test Project"})
@@ -242,7 +242,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.view._call_api_get = mock_call_api_get
 
         async with self.client as client:
-            response = await client.get('/project/details/999')
+            response = await client.get('/web/projects/999')
 
         self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertEqual(await response.get_json(), {"status": 0, "error": "Invalid project ID"})
@@ -256,7 +256,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.view._logger = MagicMock()
 
         async with self.client as client:
-            response = await client.get('/project/details/456')
+            response = await client.get('/web/projects/456')
 
         self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
         self.assertEqual(await response.get_json(), {"status": 0, "error": "Internal error!"})

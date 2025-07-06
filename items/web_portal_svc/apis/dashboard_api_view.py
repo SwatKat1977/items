@@ -48,7 +48,7 @@ class DashboardApiView(BaseWebView):
             project_id = form.get('projectId')
 
             base_url: str = ThreadSafeConfiguration().apis_gateway_svc
-            url = f"{base_url}{project_id}/delete_project"
+            url = f"{base_url}web/projects/{project_id}"
             response: ApiResponse = await self._call_api_delete(url)
 
             if response.status_code != http.HTTPStatus.OK:
@@ -57,7 +57,7 @@ class DashboardApiView(BaseWebView):
                 return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
         base_url: str = ThreadSafeConfiguration().apis_gateway_svc
-        url = f"{base_url}/project/overviews?value_fields=name"
+        url = f"{base_url}/web/projects?value_fields=name"
         response: ApiResponse = await self._call_api_get(url)
 
         if response.status_code != http.HTTPStatus.OK:
@@ -166,15 +166,15 @@ class DashboardApiView(BaseWebView):
         base_url: str = ThreadSafeConfiguration().apis_gateway_svc
 
         if quart.request.method == 'POST':
-            url = f"{base_url}/project/modify/{project_id}"
+            url = f"{base_url}/web/projects/{project_id}"
             form = await quart.request.form
             request_data: dict = {
                 "name": form.get('project_name'),
                 "announcement": form.get('announcement'),
                 "announcement_on_overview": form.get('show_announcement') == 'on'
             }
-            response: ApiResponse = await self._call_api_post(url,
-                                                              request_data)
+            response: ApiResponse = await self._call_api_patch(url,
+                                                               request_data)
             if response.status_code != http.HTTPStatus.OK:
                 request_data: dict = {
                     "project_name": form.get('project_name'),
@@ -197,7 +197,7 @@ class DashboardApiView(BaseWebView):
             redirect = self._generate_redirect('admin/projects')
             return await quart.make_response(redirect)
 
-        url = f"{base_url}/project/details/{project_id}"
+        url = f"{base_url}/web/projects/{project_id}"
 
         api_response = await self._call_api_get(url)
 

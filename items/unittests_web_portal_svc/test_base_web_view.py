@@ -82,7 +82,7 @@ class TestBaseWebView(unittest.IsolatedAsyncioTestCase):
             with patch.object(Configuration, "apis_gateway_svc", "http://mock-gateway"):
                 with self.assertRaises(BaseItemsException) as cm:
                     self.view._validate_cookies()
-                self.assertEqual(str(cm.exception), "Missing/invalid JSON body for gateway svc is_token_valid")
+                self.assertEqual(str(cm.exception), "Missing/invalid JSON body for gateway svc session validate")
 
     @patch("requests.post")
     async def test_validate_cookies_invalid_json_type(self, mock_post):
@@ -95,7 +95,7 @@ class TestBaseWebView(unittest.IsolatedAsyncioTestCase):
             with patch.object(Configuration, "apis_gateway_svc", "http://mock-gateway"):
                 with self.assertRaises(BaseItemsException) as cm:
                     self.view._validate_cookies()
-                self.assertEqual(str(cm.exception), "Invalid JSON body type for gateway svc is_token_valid")
+                self.assertEqual(str(cm.exception), "Invalid JSON body type for gateway svc session validate")
 
     @patch("requests.post")
     async def test_validate_cookies_schema_validation_error(self, mock_post):

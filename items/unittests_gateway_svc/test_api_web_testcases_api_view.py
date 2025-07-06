@@ -4,14 +4,14 @@ import json
 import logging
 import http
 import requests
-from apis.testcase_api_view import TestCaseApiView
+from apis.web.testcases_api_view import TestCasesApiView
 from threadsafe_configuration import ThreadSafeConfiguration
 
 class TestApiTestcaseApiView(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.logger = MagicMock()
         self.sessions = MagicMock()  # Mocking Sessions
-        self.view = TestCaseApiView(self.logger, self.sessions)
+        self.view = TestCasesApiView(self.logger, self.sessions)
         self.view._logger = self.logger
         self.project_id = 123
 

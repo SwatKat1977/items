@@ -26,14 +26,14 @@ from sessions import Sessions
 from account_logon_type import AccountLogonType
 
 
-class HandshakeApiView(BaseView):
+class SessionApiView(BaseView):
     __slots__ = ['_logger', '_sql_interface']
 
     def __init__(self, logger : logging.Logger, sessions: Sessions) -> None:
         self._logger = logger.getChild(__name__)
         self._sessions = sessions
 
-    async def basic_authenticate(self) -> Response:
+    async def create_new_session(self) -> Response:
         """
         Handler method for basic user authentication endpoint.
 
@@ -50,7 +50,7 @@ class HandshakeApiView(BaseView):
             '''
             request_msg: ApiResponse = self._validate_json_body(
                 await request.get_data(),
-                handshake_api.SCHEMA_BASIC_AUTHENTICATE_REQUEST)
+                handshake_api.SCHEMA_SESSION_CREATE_REQUEST)
 
             if request_msg.status_code != HTTPStatus.OK:
                 response_json = {
@@ -121,20 +121,16 @@ class HandshakeApiView(BaseView):
         return Response(json.dumps(response_json), status=response_status,
                         content_type="application/json")
 
-    async def is_token_valid(self):
+    async def validate_session(self):
         """
-        Endpoint to check to see if a token is valid.
-
-        parameters:
-            api_request - Request from Quart
+        Endpoint to check to see if the current session is valid.
 
         returns:
             Response instance
         """
-
         request_obj: ApiResponse = self._validate_json_body(
             await request.get_data(),
-            handshake_api.SCHEMA_IS_VALID_TOKEN_REQUEST)
+            handshake_api.SCHEMA_SESSION_VALIDATE_REQUEST)
 
         if request_obj.status_code != HTTPStatus.OK:
             response_json = { 'status': 'BAD REQUEST' }
@@ -151,7 +147,7 @@ class HandshakeApiView(BaseView):
         return Response(json.dumps(response_json), response_status,
                         content_type="application/json")
 
-    async def logout_user(self) -> Response:
+    async def delete_session(self) -> Response:
         """
         Handler method for user session logout endpoint.
 

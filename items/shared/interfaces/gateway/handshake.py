@@ -14,24 +14,48 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-SCHEMA_BASIC_AUTHENTICATE_REQUEST: dict = {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-
+SCHEMA_SESSION_CREATE_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "SessionAuthenticationRequest",
     "type": "object",
-    "additionalProperties": False,
-
-    "properties":
+    "properties": {
+        "type": {
+            "type": "string",
+            "enum": ["basic", "token"]
+        }
+    },
+    "required": ["type"],
+    "allOf": [
         {
-            "email_address":
-                {
-                    "type": "string"
+            "if": {
+                "properties": {"type": {"const": "basic"}}
+            },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": {"const": "basic"},
+                    "email_address": {"type": "string", "minLength": 3},
+                    "password": {"type": "string", "minLength": 8}
                 },
-            "password":
-                {
-                    "type": "string"
-                },
+                "required": ["email_address", "password"],
+                "additionalProperties": False
+            }
         },
-    "required": ["email_address", "password"]
+        {
+            "if": {
+                "properties": {"type": {"const": "token"}}
+            },
+            "then": {
+                "type": "object",
+                "properties": {
+                    "type": {"const": "token"},
+                    "token": {"type": "string", "minLength": 1}
+                },
+                "required": ["token"],
+                "additionalProperties": False
+            }
+        }
+    ]
 }
 
 SCHEMA_LOGOUT_REQUEST: dict = {
@@ -54,7 +78,7 @@ SCHEMA_LOGOUT_REQUEST: dict = {
     "required": ["email_address", "token"]
 }
 
-SCHEMA_IS_VALID_TOKEN_REQUEST = {
+SCHEMA_SESSION_VALIDATE_REQUEST = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
@@ -71,7 +95,7 @@ SCHEMA_IS_VALID_TOKEN_REQUEST = {
     "additionalProperties": False
 }
 
-SCHEMA_IS_VALID_TOKEN_RESPONSE = {
+SCHEMA_SESSION_VALIDATE_RESPONSE = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
