@@ -20,15 +20,14 @@ from metadata_handler import MetadataHandler
 
 
 def create_blueprint(logger: logging.Logger,
-                     metadata_handler: MetadataHandler,
-                     prefix: str) -> Blueprint:
+                     metadata_handler: MetadataHandler) -> Blueprint:
     view = WebhookApiView(logger, metadata_handler)
 
     blueprint = Blueprint('webhook_api', __name__)
 
     logger.debug("Registering WEB Webhook endpoints:")
 
-    logger.debug("=> %s/get_metadata [GET]", prefix)
+    logger.debug("=> /web/get_metadata [GET]")
 
     @blueprint.route('/get_metadata', methods=['GET'])
     async def get_metadata_request():
