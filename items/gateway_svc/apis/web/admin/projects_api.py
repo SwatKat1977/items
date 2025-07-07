@@ -21,7 +21,7 @@ from .projects_api_view import ProjectsApiView
 def create_blueprint(logger: logging.Logger) -> Blueprint:
     view = ProjectsApiView(logger)
 
-    blueprint = Blueprint('project_api', __name__)
+    blueprint = Blueprint('admin_project_api', __name__)
 
     logger.debug("Registering WEB ADMIN Project endpoint:")
 
