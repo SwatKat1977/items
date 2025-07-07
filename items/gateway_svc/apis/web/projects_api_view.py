@@ -17,9 +17,8 @@ import http
 import json
 import logging
 import quart
-from base_view import ApiResponse, BaseView, validate_json
+from base_view import BaseView
 from threadsafe_configuration import ThreadSafeConfiguration
-import interfaces.gateway.project as json_schemas
 
 
 class ProjectsApiView(BaseView):

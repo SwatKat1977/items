@@ -178,7 +178,7 @@ TIME_ZONES = [
     {"display": "Samoa", "id": "Pacific/Apia"},
 ]
 
-VALID_TIME_ZONES_IDS: set = {tz['id'].upper() for tz in TIME_ZONES}
+VALID_TIME_ZONES_IDS: set = {tz["id"].upper() for tz in TIME_ZONES}
 
 DEFAULT_TIME_ZONE_DEFAULT: str = "_server_tz_"
 SECTION_SERVER_SETTINGS: str = "server_settings"
@@ -272,7 +272,7 @@ class MetadataHandler:
         read_failed: bool = True
 
         try:
-            with open(config_file, 'r', encoding='utf-8') as file:
+            with open(config_file, "r", encoding="utf-8") as file:
                 config_data = json.load(file)
                 read_failed = False
 

@@ -59,14 +59,14 @@ class Application(BaseApplication):
 
         version_info: str = f"V{RELEASE_VERSION}-{BUILD_VERSION}{BUILD_TAG}"
 
-        self._logger.info('ITEMS Gateway Microservice %s', version_info)
+        self._logger.info("ITEMS Gateway Microservice %s", version_info)
         self._logger.info(SERVICE_COPYRIGHT_TEXT)
         self._logger.info(LICENSE_TEXT)
 
         if not self._manage_configuration():
             return False
 
-        self._logger.info('Setting logging level to %s',
+        self._logger.info("Setting logging level to %s",
                           Configuration().logging_log_level)
         self._logger.setLevel(Configuration().logging_log_level)
 
@@ -83,7 +83,7 @@ class Application(BaseApplication):
             create_web_routes(self._logger,
                               self._metadata_handler,
                               self._sessions,
-                              '/web'), url_prefix="/web")
+                              "/web"), url_prefix="/web")
 
         return True
 
