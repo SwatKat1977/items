@@ -21,7 +21,7 @@ from .session_api import create_blueprint as create_session_bp
 from .projects_api import create_blueprint as create_projects_bp
 from .testcases_api import create_blueprint as create_testcases_bp
 from .webhook_api import create_blueprint as create_webhook_bp
-# from .admin import create_admin_routes
+from .admin import create_web_admin_routes
 
 
 def create_web_routes(logger: logging.Logger,
@@ -41,10 +41,9 @@ def create_web_routes(logger: logging.Logger,
 
     # Webhook API routes
     web_bp.register_blueprint(create_webhook_bp(logger,
-                                                metadata_handler,
-                                                f"{prefix}/webhook"),
+                                                metadata_handler),
                               url_prefix="/webhook")
 
-    # web_bp.register_blueprint(create_admin_routes(logger, state), url_prefix="/admin")
+    web_bp.register_blueprint(create_web_admin_routes(logger, sessions), url_prefix="/admin")
 
     return web_bp
