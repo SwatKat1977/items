@@ -1,4 +1,4 @@
-name: Build | Accounts Svc Docker
+name: Build | Gateway Svc Docker
 
 on:
   workflow_dispatch:
@@ -51,10 +51,10 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: docker/Dockerfile.accounts_svc
+          file: docker/Dockerfile.gateway_svc
           push: ${{ inputs.push_to_registry }}
           no-cache: true
-          tags: intmac/intmac_accountssvc:${{ inputs.tag }}
+          tags: intmac/intmac_gatewaysvc:${{ inputs.tag }}
           platforms: |
             linux/amd64
             linux/arm64

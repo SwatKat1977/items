@@ -1,4 +1,4 @@
-name: Build | Accounts Svc Docker
+name: Build | CMS Svc Docker
 
 on:
   workflow_dispatch:
@@ -47,14 +47,14 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: Build and push Accounts Svc Docker image
+      - name: Build and push CMS Svc Docker image
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: docker/Dockerfile.accounts_svc
+          file: docker/Dockerfile.cms_svc
           push: ${{ inputs.push_to_registry }}
           no-cache: true
-          tags: intmac/intmac_accountssvc:${{ inputs.tag }}
+          tags: intmac/intmac_cmssvc:${{ inputs.tag }}
           platforms: |
             linux/amd64
             linux/arm64
