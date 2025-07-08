@@ -28,8 +28,8 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
     logger.debug(f"=> {'Modify a TC custom field'.ljust(30)}"
                  "PATCH /web/admin/testcase_custom_fields")
 
-    @blueprint.route('/testcase_custom_fields', methods=['PATCH'])
-    async def modify_custom_field_request():
-        return await view.modify_custom_field()
+    @blueprint.route('/testcase_custom_fields/<int:field_id>', methods=['PATCH'])
+    async def modify_custom_field_request(field_id: int):
+        return await view.modify_custom_field(field_id)
 
     return blueprint

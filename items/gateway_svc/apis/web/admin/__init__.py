@@ -17,6 +17,8 @@ import logging
 import quart
 from sessions import Sessions
 from .projects_api import create_blueprint as create_projects_bp
+from .testcase_custom_fields_api \
+    import create_blueprint as create_tc_custom_fields_bp
 
 
 def create_web_admin_routes(logger: logging.Logger,
@@ -25,6 +27,9 @@ def create_web_admin_routes(logger: logging.Logger,
 
     # Projects API routes
     web_bp.register_blueprint(create_projects_bp(logger))
+
+    # Testcase custom fields API routes
+    web_bp.register_blueprint(create_tc_custom_fields_bp(logger))
 
     return web_bp
 
