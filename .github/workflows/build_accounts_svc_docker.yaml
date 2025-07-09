@@ -64,7 +64,7 @@ jobs:
           file: docker/Dockerfile.accounts_svc
           push: ${{ env.PUSH_TO_REGISTRY }}
           no-cache: true
-          tags: items/items_accounts_svc:${{ env.DOCKER_TAG }}
+          tags: swatkat1977/items:accounts_svc-${{ env.DOCKER_TAG }}
           platforms: |
             linux/amd64
             linux/arm64
