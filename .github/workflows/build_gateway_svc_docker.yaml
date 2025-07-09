@@ -15,26 +15,33 @@ on:
         required: true
         type: string
       push_to_registry:
-        description: 'Whether to push to Docker Hub'
+        description: 'Push to Docker Hub'
         required: true
         type: boolean
+
+  schedule:
+    - cron: '0 2 * * *'  # 2 AM UTC every day
 
 jobs:
   build-images:
     runs-on: ubuntu-22.04
 
+    env:
+      BRANCH_NAME: ${{ github.event.inputs.branch || 'main' }}
+      DOCKER_TAG: ${{ github.event.inputs.tag || 'NIGHTLY' }}
+      PUSH_TO_REGISTRY: ${{ github.event.inputs.push_to_registry || 'true' }}
+
     steps:
       - name: Checkout ITEMS code (detached HEAD)
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Required to access remote branches
-          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+          ref: ${{ env.BRANCH_NAME }}
 
       - name: Validate input branch exists
         run: |
-          BRANCH="${{ inputs.branch }}"
-          if ! git ls-remote --exit-code origin "refs/heads/$BRANCH" > /dev/null; then
-            echo "❌ Branch '$BRANCH' does not exist on remote."
+          if ! git ls-remote --exit-code origin "refs/heads/${BRANCH_NAME}" > /dev/null; then
+            echo "❌ Branch '${BRANCH_NAME}' does not exist on remote."
             exit 1
           fi
 
@@ -50,14 +57,14 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: Build and push Accounts Svc Docker image
+      - name: Build and push Gateway Svc Docker image
         uses: docker/build-push-action@v3
         with:
           context: .
           file: docker/Dockerfile.gateway_svc
-          push: ${{ inputs.push_to_registry }}
+          push: ${{ env.PUSH_TO_REGISTRY }}
           no-cache: true
-          tags: intmac/intmac_gatewaysvc:${{ inputs.tag }}
+          tags: swatkat1977/items:items_gateway_svc-${{ env.DOCKER_TAG }}
           platforms: |
             linux/amd64
             linux/arm64
