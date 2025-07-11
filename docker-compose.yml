@@ -1,6 +1,6 @@
 services:
   accounts_svc:
-    image: swatkat1977/a:latest
+    image: swatkat1977/items:items_accounts_svc-${ACCOUNTS_SVC_DOCKER_TAG}
     container_name: accounts_svc
     networks:
       - backend
@@ -14,7 +14,7 @@ services:
       - .env
 
   cms_svc:
-    image: swatkat1977/c:latest
+    image: swatkat1977/items:items_cms_svc-${CMS_SVC_DOCKER_TAG}
     container_name: cms_svc
     networks:
       - backend
@@ -28,7 +28,7 @@ services:
       - .env
 
   gateway_svc:
-    image: swatkat1977/g:latest
+    image: swatkat1977/items:items_gateway_svc-${GATEWAY_SVC_DOCKER_TAG}
     container_name: gateway_svc
     networks:
       - backend
@@ -42,7 +42,7 @@ services:
       - .env
 
   web_portal_svc:
-    image: swatkat1977/w:latest
+    image: swatkat1977/items:items_web_portal_svc-${WEB_PORTAL_SVC_DOCKER_TAG}
     container_name: web_portal_svc
     ports:
       - "8080:8080"
