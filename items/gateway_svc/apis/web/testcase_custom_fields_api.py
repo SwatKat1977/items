@@ -13,3 +13,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import logging
+from quart import Blueprint
+from .testcase_custom_fields_api_view import TestcaseCustomFieldsApiView
+
+
+def create_blueprint(logger: logging.Logger) -> Blueprint:
+    view = TestcaseCustomFieldsApiView(logger)
+
+    blueprint = Blueprint('web_tc_custom_fields_api', __name__)
+
+    logger.debug("Registering WEB TC custom fields endpoint:")
+
+    logger.debug(f"=> {'Get all TC custom fields'.ljust(30)}"
+                 "GET /web/testcase_custom_fields")
+
+    @blueprint.route('/testcase_custom_fields', methods=['GET'])
+    async def get_all_custom_fields_request():
+        return await view.get_all_custom_fields()
+
+    return blueprint
