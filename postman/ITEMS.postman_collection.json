@@ -70,250 +70,433 @@
 			"name": "Gateway Service",
 			"item": [
 				{
-					"name": "Project API",
+					"name": "Web",
 					"item": [
 						{
-							"name": "Modify Project",
-							"request": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"name\": \"Project bob\",\n    \"announcement\": \"This is test project Gamma\",\n    \"announcement_on_overview\": false\n}",
-									"options": {
-										"raw": {
-											"language": "json"
+							"name": "Session",
+							"item": [
+								{
+									"name": "Create Session (Basic Auth)",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"type\": \"basic\",\n    \"email_address\": \"admin@localhost\",\n    \"password\": \"TestPassword\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{GATEWAY_SVC_URL}}/web/session",
+											"host": [
+												"{{GATEWAY_SVC_URL}}"
+											],
+											"path": [
+												"web",
+												"session"
+											]
 										}
-									}
+									},
+									"response": []
 								},
-								"url": {
-									"raw": "{{GATEWAY_SVC_URL}}/web/projects/modify/1",
-									"host": [
-										"{{GATEWAY_SVC_URL}}"
-									],
-									"path": [
-										"web",
-										"projects",
-										"modify",
-										"1"
-									]
+								{
+									"name": "Is Session Valid",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"email_address\": \"admin@localhost\",\n    \"token\": \"abcdefabcdefabcdefabcdef12345679\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{GATEWAY_SVC_URL}}/web/session/validate",
+											"host": [
+												"{{GATEWAY_SVC_URL}}"
+											],
+											"path": [
+												"web",
+												"session",
+												"validate"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Logout",
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"email_address\": \"admin@localhost\",\n    \"token\": \"invalidtoken\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{GATEWAY_SVC_URL}}/web/session",
+											"host": [
+												"{{GATEWAY_SVC_URL}}"
+											],
+											"path": [
+												"web",
+												"session"
+											]
+										}
+									},
+									"response": []
 								}
-							},
-							"response": []
+							]
 						},
 						{
-							"name": "Project Details",
-							"protocolProfileBehavior": {
-								"disableBodyPruning": true
-							},
-							"request": {
-								"method": "GET",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"name\": \"Project Gamma\",\n    \"announcement\": \"This is test project Gamma\",\n    \"announcement_on_overview\": false\n}",
-									"options": {
-										"raw": {
-											"language": "json"
+							"name": "Project API",
+							"item": [
+								{
+									"name": "Retrieve a Project",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"Project Gamma\",\n    \"announcement\": \"This is test project Gamma\",\n    \"announcement_on_overview\": false\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{GATEWAY_SVC_URL}}/web/projects/3",
+											"host": [
+												"{{GATEWAY_SVC_URL}}"
+											],
+											"path": [
+												"web",
+												"projects",
+												"3"
+											]
 										}
-									}
+									},
+									"response": []
 								},
-								"url": {
-									"raw": "{{GATEWAY_SVC_URL}}/web/projects/details/3",
-									"host": [
-										"{{GATEWAY_SVC_URL}}"
-									],
-									"path": [
-										"web",
-										"projects",
-										"details",
-										"3"
-									]
+								{
+									"name": "List all projects",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{GATEWAY_SVC_URL}}/web/projects?value_fields=name&count_fields=no_of_test_runs,no_of_milestones",
+											"host": [
+												"{{GATEWAY_SVC_URL}}"
+											],
+											"path": [
+												"web",
+												"projects"
+											],
+											"query": [
+												{
+													"key": "value_fields",
+													"value": "name"
+												},
+												{
+													"key": "count_fields",
+													"value": "no_of_test_runs,no_of_milestones"
+												}
+											]
+										}
+									},
+									"response": []
 								}
-							},
-							"response": []
+							]
 						},
 						{
-							"name": "Projects Overviews",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{GATEWAY_SVC_URL}}/web/projects/overviews?value_fields=name&count_fields=no_of_test_runs,no_of_milestones",
-									"host": [
-										"{{GATEWAY_SVC_URL}}"
-									],
-									"path": [
-										"web",
-										"projects",
-										"overviews"
-									],
-									"query": [
+							"name": "Webhook API",
+							"item": [
+								{
+									"name": "get_metadata",
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "X-Signature",
+												"value": "e33a8cf789fe6c61df896769db5084db5222a304140663082e6d43e426a67b86",
+												"type": "text"
+											}
+										],
+										"url": {
+											"raw": "{{GATEWAY_SVC_URL}}/web/webhook/get_metadata?nonce=109",
+											"host": [
+												"{{GATEWAY_SVC_URL}}"
+											],
+											"path": [
+												"web",
+												"webhook",
+												"get_metadata"
+											],
+											"query": [
+												{
+													"key": "nonce",
+													"value": "109"
+												}
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Testcases",
+							"item": [
+								{
+									"name": "Details of test cases",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{GATEWAY_SVC_URL}}/web/1/testcase/testcases_details",
+											"host": [
+												"{{GATEWAY_SVC_URL}}"
+											],
+											"path": [
+												"web",
+												"1",
+												"testcase",
+												"testcases_details"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get details for a test case",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "http://127.0.0.1:5000/1/testcase/get_case/1",
+											"protocol": "http",
+											"host": [
+												"127",
+												"0",
+												"0",
+												"1"
+											],
+											"port": "5000",
+											"path": [
+												"1",
+												"testcase",
+												"get_case",
+												"1"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Admin",
+							"item": [
+								{
+									"name": "Project API (Admin)",
+									"item": [
 										{
-											"key": "value_fields",
-											"value": "name"
+											"name": "Update a Project",
+											"request": {
+												"method": "PATCH",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"name\": \"Project bob\",\n    \"announcement\": \"This is test project Gamma\",\n    \"announcement_on_overview\": false\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{GATEWAY_SVC_URL}}/web/admin/projects/1",
+													"host": [
+														"{{GATEWAY_SVC_URL}}"
+													],
+													"path": [
+														"web",
+														"admin",
+														"projects",
+														"1"
+													]
+												}
+											},
+											"response": []
 										},
 										{
-											"key": "count_fields",
-											"value": "no_of_test_runs,no_of_milestones"
-										}
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Delete Project",
-							"request": {
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "{{GATEWAY_SVC_URL}}/web/projects/4/delete_project",
-									"host": [
-										"{{GATEWAY_SVC_URL}}"
-									],
-									"path": [
-										"web",
-										"projects",
-										"4",
-										"delete_project"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Add Project",
-							"request": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"name\": \"test project2\",\n    \"announcement\": \"Test that announcement are written\",\n    \"announcement_on_overview\": true\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{GATEWAY_SVC_URL}}/web/projects/add",
-									"host": [
-										"{{GATEWAY_SVC_URL}}"
-									],
-									"path": [
-										"web",
-										"projects",
-										"add"
-									]
-								}
-							},
-							"response": []
-						}
-					]
-				},
-				{
-					"name": "Webhook API",
-					"item": [
-						{
-							"name": "get_metadata",
-							"request": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "X-Signature",
-										"value": "e33a8cf789fe6c61df896769db5084db5222a304140663082e6d43e426a67b86",
-										"type": "text"
-									}
-								],
-								"url": {
-									"raw": "{{GATEWAY_SVC_URL}}/web/webhook/get_metadata?nonce=109",
-									"host": [
-										"{{GATEWAY_SVC_URL}}"
-									],
-									"path": [
-										"web",
-										"webhook",
-										"get_metadata"
-									],
-									"query": [
+											"name": "Delete Project",
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{GATEWAY_SVC_URL}}/web/admin/projects/4",
+													"host": [
+														"{{GATEWAY_SVC_URL}}"
+													],
+													"path": [
+														"web",
+														"admin",
+														"projects",
+														"4"
+													]
+												}
+											},
+											"response": []
+										},
 										{
-											"key": "nonce",
-											"value": "109"
+											"name": "Add Project",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"name\": \"test project32\",\n    \"announcement\": \"Test that announcement are written\",\n    \"announcement_on_overview\": true\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{GATEWAY_SVC_URL}}/web/admin/projects",
+													"host": [
+														"{{GATEWAY_SVC_URL}}"
+													],
+													"path": [
+														"web",
+														"admin",
+														"projects"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "Project API (Admin)",
+									"item": [
+										{
+											"name": "Update a Project",
+											"request": {
+												"method": "PATCH",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"name\": \"Project bob\",\n    \"announcement\": \"This is test project Gamma\",\n    \"announcement_on_overview\": false\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{GATEWAY_SVC_URL}}/web/admin/projects/1",
+													"host": [
+														"{{GATEWAY_SVC_URL}}"
+													],
+													"path": [
+														"web",
+														"admin",
+														"projects",
+														"1"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Project",
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{GATEWAY_SVC_URL}}/web/admin/projects/4",
+													"host": [
+														"{{GATEWAY_SVC_URL}}"
+													],
+													"path": [
+														"web",
+														"admin",
+														"projects",
+														"4"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Add Project",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"name\": \"test project32\",\n    \"announcement\": \"Test that announcement are written\",\n    \"announcement_on_overview\": true\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{GATEWAY_SVC_URL}}/web/admin/projects",
+													"host": [
+														"{{GATEWAY_SVC_URL}}"
+													],
+													"path": [
+														"web",
+														"admin",
+														"projects"
+													]
+												}
+											},
+											"response": []
 										}
 									]
 								}
-							},
-							"response": []
+							]
 						}
 					]
-				},
-				{
-					"name": "Details of test cases",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "http://127.0.0.1:5000/1/testcase/testcases_details",
-							"protocol": "http",
-							"host": [
-								"127",
-								"0",
-								"0",
-								"1"
-							],
-							"port": "5000",
-							"path": [
-								"1",
-								"testcase",
-								"testcases_details"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get details for a test case",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "http://127.0.0.1:5000/1/testcase/get_case/1",
-							"protocol": "http",
-							"host": [
-								"127",
-								"0",
-								"0",
-								"1"
-							],
-							"port": "5000",
-							"path": [
-								"1",
-								"testcase",
-								"get_case",
-								"1"
-							]
-						}
-					},
-					"response": []
 				}
 			]
 		},

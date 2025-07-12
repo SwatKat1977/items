@@ -23,7 +23,7 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
 
     blueprint = Blueprint('project_api', __name__)
 
-    logger.debug("Registering Project endpoint:")
+    logger.debug("Registering WEB Project endpoint:")
 
     logger.debug(f"=> {'List all projects'.ljust(30)}GET /web/projects")
 
@@ -37,25 +37,5 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
     @blueprint.route('/projects/<project_id>', methods=['GET'])
     async def project_details_request(project_id: int):
         return await view.retrieve_a_project(project_id)
-
-    logger.debug(f"=> {'Add a project'.ljust(30)}" "POST /web/projects")
-
-    @blueprint.route('/projects', methods=['POST'])
-    async def add_project_request():
-        return await view.add_project()
-
-    logger.debug(f"=> {'Update a project'.ljust(30)}"
-                 "PATCH /web/projects/<int:project_id>")
-
-    @blueprint.route('/projects/<int:project_id>', methods=['PATCH'])
-    async def modify_project_request(project_id: int):
-        return await view.modify_project(project_id)
-
-    logger.debug(f"=> {'Delete a project'.ljust(30)}"
-                 "DELETE /web/projects/<int:project_id>")
-
-    @blueprint.route('/projects/<project_id>', methods=['DELETE'])
-    async def delete_project_request(project_id: int):
-        return await view.delete_project(project_id)
 
     return blueprint

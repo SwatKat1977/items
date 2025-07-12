@@ -21,13 +21,13 @@ from configuration import configuration_setup
 class ConfigurationConstants:
     """ Constants for the microservice configuration. """
 
-    SECTION_LOGGING: str = 'logging'
-    SECTION_GENERAL: str = 'general'
-    SECTION_APIS: str = 'apis'
+    SECTION_LOGGING: str = "logging"
+    SECTION_GENERAL: str = "general"
+    SECTION_APIS: str = "apis"
 
-    LOGGING_LOG_LEVEL: str = 'log_level'
-    LOGGING_LOG_LEVEL_DEBUG: str = 'DEBUG'
-    LOGGING_LOG_LEVEL_INFO: str = 'INFO'
+    LOGGING_LOG_LEVEL: str = "log_level"
+    LOGGING_LOG_LEVEL_DEBUG: str = "DEBUG"
+    LOGGING_LOG_LEVEL_INFO: str = "INFO"
 
     GENERAL_METADATA_CONFIG_FILE: str = "metadata_config_file"
     GENERAL_METADATA_CONFIG_FILE_DEFAULT: str = "metadata.config"
