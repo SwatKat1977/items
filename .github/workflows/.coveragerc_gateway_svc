@@ -6,6 +6,7 @@ omit =
     items/gateway_svc/apis/web/projects_api.py
     items/gateway_svc/apis/web/testcases_api.py
     items/gateway_svc/apis/web/webhook_api.py
+    items/gateway_svc/apis/web/admin/projects_api.py
     items/shared/*
     /opt/homebrew/*
     /usr/lib/python3/*

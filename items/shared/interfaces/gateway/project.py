@@ -62,3 +62,39 @@ SCHEMA_MODIFY_PROJECT_REQUEST: dict = {
         },
     "required": ["name", "announcement", "announcement_on_overview"]
 }
+
+SCHEMA_MODIFY_TC_CUSTOM_FIELD_REQUEST: dict = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "TestcaseCustomFieldPatch",
+    "type": "object",
+    "oneOf": [
+        {
+            "required": ["position"],
+            "properties": {
+                "position": {
+                    "type": "string",
+                    "enum": ["up", "down"]
+                }
+            },
+            "additionalProperties": False
+        },
+        {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["text", "dropdown", "checkbox", "number"]
+                },
+                "required": {
+                    "type": "boolean"
+                }
+            },
+            "required": [],
+            "minProperties": 1,
+            "additionalProperties": False
+            }
+    ]
+}

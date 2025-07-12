@@ -7,6 +7,7 @@ from test_apis_web_projects_api_view import TestApiProjectApiView
 from test_api_web_testcases_api_view import TestApiTestcaseApiView
 from test_metadata_handler import TestMetadataHandler
 from test_apis_web_webhook_api_view import TestWebhookApiProjectApiView
+from test_apis_web_admin_projects_api_view import TestApiWebAdminProjectApiView
 
 if __name__ == "__main__":
     unittest.main()

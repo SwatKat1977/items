@@ -320,7 +320,7 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
 
     @patch.object(ConfigurationManager, 'get_entry')
     async def test_admin_modify_project_post_success(self, mock_get_entry):
-        mock_get_entry.return_value = "http://localhost"
+        mock_get_entry.return_value = "http://localhost/"
 
         self.view._call_api_patch = AsyncMock()
         self.view._call_api_patch.return_value = ApiResponse(
@@ -338,7 +338,7 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
             response = await client.post('/admin/123/modify_project', form=request_data)
 
         self.view._call_api_patch.assert_called_once_with(
-            "http://localhost/web/projects/123",
+            "http://localhost/web/admin/projects/123",
             {
                 "name": "Updated Project",
                 "announcement": "Updated Announcement",
@@ -349,7 +349,7 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
 
     @patch.object(ConfigurationManager, 'get_entry')
     async def test_admin_modify_project_post_fail(self, mock_get_entry):
-        mock_get_entry.return_value = "http://localhost"
+        mock_get_entry.return_value = "http://localhost/"
 
         self.view._call_api_patch = AsyncMock()
         self.view._call_api_patch.return_value = ApiResponse(
@@ -368,7 +368,7 @@ class TestApisDashboardApiView(unittest.IsolatedAsyncioTestCase):
             response = await client.post('/admin/123/modify_project', form=request_data)
 
         self.view._call_api_patch.assert_called_once_with(
-            "http://localhost/web/projects/123",
+            "http://localhost/web/admin/projects/123",
             {
                 "name": "Invalid Project",
                 "announcement": "Invalid Announcement",
