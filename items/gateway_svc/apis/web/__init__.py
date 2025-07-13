@@ -20,6 +20,8 @@ from sessions import Sessions
 from .session_api import create_blueprint as create_session_bp
 from .projects_api import create_blueprint as create_projects_bp
 from .testcases_api import create_blueprint as create_testcases_bp
+from .testcase_custom_fields_api import create_blueprint \
+    as create_tc_custom_fields_bp
 from .webhook_api import create_blueprint as create_webhook_bp
 from .admin import create_web_admin_routes
 
@@ -38,6 +40,9 @@ def create_web_routes(logger: logging.Logger,
 
     # Test cases API routes
     web_bp.register_blueprint(create_testcases_bp(logger, sessions))
+
+    # Test case custom fields API routes
+    web_bp.register_blueprint(create_tc_custom_fields_bp(logger))
 
     # Webhook API routes
     web_bp.register_blueprint(create_webhook_bp(logger,

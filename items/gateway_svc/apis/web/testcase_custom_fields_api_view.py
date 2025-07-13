@@ -13,6 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import logging
+from base_view import BaseView
 
-class TestcaseCustomFieldsApiView:
-    ...
+
+class TestcaseCustomFieldsApiView(BaseView):
+
+    def __init__(self, logger : logging.Logger) -> None:
+        self._logger = logger.getChild(__name__)
+
+    async def get_all_custom_fields(self, project_id):
+        ...

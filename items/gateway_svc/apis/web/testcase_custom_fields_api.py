@@ -28,8 +28,8 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
     logger.debug(f"=> {'Get all TC custom fields'.ljust(30)}"
                  "GET /web/testcase_custom_fields")
 
-    @blueprint.route('/testcase_custom_fields', methods=['GET'])
-    async def get_all_custom_fields_request():
-        return await view.get_all_custom_fields()
+    @blueprint.route('/testcase_custom_fields/<int:project_id>', methods=['GET'])
+    async def get_all_custom_fields_request(project_id: int):
+        return await view.get_all_custom_fields(project_id)
 
     return blueprint
