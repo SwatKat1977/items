@@ -20,7 +20,8 @@ import time
 from quart import Response
 from base_view import BaseView
 from state_object import StateObject
-import service_health_enums as health_enums
+from service_health_enums import (ServiceDegradationStatus,
+                                  ComponentDegradationLevel)
 
 
 class HealthApiView(BaseView):
@@ -66,40 +67,35 @@ class HealthApiView(BaseView):
         issues: list = []
 
         # Check database health
-        if (self._state_object.database_health !=
-                health_enums.ComponentDegradationLevel.NONE):
-            status = health_enums.ComponentDegradationLevelStr[
-                self._state_object.database_health]
+        if self._state_object.database_health != \
+                ComponentDegradationLevel.NONE:
             issues.append(
                 {"component": "database",
-                 "status": status,
+                 "status": self._state_object.database_health.value,
                  "details": self._state_object.database_health_state_str})
 
         # Check microservice health
-        if (self._state_object.service_health !=
-                health_enums.ComponentDegradationLevel.NONE):
-            status = health_enums.ComponentDegradationLevelStr[
-                self._state_object.service_health]
+        if self._state_object.service_health != \
+                ComponentDegradationLevel.NONE:
             issues.append(
                 {"component": "service",
-                 "status": status,
+                 "status": self._state_object.service_health.value,
                  "details": self._state_object.service_health_state_str})
 
         if issues:
-            status = health_enums.STATUS_CRITICAL \
+            status = ServiceDegradationStatus.CRITICAL.value \
                 if any(issue["status"] ==
-                       health_enums.COMPONENT_DEGRADATION_LEVEL_FULLY_DEGRADED
-                       for issue in issues) else health_enums.STATUS_DEGRADED
+                       ComponentDegradationLevel.FULLY_DEGRADED.value
+                       for issue in issues)\
+                else ServiceDegradationStatus.DEGRADED.value
         else:
-            status = health_enums.STATUS_HEALTHY
+            status = ServiceDegradationStatus.HEALTHY.value
 
         response: dict = {
             "status": status,
             "dependencies": {
-                "database": health_enums.ComponentDegradationLevelStr[
-                    self._state_object.database_health],
-                "service": health_enums.ComponentDegradationLevelStr[
-                    self._state_object.service_health]
+                "database": self._state_object.database_health.value,
+                "service": self._state_object.service_health.value
             },
             "issues": issues if issues else None,
             "uptime_seconds": uptime,
