@@ -220,7 +220,7 @@ jobs:
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:items/unit_tests/shared
+          PYTHONPATH: items/shared:unit_tests/shared
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_shared -m unittest -v main
           coverage report -m --fail-under=100
