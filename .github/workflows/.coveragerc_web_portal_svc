@@ -1,7 +1,7 @@
 [run]
 omit =
-    items/unittests_shared/*
-    items/unittests_web_portal_svc/*
+    unit_tests/shared/*
+    unit_tests/web_portal_svc/*
     items/web_portal_svc/apis/auth_api.py
     items/web_portal_svc/apis/dashboard_api.py
     items/web_portal_svc/apis/projects_api.py

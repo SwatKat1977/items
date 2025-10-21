@@ -41,10 +41,11 @@ jobs:
       - name: Detect changes in directories
         id: detect
         run: |
+          git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1
+          changed_files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.sha }})
+
           echo "Checking for changes in items/accounts_svc/"
-          if git diff --name-only origin/${{ github.event.pull_request.base.ref }} \
-            ${{ github.event.pull_request.head.sha }} \
-              | grep -qE '^items/accounts_svc/|^items/unittests_accounts_svc/'; then
+          if echo "$changed_files" | grep -qE '^(items|unit_tests)/accounts_svc/'; then
             echo "accounts_svc_changed=true" >> $GITHUB_OUTPUT
             echo "[INFO] items/accounts_svc has changed"
           else
@@ -52,19 +53,16 @@ jobs:
           fi
 
           echo "Checking for changes in items/cms_svc/"
-          if git diff --name-only origin/${{ github.event.pull_request.base.ref }} \
-            ${{ github.event.pull_request.head.sha }} \
-              | grep -qE '^items/cms_svc/|^items/unittests_cms_svc/'; then
+          if echo "$changed_files" | grep -qE '^(items|unit_tests)/cms_svc/'; then
             echo "cms_svc_changed=true" >> $GITHUB_OUTPUT
-            echo "[INFO] items/cms_svc has changed"
+            echo "[INFO] CMS Service or unit tests have changed"
           else
             echo "cms_svc_changed=false" >> $GITHUB_OUTPUT
+            echo "[INFO] CMS Service or unit tests have NOT changed"
           fi
 
           echo "Checking for changes in items/gateway_svc/"
-          if git diff --name-only origin/${{ github.event.pull_request.base.ref }} \
-            ${{ github.event.pull_request.head.sha }} \
-              | grep -qE '^items/gateway_svc/|^items/unittests_gateway_svc/'; then
+          if echo "$changed_files" | grep -qE '^(items|unit_tests)/gateway_svc/'; then
             echo "gateway_svc_changed=true" >> $GITHUB_OUTPUT
             echo "[INFO] items/gateway_svc has changed"
           else
@@ -72,9 +70,7 @@ jobs:
           fi
           
           echo "Checking for changes in items/web_portal_svc/"
-          if git diff --name-only origin/${{ github.event.pull_request.base.ref }} \
-            ${{ github.event.pull_request.head.sha }} \
-              | grep -qE '^items/web_portal_svc/|^items/unittests_web_portal_svc/'; then
+          if echo "$changed_files" | grep -qE '^(items|unit_tests)/web_portal_svc/'; then
             echo "web_portal_svc_changed=true" >> $GITHUB_OUTPUT
             echo "[INFO] items/web_portal_svc has changed"
           else
@@ -82,9 +78,7 @@ jobs:
           fi
 
           echo "Checking for changes in items/shared/"
-          if git diff --name-only origin/${{ github.event.pull_request.base.ref }} \
-            ${{ github.event.pull_request.head.sha }} \
-              | grep -qE '^items/shared/|^items/unittests_shared/'; then
+          if echo "$changed_files" | grep -qE '^(items|unit_tests)/shared/'; then
             echo "shared_changed=true" >> $GITHUB_OUTPUT
             echo "[INFO] items/shared has changed"
           else
@@ -114,7 +108,7 @@ jobs:
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:items/unittests_accounts_svc:items/accounts_svc
+          PYTHONPATH: items/shared:unit_tests/accounts_svc:items/accounts_svc
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_accounts_svc -m unittest -v main
           coverage report -m --fail-under=100
@@ -142,7 +136,7 @@ jobs:
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:items/unittests_cms_svc:items/cms_svc
+          PYTHONPATH: items/shared:unit_tests/cms_svc:items/cms_svc
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_cms_svc -m unittest -v main
           coverage report -m --fail-under=100
@@ -170,7 +164,7 @@ jobs:
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:items/unittests_gateway_svc:items/gateway_svc
+          PYTHONPATH: items/shared:unit_tests/gateway_svc:items/gateway_svc
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_gateway_svc -m unittest -v main
           coverage report -m --fail-under=100
@@ -198,7 +192,7 @@ jobs:
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:items/unittests_web_portal_svc:items/web_portal_svc
+          PYTHONPATH: items/shared:unit_tests/web_portal_svc:items/web_portal_svc
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_web_portal_svc -m unittest -v main
           coverage report -m --fail-under=100
@@ -226,7 +220,7 @@ jobs:
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:items/unittests_shared
+          PYTHONPATH: items/shared:unit_tests/shared
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_shared -m unittest -v main
           coverage report -m --fail-under=100
