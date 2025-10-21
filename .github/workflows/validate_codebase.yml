@@ -41,6 +41,8 @@ jobs:
       - name: Detect changes in directories
         id: detect
         run: |
+          git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1
+
           echo "Checking for changes in items/accounts_svc/"
           if git diff --name-only origin/${{ github.event.pull_request.base.ref }} \
             ${{ github.event.pull_request.head.sha }} \
@@ -52,15 +54,13 @@ jobs:
           fi
 
           echo "Checking for changes in items/cms_svc/"
-          git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1
           changed_files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.sha }})
-          echo "$changed_files"
           if echo "$changed_files" | grep -qE '^(items|unit_tests)/cms_svc/'; then
             echo "cms_svc_changed=true" >> $GITHUB_OUTPUT
-            echo "[INFO] items/cms_svc has changed"
+            echo "[INFO] CMS Service or unit tests have changed"
           else
             echo "cms_svc_changed=false" >> $GITHUB_OUTPUT
-            echo "[INFO] items/cms_svc has NOT changed"
+            echo "[INFO] CMS Service or unit tests have NOT changed"
           fi
 
           echo "Checking for changes in items/gateway_svc/"
