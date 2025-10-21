@@ -7,7 +7,7 @@ omit =
     items/gateway_svc/apis/web/testcases_api.py
     items/gateway_svc/apis/web/webhook_api.py
     items/gateway_svc/apis/web/admin/projects_api.py
-    items/gateway_svc/apis/web/admin/testcase_custom_fields_api_view.py
+    items/gateway_svc/apis/web/admin/testcase_custom_fields_api.py
     items/gateway_svc/apis/web/testcase_custom_fields_api.py
     items/shared/*
     /opt/homebrew/*
