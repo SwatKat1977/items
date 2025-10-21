@@ -31,6 +31,9 @@ from apis import create_routes
 class Application(BaseApplication):
     """ ITEMS Accounts Service """
 
+    CONFIG_FILE_ENV: str = "ITEMS_ACCOUNTS_SVC_CONFIG_FILE"
+    CONFIG_REQUIRED_ENV: str = "ITEMS_ACCOUNTS_SVC_CONFIG_FILE_REQUIRED"
+
     def __init__(self, quart_instance):
         super().__init__()
         self._quart_instance = quart_instance
@@ -63,7 +66,7 @@ class Application(BaseApplication):
         self._logger.setLevel(Configuration().logging_log_level)
 
         if not os.path.isfile(Configuration().backend_db_filename):
-            self._logger.critical("Configuratuin file '%s' is missing!",
+            self._logger.critical("Backend database file '%s' is missing!",
                                   Configuration().backend_db_filename)
             return False
 
@@ -83,28 +86,13 @@ class Application(BaseApplication):
         """
         Manage the service configuration.
         """
-
-        config_file = os.getenv("ITEMS_ACCOUNTS_SVC_CONFIG_FILE", None)
-
-        config_file_required_str: str = os.getenv(
-            "ITEMS_ACCOUNTS_SVC_CONFIG_FILE_REQUIRED", None)
-
-        config_file_required: bool = False
-        if config_file_required_str is not None and config_file_required_str == "1":
-            config_file_required = True
-
-        self._logger.info("Configuration file required? %s",
-                          "True" if config_file_required else "False")
-
-        if not config_file and config_file_required:
-            self._logger.critical("Configuration file missing!")
+        error_status, required, config_file = self._check_for_configuration(
+            self.CONFIG_FILE_ENV,self.CONFIG_REQUIRED_ENV)
+        if error_status:
+            self._logger.critical(error_status)
             return False
 
-        if config_file_required:
-            self._logger.info("Configuration file : %s", config_file)
-
-        Configuration().configure(CONFIGURATION_LAYOUT, config_file,
-                                  config_file_required)
+        Configuration().configure(CONFIGURATION_LAYOUT, config_file, required)
 
         try:
             Configuration().process_config()
@@ -116,10 +104,13 @@ class Application(BaseApplication):
         self._logger.info("Configuration")
         self._logger.info("=============")
 
+        self._logger.info("Configuration file required: %s",
+                          "True" if required else "False")
+        self._logger.info("Configuration file : %s",
+                          "None"if not required else config_file)
         self._logger.info("[logging]")
         self._logger.info("=> Logging log level : %s",
                           Configuration().logging_log_level)
-
         self._logger.info("[Backend]")
         self._logger.info("=> Database filename : %s",
                           Configuration().backend_db_filename)

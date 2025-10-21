@@ -15,11 +15,16 @@ limitations under the License.
 """
 import asyncio
 import logging
+from typing import Optional
+import os
 
 
 class BaseApplication:
     """ Application framework class. """
     __slots__ = ["_is_initialised", "_logger", "_shutdown_requested"]
+
+    BOOL_TRUE_VALUES: set = {"1", "true", "yes", "on"}
+    BOOL_FALSE_VALUES: set = {"0", "false", "no", "off"}
 
     @property
     def logger(self) -> logging.Logger:
@@ -110,3 +115,68 @@ class BaseApplication:
 
     def _shutdown(self) -> None:
         """ Abstract method for application shutdown. """
+
+    def _check_for_configuration(self,
+                                 config_file_env: str,
+                                 config_file_required_env: str):
+        """
+        Check whether a configuration file is required and available based on environment variables.
+
+        This function inspects two environment variables:
+          - One specifying the path to a configuration file.
+          - One specifying whether the configuration file is required.
+
+        It validates the "required" flag against known boolean true/false values,
+        determines whether the configuration file is missing when required, and
+        returns the appropriate error status and state.
+
+        Args:
+            config_file_env (str):
+                The name of the environment variable that holds the configuration file path.
+            config_file_required_env (str):
+                The name of the environment variable that indicates whether the configuration file is required.
+                Expected values (case-insensitive): "true", "1", "yes", "on", "false", "0", "no", "off".
+
+        Returns:
+            tuple[str | None, bool, str | None]:
+                A tuple containing:
+                - `error_status` (str | None): An error message if a fatal error occurred, otherwise None.
+                - `config_file_required` (bool): Whether a configuration file is required.
+                - `config_file` (str | None): The configuration file path if defined, otherwise None.
+
+        Notes:
+            - If `config_file_required_env` contains an invalid value, an error message is returned.
+            - If a configuration file is required but not provided, an error message is returned.
+            - If both checks pass, `error_status` will be None.
+
+        Example:
+            >>> os.environ["MY_CONFIG_FILE"] = "/etc/app.conf"
+            >>> os.environ["MY_CONFIG_FILE_REQUIRED"] = "true"
+            >>> self._check_for_configuration("MY_CONFIG_FILE", "MY_CONFIG_FILE_REQUIRED")
+            (None, True, "/etc/app.conf")
+        """
+        # Default return values
+        config_file_required: bool = False
+        error_status: Optional[str] = None
+
+        config_file = os.getenv(config_file_env, None)
+        raw_required = os.getenv(config_file_required_env,
+                                 "false").strip().lower()
+
+        # Check if it's a true value.
+        if raw_required in self.BOOL_TRUE_VALUES:
+            config_file_required = True
+
+        # Check if it's a false value.
+        elif raw_required in self.BOOL_FALSE_VALUES:
+            config_file_required = False
+
+        # Unknown value - e.g. not true or false value.
+        else:
+            error_status = (f"Invalid value for {config_file_required_env}: "
+                            f"'{raw_required}'")
+
+        if not error_status and not config_file and config_file_required:
+            error_status = "Configuration file is not defined"
+
+        return error_status, config_file_required, config_file
