@@ -13,7 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import http
+import json
 import logging
+import quart
 from base_view import BaseView
 from threadsafe_configuration import ThreadSafeConfiguration
 
@@ -23,14 +26,14 @@ class TestcaseCustomFieldsApiView(BaseView):
     def __init__(self, logger : logging.Logger) -> None:
         self._logger = logger.getChild(__name__)
 
-    async def get_all_custom_fields(self, project_id):
+    async def get_all_custom_fields(self):
 
         cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
         url: str = f"{cms_svc}admin/testcase_custom_fields/" \
-                   f"testcase_custom_fields/{field_id}/{move_position}"
+                   f"testcase_custom_fields"
 
-        api_response = await self._call_api_patch(url)
+        api_response = await self._call_api_get(url)
 
         return quart.Response(json.dumps(api_response.body),
-                              status=http.HTTPStatus.BAD_REQUEST,
+                              status=http.HTTPStatus.OK,
                               content_type="application/json")

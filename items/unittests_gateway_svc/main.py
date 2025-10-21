@@ -8,6 +8,8 @@ from test_api_web_testcases_api_view import TestApiTestcaseApiView
 from test_metadata_handler import TestMetadataHandler
 from test_apis_web_webhook_api_view import TestWebhookApiProjectApiView
 from test_apis_web_admin_projects_api_view import TestApiWebAdminProjectApiView
+from test_apis_web_admin_testcase_custom_fields_api_view import TestApiWebAdminTestCaseCustomFieldsAPIView
+from test_apis_web_testcase_custom_fields_api_view import TestApiWebTestCaseCustomFieldsAPIView
 
 if __name__ == "__main__":
     unittest.main()
