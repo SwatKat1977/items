@@ -54,7 +54,7 @@ jobs:
           echo "Checking for changes in items/cms_svc/"
           if git diff --name-only origin/${{ github.event.pull_request.base.ref }} \
             ${{ github.event.pull_request.head.sha }} \
-              | grep -qE '^items/cms_svc/|^items/unittests_cms_svc/'; then
+              | grep -qE '^items/cms_svc/|^unit_tests/cms_svc/'; then
             echo "cms_svc_changed=true" >> $GITHUB_OUTPUT
             echo "[INFO] items/cms_svc has changed"
           else
@@ -142,7 +142,7 @@ jobs:
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:items/unittests_cms_svc:items/cms_svc
+          PYTHONPATH: items/shared:unit_tests/cms_svc:items/cms_svc
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_cms_svc -m unittest -v main
           coverage report -m --fail-under=100
