@@ -59,6 +59,7 @@ jobs:
             echo "[INFO] items/cms_svc has changed"
           else
             echo "cms_svc_changed=false" >> $GITHUB_OUTPUT
+            echo "[INFO] items/cms_svc has NOT changed"
           fi
 
           echo "Checking for changes in items/gateway_svc/"
