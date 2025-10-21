@@ -38,6 +38,11 @@ jobs:
         run: |
           git fetch origin ${{ github.event.pull_request.base.ref }}  # Fetch the base branch
 
+      - name: Checkout full history for diff
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Detect changes in directories
         id: detect
         run: |
