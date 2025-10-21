@@ -20,46 +20,36 @@ class ServiceDegradationStatus(Enum):
     """ Service degradation Status """
 
     # Everything is working fine
-    HEALTHY = 0
+    HEALTHY = "healthy"
 
     # Some components are slow or experiencing minor issues
-    DEGRADED = 1
+    DEGRADED = "degraded"
 
     # A major component is down, affecting service functionality
-    CRITICAL = 2
-
-
-ServiceDegradationStatusStr: dict = {
-    ServiceDegradationStatus.HEALTHY: "healthy",
-    ServiceDegradationStatus.DEGRADED: "degraded",
-    ServiceDegradationStatus.CRITICAL: "critical"
-}
-
-STATUS_HEALTHY: str = ServiceDegradationStatusStr[
-    ServiceDegradationStatus.HEALTHY]
-STATUS_DEGRADED: str = ServiceDegradationStatusStr[
-    ServiceDegradationStatus.DEGRADED]
-STATUS_CRITICAL: str = ServiceDegradationStatusStr[
-    ServiceDegradationStatus.CRITICAL]
+    CRITICAL = "critical"
 
 
 class ComponentDegradationLevel(Enum):
-    """ Component degradation Level """
+    """
+    Represents the degradation state of a vehicle or system component.
 
-    NONE = 0
-    PART_DEGRADED = 1
-    FULLY_DEGRADED = 2
+    This enumeration defines the possible levels of degradation that a component
+    can experience during simulation or operation.
 
+    Attributes:
+        NONE (str): The component is in perfect condition, with no degradation.
+        PART_DEGRADED (str): The component is partially degraded, causing minor
+            performance loss or inefficiency.
+        FULLY_DEGRADED (str): The component is fully degraded and no longer
+            functioning as intended.
+    """
 
-ComponentDegradationLevelStr: dict = {
-    ComponentDegradationLevel.NONE: "none",
-    ComponentDegradationLevel.PART_DEGRADED: "partial",
-    ComponentDegradationLevel.FULLY_DEGRADED: "fully_degraded"
-}
+    # The component is in perfect condition, with no degradation.
+    NONE = "none"
 
-COMPONENT_DEGRADATION_LEVEL_NONE: str = ComponentDegradationLevelStr[
-    ComponentDegradationLevel.NONE]
-COMPONENT_DEGRADATION_LEVEL_DEGRADED: str = ComponentDegradationLevelStr[
-    ComponentDegradationLevel.PART_DEGRADED]
-COMPONENT_DEGRADATION_LEVEL_FULLY_DEGRADED: str = ComponentDegradationLevelStr[
-    ComponentDegradationLevel.FULLY_DEGRADED]
+    # The component is partially degraded, causing minor performance loss or
+    # inefficiency.
+    PART_DEGRADED = "partial"
+
+    # The component is fully degraded and no longer functioning as intended.
+    FULLY_DEGRADED = "fully_degraded"

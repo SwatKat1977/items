@@ -15,22 +15,21 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from .webhook_api_view import WebhookApiView
-from metadata_handler import MetadataHandler
+from .testcase_custom_fields_api_view import TestcaseCustomFieldsApiView
 
 
-def create_blueprint(logger: logging.Logger,
-                     metadata_handler: MetadataHandler) -> Blueprint:
-    view = WebhookApiView(logger, metadata_handler)
+def create_blueprint(logger: logging.Logger) -> Blueprint:
+    view = TestcaseCustomFieldsApiView(logger)
 
-    blueprint = Blueprint('webhook_api', __name__)
+    blueprint = Blueprint('web_tc_custom_fields_api', __name__)
 
-    logger.debug("Registering WEB Webhook endpoints:")
+    logger.debug("Registering WEB TC custom fields endpoint:")
 
-    logger.debug("=> /web/get_metadata [GET]")
+    logger.debug(f"=> {'Get all TC custom fields'.ljust(30)}"
+                 "GET /web/testcase_custom_fields")
 
-    @blueprint.route('/get_metadata', methods=['GET'])
-    async def get_metadata_request():
-        return await view.get_metadata()
+    @blueprint.route('/testcase_custom_fields/', methods=['GET'])
+    async def get_all_custom_fields_request():
+        return await view.get_all_custom_fields()
 
     return blueprint

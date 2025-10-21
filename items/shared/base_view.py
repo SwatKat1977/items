@@ -28,7 +28,7 @@ import quart
 import requests
 
 
-@dataclass(init=True)
+@dataclass()
 class ApiResponse:
     """ Class for keeping track of api return data. """
     status_code: int

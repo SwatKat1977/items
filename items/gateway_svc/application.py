@@ -31,7 +31,7 @@ from configuration_layout import CONFIGURATION_LAYOUT
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from interfaces.accounts.health import SCHEMA_ACCOUNTS_SVC_HEALTH_RESPONSE
 from interfaces.cms.health import SCHEMA_CMS_SVC_HEALTH_RESPONSE
-import service_health_enums as health_enums
+from service_health_enums import ServiceDegradationStatus
 from sessions import Sessions
 from metadata_handler import MetadataHandler
 from apis.web import create_web_routes
@@ -59,14 +59,14 @@ class Application(BaseApplication):
 
         version_info: str = f"V{RELEASE_VERSION}-{BUILD_VERSION}{BUILD_TAG}"
 
-        self._logger.info('ITEMS Gateway Microservice %s', version_info)
+        self._logger.info("ITEMS Gateway Microservice %s", version_info)
         self._logger.info(SERVICE_COPYRIGHT_TEXT)
         self._logger.info(LICENSE_TEXT)
 
         if not self._manage_configuration():
             return False
 
-        self._logger.info('Setting logging level to %s',
+        self._logger.info("Setting logging level to %s",
                           Configuration().logging_log_level)
         self._logger.setLevel(Configuration().logging_log_level)
 
@@ -83,7 +83,7 @@ class Application(BaseApplication):
             create_web_routes(self._logger,
                               self._metadata_handler,
                               self._sessions,
-                              '/web'), url_prefix="/web")
+                              "/web"), url_prefix="/web")
 
         return True
 
@@ -208,12 +208,12 @@ class Application(BaseApplication):
                 ", unforeseen issues may occur!", json_data["version"],
                 version_info)
 
-        if json_data["status"] == health_enums.STATUS_CRITICAL:
+        if json_data["status"] == ServiceDegradationStatus.CRITICAL.value:
             msg: str = "Accounts service critically degraded, access to "\
                        "accounts service discontinued until it is fixed"
             raise RuntimeError(msg)
 
-        if json_data["status"] == health_enums.STATUS_DEGRADED:
+        if json_data["status"] == ServiceDegradationStatus.DEGRADED.value:
             self._logger.warning("Accounts service degraded, can continue, but"
                                  " retries/slow-down may occur..")
 
@@ -278,12 +278,12 @@ class Application(BaseApplication):
                 ", unforeseen issues may occur!", json_data["version"],
                 version_info)
 
-        if json_data["status"] == health_enums.STATUS_CRITICAL:
+        if json_data["status"] == ServiceDegradationStatus.CRITICAL.value:
             msg: str = "CMS service critically degraded, access to "\
                        "cms service discontinued until it is fixed"
             raise RuntimeError(msg)
 
-        if json_data["status"] == health_enums.STATUS_DEGRADED:
+        if json_data["status"] == ServiceDegradationStatus.DEGRADED.value:
             self._logger.warning("CMS service degraded, can continue, but"
                                  " retries/slow-down may occur..")
 

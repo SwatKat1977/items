@@ -2,6 +2,8 @@ services:
   accounts_svc:
     image: swatkat1977/items:items_accounts_svc-${ACCOUNTS_SVC_DOCKER_TAG}
     container_name: accounts_svc
+    ports:
+      - "4000:4000"
     networks:
       - backend
     environment:
@@ -16,6 +18,8 @@ services:
   cms_svc:
     image: swatkat1977/items:items_cms_svc-${CMS_SVC_DOCKER_TAG}
     container_name: cms_svc
+    ports:
+      - "5050:5050"
     networks:
       - backend
     environment:
@@ -30,6 +34,8 @@ services:
   gateway_svc:
     image: swatkat1977/items:items_gateway_svc-${GATEWAY_SVC_DOCKER_TAG}
     container_name: gateway_svc
+    ports:
+      - "3000:3000"
     networks:
       - backend
     environment:

@@ -48,7 +48,7 @@ class DashboardApiView(BaseWebView):
             project_id = form.get('projectId')
 
             base_url: str = ThreadSafeConfiguration().apis_gateway_svc
-            url = f"{base_url}web/projects/{project_id}"
+            url = f"{base_url}web/admin/projects/{project_id}"
             response: ApiResponse = await self._call_api_delete(url)
 
             if response.status_code != http.HTTPStatus.OK:
@@ -101,7 +101,6 @@ class DashboardApiView(BaseWebView):
             active_admin_page="admin_page_site_settings")
 
     async def admin_add_project(self):
-
         # POST method - send new project to gateway
         if quart.request.method == 'POST':
             form = await quart.request.form
@@ -116,13 +115,15 @@ class DashboardApiView(BaseWebView):
                     "announcement_on_overview": show_announcement
                 }
                 base_url: str = ThreadSafeConfiguration().apis_gateway_svc
-                url = f"{base_url}/project/add"
+                url = f"{base_url}/web/admin/projects"
+
                 response: ApiResponse = await self._call_api_post(
                     url, gateway_request_body)
 
-                if response.status_code == http.HTTPStatus.INTERNAL_SERVER_ERROR:
+                if response.status_code == http.HTTPStatus.INTERNAL_SERVER_ERROR \
+                        or response.status_code == http.HTTPStatus.NOT_FOUND:
                     self._logger.critical(
-                        "Gateway svc request '/project/add' is invalid: %s",
+                        "Gateway svc request '/web/admin/projects' is invalid: %s",
                         response.body)
                     form = await quart.request.form
                     form_data = form.to_dict()
@@ -166,7 +167,7 @@ class DashboardApiView(BaseWebView):
         base_url: str = ThreadSafeConfiguration().apis_gateway_svc
 
         if quart.request.method == 'POST':
-            url = f"{base_url}/web/projects/{project_id}"
+            url = f"{base_url}web/admin/projects/{project_id}"
             form = await quart.request.form
             request_data: dict = {
                 "name": form.get('project_name'),
