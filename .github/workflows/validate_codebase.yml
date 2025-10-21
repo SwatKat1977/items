@@ -108,7 +108,7 @@ jobs:
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:items/unittests_accounts_svc:items/accounts_svc
+          PYTHONPATH: items/shared:unit_tests/accounts_svc:items/accounts_svc
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_accounts_svc -m unittest -v main
           coverage report -m --fail-under=100
@@ -164,7 +164,7 @@ jobs:
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:items/unittests_gateway_svc:items/gateway_svc
+          PYTHONPATH: items/shared:unit_tests/gateway_svc:items/gateway_svc
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_gateway_svc -m unittest -v main
           coverage report -m --fail-under=100
@@ -192,7 +192,7 @@ jobs:
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:items/unittests_web_portal_svc:items/web_portal_svc
+          PYTHONPATH: items/shared:unit_tests/web_portal_svc:items/web_portal_svc
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_web_portal_svc -m unittest -v main
           coverage report -m --fail-under=100
@@ -220,7 +220,7 @@ jobs:
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:items/unittests_shared
+          PYTHONPATH: items/shared:items/unit_tests/shared
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_shared -m unittest -v main
           coverage report -m --fail-under=100
