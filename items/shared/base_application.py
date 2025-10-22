@@ -120,39 +120,49 @@ class BaseApplication:
                                  config_file_env: str,
                                  config_file_required_env: str):
         """
-        Check whether a configuration file is required and available based on environment variables.
+        Check whether a configuration file is required and available based
+        on environment variables.
 
         This function inspects two environment variables:
           - One specifying the path to a configuration file.
           - One specifying whether the configuration file is required.
 
-        It validates the "required" flag against known boolean true/false values,
-        determines whether the configuration file is missing when required, and
-        returns the appropriate error status and state.
+        It validates the "required" flag against known boolean true/false
+        values, determines whether the configuration file is missing when
+        required, and returns the appropriate error status and state.
 
         Args:
             config_file_env (str):
-                The name of the environment variable that holds the configuration file path.
+                The name of the environment variable that holds the
+                configuration file path.
             config_file_required_env (str):
-                The name of the environment variable that indicates whether the configuration file is required.
-                Expected values (case-insensitive): "true", "1", "yes", "on", "false", "0", "no", "off".
+                The name of the environment variable that indicates whether the
+                configuration file is required.
+                Expected values (case-insensitive):
+                "true", "1", "yes", "on", "false", "0", "no", "off".
 
         Returns:
             tuple[str | None, bool, str | None]:
                 A tuple containing:
-                - `error_status` (str | None): An error message if a fatal error occurred, otherwise None.
-                - `config_file_required` (bool): Whether a configuration file is required.
-                - `config_file` (str | None): The configuration file path if defined, otherwise None.
+                - `error_status` (str | None): An error message if a fatal
+                  error occurred, otherwise None.
+                - `config_file_required` (bool): Whether a configuration file
+                  is required.
+                - `config_file` (str | None): The configuration file path if
+                  defined, otherwise None.
 
         Notes:
-            - If `config_file_required_env` contains an invalid value, an error message is returned.
-            - If a configuration file is required but not provided, an error message is returned.
+            - If `config_file_required_env` contains an invalid value, an error
+              message is returned.
+            - If a configuration file is required but not provided, an error
+              message is returned.
             - If both checks pass, `error_status` will be None.
 
         Example:
             >>> os.environ["MY_CONFIG_FILE"] = "/etc/app.conf"
             >>> os.environ["MY_CONFIG_FILE_REQUIRED"] = "true"
-            >>> self._check_for_configuration("MY_CONFIG_FILE", "MY_CONFIG_FILE_REQUIRED")
+            >>> self._check_for_configuration("MY_CONFIG_FILE",
+                                              "MY_CONFIG_FILE_REQUIRED")
             (None, True, "/etc/app.conf")
         """
         # Default return values
