@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 import asyncio
 from application import Application
 from configuration_layout import CONFIGURATION_LAYOUT
-from base_sqlite_interface import SqliteInterfaceException
 from threadsafe_configuration import ThreadSafeConfiguration
 
 
@@ -12,11 +11,9 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         """Set up the Application instance and mock dependencies."""
         self.mock_quart_instance = MagicMock()
-        #self.application = Application(self.mock_quart_instance)
 
         # Mock the logger
         self.mock_logger_instance = MagicMock()
-        #self.application._logger = self.mock_logger_instance
 
         # Patch configuration
         patcher = patch.object(
@@ -107,7 +104,7 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result, "Configuration should fail if the required config file is missing")
 
         # Ensure that the error log is called
-        self.mock_logger_instance.critical.assert_called_with("Configuration file missing!")
+        self.mock_logger_instance.critical.assert_called_with("Configuration file is not defined")
 
     @patch("application.Configuration")
     @patch('application.os.path.isfile', return_value=True)
