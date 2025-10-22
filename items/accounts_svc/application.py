@@ -16,7 +16,7 @@ limitations under the License.
 import asyncio
 import logging
 import os
-from base_application import BaseApplication
+from items_common.base_microservice import BaseMicroservice
 from configuration_layout import CONFIGURATION_LAYOUT
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
                            LOGGING_DEFAULT_LOG_LEVEL, \
@@ -27,8 +27,8 @@ from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
 from state_object import StateObject
 from apis import create_routes
 
-
-class Application(BaseApplication):
+#class Application(BaseApplication):
+class Service(BaseMicroservice):
     """ ITEMS Accounts Service """
 
     CONFIG_FILE_ENV: str = "ITEMS_ACCOUNTS_SVC_CONFIG_FILE"
@@ -47,7 +47,7 @@ class Application(BaseApplication):
         self._logger.setLevel(LOGGING_DEFAULT_LOG_LEVEL)
         self._logger.addHandler(console_stream)
 
-    def _initialise(self) -> bool:
+    async def _initialise(self) -> bool:
 
         build = f"V{RELEASE_VERSION}-{BUILD_VERSION}{BUILD_TAG}"
 
@@ -79,7 +79,7 @@ class Application(BaseApplication):
         """ Abstract method for main application. """
         await asyncio.sleep(0.1)
 
-    def _shutdown(self):
+    async def _shutdown(self):
         """ Abstract method for application shutdown. """
 
     def _manage_configuration(self) -> bool:

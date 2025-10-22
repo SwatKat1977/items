@@ -14,24 +14,53 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import asyncio
-import sys
+import os
 from quart import Quart
-from application import Application
+from application import Service
 
 ## Quart application instance
 app = Quart(__name__)
+service = Service(app)
 
-application = Application(app)
+
+async def cancel_background_tasks():
+    """
+    Cancel and await the application's background task, if it exists.
+
+    This function looks for a task stored on the global ``app`` object
+    under the attribute ``background_task``. If found, it cancels the task
+    and safely awaits its termination. Any ``asyncio.CancelledError``
+    raised during cancellation is suppressed.
+
+    This is typically called during application shutdown to ensure that
+    background operations are gracefully stopped.
+
+    Raises:
+        asyncio.CancelledError: Only if the cancellation is not suppressed
+            (unexpected behavior).
+    """
+    task = getattr(app, "background_task", None)
+    if task:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
 
 @app.before_serving
 async def startup() -> None:
     """
-    Code executed before Quart has began serving http requests.
+    Code executed before Quart has begun serving http requests.
 
     returns:
         None
     """
-    app.service_task = asyncio.ensure_future(application.run())
+    if not await service.initialise():
+        os._exit(1)
+
+    app.background_task = asyncio.create_task(service.run())
+
 
 @app.after_serving
 async def shutdown() -> None:
@@ -41,7 +70,9 @@ async def shutdown() -> None:
     returns:
         None
     """
-    application.stop()
+    service.shutdown_event.set()
 
-if not application.initialise():
-    sys.exit()
+    if app is not None:
+        await cancel_background_tasks()
+    else:
+        print("[WARN] app is None on shutdown, skipping cleanup")
