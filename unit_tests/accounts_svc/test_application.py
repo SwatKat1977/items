@@ -2,7 +2,7 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 import asyncio
-from application import Application
+from application import Service
 from configuration_layout import CONFIGURATION_LAYOUT
 from threadsafe_configuration import ThreadSafeConfiguration
 
@@ -39,7 +39,7 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         mock_config.backend_db_filename = "mock_db.sqlite"
         mock_configuration_class.return_value = mock_config
 
-        application = Application(self.mock_quart_instance)
+        application = Service(self.mock_quart_instance)
         application._logger = self.mock_logger_instance
 
         # Mock configuration management success
@@ -57,16 +57,16 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.mock_logger_instance.setLevel.assert_called_once_with("DEBUG")
         application._manage_configuration.assert_called_once()
 
-    def test_initialise_failure_configuration(self):
+    async def test_initialise_failure_configuration(self):
         """Test _initialise when configuration management fails."""
         # Mock configuration management failure
-        application = Application(self.mock_quart_instance)
+        application = Service(self.mock_quart_instance)
         application._logger = self.mock_logger_instance
 
         application._manage_configuration = MagicMock(return_value=False)
 
         # Call _initialise
-        result = application._initialise()
+        result = await application._initialise()
 
         # Assertions
         self.assertFalse(result, "Initialization should fail")
@@ -74,16 +74,16 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.mock_logger_instance.info.assert_called()  # Logger should still log build info
 
     @patch('application.os.path.isfile', return_value=False)
-    def test_initialise_failure_database_missing(self, mock_isfile):
+    async def test_initialise_failure_database_missing(self, mock_isfile):
         """Test _initialise when configuration management fails."""
-        application = Application(self.mock_quart_instance)
+        application = Service(self.mock_quart_instance)
         application._logger = self.mock_logger_instance
 
         # Mock configuration management failure
         application._manage_configuration = MagicMock(return_value=True)
 
         # Call _initialise
-        result = application._initialise()
+        result = await application._initialise()
 
         # Assertions
         self.assertFalse(result, "Initialization should fail")
@@ -94,7 +94,7 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
     @patch.dict(os.environ, {"ITEMS_ACCOUNTS_SVC_CONFIG_FILE_REQUIRED": "1"})
     def test_manage_configuration_missing_config_file_required(self):
         """Test _manage_configuration when config file is required but missing."""
-        application = Application(self.mock_quart_instance)
+        application = Service(self.mock_quart_instance)
         application._logger = self.mock_logger_instance
 
         # Call the method being tested
@@ -108,13 +108,13 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
 
     @patch("application.Configuration")
     @patch('application.os.path.isfile', return_value=True)
-    def test_initialise_success(self, mock_isfile, mock_configuration_class):
+    async def test_initialise_success(self, mock_isfile, mock_configuration_class):
         # Mock constants
         patch("application.RELEASE_VERSION", "1.0.0").start()
         patch("application.BUILD_VERSION", "123").start()
         patch("application.BUILD_TAG", "-alpha").start()
 
-        application = Application(self.mock_quart_instance)
+        application = Service(self.mock_quart_instance)
         application._logger = self.mock_logger_instance
 
         # Mock config instance and its properties
@@ -127,7 +127,7 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         application._manage_configuration = MagicMock(return_value=True)
 
         # Call _initialise
-        result = application._initialise()
+        result = await application._initialise()
 
         # Assertions
         self.assertTrue(result, "Initialization should succeed")
@@ -144,7 +144,7 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
     @patch('application.os.path.isfile', return_value=True)
     def test_manage_configuration_success(self, mock_isfile, mock_configuration_class):
         """Test _manage_configuration when configuration is successful."""
-        application = Application(self.mock_quart_instance)
+        application = Service(self.mock_quart_instance)
         application._logger = self.mock_logger_instance
 
         # Mock config instance and its properties
@@ -176,7 +176,7 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         mock_config.process_config = MagicMock(side_effect=ValueError("Test config error"))
         mock_configuration_class.return_value = mock_config
 
-        application = Application(self.mock_quart_instance)
+        application = Service(self.mock_quart_instance)
         application._logger = self.mock_logger_instance
 
         result = application._manage_configuration()
@@ -186,7 +186,7 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
 
     async def test_main_loop_execution(self):
         """Test that _main_loop executes properly with asyncio.sleep."""
-        application = Application(self.mock_quart_instance)
+        application = Service(self.mock_quart_instance)
         application._logger = self.mock_logger_instance
 
         # We'll use an event loop to run the async method and check if it completes
