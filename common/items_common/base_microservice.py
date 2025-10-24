@@ -1,30 +1,32 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright (C) 2025  Integrated Test Management Suite Development Team
+SPDX-License-Identifier: AGPL-3.0-or-later
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+This file is part of Integrated Test Management Suite. See the LICENSE
+file in the project root for full license details.
 """
+import abc
 import asyncio
 import logging
-from typing import Optional
 import os
+import typing
+from items_common import __version__
+from items_common.service_state import ServiceState
 
-
-class BaseApplication:
-    """ Application framework class. """
-    __slots__ = ["_is_initialised", "_logger", "_shutdown_requested"]
+class BaseMicroservice(abc.ABC):
+    """ Base microservice class. """
+    __slots__ = ["_is_initialised", "_logger", "_shutdown_complete",
+                 "_shutdown_event", "_service_state"]
 
     BOOL_TRUE_VALUES: set = {"1", "true", "yes", "on"}
     BOOL_FALSE_VALUES: set = {"0", "false", "no", "off"}
+
+    def __init__(self):
+        self._is_initialised: bool = False
+        self._logger: typing.Optional[logging.Logger] = None
+        self._shutdown_event: asyncio.Event = asyncio.Event()
+        self._shutdown_complete: asyncio.Event = asyncio.Event()
+        self._service_state: ServiceState = ServiceState(version=__version__)
 
     @property
     def logger(self) -> logging.Logger:
@@ -46,75 +48,109 @@ class BaseApplication:
         """
         self._logger = logger
 
-    def __init__(self):
-        self._is_initialised : bool = False
-        self._logger : logging.Logger = None
-        self._shutdown_requested : bool = False
-
-    def initialise(self) -> bool:
+    @property
+    def shutdown_event(self) -> asyncio.Event:
         """
-        Application initialisation.  It should return a boolean
+        Event used to signal the shutdown of the service.
+
+        This event should be awaited or checked by background tasks to
+        gracefully stop operations when the application is shutting down.
+        """
+        return self._shutdown_event
+
+    @property
+    def shutdown_complete(self) -> asyncio.Event:
+        """
+        Event that indicates the service has completed its shutdown process.
+
+        This should be set when all shutdown tasks and cleanup procedures have
+        finished, allowing other components (like the main app) to know when
+        it's safe to exit.
+        """
+        return self._shutdown_complete
+
+    async def initialise(self) -> bool:
+        """
+        Microservice initialisation.  It should return a boolean
         (True => Successful, False => Unsuccessful), upon success
         self._is_initialised is set to True.
 
-        returns:
+        Returns:
             Boolean: True => Successful, False => Unsuccessful.
         """
-        if self._initialise() is True:
+        if await self._initialise():
             self._is_initialised = True
-            init_status = True
+            return True
 
-        else:
-            init_status = False
+        await self.stop()
 
-        return init_status
+        return False
 
     async def run(self) -> None:
         """
-        Start the application.
+        Start the microservice.
         """
 
+        if not self._is_initialised:
+            self._logger.warning("Microservice is not initialised. Exiting run loop.")
+            return
+
+        self._logger.info("Microservice starting main loop.")
+
         try:
-            while not self._shutdown_requested and self._is_initialised:
+            while True:
+                if self.shutdown_event.is_set():
+                    break
+
                 await self._main_loop()
                 await asyncio.sleep(0.1)
 
         except KeyboardInterrupt:
-            self._logger.info("KeyboardInterrupt received. Stopping...")
-            self.stop()
+            self._logger.debug("Service: Keyboard interrupt received.")
+            self._shutdown_event.set()
 
-        self._logger.info("Exiting application entrypoint...")
+        except asyncio.CancelledError:
+            self._logger.debug("Service: Cancellation received.")
+            raise
 
-    def stop(self) -> None:
+        finally:
+            self._logger.info("Exiting microservice run loop...")
+            await self.stop()
+            self._logger.info("Shutdown complete.")
+
+    async def stop(self) -> None:
         """
-        Stop the application, it will wait until shutdown has been marked as
+        Stop the microservice, it will wait until shutdown has been marked as
         completed before calling the shutdown method.
         """
 
-        self._logger.info("Stopping application...")
-        self._logger.info('Waiting for application shutdown to complete')
+        self._logger.info("Stopping microservice...")
+        self._logger.info('Waiting for microservice shutdown to complete')
 
-        self._shutdown_requested = True
+        self._shutdown_event.set()
 
+        await self._shutdown()
+        self._shutdown_complete.set()
 
-        self._shutdown()
+        self._logger.info('Microservice shutdown complete...')
 
-    def _initialise(self) -> bool:
+    async def _initialise(self) -> bool:
         """
-        Application initialisation.  It should return a boolean
+        Microservice initialisation.  It should return a boolean
         (True => Successful, False => Unsuccessful).
 
-        returns:
+        Returns:
             Boolean: True => Successful, False => Unsuccessful.
         """
         return True
 
+    @abc.abstractmethod
     async def _main_loop(self) -> None:
-        """ Abstract method for main application. """
-        raise NotImplementedError("Requires implementing")
+        """ Abstract method for main microservice loop. """
 
-    def _shutdown(self) -> None:
-        """ Abstract method for application shutdown. """
+    @abc.abstractmethod
+    async def _shutdown(self):
+        """ Abstract method for microservice shutdown. """
 
     def _check_for_configuration(self,
                                  config_file_env: str,
@@ -167,7 +203,7 @@ class BaseApplication:
         """
         # Default return values
         config_file_required: bool = False
-        error_status: Optional[str] = None
+        error_status: typing.Optional[str] = None
 
         config_file = os.getenv(config_file_env, None)
         raw_required = os.getenv(config_file_required_env,

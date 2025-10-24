@@ -21,3 +21,12 @@ This is on the TODO list.
 - [Building (PLACEHOLDER)](https://github.com)
 - [Running via Docker (PLACEHOLDER)](https://github.com)
 - [Roadmap (PLACEHOLDER)](https://github.com)
+
+## Development
+
+The following Python libraries are required to run ITEMS locally:
+- quart
+- jsonschema
+- requests
+- tzlocal
+- aiohttp

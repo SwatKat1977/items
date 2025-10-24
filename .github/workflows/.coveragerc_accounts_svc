@@ -2,8 +2,9 @@
 omit =
     unit_tests/shared/*
     unit_tests/accounts_svc/*
-    items/accounts_svc/apis/authentication_api.py
-    items/accounts_svc/apis/health_api.py
+    services/accounts_svc/apis/authentication_api.py
+    services/accounts_svc/apis/health_api.py
     items/shared/*
+    common/items_common/*
     /opt/homebrew/*
     /usr/lib/python3/*
