@@ -19,7 +19,7 @@ from typing import Dict, Any
 from service_health_enums import ComponentDegradationLevel
 
 
-@dataclass
+@dataclass(slots=True)
 class ServiceState:
     """
     Represents the operational state of a service, including health,

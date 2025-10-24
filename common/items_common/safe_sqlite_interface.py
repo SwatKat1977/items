@@ -16,7 +16,7 @@ limitations under the License.
 import sqlite3
 import logging
 import typing
-from service_state import ServiceState
+from items_common.service_state import ServiceState
 from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
 
 
