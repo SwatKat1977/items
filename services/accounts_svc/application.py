@@ -71,7 +71,7 @@ class Service(BaseMicroservice):
             return False
 
         self._quart_instance.register_blueprint(
-            create_routes(self._logger, self._state_object))
+            create_routes(self._logger, self._service_state))
 
         return True
 
