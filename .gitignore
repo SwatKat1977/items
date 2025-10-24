@@ -2,6 +2,7 @@
 # Python ignore
 # -----------------
 *.pyc
+.venv
 
 # -----------------
 # Mac OS ignore
