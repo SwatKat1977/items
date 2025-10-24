@@ -19,7 +19,7 @@ import logging
 import time
 from quart import Response
 from base_view import BaseView
-from state_object import StateObject
+from items_common.service_state import ServiceState
 from service_health_enums import (ServiceDegradationStatus,
                                   ComponentDegradationLevel)
 
@@ -33,20 +33,20 @@ class HealthApiView(BaseView):
 
     Attributes:
         _logger (logging.Logger): Logger instance for recording events.
-        _state_object (StateObject): Shared state object containing health and version info.
+        _state_object (ServiceState): Shared state object containing health and version info.
     """
     __slots__ = ['_logger']
 
     def __init__(self, logger: logging.Logger,
-                 state_object: StateObject) -> None:
+                 state_object: ServiceState) -> None:
         """
         Initializes the HealthApiView with logging and application state.
 
         Args:
             logger (logging.Logger): Logger for emitting structured health
                                      check logs.
-            state_object (StateObject): Application-wide state for tracking
-                                        health, startup time, etc.
+            state_object (ServiceState): Application-wide state for tracking
+                                         health, startup time, etc.
         """
         self._logger = logger.getChild(__name__)
         self._state_object = state_object

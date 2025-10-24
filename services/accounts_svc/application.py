@@ -24,7 +24,6 @@ from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
-from state_object import StateObject
 from apis import create_routes
 
 #class Application(BaseApplication):
@@ -37,7 +36,6 @@ class Service(BaseMicroservice):
     def __init__(self, quart_instance):
         super().__init__()
         self._quart_instance = quart_instance
-        self._state_object: StateObject = StateObject()
 
         self._logger = logging.getLogger(__name__)
         log_format = logging.Formatter(LOGGING_LOG_FORMAT_STRING,
@@ -54,9 +52,6 @@ class Service(BaseMicroservice):
         self._logger.info('ITEMS Accounts Microservice %s', build)
         self._logger.info(SERVICE_COPYRIGHT_TEXT)
         self._logger.info(LICENSE_TEXT)
-
-        # Set the version string on state object.
-        self._state_object.version = build
 
         if not self._manage_configuration():
             return False

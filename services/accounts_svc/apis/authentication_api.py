@@ -16,11 +16,11 @@ limitations under the License.
 import logging
 from quart import Blueprint
 from apis.authentication_api_view import AuthenticationApiView
-from state_object import StateObject
+from items_common.service_state import ServiceState
 
 
 def create_blueprint(logger: logging.Logger,
-                     state_object: StateObject) -> Blueprint:
+                     state_object: ServiceState) -> Blueprint:
     """
     Creates and registers a Quart Blueprint for handling authentication.
 
@@ -29,7 +29,7 @@ def create_blueprint(logger: logging.Logger,
 
     Args:
         logger (logging.Logger): A logger instance for logging messages.
-        state_object (StateObject): A StateObject instance.
+        state_object (ServiceState): A StateObject instance.
 
     Returns:
         Blueprint: A Flask `Blueprint` object containing the registered route.

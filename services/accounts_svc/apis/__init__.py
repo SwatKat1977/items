@@ -15,12 +15,13 @@ limitations under the License.
 """
 import logging
 import quart
-from state_object import StateObject
+from items_common.service_state import ServiceState
 from .authentication_api import create_blueprint as create_auth_bp
 from .health_api import create_blueprint as create_health_bp
 
 
-def create_routes(logger: logging.Logger, state: StateObject) -> quart.Blueprint:
+def create_routes(logger: logging.Logger,
+                  state: ServiceState) -> quart.Blueprint:
     """
     Create and configure the API route blueprint for the application.
 
@@ -29,7 +30,7 @@ def create_routes(logger: logging.Logger, state: StateObject) -> quart.Blueprint
 
     Args:
         logger (logging.Logger): Logger instance for logging within the route views.
-        state (StateObject): Shared application state object passed to route views.
+        state (ServiceState): Shared application state object passed to route views.
 
     Returns:
         quart.Blueprint: The configured API blueprint with registered sub-routes.
