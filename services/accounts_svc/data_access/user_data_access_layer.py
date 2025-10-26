@@ -1,6 +1,6 @@
-from hashlib import sha256
 import logging
 import typing
+import bcrypt
 from items_common.safe_sqlite_interface import SafeSqliteInterface
 from items_common.service_state import ServiceState
 from account_status import AccountStatus
@@ -50,7 +50,6 @@ class UserDataAccessLayer:
 
         return user_id, error_str
 
-
     def authenticate_basic_user(self,
                                 user_id: int,
                                 password: str) -> typing.Tuple[bool, str]:
@@ -68,7 +67,7 @@ class UserDataAccessLayer:
         return_status: bool = False
         return_status_str: str = ""
 
-        query: str = ("SELECT password, password_salt FROM user_auth_details "
+        query: str = ("SELECT password FROM user_auth_details "
                       "WHERE user_id = ?")
 
         row = self._db.safe_query(query, (user_id,),
@@ -82,16 +81,13 @@ class UserDataAccessLayer:
         if not row:
             return False, 'Invalid user id'
 
-        recv_password, recv_password_salt = row
+        stored_password = row[0]
 
-        password_hash = f"{password}{recv_password_salt}".encode('UTF-8')
-        password_hash = sha256(password_hash).hexdigest()
-
-        if password_hash != recv_password:
-            return_status = False
-            return_status_str = "Username/password don't match"
+        if bcrypt.checkpw(password.encode('utf-8'), stored_password):
+            return_status = True
 
         else:
-            return_status = True
+            return_status = False
+            return_status_str = "Username/password don't match"
 
         return return_status, return_status_str
