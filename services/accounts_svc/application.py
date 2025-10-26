@@ -45,6 +45,8 @@ class Service(BaseMicroservice):
         self._logger.setLevel(LOGGING_DEFAULT_LOG_LEVEL)
         self._logger.addHandler(console_stream)
 
+        self._service_state.database_enabled = True
+
     async def _initialise(self) -> bool:
 
         build = f"V{RELEASE_VERSION}-{BUILD_VERSION}{BUILD_TAG}"
