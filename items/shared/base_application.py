@@ -15,8 +15,6 @@ limitations under the License.
 """
 import asyncio
 import logging
-from typing import Optional
-import os
 
 
 class BaseApplication:
