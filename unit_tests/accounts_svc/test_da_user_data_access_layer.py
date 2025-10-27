@@ -1,183 +1,101 @@
-from hashlib import sha256
 import unittest
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 import logging
+import bcrypt
+from data_access.user_data_access_layer import UserDataAccessLayer
+from items_common.service_state import ServiceState
 from account_status import AccountStatus
-from sql.sqlite_interface import SqliteInterface
-from state_object import StateObject
-from threadsafe_configuration import ThreadSafeConfiguration
 
 
-class TestSqliteInterface(unittest.TestCase):
+class TestUserDataAccessLayer(unittest.TestCase):
 
     def setUp(self):
-        self.mock_logger = MagicMock(spec=logging.Logger)
-        self.mock_logger.getChild.return_value = self.mock_logger
-        self.state_object = StateObject()
+        # Prepare mock state and logger
+        self.state = ServiceState()
+        self.logger = logging.getLogger("test")
 
-        # Patch ThreadSafeConfiguration.get_entry just for the test
-        self.patcher = patch.object(
-            ThreadSafeConfiguration,
-            'get_entry',
-            return_value=":memory:"
+        # Patch configuration to prevent accessing real config
+        config_patcher = patch("data_access.user_data_access_layer.Configuration")
+        self.addCleanup(config_patcher.stop)
+        mock_config_class = config_patcher.start()
+        mock_config_instance = mock_config_class.return_value
+        mock_config_instance.backend_db_filename = "test.db"
+
+        # Create the mock DB first
+        self.mock_db = MagicMock()
+
+        # Then patch SafeSqliteInterface to return it
+        db_patcher = patch("data_access.user_data_access_layer.SafeSqliteInterface", return_value=self.mock_db)
+
+        self.addCleanup(db_patcher.stop)
+        db_patcher.start()
+
+        # Create the DAL (this will now use the mocked SafeSqliteInterface)
+        self.dal = UserDataAccessLayer(self.state, self.logger)
+
+    # -------------------------------------------------------
+    # get_user_for_logon tests
+    # -------------------------------------------------------
+    def test_get_user_for_logon_returns_internal_error_if_row_none(self):
+        self.mock_db.safe_query.return_value = None
+        result = self.dal.get_user_for_logon("a@b.com", 1)
+        self.assertEqual(result, (None, "Internal error"))
+
+    def test_get_user_for_logon_returns_match_error_if_empty(self):
+        self.mock_db.safe_query.return_value = ()
+        result = self.dal.get_user_for_logon("a@b.com", 1)
+        self.assertEqual(result, (0, "Username/password don't match"))
+
+    def test_get_user_for_logon_incorrect_logon_type(self):
+        # Simulate returned row
+        self.mock_db.safe_query.return_value = (1, 2, AccountStatus.ACTIVE.value)
+        result = self.dal.get_user_for_logon("a@b.com", 1)
+        self.assertEqual(result, (0, "Incorrect logon type"))
+
+    def test_get_user_for_logon_inactive_account(self):
+        self.mock_db.safe_query.return_value = (
+            1, 1, AccountStatus.DISABLED.value
         )
-        self.mock_get_entry = self.patcher.start()
+        result = self.dal.get_user_for_logon("a@b.com", 1)
+        self.assertEqual(result, (0, "Account is not active"))
 
-    @patch("base_sqlite_interface.BaseSqliteInterface.__init__")
-    def test_initialization(self, mock_base_init):
-        """Test that SqliteInterface initializes correctly."""
+    def test_get_user_for_logon_valid_user(self):
+        self.mock_db.safe_query.return_value = (
+            42, 1, AccountStatus.ACTIVE.value
+        )
+        result = self.dal.get_user_for_logon("a@b.com", 1)
+        self.assertEqual(result, (42, ""))
 
-        # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger,
-                                    state_object=self.state_object)
+    # -------------------------------------------------------
+    # authenticate_basic_user tests
+    # -------------------------------------------------------
 
-        # Assert BaseSqliteInterface's __init__ was called with db_file
-        mock_base_init.assert_called_once_with(":memory:")
+    def test_authenticate_basic_user_returns_internal_error_if_none(self):
+        self.mock_db.safe_query.return_value = None
+        ok, msg = self.dal.authenticate_basic_user(1, "pass")
+        self.assertFalse(ok)
+        self.assertEqual(msg, "Internal error")
 
-        # Assert the logger was correctly set up as a child logger
-        self.mock_logger.getChild.assert_called_once_with("sql.extended_sql_interface")
-        self.assertEqual(interface._logger, self.mock_logger.getChild.return_value)
+    def test_authenticate_basic_user_returns_invalid_id_if_empty(self):
+        self.mock_db.safe_query.return_value = ()
+        ok, msg = self.dal.authenticate_basic_user(1, "pass")
+        self.assertFalse(ok)
+        self.assertEqual(msg, "Invalid user id")
 
-    def test_logger_usage(self):
-        """Test that the logger in SqliteInterface is used correctly."""
-        # Mock the logger
-        mock_logger = MagicMock(spec=logging.Logger)
-        mock_child_logger = mock_logger.getChild.return_value
+    @patch("data_access.user_data_access_layer.bcrypt.checkpw", return_value=True)
+    def test_authenticate_basic_user_success(self, mock_checkpw):
+        hashed = bcrypt.hashpw(b"pass", bcrypt.gensalt())
+        self.mock_db.safe_query.return_value = (hashed,)
+        ok, msg = self.dal.authenticate_basic_user(1, "pass")
+        self.assertTrue(ok)
+        self.assertEqual(msg, "")
+        mock_checkpw.assert_called_once()
 
-        interface = SqliteInterface(logger=mock_logger,
-                                    state_object=self.state_object)
-
-        # Use the logger within the class (you'll replace this with actual usage in methods)
-        interface._logger.info("Testing logger usage")
-
-        # Assert the child logger logged the message
-        mock_child_logger.info.assert_called_once_with("Testing logger usage")
-
-    def test_valid_user_to_logon_success(self):
-        # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger,
-                                    state_object=self.state_object)
-
-        # logon_type matches the argument (2)
-        interface.safe_query = MagicMock(return_value=(1, 2, AccountStatus.ACTIVE.value))
-
-        user_id, error_str = interface.valid_user_to_logon('test@example.com', 2)  # logon_type is 2
-
-        self.assertEqual(user_id, 1)
-        self.assertEqual(error_str, '')
-        interface.safe_query.assert_called_once_with(
-            "SELECT id, logon_type, account_status FROM user_profile WHERE email_address = ?",
-            ('test@example.com',),
-            'Query failed for basic user auth', 50, fetch_one=True)
-
-    def test_valid_user_to_logon_incorrect_logon_type(self):
-        # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger,
-                                    state_object=self.state_object)
-
-        # logon_type matches the argument (2)
-        interface.safe_query = MagicMock(return_value=(1, 3, AccountStatus.ACTIVE))
-
-        user_id, error_str = interface.valid_user_to_logon('test@example.com', 2)
-
-        self.assertEqual(user_id, 0)
-        self.assertEqual(error_str, 'Incorrect logon type')
-
-    def test_valid_user_to_logon_account_not_active(self):
-        # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger,
-                                    state_object=self.state_object)
-
-        # logon_type matches the argument (2)
-        interface.safe_query = MagicMock(return_value=(1, 2, AccountStatus.DISABLED))
-
-        user_id, error_str = interface.valid_user_to_logon('test@example.com', 2)
-
-        self.assertEqual(user_id, 0)
-        self.assertEqual(error_str, 'Account is not active')
-
-    def test_valid_user_to_logon_unknown_email(self):
-        # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger,
-                                    state_object=self.state_object)
-
-        # logon_type matches the argument (2)
-        interface.safe_query = MagicMock(return_value=[])
-
-        user_id, error_str = interface.valid_user_to_logon('unknown@example.com', 2)
-
-        self.assertEqual(user_id, 0)
-        self.assertEqual(error_str, "Username/password don't match")
-
-    def test_valid_user_to_logon_query_failed(self):
-        # Create SqliteInterface instance
-        interface = SqliteInterface(logger=self.mock_logger,
-                                    state_object=self.state_object)
-
-        interface.safe_query = MagicMock(return_value=None)
-
-        # Call the method
-        user_id, error_str = interface.valid_user_to_logon('test@example.com', 2)
-
-        # Assertions
-        self.assertEqual(user_id, None)
-        self.assertEqual(error_str, 'Internal error')
-
-        interface.safe_query.assert_called_once_with(
-            "SELECT id, logon_type, account_status FROM user_profile WHERE email_address = ?",
-            ('test@example.com',),
-            'Query failed for basic user auth', 50, fetch_one=True)
-
-    def test_basic_user_authenticate_success(self):
-        # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger,
-                                    state_object=self.state_object)
-
-        interface.safe_query = MagicMock(return_value=(sha256("passwordsalt".encode('UTF-8')).hexdigest(), "salt"))
-
-        status, error_str = interface.basic_user_authenticate(1, "password")
-
-        self.assertTrue(status)
-        self.assertEqual(error_str, '')
-        interface.safe_query.assert_called_once_with(
-            "SELECT password, password_salt FROM user_auth_details WHERE user_id = ?",
-            (1,), 'Query failed for basic user auth', 50, fetch_one=True)
-
-    def test_basic_user_authenticate_invalid_user_id(self):
-        # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger,
-                                    state_object=self.state_object)
-
-        interface.safe_query = MagicMock(return_value=[])
-
-        status, error_str = interface.basic_user_authenticate(99, "password")
-
-        self.assertFalse(status)
-        self.assertEqual(error_str, 'Invalid user id')
-        interface.safe_query.assert_called_once_with(
-            "SELECT password, password_salt FROM user_auth_details WHERE user_id = ?",
-            (99,), 'Query failed for basic user auth', 50, fetch_one=True)
-
-    def test_basic_user_authenticate_incorrect_password(self):
-        # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger,
-                                    state_object=self.state_object)
-
-        interface.safe_query = MagicMock(return_value=(sha256("wrongpasswordsalt".encode('UTF-8')).hexdigest(), "salt"))
-
-        status, error_str = interface.basic_user_authenticate(1, "password")
-
-        self.assertFalse(status)
-        self.assertEqual(error_str, "Username/password don't match")
-
-    def test_basic_user_authenticate_query_exception(self):
-        # Create an instance of SqliteInterface
-        interface = SqliteInterface(logger=self.mock_logger,
-                                    state_object=self.state_object)
-
-        interface.safe_query = MagicMock(return_value=None)
-
-        status, error_str = interface.basic_user_authenticate(1, "password")
-
-        self.assertFalse(status)
-        self.assertEqual(error_str, 'Internal error')
+    @patch("data_access.user_data_access_layer.bcrypt.checkpw", return_value=False)
+    def test_authenticate_basic_user_password_mismatch(self, mock_checkpw):
+        hashed = bcrypt.hashpw(b"something", bcrypt.gensalt())
+        self.mock_db.safe_query.return_value = (hashed,)
+        ok, msg = self.dal.authenticate_basic_user(1, "wrong")
+        self.assertFalse(ok)
+        self.assertEqual(msg, "Username/password don't match")
+        mock_checkpw.assert_called_once()
