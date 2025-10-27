@@ -1,154 +1,84 @@
 import unittest
-from unittest.mock import MagicMock, patch
-from http import HTTPStatus
-from quart import Quart
-from base_view import ApiResponse
-from apis.authentication_api_view import AuthenticationApiView as View
-from threadsafe_configuration import ThreadSafeConfiguration
+import json
+import logging
+from unittest.mock import patch, MagicMock
+from quart import Response
+from apis.authentication_api_view import AuthenticationApiView
+
+def _undecorated(method):
+    """Return the original function if it's wrapped by a decorator."""
+    return getattr(method, "__wrapped__", method)
 
 
-class TestAuthenticationAPI(unittest.IsolatedAsyncioTestCase):
+class TestAuthenticationApiView(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
-        """Set up Quart test client and mock dependencies."""
-        self.app = Quart(__name__)
-
-        # Patch configuration
-        patcher = patch.object(
-            ThreadSafeConfiguration,
-            'get_entry',
-            return_value=":memory:"
-        )
-        self.mock_get_entry = patcher.start()
-        self.addCleanup(patcher.stop)
-
         # Mock dependencies
-        self.sql_interface = MagicMock()
-        self.logger = MagicMock()
+        self.mock_logger = MagicMock(spec=logging.Logger)
+        self.mock_child_logger = MagicMock(spec=logging.Logger)
+        self.mock_logger.getChild.return_value = self.mock_child_logger
 
-        self.client = self.app.test_client()
+        self.mock_service_state = MagicMock()
 
-    @patch('apis.authentication_api_view.SqliteInterface')
-    async def test_authenticate_validate_user_login_internal_error(self, mock_sql_interface):
-        """Test authenticate() when valid_user_to_logon returns None."""
-        mock_db = MagicMock()
-        mock_db.valid_user_to_logon.return_value = (None, 'Internal error')
-        mock_sql_interface.return_value = mock_db
+        # Patch UserDataAccessLayer and AuthenticationService
+        user_dal_patch = patch("apis.authentication_api_view.UserDataAccessLayer", autospec=True)
+        auth_service_patch = patch("apis.authentication_api_view.AuthenticationService", autospec=True)
+        self.addCleanup(user_dal_patch.stop)
+        self.addCleanup(auth_service_patch.stop)
+        self.mock_user_dal_cls = user_dal_patch.start()
+        self.mock_auth_service_cls = auth_service_patch.start()
 
-        # Create the View instance
-        view = View(self.sql_interface, self.logger)
+        self.mock_auth_service_instance = MagicMock()
+        self.mock_auth_service_cls.return_value = self.mock_auth_service_instance
 
-        # Register route for testing
-        self.app.add_url_rule('/authentication/basic',
-                              view_func=view.authenticate_basic,
-                              methods=['POST'])
+        # Create instance
+        self.view = AuthenticationApiView(self.mock_logger, self.mock_service_state)
 
-        async with self.client as client:
-            response = await client.post('/authentication/basic',
-                                         json={"email_address": "test@example.com", "password": "1"})
+    async def test_init_creates_auth_service_and_user_dal(self):
+        self.mock_logger.getChild.assert_called_once_with("apis.authentication_api_view")
+        self.mock_user_dal_cls.assert_called_once_with(self.mock_service_state, self.mock_logger)
+        self.mock_auth_service_cls.assert_called_once()
+        self.assertIsInstance(self.view._auth_service, MagicMock)
 
-            # Debugging: Print raw response text if data is None
-            data = await response.get_json()
+    async def test_authenticate_basic_returns_expected_response(self):
+        expected_status = 200
+        expected_json = {"status": 1, "error": ""}
+        self.mock_auth_service_instance.authenticate_basic.return_value = (
+            expected_status,
+            expected_json,
+        )
 
-            # Validate response status
-            self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        mock_request_msg = MagicMock()
+        mock_request_msg.body.email_address = "user@example.com"
+        mock_request_msg.body.password = "password"
 
-            # Ensure response contains JSON
-            self.assertIsNotNone(data, "Response JSON is None!")
+        target = _undecorated(self.view.authenticate_basic)
+        resp: Response = await target(self.view, mock_request_msg)
 
-            # Validate response JSON structure
-            self.assertEqual(data['status'], 0)
-            self.assertEqual(data['error'], "Internal server error")
+        self.mock_auth_service_instance.authenticate_basic.assert_called_once_with(
+            email="user@example.com", password="password"
+        )
 
-    @patch('apis.authentication_api_view.SqliteInterface')
-    async def test_authenticate_invalid_user_id(self, mock_sql_interface):
-        """Test authenticate() when valid_user_to_logon() returns an invalid user_id."""
-        mock_db = MagicMock()
+        self.assertIsInstance(resp, Response)
+        self.assertEqual(resp.status_code, expected_status)
+        self.assertEqual(resp.content_type, "application/json")
 
-        # Mock valid_user_to_logon() to return a valid user ID
-        mock_db.valid_user_to_logon.return_value = (False, 'Invalid user id')
+        body_bytes = await resp.get_data()
+        self.assertEqual(json.loads(body_bytes), expected_json)
 
-        mock_sql_interface.return_value = mock_db
+    async def test_authenticate_basic_handles_different_response(self):
+        self.mock_auth_service_instance.authenticate_basic.return_value = (
+            401,
+            {"status": 0, "error": "Invalid credentials"},
+        )
 
-        # Create the View instance
-        view = View(self.sql_interface, self.logger)
+        mock_request_msg = MagicMock()
+        mock_request_msg.body.email_address = "bad@example.com"
+        mock_request_msg.body.password = "wrong"
 
-        # Register route for testing
-        self.app.add_url_rule('/authentication/basic',
-                              view_func=view.authenticate_basic,
-                              methods=['POST'])
+        target = _undecorated(self.view.authenticate_basic)
+        resp: Response = await target(self.view, mock_request_msg)
 
-        async with self.client as client:
-            response = await client.post('/authentication/basic',
-                                         json={"email_address": "test@example.com", "password": "password123"})
-            data = await response.get_json()
-            # Check response status
-            self.assertEqual(response.status_code, HTTPStatus.OK)
-
-            # Check response JSON
-            data = await response.get_json()
-            self.assertEqual(data['status'], 0)
-            self.assertEqual(data['error'], "Invalid user id")
-
-    '''
-    @patch('apis.authentication_api_view.SqliteInterface')
-    async def test_authenticate_wrong_password(self, mock_sql_interface):
-        """Test authenticate() when user exists but authentication fails (wrong password)."""
-        mock_db = MagicMock()
-
-        # Mock valid_user_to_logon() to return a valid user ID
-        mock_db.valid_user_to_logon.return_value = (123, None)
-
-        # Mock basic_user_authenticate() to return failed password match
-        mock_db.basic_user_authenticate.return_value = (0, "Invalid credentials")
-        mock_sql_interface.return_value = mock_db
-
-        # Create the View instance
-        view = View(self.sql_interface, self.logger)
-
-        # Register route for testing
-        self.app.add_url_rule('/authentication/basic',
-                              view_func=view.authenticate_basic,
-                              methods=['POST'])
-
-        async with self.client as client:
-            response = await client.post('/authentication/basic',
-                                         json={"email_address": "test@example.com", "password": "wrongpassword"})
-            # Check response status
-            self.assertEqual(response.status_code, HTTPStatus.OK)
-
-            # Check response JSON
-            data = await response.get_json()
-            self.assertEqual(data['status'], 0)
-            self.assertEqual(data['error'], "Invalid credentials")
-    '''
-
-    @patch('apis.authentication_api_view.SqliteInterface')
-    async def test_authenticate_success(self, mock_sql_interface):
-        """Test authenticate() when user exists and authentication succeeds."""
-        mock_db = MagicMock()
-
-        # Mock valid_user_to_logon() to return a valid user ID
-        mock_db.valid_user_to_logon.return_value = (123, None)
-
-        # Mock basic_user_authenticate() to return success
-        mock_db.basic_user_authenticate.return_value = (True, "")
-        mock_sql_interface.return_value = mock_db
-
-        # Create the View instance
-        view = View(self.sql_interface, self.logger)
-
-        # Register route for testing
-        self.app.add_url_rule('/authentication/basic',
-                              view_func=view.authenticate_basic,
-                              methods=['POST'])
-
-        async with self.client as client:
-            response = await client.post('/authentication/basic',
-                                         json={"email_address": "test@example.com", "password": "correctpassword"})
-            # Check response status
-            self.assertEqual(response.status_code, HTTPStatus.OK)
-
-            # Check response JSON
-            data = await response.get_json()
-            self.assertEqual(data['status'], 1)
-            self.assertEqual(data['error'], "")
+        self.assertEqual(resp.status_code, 401)
+        body_bytes = await resp.get_data()
+        body_json = json.loads(body_bytes)
+        self.assertEqual(body_json["error"], "Invalid credentials")

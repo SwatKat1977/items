@@ -2,7 +2,7 @@ import unittest
 from test_application import TestApplication
 from test_threadsafe_configuration import TestThreadSafeConfiguration
 from test_da_user_data_access_layer import TestUserDataAccessLayer
-from test_apis_authentication_api import TestAuthenticationAPI
+from test_apis_authentication_api import TestAuthenticationApiView
 from test_apis_health_api import TestApiHealthApiView
 from test_services_authentication_service import TestAuthenticationService
 
