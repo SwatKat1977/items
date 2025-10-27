@@ -45,9 +45,9 @@ jobs:
           changed_files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.sha }})
 
           echo "Checking for changes in items/accounts_svc/"
-          if echo "$changed_files" | grep -qE '^(items|unit_tests)/accounts_svc/'; then
+          if echo "$changed_files" | grep -qE '^(services|unit_tests)/accounts_svc/'; then
             echo "accounts_svc_changed=true" >> $GITHUB_OUTPUT
-            echo "[INFO] items/accounts_svc has changed"
+            echo "[INFO] Accounts Service or unit tests have changed"
           else
             echo "accounts_svc_changed=false" >> $GITHUB_OUTPUT
           fi
@@ -101,14 +101,14 @@ jobs:
 
       - name: Run Pylint
         env:
-          PYTHONPATH: items/shared:items/accounts_svc
+          PYTHONPATH: items/shared:services/accounts_svc:common
         run: |
-          pylint --fail-under=10.0 items/accounts_svc
+          pylint --fail-under=10.0 services/accounts_svc
 
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:unit_tests/accounts_svc:items/accounts_svc
+          PYTHONPATH: items/shared:unit_tests/accounts_svc:services/accounts_svc:common
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_accounts_svc -m unittest -v main
           coverage report -m --fail-under=100

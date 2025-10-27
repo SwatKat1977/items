@@ -21,6 +21,9 @@ class BaseApplication:
     """ Application framework class. """
     __slots__ = ["_is_initialised", "_logger", "_shutdown_requested"]
 
+    BOOL_TRUE_VALUES: set = {"1", "true", "yes", "on"}
+    BOOL_FALSE_VALUES: set = {"0", "false", "no", "off"}
+
     @property
     def logger(self) -> logging.Logger:
         """

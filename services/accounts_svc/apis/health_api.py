@@ -16,11 +16,11 @@ limitations under the License.
 import logging
 from quart import Blueprint
 from apis.health_api_view import HealthApiView
-from state_object import StateObject
+from items_common.service_state import ServiceState
 
 
 def create_blueprint(logger: logging.Logger,
-                     state_object: StateObject) -> Blueprint:
+                     state_object: ServiceState) -> Blueprint:
     """
     Creates and returns a Quart Blueprint for the Health Status API.
 
@@ -31,8 +31,8 @@ def create_blueprint(logger: logging.Logger,
     Args:
         logger (logging.Logger): The logger instance used for logging API
                                  registration.
-        state_object (StateObject): The application state object passed to the
-                                    view.
+        state_object (ServiceState): The application state object passed to the
+                                     view.
 
     Returns:
         Blueprint: A Quart Blueprint instance with the registered health status

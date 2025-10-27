@@ -6,7 +6,7 @@ import time
 from quart import Response
 from http import HTTPStatus
 from apis.health_api_view import HealthApiView
-from state_object import StateObject
+from items_common.service_state import ServiceState
 from service_health_enums import (ComponentDegradationLevel,
                                   ServiceDegradationStatus)
 
@@ -14,7 +14,7 @@ from service_health_enums import (ComponentDegradationLevel,
 class TestApiHealthApiView(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.mock_logger = MagicMock(spec=logging.Logger)
-        self.mock_state = MagicMock(spec=StateObject)
+        self.mock_state = MagicMock(spec=ServiceState)
         self.mock_state.startup_time = int(time.time()) - 5000  # 5000s uptime
         self.mock_state.version = "1.2.3"
 

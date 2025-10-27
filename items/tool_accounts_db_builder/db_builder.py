@@ -14,12 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import argparse
-from hashlib import sha256
 import logging
 import os.path
 import secrets
 import string
-from uuid import uuid4
+import bcrypt
 import sql_values
 from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
 import accounts_sql
@@ -51,6 +50,7 @@ def generate_secure_password(length: int = DEFAULT_ADMIN_PASSWORD_LEN) -> str:
 
     # Define the character pool: letters, digits, and special characters
     alphabet = string.ascii_letters + string.digits + string.punctuation
+
     # Generate a password by randomly selecting from the pool
     password = ''.join(secrets.choice(alphabet) for _ in range(length))
     return password
@@ -114,10 +114,9 @@ def build_database(logger: logging.Logger,
         return False
 
     try:
-        admin_password_salt: str = str(uuid4())
-        password_hash = f"{admin_password}{admin_password_salt}".\
-            encode('UTF-8')
-        password_hash = sha256(password_hash).hexdigest()
+        admin_password_salt = bcrypt.gensalt()
+        password_hash = bcrypt.hashpw(admin_password.encode('utf-8'),
+                                      admin_password_salt)
         admin_user_auth_details_params: tuple = (
             password_hash,
             admin_password_salt,

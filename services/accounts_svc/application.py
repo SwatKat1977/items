@@ -16,7 +16,7 @@ limitations under the License.
 import asyncio
 import logging
 import os
-from base_application import BaseApplication
+from items_common.base_microservice import BaseMicroservice
 from configuration_layout import CONFIGURATION_LAYOUT
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
                            LOGGING_DEFAULT_LOG_LEVEL, \
@@ -24,17 +24,18 @@ from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
-from state_object import StateObject
 from apis import create_routes
 
-
-class Application(BaseApplication):
+#class Application(BaseApplication):
+class Service(BaseMicroservice):
     """ ITEMS Accounts Service """
+
+    CONFIG_FILE_ENV: str = "ITEMS_ACCOUNTS_SVC_CONFIG_FILE"
+    CONFIG_REQUIRED_ENV: str = "ITEMS_ACCOUNTS_SVC_CONFIG_FILE_REQUIRED"
 
     def __init__(self, quart_instance):
         super().__init__()
         self._quart_instance = quart_instance
-        self._state_object: StateObject = StateObject()
 
         self._logger = logging.getLogger(__name__)
         log_format = logging.Formatter(LOGGING_LOG_FORMAT_STRING,
@@ -44,16 +45,15 @@ class Application(BaseApplication):
         self._logger.setLevel(LOGGING_DEFAULT_LOG_LEVEL)
         self._logger.addHandler(console_stream)
 
-    def _initialise(self) -> bool:
+        self._service_state.database_enabled = True
+
+    async def _initialise(self) -> bool:
 
         build = f"V{RELEASE_VERSION}-{BUILD_VERSION}{BUILD_TAG}"
 
         self._logger.info('ITEMS Accounts Microservice %s', build)
         self._logger.info(SERVICE_COPYRIGHT_TEXT)
         self._logger.info(LICENSE_TEXT)
-
-        # Set the version string on state object.
-        self._state_object.version = build
 
         if not self._manage_configuration():
             return False
@@ -63,12 +63,12 @@ class Application(BaseApplication):
         self._logger.setLevel(Configuration().logging_log_level)
 
         if not os.path.isfile(Configuration().backend_db_filename):
-            self._logger.critical("Configuratuin file '%s' is missing!",
+            self._logger.critical("Backend database file '%s' is missing!",
                                   Configuration().backend_db_filename)
             return False
 
         self._quart_instance.register_blueprint(
-            create_routes(self._logger, self._state_object))
+            create_routes(self._logger, self._service_state))
 
         return True
 
@@ -76,35 +76,20 @@ class Application(BaseApplication):
         """ Abstract method for main application. """
         await asyncio.sleep(0.1)
 
-    def _shutdown(self):
+    async def _shutdown(self):
         """ Abstract method for application shutdown. """
 
     def _manage_configuration(self) -> bool:
         """
         Manage the service configuration.
         """
-
-        config_file = os.getenv("ITEMS_ACCOUNTS_SVC_CONFIG_FILE", None)
-
-        config_file_required_str: str = os.getenv(
-            "ITEMS_ACCOUNTS_SVC_CONFIG_FILE_REQUIRED", None)
-
-        config_file_required: bool = False
-        if config_file_required_str is not None and config_file_required_str == "1":
-            config_file_required = True
-
-        self._logger.info("Configuration file required? %s",
-                          "True" if config_file_required else "False")
-
-        if not config_file and config_file_required:
-            self._logger.critical("Configuration file missing!")
+        error_status, required, config_file = self._check_for_configuration(
+            self.CONFIG_FILE_ENV,self.CONFIG_REQUIRED_ENV)
+        if error_status:
+            self._logger.critical(error_status)
             return False
 
-        if config_file_required:
-            self._logger.info("Configuration file : %s", config_file)
-
-        Configuration().configure(CONFIGURATION_LAYOUT, config_file,
-                                  config_file_required)
+        Configuration().configure(CONFIGURATION_LAYOUT, config_file, required)
 
         try:
             Configuration().process_config()
@@ -116,10 +101,13 @@ class Application(BaseApplication):
         self._logger.info("Configuration")
         self._logger.info("=============")
 
+        self._logger.info("Configuration file required: %s",
+                          "True" if required else "False")
+        self._logger.info("Configuration file : %s",
+                          "None"if not required else config_file)
         self._logger.info("[logging]")
         self._logger.info("=> Logging log level : %s",
                           Configuration().logging_log_level)
-
         self._logger.info("[Backend]")
         self._logger.info("=> Database filename : %s",
                           Configuration().backend_db_filename)
