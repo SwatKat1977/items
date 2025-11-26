@@ -12,6 +12,10 @@ import os
 import typing
 from items_common import __version__
 from items_common.service_state import ServiceState
+from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
+                           LOGGING_DEFAULT_LOG_LEVEL, \
+                           LOGGING_LOG_FORMAT_STRING
+
 
 class BaseMicroservice(abc.ABC):
     """ Base microservice class. """
@@ -28,6 +32,14 @@ class BaseMicroservice(abc.ABC):
         self._shutdown_complete: asyncio.Event = asyncio.Event()
         self._service_state: ServiceState = ServiceState(version=__version__)
 
+        self._logger: logging.Logger = logging.getLogger(__name__)
+        log_format= logging.Formatter(LOGGING_LOG_FORMAT_STRING,
+                                      LOGGING_DATETIME_FORMAT_STRING)
+        console_stream = logging.StreamHandler()
+        console_stream.setFormatter(log_format)
+        self._logger.setLevel(LOGGING_DEFAULT_LOG_LEVEL)
+        self._logger.addHandler(console_stream)
+
     @property
     def logger(self) -> logging.Logger:
         """
@@ -37,16 +49,6 @@ class BaseMicroservice(abc.ABC):
             Returns the logger instance.
         """
         return self._logger
-
-    @logger.setter
-    def logger(self, logger : logging.Logger) -> None:
-        """
-        Property setter for logger instance.
-
-        parameters:
-            logger (logging.Logger) : Logger instance.
-        """
-        self._logger = logger
 
     @property
     def shutdown_event(self) -> asyncio.Event:
