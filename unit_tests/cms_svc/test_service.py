@@ -2,16 +2,15 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 import asyncio
-from application import Application
+from service import Service
 from configuration_layout import CONFIGURATION_LAYOUT
-from base_sqlite_interface import SqliteInterfaceException
 
 
 class TestApplication(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         """Set up the Application instance and mock dependencies."""
         self.mock_quart_instance = MagicMock()
-        self.application = Application(self.mock_quart_instance)
+        self.application = Service(self.mock_quart_instance)
 
         # Mock the logger
         self.mock_logger_instance = MagicMock()

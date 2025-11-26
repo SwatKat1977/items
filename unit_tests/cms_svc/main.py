@@ -1,5 +1,5 @@
 import unittest
-from test_application import TestApplication
+from test_service import TestApplication
 from test_threadsafe_configuration import TestThreadSafeConfiguration
 from test_apis_health_api import TestApiHealthApiView
 from test_apis_project_api_view import TestApiProjectApiView
