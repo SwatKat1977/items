@@ -26,7 +26,7 @@ from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
 from apis import create_routes
 
-#class Application(BaseApplication):
+
 class Service(BaseMicroservice):
     """ ITEMS Accounts Service """
 

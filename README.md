@@ -39,3 +39,9 @@ Python packages:
 - jsonschema
 - requests
 - bcrypt
+
+### Gateway Service
+
+Python packages:
+- quart
+- tzlocal
