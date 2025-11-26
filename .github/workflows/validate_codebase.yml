@@ -129,14 +129,14 @@ jobs:
 
       - name: Run Pylint
         env:
-          PYTHONPATH: items/shared:services/cms_svc
+          PYTHONPATH: items/shared:services/cms_svc:common
         run: |
           pylint --fail-under=10.0 services/cms_svc
 
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:unit_tests/cms_svc:services/cms_svc
+          PYTHONPATH: items/shared:unit_tests/cms_svc:services/cms_svc:common
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_cms_svc -m unittest -v main
           coverage report -m --fail-under=100
