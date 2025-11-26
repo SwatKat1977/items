@@ -44,7 +44,7 @@ jobs:
           git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1
           changed_files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.sha }})
 
-          echo "Checking for changes in items/accounts_svc/"
+          echo "Checking for changes in services/accounts_svc/"
           if echo "$changed_files" | grep -qE '^(services|unit_tests)/accounts_svc/'; then
             echo "accounts_svc_changed=true" >> $GITHUB_OUTPUT
             echo "[INFO] Accounts Service or unit tests have changed"
@@ -52,8 +52,8 @@ jobs:
             echo "accounts_svc_changed=false" >> $GITHUB_OUTPUT
           fi
 
-          echo "Checking for changes in items/cms_svc/"
-          if echo "$changed_files" | grep -qE '^(items|unit_tests)/cms_svc/'; then
+          echo "Checking for changes in services/cms_svc/"
+          if echo "$changed_files" | grep -qE '^(services|unit_tests)/cms_svc/'; then
             echo "cms_svc_changed=true" >> $GITHUB_OUTPUT
             echo "[INFO] CMS Service or unit tests have changed"
           else
@@ -129,14 +129,14 @@ jobs:
 
       - name: Run Pylint
         env:
-          PYTHONPATH: items/shared:items/cms_svc
+          PYTHONPATH: items/shared:services/cms_svc
         run: |
-          pylint --fail-under=10.0 items/cms_svc
+          pylint --fail-under=10.0 services/cms_svc
 
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:unit_tests/cms_svc:items/cms_svc
+          PYTHONPATH: items/shared:unit_tests/cms_svc:services/cms_svc
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_cms_svc -m unittest -v main
           coverage report -m --fail-under=100
