@@ -5,6 +5,12 @@
 .venv
 
 # -----------------
+# PyCharm Ignore
+# -----------------
+.idea/items.iml
+.idea/inspectionProfiles/
+
+# -----------------
 # Mac OS ignore
 # -----------------
 .DS_Store
