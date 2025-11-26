@@ -118,7 +118,7 @@ class SqlProjects(ExtendedSqlInterface):
             dict | None: A dictionary containing the query results if successful,
                          otherwise `None` if an error occurs.
         """
-        sql = f"SELECT {fields} FROM {cms_tables.PRJ_PROJECTS}"
+        sql = f"SELECT {fields} FROM {cms_tables.PRJ_PROJECTS} WHERE awaiting_purge=0"
         rows = self.safe_query(sql,
                                (),
                                "Query failed getting projects details")
