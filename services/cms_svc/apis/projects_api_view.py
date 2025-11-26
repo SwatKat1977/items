@@ -83,7 +83,7 @@ class ProjectsApiView(BaseView):
                               content_type="application/json")
 
     # pylint: disable=too-many-locals
-    async def project_overviews(self):
+    async def list_projects(self):
         """
         Retrieve a list of projects with optional field-based filtering and metric counts.
 
@@ -183,7 +183,7 @@ class ProjectsApiView(BaseView):
                               content_type="application/json")
 
     @validate_json(json_schemas.SCHEMA_ADD_PROJECT_REQUEST)
-    async def add_project(self, request_msg: ApiResponse):
+    async def create_project(self, request_msg: ApiResponse):
         """
         Add a new project to the system.
 
