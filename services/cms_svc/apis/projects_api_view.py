@@ -21,7 +21,7 @@ import quart
 from base_view import BaseView, validate_json, ApiResponse
 from sql.sql_interface import SqlInterface
 import interfaces.cms.project as json_schemas
-from state_object import StateObject
+from items_common.service_state import ServiceState
 
 
 class ProjectsApiView(BaseView):
@@ -49,7 +49,7 @@ class ProjectsApiView(BaseView):
     VALID_FALSE_VALUES = {"false", "0", "no"}
 
     def __init__(self, logger: logging.Logger,
-                 state_object: StateObject) -> None:
+                 state_object: ServiceState) -> None:
         """
         Initialize the ProjectsApiView.
 

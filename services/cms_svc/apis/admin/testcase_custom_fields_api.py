@@ -15,7 +15,7 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from state_object import StateObject
+from items_common.service_state import ServiceState
 from .testcase_custom_fields_api_view import TestcaseCustomFieldsApiView
 
 # For admins
@@ -27,7 +27,7 @@ from .testcase_custom_fields_api_view import TestcaseCustomFieldsApiView
 
 
 def create_blueprint(logger: logging.Logger,
-                     state_object: StateObject) -> Blueprint:
+                     state_object: ServiceState) -> Blueprint:
     """
     Creates a Quart blueprint that defines admin API routes for managing
     testcase custom fields.

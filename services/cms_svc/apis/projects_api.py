@@ -15,12 +15,12 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from state_object import StateObject
+from items_common.service_state import ServiceState
 from .projects_api_view import ProjectsApiView
 
 
 def create_blueprint(logger: logging.Logger,
-                     state_object: StateObject) -> Blueprint:
+                     service_state: ServiceState) -> Blueprint:
     """
     Creates and returns a Quart Blueprint for the project API.
 
@@ -35,7 +35,7 @@ def create_blueprint(logger: logging.Logger,
     Returns:
         Blueprint: A Quart Blueprint instance with the registered routes.
     """
-    view = ProjectsApiView(logger, state_object)
+    view = ProjectsApiView(logger, service_state)
 
     blueprint = Blueprint('project_api', __name__)
 

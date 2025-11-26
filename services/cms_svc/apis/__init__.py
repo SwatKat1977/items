@@ -15,7 +15,7 @@ limitations under the License.
 """
 import logging
 import quart
-from state_object import StateObject
+from items_common.service_state import ServiceState
 from .health_api import create_blueprint as create_heath_bp
 from .projects_api import create_blueprint as create_projects_bp
 from .testcases_api import create_blueprint as create_testcases_bp
@@ -23,7 +23,7 @@ from .admin import create_admin_routes
 
 
 def create_api_routes(logger: logging.Logger,
-                      state: StateObject) -> quart.Blueprint:
+                      state: ServiceState) -> quart.Blueprint:
     """
     Create and register all API route blueprints for the application.
 

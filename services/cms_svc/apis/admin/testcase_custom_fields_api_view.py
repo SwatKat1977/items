@@ -21,7 +21,7 @@ import interfaces.cms.admin as json_schemas
 from base_view import BaseView, validate_json, ApiResponse
 from sql.sql_tc_custom_fields import CustomFieldMoveDirection
 from sql.sql_interface import SqlInterface
-from state_object import StateObject
+from items_common.service_state import ServiceState
 
 
 class TestcaseCustomFieldsApiView(BaseView):
@@ -34,7 +34,7 @@ class TestcaseCustomFieldsApiView(BaseView):
     __slots__ = ['_logger']
 
     def __init__(self, logger: logging.Logger,
-                 state_object: StateObject) -> None:
+                 state_object: ServiceState) -> None:
         """
         Initialize the TestcaseCustomFieldsApiView.
 

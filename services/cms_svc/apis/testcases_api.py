@@ -15,12 +15,12 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from state_object import StateObject
+from items_common.service_state import ServiceState
 from .testcases_api_view import TestCasesApiView
 
 
 def create_blueprint(logger: logging.Logger,
-                     state_object: StateObject) -> Blueprint:
+                     service_state: ServiceState) -> Blueprint:
     """
     Creates and returns a Quart Blueprint for the test cases API.
 
@@ -30,13 +30,13 @@ def create_blueprint(logger: logging.Logger,
     Args:
         logger (logging.Logger): The logger instance used for logging API
                                  registration.
-        state_object (StateObject): StateObject instance for database.
+        service_state (ServiceState): StateObject instance for database.
 
     Returns:
         Blueprint: A Quart Blueprint instance with the registered health status
                    route.
     """
-    view = TestCasesApiView(logger, state_object)
+    view = TestCasesApiView(logger, service_state)
 
     blueprint = Blueprint('testcases_api', __name__)
 

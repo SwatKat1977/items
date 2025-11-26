@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
-from state_object import StateObject
+from items_common.service_state import ServiceState
 from sql.extended_sql_interface import ExtendedSqlInterface
 from sql.sql_projects import SqlProjects
 from sql.sql_tc_custom_fields import SqlTCCustomFields
@@ -23,7 +23,7 @@ from sql.sql_testcases import SqlTestcases
 
 class SqlInterface(ExtendedSqlInterface):
     def __init__(self, logger: logging.Logger,
-                 state_object: StateObject) -> None:
+                 state_object: ServiceState) -> None:
         super().__init__(logger, state_object)
 
         self.projects: SqlProjects = SqlProjects(logger, state_object, self)

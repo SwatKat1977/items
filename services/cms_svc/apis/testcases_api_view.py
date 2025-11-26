@@ -20,7 +20,7 @@ import quart
 from base_view import ApiResponse, BaseView, validate_json
 import interfaces.cms.testcases as json_schemas
 from sql.sql_interface import SqlInterface
-from state_object import StateObject
+from items_common.service_state import ServiceState
 
 
 class TestCasesApiView(BaseView):
@@ -34,7 +34,7 @@ class TestCasesApiView(BaseView):
     __slots__ = ['_logger']
 
     def __init__(self, logger: logging.Logger,
-                 state_object: StateObject) -> None:
+                 state_object: ServiceState) -> None:
         """
         Initialize the TestCasesApiView.
 

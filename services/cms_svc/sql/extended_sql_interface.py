@@ -19,15 +19,15 @@ import typing
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
 from service_health_enums import ComponentDegradationLevel
-from state_object import StateObject
+from items_common.service_state import ServiceState
 
 
 class ExtendedSqlInterface(BaseSqliteInterface):
     def __init__(self, logger: logging.Logger,
-                 state_object: StateObject) -> None:
+                 state_object: ServiceState) -> None:
         super().__init__(Configuration().backend_db_filename)
         self._logger = logger.getChild(__name__)
-        self._state_object: StateObject = state_object
+        self._state_object: ServiceState = state_object
 
     def safe_query(self,
                    query: str,
