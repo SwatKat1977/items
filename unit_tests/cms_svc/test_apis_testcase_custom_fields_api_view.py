@@ -380,7 +380,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
 
         # Register route for testing
         self.app.add_url_rule('/testcase_custom_fields/testcase_custom_fields',
-                              view_func=view.get_all_custom_fields,
+                              view_func=view.get_custom_fields,
                               methods=['GET'])
 
         async with self.client as client:
@@ -392,7 +392,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(data["error"], "Internal error")
 
     @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
-    async def test_get_all_custom_fields_empty_list(self, mock_sql_interface):
+    async def test_get_custom_fields_empty_list(self, mock_sql_interface):
         mock_db = MagicMock()
         mock_db.tc_custom_fields.get_all_fields.return_value = []
         mock_sql_interface.return_value = mock_db
@@ -401,7 +401,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
 
         # Register route for testing
         self.app.add_url_rule('/testcase_custom_fields/testcase_custom_fields',
-                              view_func=view.get_all_custom_fields,
+                              view_func=view.get_custom_fields,
                               methods=['GET'])
 
         async with self.client as client:
@@ -412,8 +412,8 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(data["custom_fields"], [])
 
     @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
-    async def test_get_all_custom_fields_global_fields_no_assigned_projects(self,
-                                                                            mock_sql_interface):
+    async def test_get_custom_fields_global_fields_no_assigned_projects(self,
+                                                                        mock_sql_interface):
         mock_fields = [
             (1, "Field1", "Desc", "sys1", "type1", "entry1", True, 1, True, "def", True, None),
             (2, "Field2", "Desc2", "sys2", "type2", "entry2", True, 2, False, "def2", True, None),
@@ -426,7 +426,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
 
         # Register route for testing
         self.app.add_url_rule('/testcase_custom_fields/testcase_custom_fields',
-                              view_func=view.get_all_custom_fields,
+                              view_func=view.get_custom_fields,
                               methods=['GET'])
 
         async with self.client as client:
@@ -438,8 +438,8 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(field["assigned_projects"], [])
 
     @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
-    async def test_get_all_custom_fields_non_global_with_assigned_projects(self,
-                                                                           mock_sql_interface):
+    async def test_get_custom_fields_non_global_with_assigned_projects(self,
+                                                                       mock_sql_interface):
         mock_fields = [
             (3, "Field3", "Desc3", "sys3", "type3", "entry3", True, 3, False, "def3", False, "1:Project One,2:Project Two")
         ]
@@ -451,7 +451,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
 
         # Register route for testing
         self.app.add_url_rule('/testcase_custom_fields/testcase_custom_fields',
-                              view_func=view.get_all_custom_fields,
+                              view_func=view.get_custom_fields,
                               methods=['GET'])
 
         async with self.client as client:
@@ -465,8 +465,8 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
                              [{'id': '1', 'name': 'Project One'}, {'id': '2', 'name': 'Project Two'}])
 
     @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
-    async def test_get_all_custom_fields_mixed_fields(self,
-                                                      mock_sql_interface):
+    async def test_get_custom_fields_mixed_fields(self,
+                                                  mock_sql_interface):
         mock_fields = [
             (1, "GlobalField", "Global Desc", "sys_global", "type_global", "entry_global",
              True, 1, True, "def_global", True, None),
@@ -481,7 +481,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
 
         # Register route for testing
         self.app.add_url_rule('/testcase_custom_fields/testcase_custom_fields',
-                              view_func=view.get_all_custom_fields,
+                              view_func=view.get_custom_fields,
                               methods=['GET'])
 
         async with self.client as client:
@@ -501,25 +501,6 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
                              [{'id': '3', 'name': 'Project Three'},
                               {'id': '4', 'name': 'Project Four'}])
 
-
-    # @blueprint.route('/testcase_custom_fields/<int:project_id>', methods=['GET'])
-    # @blueprint.route('/testcase_custom_fields', methods=['GET'])
-
-    '''
-        @blueprint.route('/testcase_custom_fields/<int:project_id>',
-                     methods=['GET'])
-    async def get_project_custom_fields_request(project_id: int):
-        return await view.get_project_custom_fields(project_id)
-
-    logger.debug("=> /testcase_custom_fields [GET]")
-
-    @blueprint.route('/testcase_custom_fields', methods=['GET'])
-    async def get_all_custom_fields_request():
-        return await view.get_all_custom_fields()
-    '''
-
-
-
     @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
     async def test_get_project_custom_fields_returns_500_on_internal_error(self,
                                                                            mock_sql_interface):
@@ -530,12 +511,12 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
         view = TestcaseCustomFieldsApiView(self.mock_logger, self.mock_state_object)
 
         # Register route for testing
-        self.app.add_url_rule('/testcase_custom_fields/testcase_custom_fields/<int:project_id>',
-                              view_func=view.get_project_custom_fields,
+        self.app.add_url_rule('/testcase_custom_fields/testcase_custom_fields/',
+                              view_func=view.get_custom_fields,
                               methods=['GET'])
 
         async with self.client as client:
-            response = await client.get('/testcase_custom_fields/testcase_custom_fields/1')
+            response = await client.get('/testcase_custom_fields/testcase_custom_fields/?project_id=1')
             data = await response.get_json()
             self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
             self.assertEqual(data["status"], 0)
@@ -552,21 +533,16 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
         view = TestcaseCustomFieldsApiView(self.mock_logger, self.mock_state_object)
 
         # Register route for testing
-        self.app.add_url_rule('/testcase_custom_fields/testcase_custom_fields/<int:project_id>',
-                              view_func=view.get_project_custom_fields,
+        self.app.add_url_rule('/testcase_custom_fields/testcase_custom_fields/',
+                              view_func=view.get_custom_fields,
                               methods=['GET'])
 
         async with self.client as client:
-            response = await client.get('/testcase_custom_fields/testcase_custom_fields/1')
+            response = await client.get('/testcase_custom_fields/testcase_custom_fields/?project_id=1')
             data = await response.get_json()
             self.assertEqual(response.status_code, http.HTTPStatus.OK)
             self.assertIn("custom_fields", data)
             self.assertEqual(data["custom_fields"], [])
-
-
-
-
-
 
     @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
     async def test_get_project_custom_fields_returns_fields_correctly_when_present(
@@ -582,8 +558,8 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
         view = TestcaseCustomFieldsApiView(self.mock_logger, self.mock_state_object)
 
         # Register route for testing
-        self.app.add_url_rule('/testcase_custom_fields/testcase_custom_fields/<int:project_id>',
-                              view_func=view.get_project_custom_fields,
+        self.app.add_url_rule('/testcase_custom_fields/testcase_custom_fields/',
+                              view_func=view.get_custom_fields,
                               methods=['GET'])
 
         expected_fields = [
@@ -614,7 +590,7 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
         ]
 
         async with self.client as client:
-            response = await client.get('/testcase_custom_fields/testcase_custom_fields/1')
+            response = await client.get('/testcase_custom_fields/testcase_custom_fields/?project_id=1')
             data = await response.get_json()
             self.assertEqual(response.status_code, http.HTTPStatus.OK)
             self.assertIn("custom_fields", data)
