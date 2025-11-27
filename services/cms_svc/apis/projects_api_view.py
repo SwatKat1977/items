@@ -21,7 +21,7 @@ import quart
 from base_view import BaseView, validate_json, ApiResponse
 from sql.sql_interface import SqlInterface
 import interfaces.cms.project as json_schemas
-from state_object import StateObject
+from items_common.service_state import ServiceState
 
 
 class ProjectsApiView(BaseView):
@@ -49,7 +49,7 @@ class ProjectsApiView(BaseView):
     VALID_FALSE_VALUES = {"false", "0", "no"}
 
     def __init__(self, logger: logging.Logger,
-                 state_object: StateObject) -> None:
+                 state_object: ServiceState) -> None:
         """
         Initialize the ProjectsApiView.
 
@@ -83,7 +83,7 @@ class ProjectsApiView(BaseView):
                               content_type="application/json")
 
     # pylint: disable=too-many-locals
-    async def project_overviews(self):
+    async def list_projects(self):
         """
         Retrieve a list of projects with optional field-based filtering and metric counts.
 
@@ -183,7 +183,7 @@ class ProjectsApiView(BaseView):
                               content_type="application/json")
 
     @validate_json(json_schemas.SCHEMA_ADD_PROJECT_REQUEST)
-    async def add_project(self, request_msg: ApiResponse):
+    async def create_project(self, request_msg: ApiResponse):
         """
         Add a new project to the system.
 

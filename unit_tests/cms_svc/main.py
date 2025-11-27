@@ -1,5 +1,5 @@
 import unittest
-from test_application import TestApplication
+from test_service import TestService
 from test_threadsafe_configuration import TestThreadSafeConfiguration
 from test_apis_health_api import TestApiHealthApiView
 from test_apis_project_api_view import TestApiProjectApiView
@@ -12,6 +12,7 @@ from test_sql_sql_interface import TestSqlInterface
 from test_extended_sql_interface import TestExtendedSqlInterface
 from test_create_admin_routes import TestCreateAdminRoutes
 from test_apis_testcase_custom_fields_api_view import TestApisTestcaseCustomFieldsApiView
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -17,13 +17,13 @@ from __future__ import annotations
 import logging
 import typing
 from sql.extended_sql_interface import ExtendedSqlInterface
-from state_object import StateObject
+from items_common.service_state import ServiceState
 import databases.cms_db_tables as cms_tables
 
 
 class SqlTestcases(ExtendedSqlInterface):
     def __init__(self, logger: logging.Logger,
-                 state_object: StateObject,
+                 state_object: ServiceState,
                  parent: SqlInterface) -> None:
         super().__init__(logger, state_object)
         self._parent = parent

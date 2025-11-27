@@ -19,7 +19,7 @@ import logging
 import time
 from quart import Response
 from base_view import BaseView
-from state_object import StateObject
+from items_common.service_state import ServiceState
 from service_health_enums import (ComponentDegradationLevel,
                                   ServiceDegradationStatus)
 
@@ -35,7 +35,7 @@ class HealthApiView(BaseView):
     __slots__ = ['_logger']
 
     def __init__(self, logger: logging.Logger,
-                 state_object: StateObject) -> None:
+                 state_object: ServiceState) -> None:
         """
         Initialize the HealthApiView.
 

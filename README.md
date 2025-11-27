@@ -30,3 +30,18 @@ The following Python libraries are required to run ITEMS locally:
 - requests
 - tzlocal
 - aiohttp
+
+### Accounts Service
+
+Python packages:
+- quart
+- aiohttp
+- jsonschema
+- requests
+- bcrypt
+
+### Gateway Service
+
+Python packages:
+- quart
+- tzlocal

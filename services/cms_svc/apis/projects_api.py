@@ -15,12 +15,12 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from state_object import StateObject
+from items_common.service_state import ServiceState
 from .projects_api_view import ProjectsApiView
 
 
 def create_blueprint(logger: logging.Logger,
-                     state_object: StateObject) -> Blueprint:
+                     service_state: ServiceState) -> Blueprint:
     """
     Creates and returns a Quart Blueprint for the project API.
 
@@ -35,41 +35,37 @@ def create_blueprint(logger: logging.Logger,
     Returns:
         Blueprint: A Quart Blueprint instance with the registered routes.
     """
-    view = ProjectsApiView(logger, state_object)
+    view = ProjectsApiView(logger, service_state)
 
     blueprint = Blueprint('project_api', __name__)
 
-    logger.debug("Registering projects routes:")
+    logger.debug("--------------- Registering projects routes ---------------")
 
-    logger.debug("=> /details/<int:project_id> [GET]")
-
-    @blueprint.route('/details/<project_id>', methods=['GET'])
+    logger.debug("=> /<int:project_id> [GET] : Get project details")
+    @blueprint.route('/<project_id>', methods=['GET'])
     async def project_details(project_id: int):
         return await view.project_details(project_id)
 
-    logger.debug("=> /overviews [GET]")
+    logger.debug("=> / [GET]                 : List accessible projects")
+    @blueprint.route('/', methods=['GET'])
+    async def list_projects():
+        return await view.list_projects()
 
-    @blueprint.route('/overviews', methods=['GET'])
-    async def project_overviews():
-        return await view.project_overviews()
-
-    logger.debug("=> /add [POST]")
-
-    @blueprint.route('/add', methods=['POST'])
-    async def add_project():
+    # Create project
+    logger.debug("=> /projects [POST]        : Create project")
+    @blueprint.route('/', methods=['POST'])
+    async def create_project():
         # pylint: disable=no-value-for-parameter
-        return await view.add_project()
+        return await view.create_project()
 
-    logger.debug("=> /modify [POST]")
-
-    @blueprint.route('/modify/<int:project_id>', methods=['POST'])
+    logger.debug("=> /projects [PATCH]       : Modify project ")
+    @blueprint.route('/<int:project_id>', methods=['PATCH'])
     async def modify_project(project_id: int):
         # pylint: disable=no-value-for-parameter
         return await view.modify_project(project_id)
 
-    logger.debug("=> /project/delete [DELETE]")
-
-    @blueprint.route('/delete/<int:project_id>', methods=['DELETE'])
+    logger.debug("=> /projects [DELETE]      : Modify project ")
+    @blueprint.route('/<int:project_id>', methods=['DELETE'])
     async def delete_project(project_id: int):
         return await view.delete_project(project_id)
 

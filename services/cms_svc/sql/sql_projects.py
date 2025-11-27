@@ -17,13 +17,13 @@ from __future__ import annotations
 import logging
 import typing
 from sql.extended_sql_interface import ExtendedSqlInterface
-from state_object import StateObject
+from items_common.service_state import ServiceState
 import databases.cms_db_tables as cms_tables
 
 
 class SqlProjects(ExtendedSqlInterface):
     def __init__(self, logger: logging.Logger,
-                 state_object: StateObject,
+                 state_object: ServiceState,
                  parent: SqlInterface) -> None:
         super().__init__(logger, state_object)
         self._parent = parent
@@ -118,7 +118,7 @@ class SqlProjects(ExtendedSqlInterface):
             dict | None: A dictionary containing the query results if successful,
                          otherwise `None` if an error occurs.
         """
-        sql = f"SELECT {fields} FROM {cms_tables.PRJ_PROJECTS}"
+        sql = f"SELECT {fields} FROM {cms_tables.PRJ_PROJECTS} WHERE awaiting_purge=0"
         rows = self.safe_query(sql,
                                (),
                                "Query failed getting projects details")

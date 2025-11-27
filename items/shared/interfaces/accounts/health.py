@@ -61,7 +61,7 @@ SCHEMA_ACCOUNTS_SVC_HEALTH_RESPONSE: dict = {
         },
         "version": {
             "type": "string",
-            "pattern": "^V\\d+\\.\\d+\\.\\d+(?:-\\d+(?: \\[.*?\\])?)?$"
+            "pattern": "^V\\d+\\.\\d+\\.\\d+(?:-[A-Za-z0-9 #._-]+)?$"
         }
     },
     "required": ["status", "dependencies", "uptime_seconds", "version"],

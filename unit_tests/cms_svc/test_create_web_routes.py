@@ -2,14 +2,14 @@ import logging
 import unittest
 from unittest.mock import Mock, patch
 
-from state_object import StateObject
+from items_common.service_state import ServiceState
 from apis import create_api_routes
 
 
 class TestCreateApiRoutes(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.logger = Mock(spec=logging.Logger)
-        self.state = Mock(spec=StateObject)
+        self.state = Mock(spec=ServiceState)
 
         # Patch Blueprint and all route factories in apis.__init__
         self.patcher_bp = patch("apis.quart.Blueprint")

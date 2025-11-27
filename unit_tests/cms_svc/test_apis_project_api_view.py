@@ -29,7 +29,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.client = self.app.test_client()
 
     @patch('apis.projects_api_view.SqlInterface')
-    async def test_project_overviews_default(self, mock_sql_interface):
+    async def test_projects_details_default(self, mock_sql_interface):
         """Test default behavior when no fields are specified"""
 
         mock_db = MagicMock()
@@ -40,7 +40,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         # Register route for testing
         self.app.add_url_rule('/web/projects/overviews',
-                              view_func=view.project_overviews,
+                              view_func=view.list_projects,
                               methods=['GET'])
 
         response = await self.client.get("/web/projects/overviews")
@@ -49,7 +49,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(data["projects"], [{"id": 1, "name": "Demo Project"}])
 
     @patch('apis.projects_api_view.SqlInterface')
-    async def test_project_overviews_valid_value_fields(self, mock_sql_interface):
+    async def test_list_projects_valid_value_fields(self, mock_sql_interface):
         """Test when valid value_fields are provided"""
         mock_db = MagicMock()
         mock_db.projects.get_projects_details.return_value = [(1, "Test Project")]
@@ -59,7 +59,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         # Register route for testing
         self.app.add_url_rule('/web/projects/overviews',
-                              view_func=view.project_overviews,
+                              view_func=view.list_projects,
                               methods=['GET'])
 
         response = await self.client.get("/web/projects/overviews?value_fields=name")
@@ -67,12 +67,12 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, http.HTTPStatus.OK)
         self.assertEqual(data["projects"], [{"id": 1, "name": "Test Project"}])
 
-    async def test_project_overviews_invalid_value_field(self):
+    async def test_list_projects_invalid_value_field(self):
         view = ProjectsApiView(self.mock_logger, self.mock_state_object)
 
         # Register route for testing
         self.app.add_url_rule('/web/projects/overviews',
-                              view_func=view.project_overviews,
+                              view_func=view.list_projects,
                               methods=['GET'])
 
         """Test when an invalid field is requested"""
@@ -81,14 +81,14 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, http.HTTPStatus.BAD_REQUEST)
         self.assertEqual(data, {"error": "Invalid value field"})
 
-    async def test_project_overviews_invalid_count_field(self):
+    async def test_list_projects_invalid_count_field(self):
         """Test when an invalid field is requested"""
 
         view = ProjectsApiView(self.mock_logger, self.mock_state_object)
 
         # Register route for testing
         self.app.add_url_rule('/web/projects/overviews',
-                              view_func=view.project_overviews,
+                              view_func=view.list_projects,
                               methods=['GET'])
 
         response = await self.client.get("/web/projects/overviews?count_fields=invalid_field")
@@ -97,7 +97,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(data, {"error": "Invalid count field"})
 
     @patch('apis.projects_api_view.SqlInterface')
-    async def test_project_overviews_with_milestones(self, mock_sql_interface):
+    async def test_list_projects_with_milestones(self, mock_sql_interface):
         """Test count_fields including milestones"""
         mock_db = MagicMock()
         mock_db.projects.get_projects_details.return_value = [(1, "Test Project")]
@@ -108,7 +108,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         # Register route for testing
         self.app.add_url_rule('/web/projects/overviews',
-                              view_func=view.project_overviews,
+                              view_func=view.list_projects,
                               methods=['GET'])
 
         response = await self.client.get("/web/projects/overviews?count_fields=no_of_milestones")
@@ -117,7 +117,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(data["projects"], [{"id": 1, "name": "Test Project", "no_of_milestones": 5}])
 
     @patch('apis.projects_api_view.SqlInterface')
-    async def test_project_overviews_get_projects_details_failure(self, mock_sql_interface):
+    async def test_list_projects_get_projects_details_failure(self, mock_sql_interface):
         """Test count_fields including test runs"""
         mock_db = MagicMock()
         mock_db.projects.get_projects_details.return_value = None
@@ -129,7 +129,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         # Register route for testing
         self.app.add_url_rule('/web/projects/overviews',
-                              view_func=view.project_overviews,
+                              view_func=view.list_projects,
                               methods=['GET'])
 
         response = await self.client.get("/web/projects/overviews?count_fields=no_of_test_runs")
@@ -138,7 +138,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(data, {'error': 'Internal error in CMS'})
 
     @patch('apis.projects_api_view.SqlInterface')
-    async def test_project_overviews_with_test_runs(self, mock_sql_interface):
+    async def test_list_projects_with_test_runs(self, mock_sql_interface):
         """Test count_fields including test runs"""
         mock_db = MagicMock()
         mock_db.projects.get_projects_details.return_value = [(1, "Test Project")]
@@ -149,7 +149,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         # Register route for testing
         self.app.add_url_rule('/web/projects/overviews',
-                              view_func=view.project_overviews,
+                              view_func=view.list_projects,
                               methods=['GET'])
 
         response = await self.client.get("/web/projects/overviews?count_fields=no_of_test_runs")
@@ -158,7 +158,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(data["projects"], [{"id": 1, "name": "Test Project", "no_of_test_runs": 3}])
 
     @patch('apis.projects_api_view.SqlInterface')
-    async def test_add_project_success(self, mock_sql_interface):
+    async def test_create_project_success(self, mock_sql_interface):
         """Test successful project creation."""
         mock_db = MagicMock()
         mock_db.projects.project_name_exists.return_value = False
@@ -168,8 +168,8 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         view = ProjectsApiView(self.mock_logger, self.mock_state_object)
 
         # Register route for testing
-        self.app.add_url_rule('/web/projects/add',
-                              view_func=view.add_project,
+        self.app.add_url_rule('/projects/',
+                              view_func=view.create_project,
                               methods=['POST'])
 
         test_json_body: dict = {
@@ -186,7 +186,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
         view._call_api_post = mock_call_api_post
 
         async with self.client as client:
-            response = await client.post('/web/projects/add',
+            response = await client.post('/projects/',
                                          json=test_json_body)
             data = await response.get_json()
             # Assert response status
@@ -194,7 +194,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(data, {"project_id": 42})
 
     @patch('apis.projects_api_view.SqlInterface')
-    async def test_add_project_name_exists(self, mock_sql_interface):
+    async def test_create_project_name_exists(self, mock_sql_interface):
         """Test when the project name already exists."""
         mock_db = MagicMock()
         mock_db.projects.project_name_exists.return_value = True
@@ -204,7 +204,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         # Register route for testing
         self.app.add_url_rule('/web/projects/add',
-                              view_func=view.add_project,
+                              view_func=view.create_project,
                               methods=['POST'])
 
         test_json_body: dict = {
@@ -223,7 +223,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
                              {'error_msg': 'Project name already exists', 'status': 0})
 
     @patch('apis.projects_api_view.SqlInterface')
-    async def test_add_project_query_failure_checking_name(self, mock_sql_interface):
+    async def test_create_project_query_failure_checking_name(self, mock_sql_interface):
         """Test database query failure while checking if project name exists."""
         mock_db = MagicMock()
         mock_db.projects.project_name_exists.return_value = None
@@ -233,7 +233,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         # Register route for testing
         self.app.add_url_rule('/web/projects/add',
-                              view_func=view.add_project,
+                              view_func=view.create_project,
                               methods=['POST'])
 
         test_json_body: dict = {
@@ -251,7 +251,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
                              {'error_msg': 'Internal error in CMS', 'status': 0})
 
     @patch('apis.projects_api_view.SqlInterface')
-    async def test_add_project_query_failure_adding_project(self, mock_sql_interface):
+    async def test_create_project_query_failure_adding_project(self, mock_sql_interface):
         """Test database query failure when inserting a new project."""
         mock_db = MagicMock()
         mock_db.projects.project_name_exists.return_value = False
@@ -262,7 +262,7 @@ class TestApiProjectApiView(unittest.IsolatedAsyncioTestCase):
 
         # Register route for testing
         self.app.add_url_rule('/web/projects/add',
-                              view_func=view.add_project,
+                              view_func=view.create_project,
                               methods=['POST'])
 
         test_json_body: dict = {

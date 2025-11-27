@@ -15,7 +15,7 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from state_object import StateObject
+from items_common.service_state import ServiceState
 from .testcase_custom_fields_api_view import TestcaseCustomFieldsApiView
 
 # For admins
@@ -27,7 +27,7 @@ from .testcase_custom_fields_api_view import TestcaseCustomFieldsApiView
 
 
 def create_blueprint(logger: logging.Logger,
-                     state_object: StateObject) -> Blueprint:
+                     state_object: ServiceState) -> Blueprint:
     """
     Creates a Quart blueprint that defines admin API routes for managing
     testcase custom fields.
@@ -52,33 +52,22 @@ def create_blueprint(logger: logging.Logger,
 
     blueprint = Blueprint('admin_api', __name__)
 
-    logger.debug("Registering ADMIN testcase custom fields routes:")
+    logger.debug("----- Registering ADMIN testcase custom fields routes -----")
 
-    logger.debug("=> /testcase_custom_fields [POST] : Add new field")
-
-    @blueprint.route('/testcase_custom_fields', methods=['POST'])
+    logger.debug("=> /admin/testcase_custom_fields [POST]  : Add new field")
+    @blueprint.route('/', methods=['POST'])
     async def add_testcase_custom_field_request():
         return await view.add_custom_field()
 
-    logger.debug("=> /testcase_custom_fields [PATCH] : Move position")
-
-    @blueprint.route(
-        '/testcase_custom_fields/<int:field_id>/<string:direction>',
-        methods=['PATCH'])
+    logger.debug("=> /admin/testcase_custom_fields [PATCH] : Move position")
+    @blueprint.route('/<int:field_id>/<string:direction>', methods=['PATCH'])
     async def move_testcase_custom_field_request(field_id: int, direction: str):
         return await view.move_testcase_custom_field(field_id, direction)
 
-    logger.debug("=> /testcase_custom_fields/<int:project_id> [GET]")
-
-    @blueprint.route('/testcase_custom_fields/<int:project_id>',
-                     methods=['GET'])
-    async def get_project_custom_fields_request(project_id: int):
-        return await view.get_project_custom_fields(project_id)
-
-    logger.debug("=> /testcase_custom_fields [GET]")
-
-    @blueprint.route('/testcase_custom_fields', methods=['GET'])
-    async def get_all_custom_fields_request():
-        return await view.get_all_custom_fields()
+    logger.debug("=> /admin/testcase_custom_fields [GET]   : Get all custom "
+                 "fields")
+    @blueprint.route('/', methods=['GET'])
+    async def get_custom_fields_request():
+        return await view.get_custom_fields()
 
     return blueprint

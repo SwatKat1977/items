@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import Mock, patch
 import logging
 
-from state_object import StateObject
+from items_common.service_state import ServiceState
 from apis.admin import create_admin_routes
 
 
@@ -11,7 +11,7 @@ class TestCreateAdminRoutes(unittest.TestCase):
     @patch("apis.admin.quart.Blueprint")
     def test_create_admin_routes(self, mock_blueprint_class, mock_create_cf_bp):
         logger = Mock(spec=logging.Logger)
-        state = Mock(spec=StateObject)
+        state = Mock(spec=ServiceState)
 
         mock_admin_bp = Mock()
         mock_blueprint_class.return_value = mock_admin_bp

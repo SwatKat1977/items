@@ -15,12 +15,12 @@ limitations under the License.
 """
 import logging
 import quart
-from state_object import StateObject
+from items_common.service_state import ServiceState
 from .testcase_custom_fields_api import create_blueprint as create_cf_bp
 
 
 def create_admin_routes(logger: logging.Logger,
-                        state: StateObject) -> quart.Blueprint:
+                        state: ServiceState) -> quart.Blueprint:
     """
     Create and register admin-related API route blueprints.
 
