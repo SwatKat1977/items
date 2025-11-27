@@ -20,7 +20,7 @@ import os
 import time
 import uuid
 import requests
-from base_application import BaseApplication
+from items_common.base_microservice import BaseMicroservice
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
                            LOGGING_DEFAULT_LOG_LEVEL, \
                            LOGGING_LOG_FORMAT_STRING
@@ -38,7 +38,7 @@ from metadata_settings import MetadataSettings
 GET_METADATA_INFINITE_RETRIES: int = -1
 
 
-class Application(BaseApplication):
+class Service(BaseMicroservice):
     """ ITEMS Accounts Service """
 
     def __init__(self, quart_instance):
@@ -54,7 +54,7 @@ class Application(BaseApplication):
         self._logger.setLevel(LOGGING_DEFAULT_LOG_LEVEL)
         self._logger.addHandler(console_stream)
 
-    def _initialise(self) -> bool:
+    async def _initialise(self) -> bool:
 
         build = f"V{RELEASE_VERSION}-{BUILD_VERSION}{BUILD_TAG}"
 
@@ -94,7 +94,7 @@ class Application(BaseApplication):
         """ Abstract method for main application. """
         await asyncio.sleep(0.1)
 
-    def _shutdown(self):
+    async def _shutdown(self):
         """ Abstract method for application shutdown. """
 
     def _manage_configuration(self) -> bool:
