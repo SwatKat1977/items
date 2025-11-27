@@ -523,6 +523,22 @@ class TestApisTestcaseCustomFieldsApiView(unittest.IsolatedAsyncioTestCase):
             self.assertIn("error", data)
             self.assertEqual(data["error"], "Internal error")
 
+    async def test_get_project_custom_fields_invalid_id_type(self):
+        view = TestcaseCustomFieldsApiView(self.mock_logger, self.mock_state_object)
+
+        # Register route for testing
+        self.app.add_url_rule('/testcase_custom_fields/testcase_custom_fields/',
+                              view_func=view.get_custom_fields,
+                              methods=['GET'])
+
+        async with self.client as client:
+            response = await client.get('/testcase_custom_fields/testcase_custom_fields/?project_id=s1')
+            data = await response.get_json()
+            self.assertEqual(response.status_code, http.HTTPStatus.INTERNAL_SERVER_ERROR)
+            self.assertEqual(data["status"], 0)
+            self.assertIn("error", data)
+            self.assertEqual(data["error"], "Project ID is not an integer")
+
     @patch('apis.admin.testcase_custom_fields_api_view.SqlInterface')
     async def test_get_project_custom_fields_returns_empty_list_when_no_fields_found(
             self, mock_sql_interface):
