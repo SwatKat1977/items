@@ -67,14 +67,16 @@ jobs:
             echo "[INFO] items/gateway_svc has changed"
           else
             echo "gateway_svc_changed=false" >> $GITHUB_OUTPUT
+            echo "[INFO] Gateway Service or unit tests have NOT changed"
           fi
           
-          echo "Checking for changes in items/web_portal_svc/"
-          if echo "$changed_files" | grep -qE '^(items|unit_tests)/web_portal_svc/'; then
+          echo "Checking for changes in services/web_portal_svc/"
+          if echo "$changed_files" | grep -qE '^(services|unit_tests)/web_portal_svc/'; then
             echo "web_portal_svc_changed=true" >> $GITHUB_OUTPUT
-            echo "[INFO] items/web_portal_svc has changed"
+            echo "[INFO] services/web_portal_svc has changed"
           else
             echo "web_portal_svc_changed=false" >> $GITHUB_OUTPUT
+            echo "[INFO] Web Portal Service or unit tests have NOT changed"
           fi
 
           echo "Checking for changes in items/shared/"
@@ -185,14 +187,14 @@ jobs:
 
       - name: Run Pylint
         env:
-          PYTHONPATH: items/shared:items/web_portal_svc
+          PYTHONPATH: items/shared:services/web_portal_svc
         run: |
-          pylint --fail-under=10.0 items/web_portal_svc
+          pylint --fail-under=10.0 services/web_portal_svc
 
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:unit_tests/web_portal_svc:items/web_portal_svc
+          PYTHONPATH: items/shared:unit_tests/web_portal_svc:services/web_portal_svc
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_web_portal_svc -m unittest -v main
           coverage report -m --fail-under=100
