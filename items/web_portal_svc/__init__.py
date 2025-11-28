@@ -16,7 +16,7 @@ limitations under the License.
 import asyncio
 import os
 from quart import Quart
-from application import Service
+from service import Service
 
 ## Quart application instance
 app = Quart(__name__)
