@@ -187,14 +187,14 @@ jobs:
 
       - name: Run Pylint
         env:
-          PYTHONPATH: items/shared:services/web_portal_svc
+          PYTHONPATH: items/shared:services/web_portal_svc:common
         run: |
           pylint --fail-under=10.0 services/web_portal_svc
 
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:unit_tests/web_portal_svc:services/web_portal_svc
+          PYTHONPATH: items/shared:unit_tests/web_portal_svc:services/web_portal_svc:common
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_web_portal_svc -m unittest -v main
           coverage report -m --fail-under=100
