@@ -21,7 +21,7 @@ class TestService(unittest.IsolatedAsyncioTestCase):
         self.application._metadata_settings = MagicMock()
 
     @patch.object(ConfigurationManager, 'get_entry', return_value="test_value")
-    def test_initialise_success(self, mock_get_entry):
+    async def test_initialise_success(self, mock_get_entry):
         """Test _initialise when configuration management succeeds."""
         # Mock constants
         patch("service.RELEASE_VERSION", "1.0.0").start()
@@ -31,7 +31,7 @@ class TestService(unittest.IsolatedAsyncioTestCase):
         self.application._manage_configuration = MagicMock(return_value=True)
 
         with patch.object(self.application, "get_metadata", return_value=True) as mock_get_metadata:
-            result = self.application._initialise()
+            result = await self.application._initialise()
             self.assertTrue(result, "Initialization should succeed")
 
     async def test_main_loop_execution(self):
