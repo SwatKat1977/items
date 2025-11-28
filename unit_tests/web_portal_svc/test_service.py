@@ -4,12 +4,12 @@ import unittest
 from unittest.mock import MagicMock, patch
 import asyncio
 import requests
-from application import Application, GET_METADATA_INFINITE_RETRIES
+from service import Service, GET_METADATA_INFINITE_RETRIES
 from configuration_layout import CONFIGURATION_LAYOUT
 from configuration.configuration_manager import ConfigurationManager
 
 
-class TestApplication(unittest.IsolatedAsyncioTestCase):
+class TestService(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         """Set up the Application instance and mock dependencies."""
         self.mock_quart_instance = MagicMock()
