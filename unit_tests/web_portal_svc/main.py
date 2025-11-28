@@ -1,5 +1,5 @@
 import unittest
-from test_application import TestApplication
+from test_service import TestApplication
 from test_base_web_view import TestBaseWebView
 from test_apis_auth_api_view import TestApisAuthApiView
 from test_apis_projects_api_view import TestApisProjectsApiView
