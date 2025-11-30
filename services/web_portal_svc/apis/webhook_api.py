@@ -45,6 +45,7 @@ def create_blueprint(logger: logging.Logger,
 
     @blueprint.route('/webhook/update_metadata', methods=['POST'])
     async def update_metadata_request():
+        # pylint: disable=no-value-for-parameter
         return await view.update_metadata()
 
     return blueprint

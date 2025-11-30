@@ -98,6 +98,10 @@ class ProjectsApiView(BaseWebView):
             has_testcases=True,
             instance_name=self._metadata_settings.instance_name)
 
+    async def project_overview(self, _project_id: int):
+        """ PLACEHOLDER """
+        return None
+
     def _transform_tests_details_data(self, data):
         """
         Convert raw folder and test case data into a hierarchical tree structure.
