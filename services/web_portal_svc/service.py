@@ -28,12 +28,9 @@ from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
 from configuration_layout import CONFIGURATION_LAYOUT
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
-from apis import auth_api
-from apis import dashboard_api
-from apis import projects_api
-from apis import webhook_api
 from base_view import BaseView
 from metadata_settings import MetadataSettings
+from apis import create_api_routes
 
 GET_METADATA_INFINITE_RETRIES: int = -1
 
@@ -72,21 +69,8 @@ class Service(BaseMicroservice):
         if not self.get_metadata(GET_METADATA_INFINITE_RETRIES):
             return False
 
-        auth_blueprint = auth_api.create_blueprint(
-            self._logger, self._metadata_settings)
-        self._quart_instance.register_blueprint(auth_blueprint)
-
-        dashboard_blueprint = dashboard_api.create_blueprint(
-            self._logger, self._metadata_settings)
-        self._quart_instance.register_blueprint(dashboard_blueprint)
-
-        projects_blueprint = projects_api.create_blueprint(
-            self._logger, self._metadata_settings)
-        self._quart_instance.register_blueprint(projects_blueprint)
-
-        webhook_blueprint = webhook_api.create_blueprint(
-            self._logger, self._metadata_settings)
-        self._quart_instance.register_blueprint(webhook_blueprint)
+        create_api_routes(self._logger,
+                          self._metadata_settings)
 
         return True
 

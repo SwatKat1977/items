@@ -40,27 +40,27 @@ def create_blueprint(logger: logging.Logger,
 
     blueprint = Blueprint('auth_api', __name__)
 
-    logger.info("Registering Authentication endpoint:")
+    logger.debug("------------ Registering Authentication routes ------------")
 
-    logger.info("=> / [GET]")
+    logger.debug("=> / [GET]       : Home (web page)")
 
     @blueprint.route('/', methods=['GET'])
     async def index_page_request():
         return await view.index_page()
 
-    logger.info("=> /login [POST]")
+    logger.debug("=> /login [POST] : Login (authentication)")
 
     @blueprint.route('/login', methods=['POST'])
     async def login_page_request_post():
         return await view.login_page_post()
 
-    logger.info("=> /login [GET]")
+    logger.debug("=> /login [GET]  : Login (web page)")
 
     @blueprint.route('/login', methods=['GET'])
     async def login_page_request_get():
         return await view.login_page_get()
 
-    logger.info("=> /logout [GET]")
+    logger.debug("=> /logout [GET] : Logout (web page)")
 
     @blueprint.route('/logout', methods=['GET'])
     async def logout_page_request():
