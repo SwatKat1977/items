@@ -25,6 +25,41 @@ from metadata_settings import MetadataSettings
 
 
 class AuthApiView(BaseWebView):
+    """
+    View controller responsible for authentication and session handling.
+
+    This class provides handlers for user login, logout, and accessing the
+    authenticated home (dashboard) page. It integrates with the gateway
+    service for validating user credentials, generating authentication
+    tokens, and retrieving initial dashboard data.
+
+    The view uses cookie-based authentication and relies on BaseWebView
+    for common behaviour such as template rendering, redirect generation,
+    and API invocation. Authentication cookies are validated before
+    granting access to protected pages.
+
+    Attributes:
+        _metadata_settings (MetadataSettings):
+            Instance-level metadata containing configuration such as the
+            displayed instance name.
+
+    Methods:
+        index_page():
+            Main authenticated entry point ("/"). Validates auth cookies,
+            fetches dashboard project metadata, and renders the dashboard.
+
+        login_page_get():
+            GET handler for the login page. Redirects authenticated users
+            to the home page.
+
+        login_page_post():
+            POST handler for login. Validates submitted credentials via
+            the gateway service and establishes session cookies.
+
+        logout_page():
+            Placeholder logout handler. Intended to clear cookies and
+            redirect users once implemented.
+    """
 
     def __init__(self,
                  logger: logging.Logger,
@@ -150,3 +185,7 @@ class AuthApiView(BaseWebView):
         return await self._render_page(pages.TEMPLATE_LOGIN_PAGE,
                                        generate_error_msg = True,
                                        error_msg=error_msg)
+
+    async def logout_page(self):
+        """ PLACEHOLDER """
+        return None

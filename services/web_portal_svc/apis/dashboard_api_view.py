@@ -24,15 +24,37 @@ from threadsafe_configuration import ThreadSafeConfiguration
 
 
 class DashboardApiView(BaseWebView):
+    """
+    Dashboard view handler for administrative pages.
+
+    This class provides asynchronous route handlers for the
+    administration dashboard, managing projects, users, roles,
+    data management, and site settings. It relies on the gateway
+    service for backend operations and uses BaseWebView helpers
+    for template rendering and API calls.
+    """
 
     def __init__(self,
                  logger: logging.Logger,
                  metadata: MetadataSettings):
+        """
+        Initialize the DashboardApiView.
+
+        Args:
+            logger (logging.Logger): Logger instance for diagnostic output.
+            metadata (MetadataSettings): Metadata object containing instance
+                                         configuration.
+        """
         super().__init__(logger)
         self._metadata_settings = metadata
 
     async def admin_overview(self):
+        """
+        Render the administrative overview page.
 
+        Returns:
+            The rendered admin overview template response.
+        """
         return await self._render_page(
             pages.PAGE_INSTANCE_ADMIN_OVERVIEW,
             instance_name=self._metadata_settings.instance_name,
@@ -40,6 +62,15 @@ class DashboardApiView(BaseWebView):
             active_admin_page="admin_page_overview")
 
     async def admin_projects(self):
+        """
+        Display and manage projects.
+
+        If the request method is POST, deletes the specified project via
+        the gateway service.
+
+        Returns:
+            The rendered admin projects page or an error page.
+        """
 
         # POST method
         if quart.request.method == 'POST':
@@ -66,7 +97,6 @@ class DashboardApiView(BaseWebView):
                 response.exception_msg)
             return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
-        page: str = "dashboard"
         projects = response.body["projects"]
 
         return await self._render_page(
@@ -77,7 +107,12 @@ class DashboardApiView(BaseWebView):
             projects=projects)
 
     async def admin_users_and_roles(self):
+        """
+        Render the users and roles administration page.
 
+        Returns:
+            The rendered users and roles page.
+        """
         return await self._render_page(
             pages.PAGE_INSTANCE_ADMIN_USERS_AND_ROLES,
             instance_name=self._metadata_settings.instance_name,
@@ -85,7 +120,12 @@ class DashboardApiView(BaseWebView):
             active_admin_page="admin_page_users_roles")
 
     async def admin_manage_data(self):
+        """
+        Render the data management administration page.
 
+        Returns:
+            The rendered data management page.
+        """
         return await self._render_page(
             pages.PAGE_INSTANCE_ADMIN_MANAGE_DATA,
             instance_name=self._metadata_settings.instance_name,
@@ -93,7 +133,12 @@ class DashboardApiView(BaseWebView):
             active_admin_page="admin_page_manage_data")
 
     async def admin_site_settings(self):
+        """
+        Render the site settings administration page.
 
+        Returns:
+            The rendered site settings page.
+        """
         return await self._render_page(
             pages.PAGE_INSTANCE_ADMIN_SITE_SETTINGS,
             instance_name=self._metadata_settings.instance_name,
@@ -101,6 +146,16 @@ class DashboardApiView(BaseWebView):
             active_admin_page="admin_page_site_settings")
 
     async def admin_add_project(self):
+        """
+        Add a new project through the gateway service.
+
+        Handles POST submissions for creating a new project and
+        returns the appropriate page, error page, or redirect.
+
+        Returns:
+            Rendered add-project page, or a redirect response.
+        """
+
         # POST method - send new project to gateway
         if quart.request.method == 'POST':
             form = await quart.request.form
@@ -120,8 +175,8 @@ class DashboardApiView(BaseWebView):
                 response: ApiResponse = await self._call_api_post(
                     url, gateway_request_body)
 
-                if response.status_code == http.HTTPStatus.INTERNAL_SERVER_ERROR \
-                        or response.status_code == http.HTTPStatus.NOT_FOUND:
+                if response.status_code in (http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                                            http.HTTPStatus.NOT_FOUND):
                     self._logger.critical(
                         "Gateway svc request '/web/admin/projects' is invalid: %s",
                         response.body)
@@ -163,7 +218,18 @@ class DashboardApiView(BaseWebView):
             form_data={})
 
     async def admin_modify_project(self, project_id):
+        """
+        Modify an existing project.
 
+        Retrieves project details with GET on initial load,
+        or applies changes via PATCH if called with POST.
+
+        Args:
+            project_id (str): ID of the project to modify.
+
+        Returns:
+            Rendered modify-project page or redirect response.
+        """
         base_url: str = ThreadSafeConfiguration().apis_gateway_svc
 
         if quart.request.method == 'POST':
