@@ -33,47 +33,56 @@ def create_blueprint(logger: logging.Logger,
     """
     view = DashboardApiView(logger, metadata)
 
+    ### logger.debug("=> / [GET]              : Home page (web page)")
+
     blueprint = Blueprint('dashboard_api', __name__)
 
-    logger.info("Registering Dashboard endpoint:")
+    logger.debug("----------- Registering Admin Dashboard routes ------------")
 
-    logger.info("=> /admin/overview [GET]")
+    logger.debug("=> /admin/overview [GET]                          : Admin "
+                 "overview (web page)")
 
     @blueprint.route('/admin/overview', methods=['GET'])
     async def admin_overview_request():
         return await view.admin_overview()
 
-    logger.info("=> /admin/projects [GET, POST]")
+    logger.debug("=> /admin/projects [GET, POST]                    : Manage "
+                 "projects (web page)")
 
     @blueprint.route('/admin/projects', methods=['GET', 'POST'])
     async def admin_projects_request():
         return await view.admin_projects()
 
-    logger.info("=> /admin/users_roles [GET]")
+    logger.debug("=> /admin/users_roles [GET]                       : Manage "
+                 "user roles (web page)")
 
     @blueprint.route('/admin/users_roles', methods=['GET'])
     async def admin_admin_users_and_roles_request():
         return await view.admin_users_and_roles()
 
-    logger.info("=> /admin/manage_data [GET]")
+    logger.debug("=> /admin/manage_data [GET]                       : Manage "
+                 "data (web page)")
 
     @blueprint.route('/admin/manage_data', methods=['GET'])
     async def admin_admin_manage_data_request():
         return await view.admin_manage_data()
 
-    logger.info("=> /admin/site_settings [GET]")
+    logger.debug("=> /admin/site_settings [GET]                     : Site "
+                 "Settings (web page)")
 
     @blueprint.route('/admin/site_settings', methods=['GET'])
     async def admin_site_settings_request():
         return await view.admin_site_settings()
 
-    logger.info("=> /admin/add_project [GET, POST]")
+    logger.debug("=> /admin/add_project [GET, POST]                 : Add "
+                 "project (web page)")
 
     @blueprint.route('/admin/add_project', methods=['GET', 'POST'])
     async def admin_add_project_request():
         return await view.admin_add_project()
 
-    logger.info("=> /admin/<project_id>/modify_project [GET, POST]")
+    logger.debug("=> /admin/<project_id>/modify_project [GET, POST] : Modify "
+                 "project (web page)")
 
     @blueprint.route('/admin/<project_id>/modify_project',
                      methods=['GET', 'POST'])
