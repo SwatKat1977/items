@@ -201,3 +201,6 @@ class TestApisProjectsApiView(unittest.IsolatedAsyncioTestCase):
             }
         ]
         self.assertEqual(result, expected)
+
+    async def test_project_overview(self):
+        await self.view.project_overview(1000)

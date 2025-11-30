@@ -297,3 +297,6 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
                         error_msg='Invalid username/password')
 
                     self.assertEqual(result, "login_page")
+
+    async def test_logout_page(self):
+        await self.auth_api_view.logout_page()
