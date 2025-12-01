@@ -2,13 +2,13 @@
 omit =
     unit_tests/shared/*
     unit_tests/gateway_svc/*
-    items/gateway_svc/apis/web/session_api.py
-    items/gateway_svc/apis/web/projects_api.py
-    items/gateway_svc/apis/web/testcases_api.py
-    items/gateway_svc/apis/web/webhook_api.py
-    items/gateway_svc/apis/web/admin/projects_api.py
-    items/gateway_svc/apis/web/admin/testcase_custom_fields_api.py
-    items/gateway_svc/apis/web/testcase_custom_fields_api.py
+    services/gateway_svc/apis/web/session_api.py
+    services/gateway_svc/apis/web/projects_api.py
+    services/gateway_svc/apis/web/testcases_api.py
+    services/gateway_svc/apis/web/webhook_api.py
+    services/gateway_svc/apis/web/admin/projects_api.py
+    services/gateway_svc/apis/web/admin/testcase_custom_fields_api.py
+    services/gateway_svc/apis/web/testcase_custom_fields_api.py
     items/shared/*
     /opt/homebrew/*
     /usr/lib/python3/*
