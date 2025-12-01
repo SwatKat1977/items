@@ -61,10 +61,10 @@ jobs:
             echo "[INFO] CMS Service or unit tests have NOT changed"
           fi
 
-          echo "Checking for changes in items/gateway_svc/"
-          if echo "$changed_files" | grep -qE '^(items|unit_tests)/gateway_svc/'; then
+          echo "Checking for changes in services/gateway_svc/"
+          if echo "$changed_files" | grep -qE '^(services|unit_tests)/gateway_svc/'; then
             echo "gateway_svc_changed=true" >> $GITHUB_OUTPUT
-            echo "[INFO] items/gateway_svc has changed"
+            echo "[INFO] Gateway Service or unit tests have changed"
           else
             echo "gateway_svc_changed=false" >> $GITHUB_OUTPUT
             echo "[INFO] Gateway Service or unit tests have NOT changed"
@@ -159,14 +159,14 @@ jobs:
 
       - name: Run Pylint
         env:
-          PYTHONPATH: items/shared:items/gateway_svc
+          PYTHONPATH: items/shared:services/gateway_svc
         run: |
-          pylint --fail-under=10.0 items/gateway_svc
+          pylint --fail-under=10.0 services/gateway_svc
 
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:unit_tests/gateway_svc:items/gateway_svc
+          PYTHONPATH: items/shared:unit_tests/gateway_svc:services/gateway_svc
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_gateway_svc -m unittest -v main
           coverage report -m --fail-under=100
