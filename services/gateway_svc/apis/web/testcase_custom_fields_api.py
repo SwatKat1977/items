@@ -23,7 +23,7 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
 
     blueprint = Blueprint('web_tc_custom_fields_api', __name__)
 
-    logger.debug("Registering WEB TC custom fields endpoint:")
+    logger.debug("---------- Registering Web TC Custom Fields routes --------")
 
     logger.debug(f"=> {'Get all TC custom fields'.ljust(30)}"
                  "GET /web/testcase_custom_fields")

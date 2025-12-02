@@ -25,7 +25,7 @@ def create_blueprint(logger: logging.Logger,
 
     blueprint = Blueprint('webhook_api', __name__)
 
-    logger.debug("Registering WEB Webhook endpoints:")
+    logger.debug("-------------- Registering Web Webhook routes -------------")
 
     logger.debug("=> /web/get_metadata [GET]")
 

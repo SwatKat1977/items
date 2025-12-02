@@ -40,7 +40,7 @@ def create_blueprint(logger: logging.Logger,
 
     blueprint = Blueprint('session_api', __name__)
 
-    logger.debug("Registering session endpoint:")
+    logger.debug("-------------- Registering Web Session routes -------------")
 
     logger.debug(f"=> {'Log in/create new session'.ljust(30)}"
                  "POST /web/session")

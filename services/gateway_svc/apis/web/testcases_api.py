@@ -24,7 +24,7 @@ def create_blueprint(logger: logging.Logger, sessions: Sessions) -> Blueprint:
 
     blueprint = Blueprint('testcase_api', __name__)
 
-    logger.debug("Registering WEB Testcase endpoint:")
+    logger.debug("-------------- Registering Web Testcases routes -----------")
 
     logger.debug(f"=> {'Get all testcase for projects'.ljust(30)}"
                  "POST /web/<project_id>/testcase/testcase_details")

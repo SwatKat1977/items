@@ -23,7 +23,7 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
 
     blueprint = Blueprint('project_api', __name__)
 
-    logger.debug("Registering WEB Project endpoint:")
+    logger.debug("-------------- Registering Web Project routes -------------")
 
     logger.debug(f"=> {'List all projects'.ljust(30)}GET /web/projects")
 
