@@ -1,6 +1,6 @@
 @echo off
-SET PYTHONPATH=items/gateway_svc;items/shared;
-SET QUART_APP=items/gateway_svc
+SET PYTHONPATH=services/gateway_svc;items/shared;
+SET QUART_APP=services/gateway_svc
 SET ITEMS_GATEWAY_SVC_CONFIG_FILE=configs/gateway.cfg
 SET ITEMS_GATEWAY_SVC_CONFIG_FILE_REQUIRED=1
 SET GENERAL_API_SIGNING_SECRET=ApiSigningSecret
