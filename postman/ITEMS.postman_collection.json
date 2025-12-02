@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "e0bc8fa8-413d-4634-83f4-66a39fa32043",
+		"_postman_id": "9ecd51cf-abb5-4832-90ad-3c20ba1ad992",
 		"name": "ITEMS",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "10935426"
@@ -545,13 +545,13 @@
 									}
 								},
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/projects/add",
+									"raw": "{{CMS_SVC_URL}}/projects/",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
 										"projects",
-										"add"
+										""
 									]
 								}
 							},
@@ -625,14 +625,13 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/projects/details/1",
+									"raw": "{{CMS_SVC_URL}}/projects/2",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
 										"projects",
-										"details",
-										"1"
+										"2"
 									]
 								}
 							},
