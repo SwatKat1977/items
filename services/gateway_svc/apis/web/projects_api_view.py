@@ -37,7 +37,7 @@ class ProjectsApiView(BaseView):
             else ""
         joiner_str = "&" if value_fields and count_fields else ""
         cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
-        url: str = f"{cms_svc}projects/overviews?{value_fields_str}" + \
+        url: str = f"{cms_svc}projects/?{value_fields_str}" + \
                    f"{joiner_str}{count_fields_str}"
 
         api_response = await self._call_api_get(url)
@@ -59,7 +59,7 @@ class ProjectsApiView(BaseView):
 
     async def retrieve_a_project(self, project_id: int):
         cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
-        url: str = f"{cms_svc}projects/details/{project_id}"
+        url: str = f"{cms_svc}projects/{project_id}"
 
         api_response = await self._call_api_get(url)
 
