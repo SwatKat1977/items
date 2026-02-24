@@ -24,6 +24,7 @@
     <ClInclude Include="Configuration\ConfigurationSetup.h" />
     <ClInclude Include="Configuration\ConfigurationSetupItem.h" />
     <ClInclude Include="EnvironmentUtils.h" />
+    <ClInclude Include="Logger\LoggerConfig.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Configuration\ConfigurationManager.cpp" />

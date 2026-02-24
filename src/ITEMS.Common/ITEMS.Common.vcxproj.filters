@@ -4,6 +4,9 @@
     <Filter Include="Configuration System">
       <UniqueIdentifier>{9ae9acf8-abff-45cd-937d-6054f4a4eae3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Logger">
+      <UniqueIdentifier>{8ded3f27-c9c8-4348-b375-4f3542750e16}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Configuration\ConfigurationItemType.h">
@@ -19,6 +22,9 @@
       <Filter>Configuration System</Filter>
     </ClInclude>
     <ClInclude Include="EnvironmentUtils.h" />
+    <ClInclude Include="Logger\LoggerConfig.h">
+      <Filter>Logger</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Configuration\ConfigurationSetup.cpp">
