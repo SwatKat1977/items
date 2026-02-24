@@ -124,7 +124,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ConfigurationDataType.h" />
+    <ClInclude Include="ConfigurationItemType.h" />
     <ClInclude Include="ConfigurationSetupItem.h" />
     <ClInclude Include="DllExport.h" />
   </ItemGroup>

@@ -13,17 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#ifndef CONFIGURATIONDATATYPE_H_
-#define CONFIGURATIONDATATYPE_H_
+#ifndef CONFIGURATIONITEMTYPE_H_
+#define CONFIGURATIONITEMTYPE_H_
 
 namespace ITEMS::Configuration {
 
-enum class ConfigItemDataType {
+enum class ConfigurationItemType {
     Integer,
     String
 };
 
-}
+}   // namespace ITEMS::Configuration
 
-#endif  // CONFIGURATIONDATATYPE_H_
+#endif  // CONFIGURATIONITEMTYPE_H_
 

@@ -2,10 +2,10 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="DllExport.h" />
-    <ClInclude Include="ConfigurationDataType.h">
+    <ClInclude Include="ConfigurationSetupItem.h">
       <Filter>Configuration System</Filter>
     </ClInclude>
-    <ClInclude Include="ConfigurationSetupItem.h">
+    <ClInclude Include="ConfigurationItemType.h">
       <Filter>Configuration System</Filter>
     </ClInclude>
   </ItemGroup>

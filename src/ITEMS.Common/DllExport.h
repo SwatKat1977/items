@@ -16,10 +16,14 @@ limitations under the License.
 #ifndef DLLEXPORT_H_
 #define DLLEXPORT_H_
 
+namespace ITEMS::Configuration {
+
 #ifdef COMMON_EXPORTS
 #define COMMON_API __declspec(dllexport)
 #else
 #define COMMON_API __declspec(dllimport)
 #endif
 
-#endif // DLLEXPORT_H_
+}   // namespace ITEMS::Configuration
+
+#endif  // DLLEXPORT_H_
