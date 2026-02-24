@@ -14,3 +14,33 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include "ConfigurationSetup.h"
+
+class ConfigurationSetup
+{
+public:
+    using SectionItems = std::vector<ConfigurationSetupItem>;
+    using LayoutMap = std::unordered_map<std::string, SectionItems>;
+
+    explicit ConfigurationSetup(LayoutMap items)
+        : _items(std::move(items)) {
+    }
+
+    std::vector<std::string> getSections() const
+    {
+        std::vector<std::string> sections;
+        for (const auto& kv : _items)
+            sections.push_back(kv.first);
+        return sections;
+    }
+
+    const SectionItems* getSection(const std::string& name) const
+    {
+        auto it = _items.find(name);
+        if (it == _items.end())
+            return nullptr;
+        return &it->second;
+    }
+
+private:
+    LayoutMap _items;
+};

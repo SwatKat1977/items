@@ -13,9 +13,45 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#pragma once
+#ifndef CONFIGURATION_CONFIGURATIONSETUP_H_
+#define CONFIGURATION_CONFIGURATIONSETUP_H_
+#include <string>
+#include <unordered_map>
+#include <vector>
+#include "ConfigurationSetupItem.h"
+
+namespace ITEMS::Configuration {
 
 class ConfigurationSetup
 {
+public:
+    using SectionItems = std::vector<ConfigurationSetupItem>;
+    using LayoutMap = std::unordered_map<std::string, SectionItems>;
+
+    explicit ConfigurationSetup(LayoutMap items)
+        : _items(std::move(items)) {
+    }
+
+    std::vector<std::string> getSections() const
+    {
+        std::vector<std::string> sections;
+        for (const auto& kv : _items)
+            sections.push_back(kv.first);
+        return sections;
+    }
+
+    const SectionItems* getSection(const std::string& name) const
+    {
+        auto it = _items.find(name);
+        if (it == _items.end())
+            return nullptr;
+        return &it->second;
+    }
+
+private:
+    LayoutMap _items;
 };
 
+}   // namespace ITEMS::Configuration
+
+#endif  // CONFIGURATION_CONFIGURATIONSETUP_H_

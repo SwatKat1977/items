@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#ifndef CONFIGURATIONMANAGER_H_
-#define CONFIGURATIONMANAGER_H_
+#ifndef CONFIGURATION_CONFIGURATIONMANAGER_H_
+#define CONFIGURATION_CONFIGURATIONMANAGER_H_
 #include <string>
 #include <unordered_map>
 
@@ -56,4 +56,4 @@ private:
         const ConfigurationSetupItem& fmt);
 };
 
-#endif  // CONFIGURATIONMANAGER_H_
+#endif  // CONFIGURATION_CONFIGURATIONMANAGER_H_

@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#ifndef CONFIGURATIONITEMTYPE_H_
-#define CONFIGURATIONITEMTYPE_H_
+#ifndef CONFIGURATION_CONFIGURATIONITEMTYPE_H_
+#define CONFIGURATION_CONFIGURATIONITEMTYPE_H_
 
 namespace ITEMS::Configuration {
 
@@ -25,5 +25,5 @@ enum class ConfigurationItemType {
 
 }   // namespace ITEMS::Configuration
 
-#endif  // CONFIGURATIONITEMTYPE_H_
+#endif  // CONFIGURATION_CONFIGURATIONITEMTYPE_H_
 
