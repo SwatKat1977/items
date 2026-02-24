@@ -22,34 +22,19 @@ limitations under the License.
 
 namespace ITEMS::Configuration {
 
-class ConfigurationSetup
-{
+class ConfigurationSetup {
 public:
     using SectionItems = std::vector<ConfigurationSetupItem>;
     using LayoutMap = std::unordered_map<std::string, SectionItems>;
 
-    explicit ConfigurationSetup(LayoutMap items)
-        : _items(std::move(items)) {
-    }
+    explicit ConfigurationSetup(LayoutMap items);
 
-    std::vector<std::string> getSections() const
-    {
-        std::vector<std::string> sections;
-        for (const auto& kv : _items)
-            sections.push_back(kv.first);
-        return sections;
-    }
+    std::vector<std::string> GetSections() const;
 
-    const SectionItems* getSection(const std::string& name) const
-    {
-        auto it = _items.find(name);
-        if (it == _items.end())
-            return nullptr;
-        return &it->second;
-    }
+    const SectionItems* GetSection(const std::string& name) const;
 
 private:
-    LayoutMap _items;
+    LayoutMap items_;
 };
 
 }   // namespace ITEMS::Configuration
