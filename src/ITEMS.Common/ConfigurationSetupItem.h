@@ -20,6 +20,9 @@ limitations under the License.
 #include <utility>
 #include <variant>
 #include <vector>
+#include "ConfigurationItemType.h"
+
+namespace ITEMS::Configuration {
 
 using ConfigValue = std::variant<int, std::string>;
 
@@ -27,7 +30,7 @@ class ConfigurationSetupItem {
  public:
     ConfigurationSetupItem(
         std::string name,
-        ConfigItemDataType type,
+        ConfigurationItemType type,
         std::vector<std::string> validValues = {},
         bool required = false,
         std::optional<ConfigValue> defaultValue = std::nullopt)
@@ -39,10 +42,12 @@ class ConfigurationSetupItem {
     }
 
     std::string item_name;
-    ConfigItemDataType item_type;
+    ConfigurationItemType item_type;
     std::vector<std::string> valid_values;
     bool is_required;
     std::optional<ConfigValue> default_value;
 };
+
+}   // namespace ITEMS::Configuration
 
 #endif // CONFIGURATION_SETUP_ITEM_H_
