@@ -21,7 +21,7 @@ limitations under the License.
 namespace ITEMS::Configuration {
 
 class EnvironmentUtils {
-public:
+ public:
     static std::optional<std::string> GetEnvironmentVariable(
         const std::string& name);
 };
