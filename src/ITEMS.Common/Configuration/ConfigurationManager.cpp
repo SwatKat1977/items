@@ -20,14 +20,9 @@ limitations under the License.
 #include "ConfigurationManager.h"
 #include "ConfigurationItemType.h"
 #include "ConfigurationSetupItem.h"
+#include "EnvironmentUtils.h"
 
 namespace ITEMS::Configuration {
-
-static std::optional<std::string> getEnv(const std::string& name) {
-    const char* value = std::getenv(name.c_str());
-    if (!value) return std::nullopt;
-    return std::string(value);
-}
 
 void ConfigurationManager::Configure(const ConfigurationSetup& layout,
     const std::string& configFile,
@@ -109,7 +104,7 @@ std::string ConfigurationManager::ReadString(
     std::string envName = section + "_" + fmt.item_name;
     std::transform(envName.begin(), envName.end(), envName.begin(), ::toupper);
 
-    auto value = getEnv(envName);
+    auto value = EnvironmentUtils::GetEnvironmentVariable(envName);
 
     if (!value && has_config_file_) {
         auto sec = ini_data_.find(section);
@@ -147,7 +142,7 @@ int ConfigurationManager::ReadInt(
     std::string envName = section + "_" + fmt.item_name;
     std::transform(envName.begin(), envName.end(), envName.begin(), ::toupper);
 
-    auto value = getEnv(envName);
+    auto value = EnvironmentUtils::GetEnvironmentVariable(envName);
 
     if (!value && has_config_file_) {
         auto sec = ini_data_.find(section);

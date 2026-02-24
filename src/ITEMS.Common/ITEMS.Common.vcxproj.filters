@@ -18,6 +18,7 @@
     <ClInclude Include="Configuration\ConfigurationManager.h">
       <Filter>Configuration System</Filter>
     </ClInclude>
+    <ClInclude Include="EnvironmentUtils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Configuration\ConfigurationSetup.cpp">
@@ -26,5 +27,6 @@
     <ClCompile Include="Configuration\ConfigurationManager.cpp">
       <Filter>Configuration System</Filter>
     </ClCompile>
+    <ClCompile Include="EnvironmentUtils.cpp" />
   </ItemGroup>
 </Project>
