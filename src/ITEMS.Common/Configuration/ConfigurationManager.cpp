@@ -13,132 +13,126 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include <algorithm>
+#include <fstream>
+#include <stdexcept>
+#include <string>
 #include "ConfigurationManager.h"
+#include "ConfigurationItemType.h"
 #include "ConfigurationSetupItem.h"
 
+namespace ITEMS::Configuration {
 
-static std::optional<std::string> getEnv(const std::string& name)
-{
+static std::optional<std::string> getEnv(const std::string& name) {
     const char* value = std::getenv(name.c_str());
     if (!value) return std::nullopt;
     return std::string(value);
 }
 
-void ConfigurationManager::configure(const ConfigurationSetup& layout,
+void ConfigurationManager::Configure(const ConfigurationSetup& layout,
     const std::string& configFile,
-    bool fileRequired)
-{
-    _layout = &layout;
-    _configFile = configFile;
-    _fileRequired = fileRequired;
+    bool fileRequired) {
+    layout_ = &layout;
+    config_file_ = configFile;
+    file_required_ = fileRequired;
 }
 
-void ConfigurationManager::processConfig()
-{
-    if (!_layout)
+void ConfigurationManager::ProcessConfig() {
+    if (!layout_) {
         throw std::runtime_error("Configuration layout not set.");
-
-    if (!_configFile.empty())
-    {
-        loadIniFile();
-        _hasConfigFile = true;
     }
 
-    readConfiguration();
+    if (!config_file_.empty()) {
+        LoadIniFile();
+        has_config_file_ = true;
+    }
+
+    ReadConfiguration();
 }
 
-void ConfigurationManager::loadIniFile()
-{
-    std::ifstream file(_configFile);
-    if (!file.is_open())
-    {
-        if (_fileRequired)
-            throw std::runtime_error("Failed to open required config file: " + _configFile);
+void ConfigurationManager::LoadIniFile() {
+    std::ifstream file(config_file_);
+    if (!file.is_open()) {
+        if (file_required_) {
+            throw std::runtime_error("Failed to open required config file: " +
+                config_file_);
+        }
+
         return;
     }
 
     std::string line;
     std::string currentSection;
 
-    while (std::getline(file, line))
-    {
-        line.erase(std::remove_if(line.begin(), line.end(), ::isspace), line.end());
+    while (std::getline(file, line)) {
+        line.erase(std::remove_if(line.begin(), line.end(), ::isspace),
+                   line.end());
 
         if (line.empty() || line[0] == '#')
             continue;
 
-        if (line.front() == '[' && line.back() == ']')
-        {
+        if (line.front() == '[' && line.back() == ']') {
             currentSection = line.substr(1, line.size() - 2);
             continue;
         }
 
         auto pos = line.find('=');
-        if (pos != std::string::npos && !currentSection.empty())
-        {
+        if (pos != std::string::npos && !currentSection.empty()) {
             std::string key = line.substr(0, pos);
             std::string value = line.substr(pos + 1);
-            _iniData[currentSection][key] = value;
+            ini_data_[currentSection][key] = value;
         }
     }
 }
 
-void ConfigurationManager::readConfiguration()
-{
-    for (const auto& section : _layout->getSections())
-    {
-        const auto* items = _layout->getSection(section);
+void ConfigurationManager::ReadConfiguration() {
+    for (const auto& section : layout_->GetSections()) {
+        const auto* items = layout_->GetSection(section);
+
         if (!items) continue;
 
-        for (const auto& item : *items)
-        {
-            if (item.item_type == ConfigItemDataType::Integer)
-            {
-                int value = readInt(section, item);
-                _configItems[section][item.item_name] = value;
-            }
-            else
-            {
-                std::string value = readString(section, item);
-                _configItems[section][item.item_name] = value;
+        for (const auto& item : *items) {
+            if (item.item_type == ConfigurationItemType::Integer) {
+                int value = ReadInt(section, item);
+                config_items_[section][item.item_name] = value;
+            } else {
+                std::string value = ReadString(section, item);
+                config_items_[section][item.item_name] = value;
             }
         }
     }
 }
 
-std::string ConfigurationManager::readString(
+std::string ConfigurationManager::ReadString(
     const std::string& section,
-    const ConfigurationSetupItem& fmt)
-{
+    const ConfigurationSetupItem& fmt) {
     std::string envName = section + "_" + fmt.item_name;
     std::transform(envName.begin(), envName.end(), envName.begin(), ::toupper);
 
     auto value = getEnv(envName);
 
-    if (!value && _hasConfigFile)
-    {
-        auto sec = _iniData.find(section);
-        if (sec != _iniData.end())
-        {
+    if (!value && has_config_file_) {
+        auto sec = ini_data_.find(section);
+        if (sec != ini_data_.end()) {
             auto it = sec->second.find(fmt.item_name);
-            if (it != sec->second.end())
+            if (it != sec->second.end()) {
                 value = it->second;
+            }
         }
     }
 
-    if (!value && fmt.default_value)
+    if (!value && fmt.default_value) {
         value = std::get<std::string>(*fmt.default_value);
+    }
 
     if (!value && fmt.is_required)
         throw std::runtime_error("Missing required config option " +
             section + "::" + fmt.item_name);
 
-    if (value && !fmt.valid_values.empty())
-    {
+    if (value && !fmt.valid_values.empty()) {
         if (std::find(fmt.valid_values.begin(),
             fmt.valid_values.end(),
-            *value) == fmt.valid_values.end())
-        {
+            *value) == fmt.valid_values.end()) {
             throw std::runtime_error("Invalid value '" + *value +
                 "' for " + fmt.item_name);
         }
@@ -147,20 +141,17 @@ std::string ConfigurationManager::readString(
     return value.value_or("");
 }
 
-int ConfigurationManager::readInt(
+int ConfigurationManager::ReadInt(
     const std::string& section,
-    const ConfigurationSetupItem& fmt)
-{
+    const ConfigurationSetupItem& fmt) {
     std::string envName = section + "_" + fmt.item_name;
     std::transform(envName.begin(), envName.end(), envName.begin(), ::toupper);
 
     auto value = getEnv(envName);
 
-    if (!value && _hasConfigFile)
-    {
-        auto sec = _iniData.find(section);
-        if (sec != _iniData.end())
-        {
+    if (!value && has_config_file_) {
+        auto sec = ini_data_.find(section);
+        if (sec != ini_data_.end()) {
             auto it = sec->second.find(fmt.item_name);
             if (it != sec->second.end())
                 value = it->second;
@@ -174,23 +165,20 @@ int ConfigurationManager::readInt(
         throw std::runtime_error("Missing required config option " +
             section + "::" + fmt.item_name);
 
-    try
-    {
+    try {
         return std::stoi(value.value_or("0"));
     }
-    catch (...)
-    {
+    catch (...) {
         throw std::runtime_error("Invalid integer value for " +
             fmt.item_name);
     }
 }
 
-const ConfigValue& ConfigurationManager::getEntry(
+const ConfigValue& ConfigurationManager::GetEntry(
     const std::string& section,
-    const std::string& item) const
-{
-    auto sec = _configItems.find(section);
-    if (sec == _configItems.end())
+    const std::string& item) const {
+    auto sec = config_items_.find(section);
+    if (sec == config_items_.end())
         throw std::runtime_error("Invalid section '" + section + "'");
 
     auto it = sec->second.find(item);
@@ -200,3 +188,5 @@ const ConfigValue& ConfigurationManager::getEntry(
 
     return it->second;
 }
+
+}   // namespace ITEMS::Configuration

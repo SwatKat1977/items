@@ -17,43 +17,50 @@ limitations under the License.
 #define CONFIGURATION_CONFIGURATIONMANAGER_H_
 #include <string>
 #include <unordered_map>
+#include "ConfigurationSetup.h"
+
+namespace ITEMS::Configuration {
 
 class ConfigurationManager {
-public:
-    void configure(const ConfigurationSetup& layout,
+ public:
+    void Configure(const ConfigurationSetup& layout,
         const std::string& configFile = "",
         bool fileRequired = false);
 
-    void processConfig();
+    void ProcessConfig();
 
-    const ConfigValue& getEntry(const std::string& section,
+    const ConfigValue& GetEntry(const std::string& section,
         const std::string& item) const;
 
-private:
-    const ConfigurationSetup* _layout = nullptr;
+ private:
+    const ConfigurationSetup* layout_ = nullptr;
 
-    std::string _configFile;
-    bool _fileRequired = false;
-    bool _hasConfigFile = false;
+    std::string config_file_;
+    bool file_required_ = false;
+    bool has_config_file_ = false;
 
     using SectionMap = std::unordered_map<std::string,
-        std::unordered_map<std::string, ConfigValue>>;
-
-    SectionMap _configItems;
+                                          std::unordered_map<std::string,
+                                                             ConfigValue>>;
 
     using IniData = std::unordered_map<std::string,
         std::unordered_map<std::string, std::string>>;
 
-    IniData _iniData;
+    SectionMap config_items_;
 
-    void readConfiguration();
-    void loadIniFile();
 
-    std::string readString(const std::string& section,
-        const ConfigurationSetupItem& fmt);
+    IniData ini_data_;
 
-    int readInt(const std::string& section,
-        const ConfigurationSetupItem& fmt);
+    void ReadConfiguration();
+    void LoadIniFile();
+
+    std::string ReadString(const std::string& section,
+                           const ConfigurationSetupItem& fmt);
+
+    int ReadInt(const std::string& section,
+                const ConfigurationSetupItem& fmt);
 };
+
+}   // namespace ITEMS::Configuration
 
 #endif  // CONFIGURATION_CONFIGURATIONMANAGER_H_

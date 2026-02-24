@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#ifndef CONFIGURATIONSETUPITEM_H_
-#define CONFIGURATIONSETUPITEM_H_
+#ifndef CONFIGURATION_CONFIGURATIONSETUPITEM_H_
+#define CONFIGURATION_CONFIGURATIONSETUPITEM_H_
 #include <optional>
 #include <string>
 #include <utility>
@@ -34,20 +34,20 @@ class ConfigurationSetupItem {
         std::vector<std::string> validValues = {},
         bool required = false,
         std::optional<ConfigValue> defaultValue = std::nullopt)
-        : itemName_(std::move(name)),
-        item_type_(type),
-        valid_values_(std::move(validValues)),
-        is_required_(required),
-        default_value_(std::move(defaultValue)) {
+        : item_name(std::move(name)),
+        item_type(type),
+        valid_values(std::move(validValues)),
+        is_required(required),
+        default_value(std::move(defaultValue)) {
     }
 
-    std::string itemName_;
-    ConfigurationItemType item_type_;
-    std::vector<std::string> valid_values_;
-    bool is_required_;
-    std::optional<ConfigValue> default_value_;
+    std::string item_name;
+    ConfigurationItemType item_type;
+    std::vector<std::string> valid_values;
+    bool is_required;
+    std::optional<ConfigValue> default_value;
 };
 
 }   // namespace ITEMS::Configuration
 
-#endif // CONFIGURATION_SETUP_ITEM_H_
+#endif  // CONFIGURATION_CONFIGURATIONSETUPITEM_H_

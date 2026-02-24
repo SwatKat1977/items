@@ -23,7 +23,7 @@ limitations under the License.
 namespace ITEMS::Configuration {
 
 class ConfigurationSetup {
-public:
+ public:
     using SectionItems = std::vector<ConfigurationSetupItem>;
     using LayoutMap = std::unordered_map<std::string, SectionItems>;
 
@@ -33,7 +33,7 @@ public:
 
     const SectionItems* GetSection(const std::string& name) const;
 
-private:
+ private:
     LayoutMap items_;
 };
 
