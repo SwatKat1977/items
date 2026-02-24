@@ -125,10 +125,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ConfigurationItemType.h" />
+    <ClInclude Include="ConfigurationManager.h" />
+    <ClInclude Include="ConfigurationSetup.h" />
     <ClInclude Include="ConfigurationSetupItem.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConfigurationManager.cpp" />
+    <ClCompile Include="ConfigurationSetup.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
