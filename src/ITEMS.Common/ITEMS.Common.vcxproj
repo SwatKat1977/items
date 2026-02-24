@@ -18,6 +18,16 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Configuration\ConfigurationItemType.h" />
+    <ClInclude Include="Configuration\ConfigurationManager.h" />
+    <ClInclude Include="Configuration\ConfigurationSetup.h" />
+    <ClInclude Include="Configuration\ConfigurationSetupItem.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Configuration\ConfigurationManager.cpp" />
+    <ClCompile Include="Configuration\ConfigurationSetup.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -123,16 +133,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="ConfigurationItemType.h" />
-    <ClInclude Include="ConfigurationManager.h" />
-    <ClInclude Include="ConfigurationSetup.h" />
-    <ClInclude Include="ConfigurationSetupItem.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="ConfigurationManager.cpp" />
-    <ClCompile Include="ConfigurationSetup.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
