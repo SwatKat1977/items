@@ -1,5 +1,5 @@
 /*
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2026 Integrated Test Management Suite Development Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
