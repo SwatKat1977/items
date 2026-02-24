@@ -35,17 +35,17 @@ class ConfigurationSetupItem {
         bool required = false,
         std::optional<ConfigValue> defaultValue = std::nullopt)
         : itemName_(std::move(name)),
-        itemType_(type),
-        validValues_(std::move(validValues)),
-        isRequired_(required),
-        defaultValue_(std::move(defaultValue)) {
+        item_type_(type),
+        valid_values_(std::move(validValues)),
+        is_required_(required),
+        default_value_(std::move(defaultValue)) {
     }
 
     std::string itemName_;
-    ConfigurationItemType itemType_;
-    std::vector<std::string> validValues_;
-    bool isRequired_;
-    std::optional<ConfigValue> defaultValue_;
+    ConfigurationItemType item_type_;
+    std::vector<std::string> valid_values_;
+    bool is_required_;
+    std::optional<ConfigValue> default_value_;
 };
 
 }   // namespace ITEMS::Configuration
