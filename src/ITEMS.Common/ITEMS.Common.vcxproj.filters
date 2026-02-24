@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="DllExport.h" />
+    <ClInclude Include="ConfigurationDataType.h">
+      <Filter>Configuration System</Filter>
+    </ClInclude>
+    <ClInclude Include="ConfigurationSetupItem.h">
+      <Filter>Configuration System</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Configuration System">
+      <UniqueIdentifier>{9ae9acf8-abff-45cd-937d-6054f4a4eae3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ConfigurationManager.cpp">
+      <Filter>Configuration System</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
