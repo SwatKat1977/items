@@ -25,6 +25,9 @@
     <ClInclude Include="Logger\LoggerConfig.h">
       <Filter>Logger</Filter>
     </ClInclude>
+    <ClInclude Include="Logger\Logger.h">
+      <Filter>Logger</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Configuration\ConfigurationSetup.cpp">
@@ -34,5 +37,8 @@
       <Filter>Configuration System</Filter>
     </ClCompile>
     <ClCompile Include="EnvironmentUtils.cpp" />
+    <ClCompile Include="Logger\Logger.cpp">
+      <Filter>Logger</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
