@@ -18,7 +18,7 @@ limitations under the License.
 #include <vector>
 #include "ConfigurationSetup.h"
 
-namespace ITEMS::Configuration {
+namespace ITEMS::Common {
 
 ConfigurationSetup::ConfigurationSetup(LayoutMap items)
     : items_(std::move(items)) {
@@ -39,4 +39,4 @@ const ConfigurationSetup::SectionItems* ConfigurationSetup::GetSection(
     return &it->second;
 }
 
-}   // namespace ITEMS::Configuration
+}   // namespace ITEMS::Common

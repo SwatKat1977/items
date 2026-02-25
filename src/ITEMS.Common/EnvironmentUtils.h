@@ -18,7 +18,7 @@ limitations under the License.
 #include <optional>
 #include <string>
 
-namespace ITEMS::Configuration {
+namespace ITEMS::Common {
 
 class EnvironmentUtils {
  public:
@@ -26,6 +26,6 @@ class EnvironmentUtils {
         const std::string& name);
 };
 
-}   // namespace ITEMS::Configuration
+}   // namespace ITEMS::Common
 
 #endif  // ENVIRONMENTUTILS_H_

@@ -19,7 +19,7 @@ limitations under the License.
 #include <unordered_map>
 #include "ConfigurationSetup.h"
 
-namespace ITEMS::Configuration {
+namespace ITEMS::Common {
 
 class ConfigurationManager {
  public:
@@ -61,6 +61,6 @@ class ConfigurationManager {
                 const ConfigurationSetupItem& fmt);
 };
 
-}   // namespace ITEMS::Configuration
+}   // namespace ITEMS::Common
 
 #endif  // CONFIGURATION_CONFIGURATIONMANAGER_H_

@@ -17,7 +17,7 @@ limitations under the License.
 #include <string>
 #include "EnvironmentUtils.h"
 
-namespace ITEMS::Configuration {
+namespace ITEMS::Common {
 
 std::optional<std::string> EnvironmentUtils::GetEnvironmentVariable(
     const std::string& name) {
@@ -26,4 +26,4 @@ std::optional<std::string> EnvironmentUtils::GetEnvironmentVariable(
     return std::string(value);
 }
 
-}   // namespace ITEMS::Configuration
+}   // namespace ITEMS::Common

@@ -16,14 +16,14 @@ limitations under the License.
 #ifndef CONFIGURATION_CONFIGURATIONITEMTYPE_H_
 #define CONFIGURATION_CONFIGURATIONITEMTYPE_H_
 
-namespace ITEMS::Configuration {
+namespace ITEMS::Common {
 
 enum class ConfigurationItemType {
     Integer,
     String
 };
 
-}   // namespace ITEMS::Configuration
+}   // namespace ITEMS::Common
 
 #endif  // CONFIGURATION_CONFIGURATIONITEMTYPE_H_
 

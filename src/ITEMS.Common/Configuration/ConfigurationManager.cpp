@@ -22,7 +22,7 @@ limitations under the License.
 #include "ConfigurationSetupItem.h"
 #include "EnvironmentUtils.h"
 
-namespace ITEMS::Configuration {
+namespace ITEMS::Common {
 
 void ConfigurationManager::Configure(const ConfigurationSetup& layout,
     const std::string& configFile,
@@ -184,4 +184,4 @@ const ConfigValue& ConfigurationManager::GetEntry(
     return it->second;
 }
 
-}   // namespace ITEMS::Configuration
+}   // namespace ITEMS::Common

@@ -22,7 +22,7 @@ limitations under the License.
 #include <vector>
 #include "ConfigurationItemType.h"
 
-namespace ITEMS::Configuration {
+namespace ITEMS::Common {
 
 using ConfigValue = std::variant<int, std::string>;
 
@@ -48,6 +48,6 @@ class ConfigurationSetupItem {
     std::optional<ConfigValue> default_value;
 };
 
-}   // namespace ITEMS::Configuration
+}   // namespace ITEMS::Common
 
 #endif  // CONFIGURATION_CONFIGURATIONSETUPITEM_H_

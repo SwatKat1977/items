@@ -20,7 +20,7 @@ limitations under the License.
 #include <vector>
 #include "ConfigurationSetupItem.h"
 
-namespace ITEMS::Configuration {
+namespace ITEMS::Common {
 
 class ConfigurationSetup {
  public:
@@ -37,6 +37,6 @@ class ConfigurationSetup {
     LayoutMap items_;
 };
 
-}   // namespace ITEMS::Configuration
+}   // namespace ITEMS::Common
 
 #endif  // CONFIGURATION_CONFIGURATIONSETUP_H_
