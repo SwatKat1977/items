@@ -33,6 +33,11 @@
     <ClCompile Include="EnvironmentUtils.cpp" />
     <ClCompile Include="Logger\Logger.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ITEMS.Accounts\ITEMS.Accounts.vcxproj">
+      <Project>{ab83cec3-edc4-402e-adfe-e47f88bf50fd}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
