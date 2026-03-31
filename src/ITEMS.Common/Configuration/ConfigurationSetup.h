@@ -22,6 +22,16 @@ limitations under the License.
 
 namespace ITEMS::Common {
 
+ConfigurationSetupItem StringItem(
+    std::string name,
+    std::optional<std::string> defaultValue = std::nullopt,
+    bool required = false,
+    std::vector<std::string> valid = {});
+
+ConfigurationSetupItem IntItem(std::string name,
+                               std::optional<int> defaultValue = std::nullopt,
+                               bool required = false);
+
 class ConfigurationSetup {
  public:
     using SectionItems = std::vector<ConfigurationSetupItem>;

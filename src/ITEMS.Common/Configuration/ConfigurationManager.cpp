@@ -25,7 +25,7 @@ limitations under the License.
 namespace ITEMS::Common {
 
 void ConfigurationManager::Configure(const ConfigurationSetup& layout,
-    const std::string& configFile,
+    const std::string configFile,
     bool fileRequired) {
     layout_ = &layout;
     config_file_ = configFile;

@@ -39,4 +39,29 @@ const ConfigurationSetup::SectionItems* ConfigurationSetup::GetSection(
     return &it->second;
 }
 
+ConfigurationSetupItem StringItem(std::string name,
+                                  std::optional<std::string> defaultValue,
+                                  bool required,
+                                  std::vector<std::string> valid) {
+    return ConfigurationSetupItem(
+        std::move(name),
+        ConfigurationItemType::String,
+        std::move(valid),
+        required,
+        defaultValue ? std::optional<ConfigValue>(*defaultValue) : std::nullopt
+    );
+}
+
+ConfigurationSetupItem IntItem(std::string name,
+                               std::optional<int> defaultValue,
+                               bool required) {
+    return ConfigurationSetupItem(
+        std::move(name),
+        ConfigurationItemType::Integer,
+        {},
+        required,
+        defaultValue ? std::optional<ConfigValue>(*defaultValue) : std::nullopt
+    );
+}
+
 }   // namespace ITEMS::Common

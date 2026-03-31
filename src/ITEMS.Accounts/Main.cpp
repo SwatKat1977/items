@@ -13,26 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "Configuration/ConfigurationManager.h"
+
 #include "Logger/Logger.h"
 #include "Service.h"
 
-namespace ITEMS::Accounts {
-
 int main(int argc, char* argv[]) {
-    Common::LoggerConfig loggerConfig;
-    loggerConfig.level = Common::LogLevel::Info;
-    loggerConfig.console = true;
 
-    Common::Logger::Initialise(loggerConfig);
-
-    Common::ConfigurationManager config;
-    config.ProcessConfig();
-
-    Service service(config);
+    ITEMS::Accounts::Service service;
     service.Run();
 
     return 0;
-}
-
 }

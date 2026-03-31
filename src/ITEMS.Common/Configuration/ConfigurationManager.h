@@ -24,7 +24,7 @@ namespace ITEMS::Common {
 class ConfigurationManager {
  public:
     void Configure(const ConfigurationSetup& layout,
-        const std::string& configFile = "",
+        const std::string configFile = "",
         bool fileRequired = false);
 
     void ProcessConfig();
