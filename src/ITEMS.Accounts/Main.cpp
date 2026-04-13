@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 #include "Logger/Logger.h"
-#include "Service.h"
+#include "AccountsService.h"
 
 int main(int argc, char* argv[]) {
     ITEMS::Accounts::AccountsService service;

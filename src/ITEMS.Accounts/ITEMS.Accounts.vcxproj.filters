@@ -2,11 +2,11 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Service.cpp" />
+    <ClCompile Include="AccountsService.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Service.h" />
     <ClInclude Include="ServiceConfiguration.h" />
     <ClInclude Include="CrowIncludes.h" />
+    <ClInclude Include="AccountsService.h" />
   </ItemGroup>
 </Project>
