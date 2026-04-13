@@ -7,5 +7,6 @@
   <ItemGroup>
     <ClInclude Include="Service.h" />
     <ClInclude Include="Crow.h" />
+    <ClInclude Include="ServiceConfiguration.h" />
   </ItemGroup>
 </Project>

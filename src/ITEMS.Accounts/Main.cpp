@@ -19,7 +19,7 @@ limitations under the License.
 
 int main(int argc, char* argv[]) {
 
-    ITEMS::Accounts::Service service;
+    ITEMS::Accounts::AccountsService service;
     service.Run();
 
     return 0;

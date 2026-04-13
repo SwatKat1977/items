@@ -7,6 +7,9 @@
     <Filter Include="Logger">
       <UniqueIdentifier>{8ded3f27-c9c8-4348-b375-4f3542750e16}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Base Service">
+      <UniqueIdentifier>{0ee4aab1-4ab3-4574-888c-363f172e7e4e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Configuration\ConfigurationItemType.h">
@@ -28,6 +31,9 @@
     <ClInclude Include="Logger\Logger.h">
       <Filter>Logger</Filter>
     </ClInclude>
+    <ClInclude Include="Service\Microservice.h">
+      <Filter>Base Service</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Configuration\ConfigurationSetup.cpp">
@@ -39,6 +45,9 @@
     <ClCompile Include="EnvironmentUtils.cpp" />
     <ClCompile Include="Logger\Logger.cpp">
       <Filter>Logger</Filter>
+    </ClCompile>
+    <ClCompile Include="Service\Microservice.cpp">
+      <Filter>Base Service</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

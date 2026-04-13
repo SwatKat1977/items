@@ -26,12 +26,14 @@
     <ClInclude Include="EnvironmentUtils.h" />
     <ClInclude Include="Logger\Logger.h" />
     <ClInclude Include="Logger\LoggerConfig.h" />
+    <ClInclude Include="Service\Microservice.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Configuration\ConfigurationManager.cpp" />
     <ClCompile Include="Configuration\ConfigurationSetup.cpp" />
     <ClCompile Include="EnvironmentUtils.cpp" />
     <ClCompile Include="Logger\Logger.cpp" />
+    <ClCompile Include="Service\Microservice.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ITEMS.Accounts\ITEMS.Accounts.vcxproj">
