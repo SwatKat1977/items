@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Configuration System">
+      <UniqueIdentifier>{9ae9acf8-abff-45cd-937d-6054f4a4eae3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Logger">
+      <UniqueIdentifier>{8ded3f27-c9c8-4348-b375-4f3542750e16}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Base Service">
+      <UniqueIdentifier>{0ee4aab1-4ab3-4574-888c-363f172e7e4e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Configuration\ConfigurationItemType.h">
+      <Filter>Configuration System</Filter>
+    </ClInclude>
+    <ClInclude Include="Configuration\ConfigurationSetup.h">
+      <Filter>Configuration System</Filter>
+    </ClInclude>
+    <ClInclude Include="Configuration\ConfigurationSetupItem.h">
+      <Filter>Configuration System</Filter>
+    </ClInclude>
+    <ClInclude Include="Configuration\ConfigurationManager.h">
+      <Filter>Configuration System</Filter>
+    </ClInclude>
+    <ClInclude Include="EnvironmentUtils.h" />
+    <ClInclude Include="Logger\LoggerConfig.h">
+      <Filter>Logger</Filter>
+    </ClInclude>
+    <ClInclude Include="Logger\Logger.h">
+      <Filter>Logger</Filter>
+    </ClInclude>
+    <ClInclude Include="Service\Microservice.h">
+      <Filter>Base Service</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Configuration\ConfigurationSetup.cpp">
+      <Filter>Configuration System</Filter>
+    </ClCompile>
+    <ClCompile Include="Configuration\ConfigurationManager.cpp">
+      <Filter>Configuration System</Filter>
+    </ClCompile>
+    <ClCompile Include="EnvironmentUtils.cpp" />
+    <ClCompile Include="Logger\Logger.cpp">
+      <Filter>Logger</Filter>
+    </ClCompile>
+    <ClCompile Include="Service\Microservice.cpp">
+      <Filter>Base Service</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
