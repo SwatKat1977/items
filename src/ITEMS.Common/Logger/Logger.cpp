@@ -81,8 +81,22 @@ void Logger::Initialise(const LoggerConfig& config) {
         }
 
         g_logger->set_level(ConvertLevel(config.level));
-        g_logger->set_pattern(
-            "[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [thread %t] %v");
+
+        std::string pattern = "[%Y-%m-%d %H:%M:%S";
+
+        if (config.include_milliseconds) {
+            pattern += ".%e";
+        }
+
+        pattern += "] [%^%l%$]";
+
+        if (config.include_thread_id) {
+            pattern += " [thread %t]";
+        }
+
+        pattern += " %v";
+
+        g_logger->set_pattern(pattern);
 
         spdlog::register_logger(g_logger);
         });

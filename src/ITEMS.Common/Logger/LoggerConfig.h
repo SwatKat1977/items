@@ -44,6 +44,9 @@ struct LoggerConfig {
     // Default to 5 MB and 3 files for rotation
     std::size_t max_file_size = 5 * ONE_MEGABYTE;
     std::size_t max_rotation_files = 3;
+
+    bool include_thread_id = false;
+    bool include_milliseconds = false;
 };
 
 }   // namespace ITEMS::Common

@@ -40,6 +40,8 @@ AccountsService::AccountsService() : Common::Microservice() {
     Common::LoggerConfig loggerConfig;
     loggerConfig.level = Common::LogLevel::Info;
     loggerConfig.console = true;
+    loggerConfig.include_thread_id = true;
+    loggerConfig.include_milliseconds = true;
     Common::Logger::Initialise(loggerConfig);
 }
 
