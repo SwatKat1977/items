@@ -75,7 +75,7 @@
     <LibraryPath>$(SolutionDir)dist\$(Configuration)\bin;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)ITEMS.Common;$(SolutionDir)3rdParty;$(SolutionDir)3rdParty\asio;$(ExternalIncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)ITEMS.Common;$(SolutionDir)3rdParty;$(SolutionDir)3rdParty\asio;$(ExternalIncludePath);.</IncludePath>
     <LibraryPath>$(SolutionDir)dist\$(Configuration)\bin;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
