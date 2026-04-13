@@ -67,7 +67,7 @@ class ServiceConfigurationLogging {
 };
 
 class ServiceConfiguration {
-public:
+ public:
     ServiceConfiguration(
         const ServiceConfigurationLogging& logging_config,
         const ServiceConfigurationDatabase& database_config)
