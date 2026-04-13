@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#ifndef IDATABASE_H_
-#define IDATABASE_H_
+#ifndef DATABASEENGINE_IDATABASE_H_
+#define DATABASEENGINE_IDATABASE_H_
 #include <string>
 #include <vector>
 #include <optional>
@@ -26,7 +26,7 @@ namespace ITEMS::Common {
 using Row = std::unordered_map<std::string, std::string>;
 
 class IDatabase {
-public:
+ public:
     virtual ~IDatabase() = default;
 
     // Execute a query that does not return results
@@ -46,6 +46,6 @@ public:
         const std::vector<std::string>& params = {}) = 0;
 };
 
-} // namespace ITEMS::Common
+}   // namespace ITEMS::Common
 
-#endif // IDATABASE_H_
+#endif  // DATABASEENGINE_IDATABASE_H_

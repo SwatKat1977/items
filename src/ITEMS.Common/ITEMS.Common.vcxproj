@@ -23,7 +23,9 @@
     <ClInclude Include="Configuration\ConfigurationManager.h" />
     <ClInclude Include="Configuration\ConfigurationSetup.h" />
     <ClInclude Include="Configuration\ConfigurationSetupItem.h" />
+    <ClInclude Include="DatabaseEngine\IDatabase.h" />
     <ClInclude Include="EnvironmentUtils.h" />
+    <ClInclude Include="IDatabase.h" />
     <ClInclude Include="Logger\Logger.h" />
     <ClInclude Include="Logger\LoggerConfig.h" />
     <ClInclude Include="Service\Microservice.h" />
