@@ -13,6 +13,12 @@
     <Filter Include="Database Engine">
       <UniqueIdentifier>{c52d4736-2cf8-4df7-972b-42f4fe4ba133}</UniqueIdentifier>
     </Filter>
+    <Filter Include="3rd Party">
+      <UniqueIdentifier>{d49fa32c-3720-4627-98ae-af39d269cc36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rd Party\Sqlite Library">
+      <UniqueIdentifier>{7b996cdf-6214-4b3e-93a6-5910872eafc1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Configuration\ConfigurationItemType.h">
@@ -41,6 +47,13 @@
     <ClInclude Include="DatabaseEngine\IDatabase.h">
       <Filter>Database Engine</Filter>
     </ClInclude>
+    <ClInclude Include="DatabaseEngine\SqliteDatabase.h" />
+    <ClInclude Include="..\3rdParty\sqlite\sqlite3.h">
+      <Filter>3rd Party\Sqlite Library</Filter>
+    </ClInclude>
+    <ClInclude Include="..\3rdParty\sqlite\sqlite3ext.h">
+      <Filter>3rd Party\Sqlite Library</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Configuration\ConfigurationSetup.cpp">
@@ -55,6 +68,10 @@
     </ClCompile>
     <ClCompile Include="Service\Microservice.cpp">
       <Filter>Base Service</Filter>
+    </ClCompile>
+    <ClCompile Include="DatabaseEngine\SqliteDatabase.cpp" />
+    <ClCompile Include="..\3rdParty\sqlite\sqlite3.c">
+      <Filter>3rd Party\Sqlite Library</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
