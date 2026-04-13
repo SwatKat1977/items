@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include <iostream>
+#include <string>
 #include "Service.h"
 #include "Configuration/ConfigurationManager.h"
 #include "Configuration/ConfigurationSetupItem.h"
@@ -61,7 +63,7 @@ bool AccountsService::_Initialise() {
         serviceConfig_.emplace(logging_config, db_config);
     }
     catch (std::runtime_error& ex) {
-        printf("%s\n", ex.what());
+        std::cout << "Error processing config: " << ex.what() << std::endl;
         return false;
     }
 
@@ -81,7 +83,7 @@ bool AccountsService::_Initialise() {
     Common::Logger::Info("[database]");
     Common::Logger::Info("=> Filename : " +
         serviceConfig_->GetDatabase().GetFilename());
-    Common::Logger::Info("=> Journal mode : " + 
+    Common::Logger::Info("=> Journal mode : " +
         serviceConfig_->GetDatabase().GetJournalMode());
     Common::Logger::Info("=> Busy timeout : " +
         std::to_string(serviceConfig_->GetDatabase().GetBusyTimeout()) +

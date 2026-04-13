@@ -18,7 +18,6 @@ limitations under the License.
 #include "Service.h"
 
 int main(int argc, char* argv[]) {
-
     ITEMS::Accounts::AccountsService service;
     service.Run();
 
