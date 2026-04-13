@@ -3,10 +3,27 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="AccountsService.cpp" />
+    <ClCompile Include="Routes\HealthRoutes.cpp">
+      <Filter>Routes</Filter>
+    </ClCompile>
+    <ClCompile Include="Routes\AuthenticationRoutes.cpp">
+      <Filter>Routes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ServiceConfiguration.h" />
     <ClInclude Include="CrowIncludes.h" />
     <ClInclude Include="AccountsService.h" />
+    <ClInclude Include="Routes\HealthRoutes.h">
+      <Filter>Routes</Filter>
+    </ClInclude>
+    <ClInclude Include="Routes\AuthenticationRoutes.h">
+      <Filter>Routes</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Routes">
+      <UniqueIdentifier>{8a4acecf-ec51-458b-97f2-7ca7405e2cbc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

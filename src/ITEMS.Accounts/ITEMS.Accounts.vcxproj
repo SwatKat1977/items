@@ -138,10 +138,14 @@
   <ItemGroup>
     <ClCompile Include="AccountsService.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Routes\AuthenticationRoutes.cpp" />
+    <ClCompile Include="Routes\HealthRoutes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccountsService.h" />
     <ClInclude Include="CrowIncludes.h" />
+    <ClInclude Include="Routes\AuthenticationRoutes.h" />
+    <ClInclude Include="Routes\HealthRoutes.h" />
     <ClInclude Include="ServiceConfiguration.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
