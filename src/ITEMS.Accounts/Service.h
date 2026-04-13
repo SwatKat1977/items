@@ -15,9 +15,11 @@ limitations under the License.
 */
 #ifndef SERVICE_H_
 #define SERVICE_H_
-#include "crow.h"
+#include <optional>
+#include "CrowIncludes.h"
 #include "Service/Microservice.h"
 #include "Configuration/ConfigurationManager.h"
+#include "ServiceConfiguration.h"
 
 
 namespace ITEMS::Accounts {
@@ -34,6 +36,7 @@ class AccountsService : public Common::Microservice {
     void SetupRoutes();
 
     Common::ConfigurationManager config_;
+    std::optional<ServiceConfiguration> serviceConfig_;
     crow::SimpleApp app_;
 };
 

@@ -140,7 +140,7 @@
     <ClCompile Include="Service.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Crow.h" />
+    <ClInclude Include="CrowIncludes.h" />
     <ClInclude Include="Service.h" />
     <ClInclude Include="ServiceConfiguration.h" />
   </ItemGroup>

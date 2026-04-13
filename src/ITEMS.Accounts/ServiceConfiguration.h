@@ -53,6 +53,14 @@ class ServiceConfigurationLogging {
                                                            file_(file) {
     }
 
+    std::string GetLevel() const {
+        return level_;
+    }
+
+    std::string GetFile() const {
+        return file_;
+    }
+
  private:
     std::string level_;
     std::string file_;

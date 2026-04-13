@@ -32,6 +32,10 @@ class ConfigurationManager {
     const ConfigValue& GetEntry(const std::string& section,
         const std::string& item) const;
 
+    bool IsFileRequired() const {
+        return file_required_;
+    }
+
  private:
     const ConfigurationSetup* layout_ = nullptr;
 

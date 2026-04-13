@@ -52,14 +52,11 @@ bool AccountsService::_Initialise() {
         ServiceConfigurationDatabase db_config(
             std::get<std::string>(config_.GetEntry("database", "file")),
             std::get<std::string>(config_.GetEntry("database", "journal_mode")),
-            std::get<int>(config_.GetEntry("database", "busy_timeout"));
-
+            std::get<int>(config_.GetEntry("database", "busy_timeout")));
         ServiceConfigurationLogging logging_config(
             std::get<std::string>(config_.GetEntry("logging", "level")),
             std::get<std::string>(config_.GetEntry("logging", "file")));
-
-        auto foo = ServiceConfiguration(logging_config, db_config);
-
+        serviceConfig_.emplace(logging_config, db_config);
     }
     catch (std::runtime_error& ex) {
         printf("%s\n", ex.what());
@@ -69,20 +66,24 @@ bool AccountsService::_Initialise() {
     Common::Logger::Info("Configuration");
     Common::Logger::Info("=============");
 
-    Common::Logger::Info("Configuration file required: " +
-                         "True" ? required : "False");
-    Common::Logger::Info("Configuration file : %s",
-        "None"if not required else config_file);
+    std::string required_str = config_.IsFileRequired() ? "True" : "False";
+    std::string config_file = config_.IsFileRequired()
+        ? serviceConfig_->GetDatabase().GetFilename() : "None";
+    Common::Logger::Info("Configuration file required: " + required_str);
+    Common::Logger::Info("Configuration file : " + config_file);
     Common::Logger::Info("[logging]");
-    Common::Logger::Info("=> Log level : %s",
-        ServiceConfiguration().logging_log_level);
+    Common::Logger::Info("=> Log level : " +
+        serviceConfig_->GetLogging().GetLevel());
+    Common::Logger::Info("=> Log file : " +
+        serviceConfig_->GetLogging().GetFile());
     Common::Logger::Info("[database]");
-    Common::Logger::Info("=> Filename : %s",
-        ServiceConfiguration().database_filename);
-    Common::Logger::Info("=> Journal mode : %s",
-        ServiceConfiguration().database_journal_mode);
-    Common::Logger::Info("=> Busy timeout : %d",
-        ServiceConfiguration().database_busy_timeout);
+    Common::Logger::Info("=> Filename : " +
+        serviceConfig_->GetDatabase().GetFilename());
+    Common::Logger::Info("=> Journal mode : " + 
+        serviceConfig_->GetDatabase().GetJournalMode());
+    Common::Logger::Info("=> Busy timeout : " +
+        std::to_string(serviceConfig_->GetDatabase().GetBusyTimeout()) +
+        std::string(" ms"));
 
     config_.GetEntry("database", "file");
 
