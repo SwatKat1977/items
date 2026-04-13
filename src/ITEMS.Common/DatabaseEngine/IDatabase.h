@@ -15,15 +15,18 @@ limitations under the License.
 */
 #ifndef DATABASEENGINE_IDATABASE_H_
 #define DATABASEENGINE_IDATABASE_H_
-#include <string>
-#include <vector>
 #include <optional>
+#include <string>
+#include <variant>
+#include <vector>
 #include <unordered_map>
 
 namespace ITEMS::Common {
 
 // Simple row representation: column name -> value
 using Row = std::unordered_map<std::string, std::string>;
+
+using DbValue = std::variant<int, std::string>;
 
 class IDatabase {
  public:
@@ -33,17 +36,17 @@ class IDatabase {
     // (INSERT, UPDATE, DELETE, CREATE, etc.)
     virtual int Execute(
         const std::string& query,
-        const std::vector<std::string>& params = {}) = 0;
+        const std::vector<DbValue>& params) = 0;
 
     // Execute a query that returns multiple rows
     virtual std::vector<Row> Query(
         const std::string& query,
-        const std::vector<std::string>& params = {}) = 0;
+        const std::vector<DbValue>& params) = 0;
 
     // Execute a query that returns a single row (or none)
     virtual std::optional<Row> QuerySingle(
         const std::string& query,
-        const std::vector<std::string>& params = {}) = 0;
+        const std::vector<DbValue>& params) = 0;
 };
 
 }   // namespace ITEMS::Common
