@@ -13,19 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include <atomic>
-#include <csignal>
-#include <memory>
 #include "Service.h"
-#include "Logger/Logger.h"
 #include "Configuration/ConfigurationManager.h"
-#include "Configuration/ConfigurationSetupItem.h"   
+#include "Configuration/ConfigurationSetupItem.h"
+#include "Logger/Logger.h"
+#include "ServiceConfiguration.h"
 
 namespace ITEMS::Accounts {
 
 Common::ConfigurationSetup CONFIG_LAYOUT({
     {"logging", {
-        Common::StringItem("level", "info", true, {"debug", "info", "warn", "error"}),
+        Common::StringItem("level", "info",
+                           true,
+                           {"debug", "info", "warn", "error"}),
         Common::StringItem("file", "app.log")
     }},
     {"database", {
@@ -35,109 +35,37 @@ Common::ConfigurationSetup CONFIG_LAYOUT({
     }}
 });
 
-namespace {
 
-Service* g_service_instance = nullptr;
-
-void SignalHandler(int) {
-    if (g_service_instance) {
-        Common::Logger::Info("Shutdown signal received.");
-        g_service_instance->Stop();
-    }
-}
-
-}
-
-Service::Service() {
+AccountsService::AccountsService() : Common::Microservice() {
     Common::LoggerConfig loggerConfig;
     loggerConfig.level = Common::LogLevel::Info;
     loggerConfig.console = true;
     Common::Logger::Initialise(loggerConfig);
-
-    /*
-    Common::ConfigurationSetup configLayout({
-        {"logging", {
-            Common::StringItem("level", "info", true, {"debug", "info", "warn", "error"}),
-            Common::StringItem("file", "app.log")
-        }},
-        {"database", {
-            Common::StringItem("file", std::nullopt, true),
-            Common::StringItem("journal_mode", "wal"),
-            Common::IntItem("busy_timeout", 5000)
-        }}
-    });
-    // CONFIG_LAYOUT
-    config_.Configure(configLayout);
-
-    try {
-        config_.ProcessConfig();
-    }
-    catch (std::runtime_error &ex) {
-        printf("%s\n", ex.what());
-        return;
-    }
-
-    SetupRoutes();
-    SetupSignalHandlers();
-    */
 }
 
-void Service::SetupRoutes()
-{
-    CROW_ROUTE(_app, "/health")
-        ([]() {
-        return "OK";
-            });
-
-    CROW_ROUTE(_app, "/hello")
-        ([]() {
-        return "Hello from ITEMS service";
-            });
-}
-
-void Service::SetupSignalHandlers()
-{
-    g_service_instance = this;
-
-    std::signal(SIGINT, SignalHandler);
-    std::signal(SIGTERM, SignalHandler);
-}
-
-void Service::Run()
-{
-    _running = true;
-
-    int port = 8080;
-
-    if (!Initialise()) {
-        Common::Logger::Error("Failed to initialize service. Exiting.");
-        return;
-    }
-
-    try {
-        Common::Logger::Info("Starting service on port " + port); // if formatting outside
-        _app.port(port).multithreaded().run();
-    }
-    catch (const std::exception& ex) {
-        Common::Logger::Error(std::string("Service crashed: ") + ex.what());
-        throw;
-    }
-
-    Common::Logger::Info("Service exited cleanly.");
-}
-
-bool Service::Initialise() {
+bool AccountsService::_Initialise() {
     config_.Configure(CONFIG_LAYOUT);
 
     try {
         config_.ProcessConfig();
+
+        ServiceConfigurationDatabase db_config(
+            std::get<std::string>(config_.GetEntry("database", "file")),
+            std::get<std::string>(config_.GetEntry("database", "journal_mode")),
+            std::get<int>(config_.GetEntry("database", "busy_timeout"));
+
+        ServiceConfigurationLogging logging_config(
+            std::get<std::string>(config_.GetEntry("logging", "level")),
+            std::get<std::string>(config_.GetEntry("logging", "file")));
+
+        auto foo = ServiceConfiguration(logging_config, db_config);
+
     }
     catch (std::runtime_error& ex) {
         printf("%s\n", ex.what());
         return false;
     }
 
-    /*
     Common::Logger::Info("Configuration");
     Common::Logger::Info("=============");
 
@@ -155,22 +83,42 @@ bool Service::Initialise() {
         ServiceConfiguration().database_journal_mode);
     Common::Logger::Info("=> Busy timeout : %d",
         ServiceConfiguration().database_busy_timeout);
-    */
+
+    config_.GetEntry("database", "file");
 
     SetupRoutes();
-    SetupSignalHandlers();
 
     return true;
 }
 
-void Service::Stop()
-{
-    if (_running)
-    {
-        _running = false;
-        _app.stop();
-        Common::Logger::Info("Service stopped.");
+void AccountsService::_MainLoop() {
+    int port = 8080;
+
+    try {
+        Common::Logger::Info("Starting service on port " +
+            std::to_string(port));
+        app_.loglevel(crow::LogLevel::Warning);
+        app_.port(port).multithreaded().run();
+    }
+    catch (const std::exception& ex) {
+        Common::Logger::Error(std::string("Service crashed: ") + ex.what());
+        throw;
     }
 }
 
+void AccountsService::_Shutdown() {
 }
+
+void AccountsService::SetupRoutes() {
+    CROW_ROUTE(app_, "/health")
+    ([]() {
+        return "OK";
+        });
+
+    CROW_ROUTE(app_, "/hello")
+    ([]() {
+        return "Hello from ITEMS service";
+    });
+}
+
+}   // namespace ITEMS::Accounts

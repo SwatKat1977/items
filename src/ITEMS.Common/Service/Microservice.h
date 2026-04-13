@@ -13,30 +13,29 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#ifndef SERVICE_H_
-#define SERVICE_H_
-#include "crow.h"
-#include "Service/Microservice.h"
-#include "Configuration/ConfigurationManager.h"
+#ifndef SERVICE_MICROSERVICE_H_
+#define SERVICE_MICROSERVICE_H_
+#include <atomic>
 
+namespace ITEMS::Common {
 
-namespace ITEMS::Accounts {
-
-class AccountsService : public Common::Microservice {
+class Microservice {
  public:
-    AccountsService();
+    Microservice();
+
+    void Run();
+    void Stop();
 
  private:
-    bool _Initialise() override;
-    void _MainLoop() override;
-    void _Shutdown() override;
+    void SetupSignalHandlers();
 
-    void SetupRoutes();
+    virtual bool _Initialise() = 0;
+    virtual void _MainLoop() = 0;
+    virtual void _Shutdown() = 0;
 
-    Common::ConfigurationManager config_;
-    crow::SimpleApp app_;
+    std::atomic<bool> _running{ false };
 };
 
-}   // namespace ITEMS::Accounts
+}   // namespace ITEMS::Common
 
-#endif  // SERVICE_H_
+#endif  // SERVICE_MICROSERVICE_H_

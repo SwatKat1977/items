@@ -48,8 +48,8 @@ ConfigurationSetupItem StringItem(std::string name,
         ConfigurationItemType::String,
         std::move(valid),
         required,
-        defaultValue ? std::optional<ConfigValue>(*defaultValue) : std::nullopt
-    );
+        defaultValue ? std::optional<ConfigValue>(*defaultValue)
+                     : std::nullopt);
 }
 
 ConfigurationSetupItem IntItem(std::string name,
@@ -60,8 +60,8 @@ ConfigurationSetupItem IntItem(std::string name,
         ConfigurationItemType::Integer,
         {},
         required,
-        defaultValue ? std::optional<ConfigValue>(*defaultValue) : std::nullopt
-    );
+        defaultValue ? std::optional<ConfigValue>(*defaultValue)
+                     : std::nullopt);
 }
 
 }   // namespace ITEMS::Common
