@@ -33,8 +33,6 @@ class AccountsService : public Common::Microservice {
     void _MainLoop() override;
     void _Shutdown() override;
 
-    void SetupRoutes();
-
     Common::ConfigurationManager config_;
     std::optional<ServiceConfiguration> serviceConfig_;
     crow::SimpleApp app_;

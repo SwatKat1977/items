@@ -19,18 +19,25 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\3rdParty\sqlite\sqlite3.h" />
+    <ClInclude Include="..\3rdParty\sqlite\sqlite3ext.h" />
     <ClInclude Include="Configuration\ConfigurationItemType.h" />
     <ClInclude Include="Configuration\ConfigurationManager.h" />
     <ClInclude Include="Configuration\ConfigurationSetup.h" />
     <ClInclude Include="Configuration\ConfigurationSetupItem.h" />
+    <ClInclude Include="DatabaseEngine\IDatabase.h" />
+    <ClInclude Include="DatabaseEngine\SqliteDatabase.h" />
     <ClInclude Include="EnvironmentUtils.h" />
+    <ClInclude Include="IDatabase.h" />
     <ClInclude Include="Logger\Logger.h" />
     <ClInclude Include="Logger\LoggerConfig.h" />
     <ClInclude Include="Service\Microservice.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\3rdParty\sqlite\sqlite3.c" />
     <ClCompile Include="Configuration\ConfigurationManager.cpp" />
     <ClCompile Include="Configuration\ConfigurationSetup.cpp" />
+    <ClCompile Include="DatabaseEngine\SqliteDatabase.cpp" />
     <ClCompile Include="EnvironmentUtils.cpp" />
     <ClCompile Include="Logger\Logger.cpp" />
     <ClCompile Include="Service\Microservice.cpp" />

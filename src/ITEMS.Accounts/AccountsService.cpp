@@ -20,6 +20,8 @@ limitations under the License.
 #include "Configuration/ConfigurationSetupItem.h"
 #include "Logger/Logger.h"
 #include "ServiceConfiguration.h"
+#include "Routes/HealthRoutes.h"
+#include "Routes/AuthenticationRoutes.h"
 
 namespace ITEMS::Accounts {
 
@@ -91,7 +93,8 @@ bool AccountsService::_Initialise() {
 
     config_.GetEntry("database", "file");
 
-    SetupRoutes();
+    HealthRoutes::Register(app_);
+    AuthRoutes::Register(app_);
 
     return true;
 }
@@ -112,18 +115,6 @@ void AccountsService::_MainLoop() {
 }
 
 void AccountsService::_Shutdown() {
-}
-
-void AccountsService::SetupRoutes() {
-    CROW_ROUTE(app_, "/health")
-    ([]() {
-        return "OK";
-        });
-
-    CROW_ROUTE(app_, "/hello")
-    ([]() {
-        return "Hello from ITEMS service";
-    });
 }
 
 }   // namespace ITEMS::Accounts
