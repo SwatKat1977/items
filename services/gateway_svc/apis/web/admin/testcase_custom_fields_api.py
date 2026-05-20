@@ -23,7 +23,7 @@ def create_blueprint(logger: logging.Logger) -> Blueprint:
 
     blueprint = Blueprint('admin_tc_custom_fields_api', __name__)
 
-    logger.debug("Registering WEB ADMIN TC custom fields endpoint:")
+    logger.debug("------- Registering Web Admin TC Custom Fields routes -----")
 
     logger.debug(f"=> {'Modify a TC custom field'.ljust(30)}"
                  "PATCH /web/admin/testcase_custom_fields")
