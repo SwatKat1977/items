@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Configuration System">
+      <UniqueIdentifier>{9ae9acf8-abff-45cd-937d-6054f4a4eae3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Logger">
+      <UniqueIdentifier>{8ded3f27-c9c8-4348-b375-4f3542750e16}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Base Service">
+      <UniqueIdentifier>{0ee4aab1-4ab3-4574-888c-363f172e7e4e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Database Engine">
+      <UniqueIdentifier>{c52d4736-2cf8-4df7-972b-42f4fe4ba133}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rd Party">
+      <UniqueIdentifier>{d49fa32c-3720-4627-98ae-af39d269cc36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rd Party\Sqlite Library">
+      <UniqueIdentifier>{7b996cdf-6214-4b3e-93a6-5910872eafc1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Configuration\ConfigurationItemType.h">
+      <Filter>Configuration System</Filter>
+    </ClInclude>
+    <ClInclude Include="Configuration\ConfigurationSetup.h">
+      <Filter>Configuration System</Filter>
+    </ClInclude>
+    <ClInclude Include="Configuration\ConfigurationSetupItem.h">
+      <Filter>Configuration System</Filter>
+    </ClInclude>
+    <ClInclude Include="Configuration\ConfigurationManager.h">
+      <Filter>Configuration System</Filter>
+    </ClInclude>
+    <ClInclude Include="EnvironmentUtils.h" />
+    <ClInclude Include="Logger\LoggerConfig.h">
+      <Filter>Logger</Filter>
+    </ClInclude>
+    <ClInclude Include="Logger\Logger.h">
+      <Filter>Logger</Filter>
+    </ClInclude>
+    <ClInclude Include="Service\Microservice.h">
+      <Filter>Base Service</Filter>
+    </ClInclude>
+    <ClInclude Include="IDatabase.h" />
+    <ClInclude Include="DatabaseEngine\IDatabase.h">
+      <Filter>Database Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\3rdParty\sqlite\sqlite3.h">
+      <Filter>3rd Party\Sqlite Library</Filter>
+    </ClInclude>
+    <ClInclude Include="..\3rdParty\sqlite\sqlite3ext.h">
+      <Filter>3rd Party\Sqlite Library</Filter>
+    </ClInclude>
+    <ClInclude Include="DatabaseEngine\SqliteDatabase.h">
+      <Filter>Database Engine</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Configuration\ConfigurationSetup.cpp">
+      <Filter>Configuration System</Filter>
+    </ClCompile>
+    <ClCompile Include="Configuration\ConfigurationManager.cpp">
+      <Filter>Configuration System</Filter>
+    </ClCompile>
+    <ClCompile Include="EnvironmentUtils.cpp" />
+    <ClCompile Include="Logger\Logger.cpp">
+      <Filter>Logger</Filter>
+    </ClCompile>
+    <ClCompile Include="Service\Microservice.cpp">
+      <Filter>Base Service</Filter>
+    </ClCompile>
+    <ClCompile Include="..\3rdParty\sqlite\sqlite3.c">
+      <Filter>3rd Party\Sqlite Library</Filter>
+    </ClCompile>
+    <ClCompile Include="DatabaseEngine\SqliteDatabase.cpp">
+      <Filter>Database Engine</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
