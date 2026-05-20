@@ -47,12 +47,14 @@
     <ClInclude Include="DatabaseEngine\IDatabase.h">
       <Filter>Database Engine</Filter>
     </ClInclude>
-    <ClInclude Include="DatabaseEngine\SqliteDatabase.h" />
     <ClInclude Include="..\3rdParty\sqlite\sqlite3.h">
       <Filter>3rd Party\Sqlite Library</Filter>
     </ClInclude>
     <ClInclude Include="..\3rdParty\sqlite\sqlite3ext.h">
       <Filter>3rd Party\Sqlite Library</Filter>
+    </ClInclude>
+    <ClInclude Include="DatabaseEngine\SqliteDatabase.h">
+      <Filter>Database Engine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -69,9 +71,11 @@
     <ClCompile Include="Service\Microservice.cpp">
       <Filter>Base Service</Filter>
     </ClCompile>
-    <ClCompile Include="DatabaseEngine\SqliteDatabase.cpp" />
     <ClCompile Include="..\3rdParty\sqlite\sqlite3.c">
       <Filter>3rd Party\Sqlite Library</Filter>
+    </ClCompile>
+    <ClCompile Include="DatabaseEngine\SqliteDatabase.cpp">
+      <Filter>Database Engine</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
