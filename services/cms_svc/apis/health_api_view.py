@@ -71,7 +71,7 @@ class HealthApiView(BaseView):
             issues.append(
                 {"component": "database",
                  "status": self._state_object.database_health.value,
-                 "details": self._state_object.database_health_state_str})
+                 "details": self._state_object.database_health_reason})
 
         if issues:
             status = ServiceDegradationStatus.CRITICAL.value \

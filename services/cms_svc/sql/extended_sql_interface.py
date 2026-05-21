@@ -58,7 +58,7 @@ class ExtendedSqlInterface(BaseSqliteInterface):
         except SqliteInterfaceException as ex:
             self._logger.log(log_level, "%s, reason: %s", error_message, str(ex))
             self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
-            self._state_object.database_health_state_str = "Fatal SQL failure"
+            self._state_object.database_health_reason = "Fatal SQL failure"
             return None
 
     def safe_insert_query(self,
@@ -87,7 +87,7 @@ class ExtendedSqlInterface(BaseSqliteInterface):
             except sqlite3.Error as ex:
                 self._logger.log(log_level, "%s, reason: %s", error_message, str(ex))
                 self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
-                self._state_object.database_health_state_str = "Fatal SQL failure"
+                self._state_object.database_health_reason = "Fatal SQL failure"
                 return None
 
     def safe_bulk_insert(self,
@@ -113,5 +113,5 @@ class ExtendedSqlInterface(BaseSqliteInterface):
         except sqlite3.Error as ex:
             self._logger.log(log_level, "%s, reason: %s", error_message, str(ex))
             self._state_object.database_health = ComponentDegradationLevel.FULLY_DEGRADED
-            self._state_object.database_health_state_str = "Fatal SQL failure"
+            self._state_object.database_health_reason = "Fatal SQL failure"
             return False

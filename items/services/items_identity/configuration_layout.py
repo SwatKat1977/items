@@ -1,5 +1,5 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from configuration import configuration_setup
-
+from weaver_framework.configuration_system.configuration_setup import (
+    ConfigItemDataType, ConfigurationSetup, ConfigurationSetupItem)
 # pylint: disable=too-few-public-methods
 
 
@@ -31,20 +31,20 @@ class ConfigurationConstants:
     ITEM_BACKEND_DB_FILENAME: str = 'db_filename'
 
 
-CONFIGURATION_LAYOUT = configuration_setup.ConfigurationSetup(
+CONFIGURATION_LAYOUT = ConfigurationSetup(
     {
         ConfigurationConstants.SECTION_LOGGING: [
-            configuration_setup.ConfigurationSetupItem(
+            ConfigurationSetupItem(
                 ConfigurationConstants.ITEM_LOGGING_LOG_LEVEL,
-                configuration_setup.ConfigItemDataType.STRING,
+                ConfigItemDataType.STRING,
                 valid_values=[ConfigurationConstants.LOG_LEVEL_DEBUG,
                               ConfigurationConstants.LOG_LEVEL_INFO],
-                              default_value=ConfigurationConstants.LOG_LEVEL_INFO)
+                default_value=ConfigurationConstants.LOG_LEVEL_INFO)
         ],
         ConfigurationConstants.SECTION_BACKEND: [
-            configuration_setup.ConfigurationSetupItem(
+            ConfigurationSetupItem(
                 ConfigurationConstants.ITEM_BACKEND_DB_FILENAME,
-                configuration_setup.ConfigItemDataType.STRING,
+                ConfigItemDataType.STRING,
                 default_value="items_accounts_svc.db")
         ]
     }

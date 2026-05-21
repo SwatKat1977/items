@@ -72,7 +72,7 @@ class HealthApiView(BaseView):
             issues.append(
                 {"component": "database",
                  "status": self._state_object.database_health.value,
-                 "details": self._state_object.database_health_state_str})
+                 "details": self._state_object.database_health_reason})
 
         # Check microservice health
         if self._state_object.service_health != \
@@ -80,7 +80,7 @@ class HealthApiView(BaseView):
             issues.append(
                 {"component": "service",
                  "status": self._state_object.service_health.value,
-                 "details": self._state_object.service_health_state_str})
+                 "details": self._state_object.service_heath_reason})
 
         if issues:
             status = ServiceDegradationStatus.CRITICAL.value \
