@@ -20,8 +20,8 @@ class TestAuthenticationApiView(unittest.IsolatedAsyncioTestCase):
         self.mock_service_state = MagicMock()
 
         # Patch UserDataAccessLayer and AuthenticationService
-        user_dal_patch = patch("apis.authentication_api_view.UserDataAccessLayer", autospec=True)
-        auth_service_patch = patch("apis.authentication_api_view.AuthenticationService", autospec=True)
+        user_dal_patch = patch("routes.authentication_api_view.UserDataAccessLayer", autospec=True)
+        auth_service_patch = patch("routes.authentication_api_view.AuthenticationService", autospec=True)
         self.addCleanup(user_dal_patch.stop)
         self.addCleanup(auth_service_patch.stop)
         self.mock_user_dal_cls = user_dal_patch.start()
@@ -34,7 +34,7 @@ class TestAuthenticationApiView(unittest.IsolatedAsyncioTestCase):
         self.view = AuthenticationApiView(self.mock_logger, self.mock_service_state)
 
     async def test_init_creates_auth_service_and_user_dal(self):
-        self.mock_logger.getChild.assert_called_once_with("apis.authentication_api_view")
+        self.mock_logger.getChild.assert_called_once_with("routes.authentication_api_view")
         self.mock_user_dal_cls.assert_called_once_with(self.mock_service_state, self.mock_logger)
         self.mock_auth_service_cls.assert_called_once()
         self.assertIsInstance(self.view._auth_service, MagicMock)

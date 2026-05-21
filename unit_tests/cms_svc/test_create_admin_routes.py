@@ -7,8 +7,8 @@ from apis.admin import create_admin_routes
 
 
 class TestCreateAdminRoutes(unittest.TestCase):
-    @patch("apis.admin.create_cf_bp")
-    @patch("apis.admin.quart.Blueprint")
+    @patch("routes.admin.create_cf_bp")
+    @patch("routes.admin.quart.Blueprint")
     def test_create_admin_routes(self, mock_blueprint_class, mock_create_cf_bp):
         logger = Mock(spec=logging.Logger)
         state = Mock(spec=ServiceState)
@@ -22,7 +22,7 @@ class TestCreateAdminRoutes(unittest.TestCase):
         result = create_admin_routes(logger, state)
 
         # Asserts
-        mock_blueprint_class.assert_called_once_with("admin_routes", "apis.admin")
+        mock_blueprint_class.assert_called_once_with("admin_routes", "routes.admin")
         mock_create_cf_bp.assert_called_once_with(logger, state)
         mock_admin_bp.register_blueprint.assert_called_once_with(
             mock_cf_bp, url_prefix="/testcase_custom_fields"
