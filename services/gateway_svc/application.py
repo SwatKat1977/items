@@ -139,7 +139,7 @@ class Application(BaseApplication):
         self._logger.info("=> Metadata config file : %s",
                           Configuration().general_metadata_config_file)
 
-        self._logger.info("[apis]")
+        self._logger.info("[routes]")
         self._logger.info("=> Accounts Service API : %s",
                           Configuration().apis_accounts_svc)
         self._logger.info("=> CMS Service API : %s",
