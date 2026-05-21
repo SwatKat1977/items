@@ -16,15 +16,37 @@ limitations under the License.
 import json
 import logging
 from quart import Response
-import interfaces.accounts.basic_authentication as basic_auth
-from base_view import ApiResponse, BaseView, validate_json
+from weaver_framework.microservice.base_api_route import (
+    BaseApiRoute, validate_json)
+# from base_view import ApiResponse, BaseView, validate_json
 from items.shared.service_state import ServiceState
 from items.services.items_identity.data_access.user_data_access_layer import (
     UserDataAccessLayer)
-from services.authentication_service import AuthenticationService
+# from services.authentication_service import AuthenticationService
 
 
-class AuthenticationApiView(BaseView):
+SCHEMA_BASIC_AUTHENTICATE_REQUEST: dict = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+    {
+        "email_address":
+        {
+            "type": "string"
+        },
+        "password":
+        {
+            "type": "string"
+        },
+    },
+    "required": ["email_address", "password"]
+}
+
+
+class AuthenticationApiView(BaseApiRoute):
     """
     Provides API endpoints related to user authentication for the service.
 
@@ -45,7 +67,7 @@ class AuthenticationApiView(BaseView):
         user_dal = UserDataAccessLayer(service_state, logger)
         self._auth_service = AuthenticationService(self._logger, user_dal)
 
-    @validate_json(basic_auth.SCHEMA_BASIC_AUTHENTICATE_REQUEST)
+    @validate_json(SCHEMA_BASIC_AUTHENTICATE_REQUEST)
     async def authenticate_basic(self, request_msg: ApiResponse):
         """
         Handles basic authentication requests (HTTP layer).

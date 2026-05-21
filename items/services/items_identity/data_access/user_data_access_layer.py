@@ -1,10 +1,10 @@
 import logging
 import typing
 import bcrypt
-from items_common.safe_sqlite_interface import SafeSqliteInterface
-from items_common.service_state import ServiceState
-from account_status import AccountStatus
-from threadsafe_configuration import ThreadSafeConfiguration as Configuration
+#from items_common.safe_sqlite_interface import SafeSqliteInterface
+from items.shared.service_state import ServiceState
+from items.services.items_identity.account_status import AccountStatus
+#from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 
 
 class UserDataAccessLayer:
