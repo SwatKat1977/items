@@ -21,7 +21,7 @@ from items.shared import LICENSE_TEXT, SERVICE_COPYRIGHT_TEXT, __version__
 from items.shared.service_state import ServiceState
 from items.services.items_identity.identity_configuration import \
     IdentityConfiguration
-from items.services.items_identity.apis import create_routes
+from items.services.items_identity.routes import create_routes
 from items.services.items_identity.configuration_layout import \
     CONFIGURATION_LAYOUT
 from items.services.items_identity.repositories.user_repository import \
