@@ -16,7 +16,7 @@ limitations under the License.
 from dataclasses import dataclass, field
 import time
 from typing import Dict, Any
-from service_health_enums import ComponentDegradationLevel
+from items.shared.service_health_enums import ComponentDegradationLevel
 
 
 @dataclass(slots=True)
