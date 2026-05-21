@@ -1,6 +1,6 @@
 @echo off
 echo Starting ITEMS - Identity Service
-rem set PYTHONPATH=.
+set PYTHONPATH=.
 set QUART_APP=items/services/items_identity
 rem set ITEMS_IDENTITY_CONFIG_FILE_REQUIRED=1
 rem set ITEMS_IDENTITY_CONFIG_FILE=configs/svc.cfg

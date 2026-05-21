@@ -122,7 +122,7 @@ class Service(BaseMicroservice):
         self._logger.info("=> Logging log level : %s",
                           Configuration().logging_log_level)
 
-        self._logger.info("[apis]")
+        self._logger.info("[routes]")
         self._logger.info("=> Gateway Service API : %s",
                           Configuration().apis_gateway_svc)
 
