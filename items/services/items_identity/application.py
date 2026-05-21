@@ -1,5 +1,5 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,44 +14,45 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import asyncio
-import logging
-import os
-from items_common.base_microservice import BaseMicroservice
-from configuration_layout import CONFIGURATION_LAYOUT
-from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
-                           LOGGING_DEFAULT_LOG_LEVEL, \
-                           LOGGING_LOG_FORMAT_STRING
-from threadsafe_configuration import ThreadSafeConfiguration as Configuration
+from pathlib import Path
+from quart import Quart
+from weaver_framework.microservice.base_microservice import BaseMicroservice
+from items.shared import LICENSE_TEXT, SERVICE_COPYRIGHT_TEXT
+
+from items.services.items_identity.configuration_layout import \
+    CONFIGURATION_LAYOUT
+
+
+
+# import os
+
+'''
+from items.services.items_identity.threadsafe_configuration import (
+    ThreadSafeConfiguration as Configuration)
+'''
+'''
 from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
                     SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
-from apis import create_routes
+'''
+from items.services.items_identity.apis import create_routes
 
 
 class Service(BaseMicroservice):
-    """ ITEMS Accounts Service """
+    """ ITEMS Identity Microservice """
 
-    CONFIG_FILE_ENV: str = "ITEMS_ACCOUNTS_SVC_CONFIG_FILE"
-    CONFIG_REQUIRED_ENV: str = "ITEMS_ACCOUNTS_SVC_CONFIG_FILE_REQUIRED"
+    CONFIG_FILE_ENV: str = "ITEMS_IDENTITY_CONFIG_FILE"
+    CONFIG_REQUIRED_ENV: str = "ITEMS_IDENTITY_CONFIG_FILE_REQUIRED"
 
-    def __init__(self, quart_instance):
+    def __init__(self, quart_instance: Quart):
         super().__init__()
         self._quart_instance = quart_instance
-
-        self._logger = logging.getLogger(__name__)
-        log_format = logging.Formatter(LOGGING_LOG_FORMAT_STRING,
-                                       LOGGING_DATETIME_FORMAT_STRING)
-        console_stream = logging.StreamHandler()
-        console_stream.setFormatter(log_format)
-        self._logger.setLevel(LOGGING_DEFAULT_LOG_LEVEL)
-        self._logger.addHandler(console_stream)
-
         self._service_state.database_enabled = True
 
     async def _initialise(self) -> bool:
 
         build = f"V{RELEASE_VERSION}-{BUILD_VERSION}{BUILD_TAG}"
 
-        self._logger.info('ITEMS Accounts Microservice %s', build)
+        self._logger.info('ITEMS Identity Microservice %s', build)
         self._logger.info(SERVICE_COPYRIGHT_TEXT)
         self._logger.info(LICENSE_TEXT)
 

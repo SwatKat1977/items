@@ -15,7 +15,7 @@ limitations under the License.
 """
 import logging
 import quart
-from items_common.service_state import ServiceState
+from items.shared.service_state import ServiceState
 from .authentication_api import create_blueprint as create_auth_bp
 from .health_api import create_blueprint as create_health_bp
 

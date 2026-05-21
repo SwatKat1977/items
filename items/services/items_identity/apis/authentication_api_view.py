@@ -18,10 +18,10 @@ import logging
 from quart import Response
 import interfaces.accounts.basic_authentication as basic_auth
 from base_view import ApiResponse, BaseView, validate_json
-from items_common.service_state import ServiceState
-from data_access.user_data_access_layer import UserDataAccessLayer
+from items.shared.service_state import ServiceState
+from items.services.items_identity.data_access.user_data_access_layer import (
+    UserDataAccessLayer)
 from services.authentication_service import AuthenticationService
-
 
 
 class AuthenticationApiView(BaseView):

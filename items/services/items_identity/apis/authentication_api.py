@@ -15,8 +15,9 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from apis.authentication_api_view import AuthenticationApiView
-from items_common.service_state import ServiceState
+from items.services.items_identity.apis.authentication_api_view import (
+    AuthenticationApiView)
+from items.shared.service_state import ServiceState
 
 
 def create_blueprint(logger: logging.Logger,
