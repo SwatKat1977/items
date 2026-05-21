@@ -17,24 +17,17 @@ import asyncio
 from pathlib import Path
 from quart import Quart
 from weaver_framework.microservice.base_microservice import BaseMicroservice
-from items.shared import LICENSE_TEXT, SERVICE_COPYRIGHT_TEXT
-
+from items.shared import LICENSE_TEXT, SERVICE_COPYRIGHT_TEXT, __version__
+from items.shared.service_state import ServiceState
+from items.services.items_identity.identity_configuration import \
+    IdentityConfiguration
+from items.services.items_identity.apis import create_routes
 from items.services.items_identity.configuration_layout import \
     CONFIGURATION_LAYOUT
-
-
-
-# import os
-
-'''
-from items.services.items_identity.threadsafe_configuration import (
-    ThreadSafeConfiguration as Configuration)
-'''
-'''
-from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
-                    SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
-'''
-from items.services.items_identity.apis import create_routes
+from items.services.items_identity.repositories.user_repository import \
+    UserRepository
+from items.services.items_identity.data_access.authentication_service import \
+    AuthenticationService
 
 
 class Service(BaseMicroservice):
@@ -46,26 +39,36 @@ class Service(BaseMicroservice):
     def __init__(self, quart_instance: Quart):
         super().__init__()
         self._quart_instance = quart_instance
+        self._service_state: ServiceState = ServiceState()
+        self._config: IdentityConfiguration = IdentityConfiguration()
+        self._user_repository: UserRepository | None = None
+        self._authentication_service: AuthenticationService | None = None
+
         self._service_state.database_enabled = True
 
     async def _initialise(self) -> bool:
-
-        build = f"V{RELEASE_VERSION}-{BUILD_VERSION}{BUILD_TAG}"
-
-        self._logger.info('ITEMS Identity Microservice %s', build)
-        self._logger.info(SERVICE_COPYRIGHT_TEXT)
-        self._logger.info(LICENSE_TEXT)
+        self.logger.info('ITEMS Identity Microservice %s', __version__)
+        self.logger.info(SERVICE_COPYRIGHT_TEXT)
+        self.logger.info(LICENSE_TEXT)
 
         if not self._manage_configuration():
             return False
 
-        self._logger.info('Setting logging level to %s',
-                          Configuration().logging_log_level)
-        self._logger.setLevel(Configuration().logging_log_level)
+        self.logger.info('Setting logging level to %s',
+                         self._config.logging_log_level)
+        self.logger.setLevel(self._config.logging_log_level)
 
-        if not os.path.isfile(Configuration().backend_db_filename):
+        self._user_repository = UserRepository(self.logger,
+                                               self._config)
+        self._authentication_service = AuthenticationService(
+            self.logger,
+            self._service_state,
+            self._user_repository)
+
+        db_filename: Path = Path(self._config.backend_db_filename)
+        if not db_filename.is_file():
             self._logger.critical("Backend database file '%s' is missing!",
-                                  Configuration().backend_db_filename)
+                                  db_filename)
             return False
 
         self._quart_instance.register_blueprint(
@@ -73,9 +76,9 @@ class Service(BaseMicroservice):
 
         return True
 
-    async def _main_loop(self) -> None:
-        """ Abstract method for main application. """
-        await asyncio.sleep(0.1)
+    async def _create_tasks(self) -> list[asyncio.Task]:
+        """ Create and return the service's background tasks. """
+        return [asyncio.create_task(self._dummy_task())]
 
     async def _shutdown(self):
         """ Abstract method for application shutdown. """
@@ -90,10 +93,10 @@ class Service(BaseMicroservice):
             self._logger.critical(error_status)
             return False
 
-        Configuration().configure(CONFIGURATION_LAYOUT, config_file, required)
+        self._config.configure(CONFIGURATION_LAYOUT, config_file, required)
 
         try:
-            Configuration().process_config()
+            self._config.process_config()
 
         except ValueError as ex:
             self._logger.critical("Configuration error : %s", str(ex))
@@ -108,9 +111,12 @@ class Service(BaseMicroservice):
                           "None"if not required else config_file)
         self._logger.info("[logging]")
         self._logger.info("=> Logging log level : %s",
-                          Configuration().logging_log_level)
+                          self._config.logging_log_level)
         self._logger.info("[Backend]")
         self._logger.info("=> Database filename : %s",
-                          Configuration().backend_db_filename)
+                          self._config.backend_db_filename)
 
         return True
+
+    async def _dummy_task(self) -> None:
+        await self.shutdown_event.wait()
