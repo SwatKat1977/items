@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
-import quart
+from quart import Blueprint, Response
 from items.shared.service_state import ServiceState
 from items.services.items_identity.routes.system.health_route import \
-    create_blueprint as create_health_blueprint
+    HealthHandler
 
 
 def create_system_routes(logger: logging.Logger,
@@ -35,10 +35,21 @@ def create_system_routes(logger: logging.Logger,
         The configured system blueprint containing all registered
         system routes.
     """
-    system_routes = quart.Blueprint("system_routes", __name__)
+    system_routes = Blueprint("system_routes", __name__)
 
-    # Health route
-    system_routes.register_blueprint(create_health_blueprint(
-        logger, state_object))
+    # Health route handler
+    health_handler: HealthHandler(logger, state_object)
+
+    logger.debug("=> %s GET /system/health",
+                 'Get system health'.ljust(40))
+
+    @system_routes.route('/system/health', methods=['GET'])
+    async def health_request():
+        """Handle incoming system health requests.
+
+        Returns:
+            A response containing the current system health status.
+        """
+        return await health_handler.health()
 
     return system_routes

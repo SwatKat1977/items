@@ -57,7 +57,7 @@ def create_blueprint(logger: logging.Logger,
     return blueprint
 
 
-class HealthRoute(BaseApiRoute):
+class HealthHandler(BaseApiRoute):
     """
     A view that provides health check information for the application.
 
@@ -68,7 +68,6 @@ class HealthRoute(BaseApiRoute):
         _logger (logging.Logger): Logger instance for recording events.
         _state_object (ServiceState): Shared state object containing health and version info.
     """
-    __slots__ = ['_logger']
 
     def __init__(self, logger: logging.Logger,
                  state_object: ServiceState) -> None:
