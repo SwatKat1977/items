@@ -16,8 +16,8 @@ limitations under the License.
 import logging
 import quart
 from items.shared.service_state import ServiceState
-from items.services.items_identity.routes.authentication_api import \
-    create_blueprint as create_auth_routes
+from items.services.items_identity.routes.auth.authentication_routes import (
+    create_blueprint as create_auth_routes)
 
 
 def create_auth_blueprints(logger: logging.Logger,

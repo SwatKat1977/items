@@ -20,8 +20,8 @@ from items.services.items_identity.routes.system.health_route import \
     create_blueprint as create_health_blueprint
 
 
-def create_system_blueprints(logger: logging.Logger,
-                             state_object: ServiceState) -> quart.Blueprint:
+def create_system_routes(logger: logging.Logger,
+                         state_object: ServiceState) -> quart.Blueprint:
     """Create and register system-related blueprints.
 
     This function creates the parent system blueprint and registers
@@ -35,10 +35,10 @@ def create_system_blueprints(logger: logging.Logger,
         The configured system blueprint containing all registered
         system routes.
     """
-    system_blueprint = quart.Blueprint("system_routes", __name__)
+    system_routes = quart.Blueprint("system_routes", __name__)
 
     # Health route
-    system_blueprint.register_blueprint(create_health_blueprint(
+    system_routes.register_blueprint(create_health_blueprint(
         logger, state_object))
 
-    return system_blueprint
+    return system_routes
