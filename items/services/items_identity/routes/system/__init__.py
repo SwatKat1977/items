@@ -16,12 +16,12 @@ limitations under the License.
 import logging
 from quart import Blueprint, Response
 from items.shared.service_state import ServiceState
-from items.services.items_identity.routes.system.health_route import \
+from items.services.items_identity.routes.system.health_handler import \
     HealthHandler
 
 
 def create_system_routes(logger: logging.Logger,
-                         state_object: ServiceState) -> quart.Blueprint:
+                         state_object: ServiceState) -> Blueprint:
     """Create and register system-related blueprints.
 
     This function creates the parent system blueprint and registers
@@ -38,7 +38,7 @@ def create_system_routes(logger: logging.Logger,
     system_routes = Blueprint("system_routes", __name__)
 
     # Health route handler
-    health_handler: HealthHandler(logger, state_object)
+    health_route_handler: HealthHandler(logger, state_object)
 
     logger.debug("=> %s GET /system/health",
                  'Get system health'.ljust(40))
@@ -50,6 +50,6 @@ def create_system_routes(logger: logging.Logger,
         Returns:
             A response containing the current system health status.
         """
-        return await health_handler.health()
+        return await health_route_handler.health()
 
     return system_routes
