@@ -16,29 +16,26 @@ limitations under the License.
 import logging
 import quart
 from items.shared.service_state import ServiceState
-from items.services.items_identity.routes.system.health_route import \
-    create_blueprint as create_health_blueprint
+from items.services.items_identity.routes.authentication_api import \
+    create_blueprint as create_auth_routes
 
 
-def create_system_blueprints(logger: logging.Logger,
-                             state_object: ServiceState) -> quart.Blueprint:
-    """Create and register system-related blueprints.
+def create_auth_blueprints(logger: logging.Logger,
+                           state_object: ServiceState) -> quart.Blueprint:
+    """Create and register auth-related blueprints.
 
-    This function creates the parent system blueprint and registers
-    all system-level route blueprints, such as health check routes.
+    This function creates the parent auth blueprint and registers
+    all auth-level route blueprints, such as login, logout and register routes.
 
     Args:
-        logger: Logger instance used by system route handlers.
+        logger: Logger instance used by route handlers.
         state_object (ServiceState): A StateObject instance.
 
     Returns:
-        The configured system blueprint containing all registered
-        system routes.
+        The configured  blueprint containing all registered routes.
     """
-    system_blueprint = quart.Blueprint("system_routes", __name__)
+    auth_blueprint = quart.Blueprint("auth_routes", __name__)
 
-    # Health route
-    system_blueprint.register_blueprint(create_health_blueprint(
-        logger, state_object))
+    auth_blueprint.register_blueprint(create_auth_routes(logger, state), url_prefix="/authentication")
 
     return system_blueprint

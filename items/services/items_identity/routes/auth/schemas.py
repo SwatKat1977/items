@@ -13,3 +13,28 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
+SCHEMA_AUTHENTICATE_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+    {
+        "email_address":
+        {
+            "type": "string",
+            "format": "email",
+            "minLength": 3,
+            "maxLength": 320
+        },
+        "password":
+        {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+        },
+    },
+    "required": ["email_address", "password"]
+}

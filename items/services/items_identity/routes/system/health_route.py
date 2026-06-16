@@ -17,11 +17,11 @@ from http import HTTPStatus
 import json
 import logging
 import time
+from quart import Blueprint, Response
 from weaver_framework.microservice.base_api_route import BaseApiRoute
-from quart import Blueprint
 from items.shared.service_state import ServiceState
-from service_health_enums import (ServiceDegradationStatus,
-                                  ComponentDegradationLevel)
+from items.shared.service_health_enums import (ComponentDegradationLevel,
+                                               ServiceDegradationStatus)
 
 
 def create_blueprint(logger: logging.Logger,
@@ -113,7 +113,7 @@ class HealthRoute(BaseApiRoute):
             issues.append(
                 {"component": "service",
                  "status": self._state_object.service_health.value,
-                 "details": self._state_object.service_heath_reason})
+                 "details": self._state_object.service_health_reason})
 
         if issues:
             status = ServiceDegradationStatus.CRITICAL.value \

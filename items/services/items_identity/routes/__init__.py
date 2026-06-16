@@ -16,7 +16,7 @@ limitations under the License.
 import logging
 import quart
 from items.shared.service_state import ServiceState
-from .authentication_api import create_blueprint as create_auth_bp
+from .authentication_api import create_blueprint as create_auth_blueprint
 from .system.health_route import create_blueprint as create_system_blueprint
 
 
@@ -37,7 +37,7 @@ def create_routes(logger: logging.Logger,
     """
     api_bp = quart.Blueprint("api_routes", __name__)
 
-    api_bp.register_blueprint(create_auth_bp(logger, state), url_prefix="/authentication")
+    api_bp.register_blueprint(create_auth_blueprint(logger, state), url_prefix="/auth")
     api_bp.register_blueprint(create_system_blueprint(logger, state))
 
     return api_bp

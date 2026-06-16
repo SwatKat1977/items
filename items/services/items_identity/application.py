@@ -51,6 +51,8 @@ class Service(BaseMicroservice):
         self.logger.info(SERVICE_COPYRIGHT_TEXT)
         self.logger.info(LICENSE_TEXT)
 
+        self._service_state.version = __version__
+
         if not self._manage_configuration():
             return False
 
