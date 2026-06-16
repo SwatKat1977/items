@@ -18,10 +18,13 @@ import quart
 from items.shared.service_state import ServiceState
 from .auth import create_auth_routes
 from .system import create_system_routes
+from items.services.items_identity.identity_configuration import (
+    IdentityConfiguration)
 
 
 def create_routes(logger: logging.Logger,
-                  state: ServiceState) -> quart.Blueprint:
+                  state: ServiceState,
+                  configuration: IdentityConfiguration) -> quart.Blueprint:
     """
     Create and configure the API route blueprint for the application.
 
@@ -37,7 +40,7 @@ def create_routes(logger: logging.Logger,
     """
     routes_bp = quart.Blueprint("api_routes", __name__)
 
-    routes_bp.register_blueprint(create_auth_routes(logger, state))
+    routes_bp.register_blueprint(create_auth_routes(logger, state, configuration))
     routes_bp.register_blueprint(create_system_routes(logger, state))
 
     return routes_bp

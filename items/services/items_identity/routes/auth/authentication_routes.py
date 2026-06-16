@@ -13,20 +13,25 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from http import HTTPStatus
+import json
 import logging
-from quart import Blueprint
+from quart import Blueprint, Response
 from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.microservice_decorators import validate_json
-from items.services.items_identity.data_access.user_data_access_layer import (
-    UserDataAccessLayer)
+from items.services.items_identity.data_access.authentication_service import (
+    AuthenticationService)
+from items.services.items_identity.identity_configuration import IdentityConfiguration
+from items.services.items_identity.repositories.user_repository import UserRepository
 from items.services.items_identity.routes.auth.schemas import (
     SCHEMA_AUTHENTICATE_REQUEST)
 from items.shared.service_state import ServiceState
 
 
 def create_blueprint(logger: logging.Logger,
-                     service_state: ServiceState) -> Blueprint:
+                     service_state: ServiceState,
+                     configuration: IdentityConfiguration) -> Blueprint:
     """
     Creates and registers a Quart Blueprint for handling authentication.
 
@@ -39,18 +44,18 @@ def create_blueprint(logger: logging.Logger,
     Returns:
         Blueprint: A Flask `Blueprint` object containing the registered route.
     """
-    view = AuthenticationApiView(logger, service_state)
+    view = AuthenticationApiView(logger, service_state, configuration)
 
     blueprint = Blueprint('auth_api', __name__)
 
     logger.debug("Registering Authentication API routes:")
 
-    logger.debug("=> /authentication/basic [POST]")
+    logger.debug("=> /auth/login [POST]")
 
     # pylint: disable=no-value-for-parameter
     @blueprint.route('/basic', methods=['POST'])
     async def authenticate_basic_request():
-        return await view.authenticate_basic()
+        return await view.authenticate_password()
 
     return blueprint
 
@@ -68,21 +73,35 @@ class AuthenticationApiView(BaseApiRoute):
         _logger (logging.Logger): Logger instance for recording operational details.
     """
 
-    def __init__(self, logger: logging.Logger, service_state: ServiceState) -> None:
+    def __init__(self,
+                 logger: logging.Logger,
+                 service_state: ServiceState,
+                 configuration: IdentityConfiguration) -> None:
         self._logger = logger.getChild(__name__)
-        self._service_state = service_state
-        user_dal = UserDataAccessLayer(service_state, logger)
-        self._auth_service = AuthenticationService(self._logger, user_dal)
+        self._service_state: ServiceState = service_state
+
+        user_repository: UserRepository = UserRepository(self._logger,
+                                                         configuration)
+        self._auth_service: AuthenticationService = AuthenticationService(
+            self._logger, self._service_state, user_repository)
 
     @validate_json(SCHEMA_AUTHENTICATE_REQUEST)
-    async def authenticate_basic(self, request_msg: ApiResponse):
+    async def authenticate_password(self, request_msg: ApiResponse) -> Response:
         """
-        Handles basic authentication requests (HTTP layer).
+        Handles password authentication requests.
         """
-        status_code, response_json = self._auth_service.authenticate_basic(
+        success, message = await self._auth_service.authenticate_password(
             email=request_msg.body.email_address,
             password=request_msg.body.password
         )
+
+        response_json = {
+            "success": success,
+            "message": message
+        }
+
+        status_code = HTTPStatus.OK if success else HTTPStatus.UNAUTHORIZED
+
         return Response(
             json.dumps(response_json),
             status=status_code,

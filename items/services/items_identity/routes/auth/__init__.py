@@ -15,13 +15,15 @@ limitations under the License.
 """
 import logging
 import quart
+from items.services.items_identity.identity_configuration import IdentityConfiguration
 from items.shared.service_state import ServiceState
 from items.services.items_identity.routes.auth.authentication_routes import (
-    create_blueprint as create_auth_routes)
+    create_blueprint as create_auth_routes_internal)
 
 
-def create_auth_blueprints(logger: logging.Logger,
-                           state_object: ServiceState) -> quart.Blueprint:
+def create_auth_routes(logger: logging.Logger,
+                       service_state: ServiceState,
+                       config: IdentityConfiguration) -> quart.Blueprint:
     """Create and register auth-related blueprints.
 
     This function creates the parent auth blueprint and registers
@@ -29,13 +31,15 @@ def create_auth_blueprints(logger: logging.Logger,
 
     Args:
         logger: Logger instance used by route handlers.
-        state_object (ServiceState): A StateObject instance.
+        service_state (ServiceState): A StateObject instance.
 
     Returns:
         The configured  blueprint containing all registered routes.
     """
-    auth_blueprint = quart.Blueprint("auth_routes", __name__)
+    auth_routes = quart.Blueprint("auth_routes", __name__)
 
-    auth_blueprint.register_blueprint(create_auth_routes(logger, state), url_prefix="/authentication")
+    auth_routes.register_blueprint(create_auth_routes_internal(logger,
+                                                               service_state,
+                                                               config))
 
-    return system_blueprint
+    return auth_routes
