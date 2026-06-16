@@ -1,5 +1,5 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@ limitations under the License.
 import logging
 import quart
 from items.shared.service_state import ServiceState
-#from .authentication_api import create_blueprint as create_auth_blueprint
-#from .system.health_route import create_blueprint as create_system_blueprint
+from .auth import create_auth_routes
 from .system import create_system_routes
 
 
@@ -38,7 +37,7 @@ def create_routes(logger: logging.Logger,
     """
     routes_bp = quart.Blueprint("api_routes", __name__)
 
-    #api_bp.register_blueprint(create_auth_blueprint(logger, state), url_prefix="/auth")
+    routes_bp.register_blueprint(create_auth_routes(logger, state))
     routes_bp.register_blueprint(create_system_routes(logger, state))
 
     return routes_bp
