@@ -1,5 +1,5 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,14 +17,47 @@ from http import HTTPStatus
 import json
 import logging
 import time
-from quart import Response
-from base_view import BaseView
-from items_common.service_state import ServiceState
+from weaver_framework.microservice.base_api_route import BaseApiRoute
+from quart import Blueprint
+from items.shared.service_state import ServiceState
 from service_health_enums import (ServiceDegradationStatus,
                                   ComponentDegradationLevel)
 
 
-class HealthApiView(BaseView):
+def create_blueprint(logger: logging.Logger,
+                     state_object: ServiceState) -> Blueprint:
+    """Create and configure the system health API blueprint.
+
+    Args:
+        logger: Logger instance used for route registration and
+            request handling logging.
+        state_object (ServiceState): Application-wide state for tracking
+                                     health, startup time, etc.
+
+    Returns:
+        A configured Quart blueprint containing the system health
+        endpoint.
+    """
+    route = HealthRoute(logger, state_object)
+
+    blueprint = Blueprint('health', __name__)
+
+    logger.debug("=> %s GET /system/health",
+                 'Get system health'.ljust(40))
+
+    @blueprint.route('/system/health', methods=['GET'])
+    async def health_request():
+        """Handle incoming system health requests.
+
+        Returns:
+            A response containing the current system health status.
+        """
+        return await route.health()
+
+    return blueprint
+
+
+class HealthRoute(BaseApiRoute):
     """
     A view that provides health check information for the application.
 
