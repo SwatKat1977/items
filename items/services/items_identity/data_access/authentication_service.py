@@ -5,6 +5,7 @@ from items.shared.service_state import ServiceState
 from items.services.items_identity.repositories.user_repository import \
     UserRepository
 from items.services.items_identity.account_status import AccountStatus
+from items.services.items_identity.logon_type import LogonType
 
 
 class AuthenticationService:
@@ -33,23 +34,15 @@ class AuthenticationService:
         self._state = state
         self._user_repository = user_repository
 
-    def authenticate_basic_user(
-            self,
-            email: str,
-            password: str,
-            logon_type: int) -> tuple[bool, str]:
+    async def authenticate_password(self,
+                                    email: str,
+                                    password: str) -> tuple[bool, str]:
         """
         Authenticate a user using email/password credentials.
 
         Args:
-            email:
-                User email address.
-
-            password:
-                Plain-text password supplied by the user.
-
-            logon_type:
-                Expected logon type.
+            email: User email address.
+            password: Plain-text password supplied by the user.
 
         Returns:
             tuple:
@@ -65,7 +58,7 @@ class AuthenticationService:
 
         # Retrieve user
         try:
-            row = self._user_repository.get_user_for_logon(email)
+            row = await self._user_repository.get_user_by_email(email)
 
         except SqliteInterfaceException as ex:
 
@@ -78,23 +71,26 @@ class AuthenticationService:
 
             return False, "Internal authentication error"
 
-        # Check is the user existence
+        # Check user existence
         if row is None:
             return False, "Username/password don't match"
 
         user_id, account_logon_type, account_status = row
 
-        # Account validation
-        if account_logon_type != logon_type:
-            return False, "Incorrect logon type"
+        # Account validation - incorrect login type
+        if account_logon_type != LogonType.PASSWORD.value:
+            return False, "Username/password don't match"
 
+        # Account validation - Is account active
         if account_status != AccountStatus.ACTIVE.value:
+            self._logger.warning("Login attempt for inactive account %s",
+                                 user_id)
             return False, "Account is not active"
 
         # Retrieve password hash
         try:
             stored_password = (
-                self._user_repository.get_password_hash(user_id))
+                await self._user_repository.get_password_hash(user_id))
 
         except SqliteInterfaceException as ex:
 
@@ -109,11 +105,12 @@ class AuthenticationService:
 
         # Validate password
         if stored_password is None:
-            return False, "Invalid user id"
+            self._logger.error("User %s has no password record", user_id)
+            return False, "Internal authentication error"
 
         if not bcrypt.checkpw(
                 password.encode("utf-8"),
                 stored_password):
             return False, "Username/password don't match"
 
-        return True, ""
+        return True, "Authentication successful"
