@@ -16,7 +16,7 @@ limitations under the License.
 from http import HTTPStatus
 import json
 import logging
-from quart import Blueprint, Response
+from quart import Response
 from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.microservice_decorators import validate_json
@@ -29,38 +29,7 @@ from items.services.items_identity.routes.auth.schemas import (
 from items.shared.service_state import ServiceState
 
 
-def create_blueprint(logger: logging.Logger,
-                     service_state: ServiceState,
-                     configuration: IdentityConfiguration) -> Blueprint:
-    """
-    Creates and registers a Quart Blueprint for handling authentication.
-
-    This function initializes a `View` object with the provided logger, and
-    then defines an API endpoints for authentication.
-
-    Args:
-        logger (logging.Logger): A logger instance for logging messages.
-
-    Returns:
-        Blueprint: A Flask `Blueprint` object containing the registered route.
-    """
-    view = AuthenticationApiView(logger, service_state, configuration)
-
-    blueprint = Blueprint('auth_api', __name__)
-
-    logger.debug("Registering Authentication API routes:")
-
-    logger.debug("=> /auth/login [POST]")
-
-    # pylint: disable=no-value-for-parameter
-    @blueprint.route('/basic', methods=['POST'])
-    async def authenticate_basic_request():
-        return await view.authenticate_password()
-
-    return blueprint
-
-
-class AuthenticationApiView(BaseApiRoute):
+class AuthenticatePasswordHandler(BaseApiRoute):
     """
     Provides API endpoints related to user authentication for the service.
 

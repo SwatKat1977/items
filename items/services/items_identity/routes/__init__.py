@@ -16,10 +16,11 @@ limitations under the License.
 import logging
 import quart
 from items.shared.service_state import ServiceState
-from .auth import create_auth_routes
-from .system import create_system_routes
 from items.services.items_identity.identity_configuration import (
     IdentityConfiguration)
+from .auth import create_auth_routes
+from .system import create_system_routes
+
 
 
 def create_routes(logger: logging.Logger,
