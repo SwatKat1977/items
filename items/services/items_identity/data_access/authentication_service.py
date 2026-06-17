@@ -10,7 +10,12 @@ from items.services.items_identity.logon_type import LogonType
 
 class AuthenticationService:
     """
-    Handles user authentication workflows and operational policy.
+    Provides user authentication services for password-based accounts.
+
+    This service validates user credentials, enforces account status
+    restrictions, and coordinates authentication-related operational
+    state management. Database failures are logged and may cause the
+    service to transition into a degraded state.
     """
 
     def __init__(self,
@@ -38,18 +43,45 @@ class AuthenticationService:
                                     email: str,
                                     password: str) -> tuple[bool, str]:
         """
-        Authenticate a user using email/password credentials.
+        Authenticate a user using an email address and password.
+
+        The authentication process performs the following checks:
+
+        1. Verifies that the authentication service is available.
+        2. Retrieves the user account associated with the email address.
+        3. Ensures the account uses password-based authentication.
+        4. Verifies that the account is active.
+        5. Retrieves the stored password hash.
+        6. Compares the supplied password against the stored hash.
+
+        Database failures are logged and may cause the service state to be
+        marked as degraded.
 
         Args:
-            email: User email address.
-            password: Plain-text password supplied by the user.
+            email:
+                Email address supplied by the user.
+
+            password:
+                Plain-text password supplied by the user.
 
         Returns:
-            tuple:
+            A tuple containing:
+
+            * ``True`` and a success message when authentication succeeds.
+            * ``False`` and a descriptive failure message when
+              authentication fails.
+
+            The returned tuple has the form::
+
                 (
                     authentication_successful,
                     status_message
                 )
+
+        Notes:
+            Authentication failures intentionally return a generic
+            username/password mismatch message where appropriate to avoid
+            disclosing account existence information.
         """
 
         # Check service availability

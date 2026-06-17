@@ -7,7 +7,11 @@ from items.services.items_identity.identity_configuration import \
 
 class UserRepository:
     """
-    Repository responsible for user-related persistence operations.
+    Provides persistence operations for user account and authentication data.
+
+    This repository encapsulates database access for user identity and
+    credential information. It serves as the data access layer between
+    application services and the underlying SQLite storage.
     """
 
     GET_USER_FOR_LOGON_QUERY: str = (
@@ -23,6 +27,17 @@ class UserRepository:
     def __init__(self,
                  logger: logging.Logger,
                  config: IdentityConfiguration) -> None:
+        """
+        Initialize a UserRepository instance.
+
+        Args:
+            logger:
+                Parent logger used for repository and database logging.
+
+            config:
+                Identity service configuration containing database
+                connection settings.
+        """
         self._logger: logging.Logger = logger.getChild(__name__)
         self._config: IdentityConfiguration = config
 
@@ -33,19 +48,29 @@ class UserRepository:
     async def get_user_by_email(self,
                                 email: str) -> Optional[tuple[int, int, int]]:
         """
-        Retrieve user logon information by email address.
+        Retrieve user authentication information by email address.
+
+        Args:
+            email:
+                Email address associated with the user account.
 
         Returns:
-            Tuple containing:
-                (
-                    user_id,
-                    logon_type,
-                    account_status
-                )
+            A tuple containing the user's authentication metadata if a
+            matching account exists:
 
-            or None if no matching user exists.
+            (
+                user_id,
+                logon_type,
+                account_status
+            )
+
+            Returns ``None`` if no user exists with the specified email
+            address.
+
+        Raises:
+            SqliteInterfaceException:
+                If the underlying database operation fails.
         """
-
         return await self._db.run_query(self.GET_USER_FOR_LOGON_QUERY,
                                         (email,),
                                         fetch_one=True)
@@ -54,14 +79,21 @@ class UserRepository:
             self,
             user_id: int) -> Optional[bytes]:
         """
-        Retrieve password hash for a user.
+        Retrieve the stored password hash for a user.
+
+        Args:
+            user_id:
+                Unique identifier of the user.
 
         Returns:
-            Password hash bytes or None if not found.
-        """
+            The stored password hash as bytes if a password record exists,
+            otherwise ``None``.
 
+        Raises:
+            SqliteInterfaceException:
+                If the underlying database operation fails.
+        """
         row = await self._db.run_query(self.GET_PASSWORD_HASH_QUERY,
                                        (user_id,),
                                        fetch_one=True)
-
         return row[0] if row else None

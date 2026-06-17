@@ -15,7 +15,8 @@ limitations under the License.
 """
 from weaver_framework.configuration_system.configuration_manager import (
     ConfigurationManager)
-from items.services.items_identity.configuration_layout import ConfigurationConstants
+from items.services.items_identity.configuration_layout import \
+    ConfigurationConstants
 
 
 class IdentityConfiguration(ConfigurationManager):

@@ -23,21 +23,37 @@ from .authenticate_password_handler import AuthenticatePasswordHandler
 def create_auth_routes(logger: logging.Logger,
                        service_state: ServiceState,
                        config: IdentityConfiguration) -> quart.Blueprint:
-    """Create and register auth-related blueprints.
+    """
+    Create and configure authentication-related routes.
 
-    This function creates the parent auth blueprint and registers
-    all auth-level route blueprints, such as login, logout and register routes.
+    This function creates the authentication blueprint, initializes
+    the required route handlers, and registers all authentication
+    endpoints with the blueprint.
+
+    Currently registered routes include:
+
+    * ``POST /auth/login`` - Authenticate a user using email and password
+      credentials.
 
     Args:
-        logger: Logger instance used by route handlers.
-        service_state (ServiceState): A StateObject instance.
+        logger:
+            Logger used for route registration and request handling.
+
+        service_state:
+            Shared service state used by authentication handlers to
+            determine service availability and operational status.
+
+        config:
+            Identity service configuration used to initialize
+            authentication components.
 
     Returns:
-        The configured  blueprint containing all registered routes.
+        A configured Quart blueprint containing all registered
+        authentication routes.
     """
     auth_routes = quart.Blueprint("auth_routes", __name__)
 
-    authenticate_password_handler: AuthenticatePasswordHandler = \
+    auth_password_handler: AuthenticatePasswordHandler = \
         AuthenticatePasswordHandler(logger, service_state, config)
 
     logger.debug("Registering Auth API routes:")
@@ -48,6 +64,6 @@ def create_auth_routes(logger: logging.Logger,
     # pylint: disable=no-value-for-parameter
     @auth_routes.route('/auth/login', methods=['POST'])
     async def authenticate_password_request():
-        return await authenticate_password_handler.authenticate_password()
+        return await auth_password_handler.authenticate_password()
 
     return auth_routes

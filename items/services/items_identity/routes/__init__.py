@@ -26,17 +26,33 @@ def create_routes(logger: logging.Logger,
                   state: ServiceState,
                   configuration: IdentityConfiguration) -> quart.Blueprint:
     """
-    Create and configure the API route blueprint for the application.
+    Create and configure the application's API route blueprint.
 
-    This function initializes a Quart blueprint for the API routes and registers
-    sub-blueprints, such as the authentication API, under appropriate URL prefixes.
+    This function creates the root API blueprint and registers all
+    route groups used by the identity service. Each route group is
+    implemented as a separate Quart blueprint and is registered under
+    the root API blueprint.
+
+    Currently registered route groups include:
+
+    * Authentication routes
+    * System and health monitoring routes
 
     Args:
-        logger (logging.Logger): Logger instance for logging within the route views.
-        state (ServiceState): Shared application state object passed to route views.
+        logger:
+            Logger used by route handlers and route registration code.
+
+        state:
+            Shared service state used by route handlers to determine
+            service availability and operational status.
+
+        configuration:
+            Identity service configuration used to initialize
+            route handlers and supporting services.
 
     Returns:
-        quart.Blueprint: The configured API blueprint with registered sub-routes.
+        A configured Quart blueprint containing all registered API
+        routes for the application.
     """
     routes_bp = quart.Blueprint("api_routes", __name__)
 

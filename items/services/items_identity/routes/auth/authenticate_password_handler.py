@@ -59,10 +59,10 @@ class AuthenticatePasswordHandler(BaseApiRoute):
         """
         Handles password authentication requests.
         """
+        print(request_msg.body)
         success, message = await self._auth_service.authenticate_password(
-            email=request_msg.body.email_address,
-            password=request_msg.body.password
-        )
+            email=request_msg.body['email_address'],
+            password=request_msg.body['password'])
 
         response_json = {
             "success": success,
