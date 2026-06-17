@@ -22,7 +22,6 @@ from .auth import create_auth_routes
 from .system import create_system_routes
 
 
-
 def create_routes(logger: logging.Logger,
                   state: ServiceState,
                   configuration: IdentityConfiguration) -> quart.Blueprint:

@@ -17,8 +17,7 @@ import logging
 import quart
 from items.services.items_identity.identity_configuration import IdentityConfiguration
 from items.shared.service_state import ServiceState
-from items.services.items_identity.routes.auth.authentication_routes import (
-    AuthenticatePasswordHandler)
+from .authenticate_password_handler import AuthenticatePasswordHandler
 
 
 def create_auth_routes(logger: logging.Logger,
