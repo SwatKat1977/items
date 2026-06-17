@@ -38,7 +38,9 @@ def create_system_routes(logger: logging.Logger,
     system_routes = Blueprint("system_routes", __name__)
 
     # Health route handler
-    health_route_handler: HealthHandler(logger, state_object)
+    health_route_handler: HealthHandler = HealthHandler(logger, state_object)
+
+    logger.debug("Registering System API routes:")
 
     logger.debug("=> %s GET /system/health",
                  'Get system health'.ljust(40))

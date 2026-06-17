@@ -18,7 +18,7 @@ import quart
 from items.services.items_identity.identity_configuration import IdentityConfiguration
 from items.shared.service_state import ServiceState
 from items.services.items_identity.routes.auth.authentication_routes import (
-    create_blueprint as create_auth_routes_internal)
+    AuthenticatePasswordHandler)
 
 
 def create_auth_routes(logger: logging.Logger,
@@ -38,8 +38,17 @@ def create_auth_routes(logger: logging.Logger,
     """
     auth_routes = quart.Blueprint("auth_routes", __name__)
 
-    auth_routes.register_blueprint(create_auth_routes_internal(logger,
-                                                               service_state,
-                                                               config))
+    authenticate_password_handler: AuthenticatePasswordHandler = \
+        AuthenticatePasswordHandler(logger, service_state, config)
+
+    logger.debug("Registering Auth API routes:")
+
+    logger.debug("=> %s POST /auth/login",
+                 'Authenticate with password'.ljust(40))
+
+    # pylint: disable=no-value-for-parameter
+    @auth_routes.route('/auth/login', methods=['POST'])
+    async def authenticate_password_request():
+        return await authenticate_password_handler.authenticate_password()
 
     return auth_routes
