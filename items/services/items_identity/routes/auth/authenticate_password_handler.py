@@ -23,7 +23,7 @@ from weaver_framework.microservice.microservice_decorators import validate_json
 from items.services.items_identity.data_access.authentication_service import (
     AuthenticationService)
 from items.services.items_identity.identity_configuration import IdentityConfiguration
-from items.services.items_identity.repositories.user_repository import UserRepository
+from items.services.items_identity.data_access.user_repository import UserRepository
 from items.services.items_identity.routes.auth.schemas import (
     SCHEMA_AUTHENTICATE_REQUEST)
 from items.shared.service_state import ServiceState

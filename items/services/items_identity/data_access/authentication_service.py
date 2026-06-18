@@ -2,7 +2,7 @@ import logging
 import bcrypt
 from weaver_framework.database.sqlite_interface import SqliteInterfaceException
 from items.shared.service_state import ServiceState
-from items.services.items_identity.repositories.user_repository import \
+from items.services.items_identity.data_access.user_repository import \
     UserRepository
 from items.services.items_identity.account_status import AccountStatus
 from items.services.items_identity.logon_type import LogonType

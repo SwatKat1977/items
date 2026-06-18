@@ -24,7 +24,7 @@ from items.services.items_identity.identity_configuration import \
 from items.services.items_identity.routes import create_routes
 from items.services.items_identity.configuration_layout import \
     CONFIGURATION_LAYOUT
-from items.services.items_identity.repositories.user_repository import \
+from items.services.items_identity.data_access.user_repository import \
     UserRepository
 from items.services.items_identity.data_access.authentication_service import \
     AuthenticationService
