@@ -26,7 +26,7 @@ from items.services.items_identity.configuration_layout import \
     CONFIGURATION_LAYOUT
 from items.services.items_identity.data_access.user_repository import \
     UserRepository
-from items.services.items_identity.data_access.authentication_service import \
+from items.services.items_identity.services.authentication_service import \
     AuthenticationService
 
 
