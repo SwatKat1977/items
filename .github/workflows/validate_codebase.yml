@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup  # Wait for the setup job to complete
     outputs:
-      accounts_svc_changed: ${{ steps.detect.outputs.accounts_svc_changed }}
+      identity_svc_changed: ${{ steps.detect.outputs.identity_svc_changed }}
       cms_svc_changed: ${{ steps.detect.outputs.cms_svc_changed }}
       gateway_svc_changed: ${{ steps.detect.outputs.gateway_svc_changed }}
       web_portal_svc_changed: ${{ steps.detect.outputs.web_portal_svc_changed }}
