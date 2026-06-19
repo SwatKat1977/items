@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from account_logon_type import AccountLogonType
 from account_status import AccountStatus
+from account_logon_type import AccountLogonType
 
 SQL_CREATE_USER_PROFILE_TABLE: str = """
     CREATE TABLE IF NOT EXISTS user_profile (
@@ -28,14 +28,6 @@ SQL_CREATE_USER_PROFILE_TABLE: str = """
     )
 """
 
-DEFAULT_ADMIN_USER: dict = {
-    'email_address': 'admin@localhost',
-    'full_name': 'Local Admin',
-    'display_name': 'Local Admin',
-    'account_status': AccountStatus.ACTIVE.value,
-    'logon_type': AccountLogonType.BASIC.value
-}
-
 SQL_CREATE_USER_AUTH_DETAILS_TABLE: str = """
     CREATE TABLE IF NOT EXISTS user_auth_details (
         id integer PRIMARY KEY,
@@ -46,3 +38,11 @@ SQL_CREATE_USER_AUTH_DETAILS_TABLE: str = """
         FOREIGN KEY(user_id) REFERENCES user_profile(id)
     )
 """
+
+DEFAULT_ADMIN_USER: dict = {
+    'email_address': 'admin@localhost',
+    'full_name': 'Local Admin',
+    'display_name': 'Local Admin',
+    'account_status': AccountStatus.ACTIVE.value,
+    'logon_type': AccountLogonType.BASIC.value
+}

@@ -1,0 +1,124 @@
+"""
+Copyright 2025 Integrated Test Management Suite Development Team
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+import argparse
+import logging
+import os.path
+import secrets
+import string
+import bcrypt
+import identity_sql
+import sql_values
+from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
+
+LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
+LOGGING_DEFAULT_LOG_LEVEL = logging.DEBUG
+LOGGING_LOG_FORMAT_STRING = "%(asctime)s [%(levelname)s] %(message)s"
+
+DEFAULT_DB_FILENAME: str = "items_identity_svc.db"
+DEFAULT_FIXED_ADMIN_PASSWORD: str = "item_admin_2025"
+DEFAULT_ADMIN_PASSWORD_LEN: int = 10
+
+
+def generate_secure_password(length: int = DEFAULT_ADMIN_PASSWORD_LEN) -> str:
+    if length < DEFAULT_ADMIN_PASSWORD_LEN:
+        raise ValueError(f"Password length should be at least "
+                         f"{DEFAULT_ADMIN_PASSWORD_LEN} characters.")
+    alphabet = string.ascii_letters + string.digits + string.punctuation
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+
+def open_db(logger: logging.Logger, filename: str) -> BaseSqliteInterface:
+    logger.info("Opening database...")
+    if os.path.exists(filename):
+        logger.critical("Database '%s' already exists!", filename)
+        return None
+    db = BaseSqliteInterface(filename)
+    logger.info("Database '%s' opened successfully", filename)
+    return db
+
+
+def build_database(logger: logging.Logger,
+                   database: BaseSqliteInterface,
+                   admin_password: str) -> bool:
+    try:
+        logger.info("-> Creating user_profile table")
+        database.create_table(sql_values.SQL_CREATE_USER_PROFILE_TABLE, "user_profile")
+
+        logger.info("-> Creating user_auth_details table")
+        database.create_table(sql_values.SQL_CREATE_USER_AUTH_DETAILS_TABLE, "user_auth_details")
+
+        logger.info("-> Creating admin with password '%s'", admin_password)
+        admin_profile_params: tuple = (
+            sql_values.DEFAULT_ADMIN_USER.get('email_address'),
+            sql_values.DEFAULT_ADMIN_USER.get('full_name'),
+            sql_values.DEFAULT_ADMIN_USER.get('display_name'),
+            sql_values.DEFAULT_ADMIN_USER.get('account_status'),
+            sql_values.DEFAULT_ADMIN_USER.get('logon_type')
+        )
+        admin_user_id: int = database.insert_query(identity_sql.SQL_ADD_USER_PROFILE,
+                                                   admin_profile_params)
+
+        admin_password_salt = bcrypt.gensalt()
+        password_hash = bcrypt.hashpw(admin_password.encode('utf-8'), admin_password_salt)
+        database.insert_query(identity_sql.SQL_ADD_USER_AUTH_DETAILS,
+                              (password_hash, admin_password_salt, admin_user_id))
+
+        logger.info("Database build successful")
+
+    except SqliteInterfaceException as interface_except:
+        logger.critical("Database build failed: %s", str(interface_except))
+        return False
+
+    return True
+
+
+def main():
+    logger: logging.Logger = logging.getLogger(__name__)
+    log_format = logging.Formatter(LOGGING_LOG_FORMAT_STRING, LOGGING_DATETIME_FORMAT_STRING)
+    console_stream = logging.StreamHandler()
+    console_stream.setFormatter(log_format)
+    logger.setLevel(LOGGING_DEFAULT_LOG_LEVEL)
+    logger.addHandler(console_stream)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--dbFile", type=str, help="Database filename")
+    parser.add_argument("-a", "--adminPassword", type=str, help="Manual admin password")
+    parser.add_argument("-r", "--randomAdminPassword", action="store_true",
+                        help="Random password")
+    args = parser.parse_args()
+
+    filename: str = args.dbFile if args.dbFile else DEFAULT_DB_FILENAME
+    logger.info("Database file: %s", filename)
+
+    admin_password: str = DEFAULT_FIXED_ADMIN_PASSWORD
+    if args.randomAdminPassword:
+        logger.info("Using random admin password...")
+        admin_password = generate_secure_password()
+    elif args.adminPassword:
+        logger.info("Using user-defined admin password...")
+        admin_password = args.adminPassword
+    else:
+        logger.info("Using default admin password...")
+
+    db = open_db(logger, filename)
+    if not db:
+        return
+
+    build_database(logger, db, admin_password)
+
+
+if __name__ == "__main__":
+    main()
