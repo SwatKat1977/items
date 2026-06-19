@@ -111,9 +111,9 @@ jobs:
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: .:items/services/items_identity:unit_tests/identity_svc
+          PYTHONPATH: .:items/services/items_identity:unit_tests/items_identity
         run: |
-          coverage run --rcfile=.github/workflows/.coveragerc_identity_svc -m unittest -v unit_tests/identity_svc/main.py
+          coverage run --rcfile=.github/workflows/.coveragerc_identity_svc -m unittest -v unit_tests/items_identity/main.py
           coverage report -m --fail-under=100
 
   verify_cms-svc:
