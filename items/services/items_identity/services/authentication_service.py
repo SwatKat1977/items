@@ -1,3 +1,18 @@
+"""
+Copyright 2025-2026 Integrated Test Management Suite Development Team
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 import logging
 import bcrypt
 from weaver_framework.database.sqlite_interface import SqliteInterfaceException
@@ -17,6 +32,7 @@ class AuthenticationService:
     state management. Database failures are logged and may cause the
     service to transition into a degraded state.
     """
+    # pylint: disable=too-few-public-methods
 
     def __init__(self,
                  logger: logging.Logger,
@@ -83,6 +99,7 @@ class AuthenticationService:
             username/password mismatch message where appropriate to avoid
             disclosing account existence information.
         """
+        # pylint: disable=too-many-return-statements
 
         # Check service availability
         if not self._state.is_available():
