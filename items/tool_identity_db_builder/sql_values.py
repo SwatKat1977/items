@@ -32,7 +32,6 @@ SQL_CREATE_USER_AUTH_DETAILS_TABLE: str = """
     CREATE TABLE IF NOT EXISTS user_auth_details (
         id integer PRIMARY KEY,
         password text NOT NULL,
-        password_salt text NOT NULL,
         user_id integer NOT NULL,
 
         FOREIGN KEY(user_id) REFERENCES user_profile(id)

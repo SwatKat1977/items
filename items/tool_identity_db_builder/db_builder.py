@@ -18,7 +18,7 @@ import logging
 import os.path
 import secrets
 import string
-import bcrypt
+from argon2 import PasswordHasher
 import identity_sql
 import sql_values
 from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
@@ -71,10 +71,9 @@ def build_database(logger: logging.Logger,
         admin_user_id: int = database.insert_query(identity_sql.SQL_ADD_USER_PROFILE,
                                                    admin_profile_params)
 
-        admin_password_salt = bcrypt.gensalt()
-        password_hash = bcrypt.hashpw(admin_password.encode('utf-8'), admin_password_salt)
+        password_hash = PasswordHasher().hash(admin_password)
         database.insert_query(identity_sql.SQL_ADD_USER_AUTH_DETAILS,
-                              (password_hash, admin_password_salt, admin_user_id))
+                              (password_hash, admin_user_id))
 
         logger.info("Database build successful")
 

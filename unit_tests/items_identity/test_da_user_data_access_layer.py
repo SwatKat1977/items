@@ -53,8 +53,8 @@ class TestUserRepository(unittest.IsolatedAsyncioTestCase):
         result = await self.repo.get_password_hash(1)
         self.assertIsNone(result)
 
-    async def test_get_password_hash_returns_hash_bytes(self):
-        expected_hash = b"$2b$12$somehash"
+    async def test_get_password_hash_returns_hash_str(self):
+        expected_hash = "$argon2id$v=19$somehash"
         self.mock_db.run_query.return_value = (expected_hash,)
         result = await self.repo.get_password_hash(1)
         self.assertEqual(result, expected_hash)

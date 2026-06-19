@@ -77,7 +77,7 @@ class UserRepository:
 
     async def get_password_hash(
             self,
-            user_id: int) -> Optional[bytes]:
+            user_id: int) -> Optional[str]:
         """
         Retrieve the stored password hash for a user.
 
@@ -86,8 +86,8 @@ class UserRepository:
                 Unique identifier of the user.
 
         Returns:
-            The stored password hash as bytes if a password record exists,
-            otherwise ``None``.
+            The stored Argon2 password hash string if a password record
+            exists, otherwise ``None``.
 
         Raises:
             SqliteInterfaceException:

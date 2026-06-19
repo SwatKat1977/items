@@ -19,5 +19,5 @@ SQL_ADD_USER_PROFILE: str = ("INSERT INTO user_profile (email_address, "
                              "account_status, logon_type) "
                              "VALUES(?, ?, ?, 0, ?, ?)")
 
-SQL_ADD_USER_AUTH_DETAILS: str = ("INSERT INTO user_auth_details (password,"
-                                  "password_salt, user_id) VALUES(?, ?, ?)")
+SQL_ADD_USER_AUTH_DETAILS: str = ("INSERT INTO user_auth_details (password, "
+                                  "user_id) VALUES(?, ?)")

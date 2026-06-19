@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
-import bcrypt
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 from weaver_framework.database.sqlite_interface import SqliteInterfaceException
 from items.shared.service_state import ServiceState
 from items.services.items_identity.data_access.user_repository import \
@@ -157,9 +158,13 @@ class AuthenticationService:
             self._logger.error("User %s has no password record", user_id)
             return False, "Internal authentication error"
 
-        if not bcrypt.checkpw(
-                password.encode("utf-8"),
-                stored_password):
+        try:
+            PasswordHasher().verify(stored_password, password)
+        except VerifyMismatchError:
             return False, "Username/password don't match"
+        except (VerificationError, InvalidHashError) as ex:
+            self._logger.error("Password verification error for user %s: %s",
+                               user_id, str(ex))
+            return False, "Internal authentication error"
 
         return True, "Authentication successful"

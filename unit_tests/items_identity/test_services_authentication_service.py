@@ -1,6 +1,7 @@
 import unittest
 import logging
 from unittest.mock import MagicMock, AsyncMock, patch
+from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 from weaver_framework.database.sqlite_interface import SqliteInterfaceException
 from services.authentication_service import AuthenticationService
 
@@ -79,24 +80,43 @@ class TestAuthenticationService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(message, "Internal authentication error")
         self.mock_child_logger.error.assert_called_once()
 
-    @patch("services.authentication_service.bcrypt.checkpw", return_value=True)
-    async def test_authenticate_success(self, mock_checkpw):
+    @patch("services.authentication_service.PasswordHasher")
+    async def test_authenticate_success(self, mock_ph_cls):
+        mock_ph = MagicMock()
+        mock_ph_cls.return_value = mock_ph
         # logon_type=0 (PASSWORD), account_status=1 (ACTIVE)
         self.mock_user_repository.get_user_by_email.return_value = (42, 0, 1)
-        self.mock_user_repository.get_password_hash.return_value = b"$2b$12$hash"
+        self.mock_user_repository.get_password_hash.return_value = "$argon2id$v=19$hash"
         success, message = await self.auth_service.authenticate_password(
             "user@example.com", "password")
         self.assertTrue(success)
         self.assertEqual(message, "Authentication successful")
-        mock_checkpw.assert_called_once()
+        mock_ph.verify.assert_called_once_with("$argon2id$v=19$hash", "password")
 
-    @patch("services.authentication_service.bcrypt.checkpw", return_value=False)
-    async def test_authenticate_wrong_password(self, mock_checkpw):
+    @patch("services.authentication_service.PasswordHasher")
+    async def test_authenticate_wrong_password(self, mock_ph_cls):
+        mock_ph = MagicMock()
+        mock_ph.verify.side_effect = VerifyMismatchError()
+        mock_ph_cls.return_value = mock_ph
         # logon_type=0 (PASSWORD), account_status=1 (ACTIVE)
         self.mock_user_repository.get_user_by_email.return_value = (42, 0, 1)
-        self.mock_user_repository.get_password_hash.return_value = b"$2b$12$hash"
+        self.mock_user_repository.get_password_hash.return_value = "$argon2id$v=19$hash"
         success, message = await self.auth_service.authenticate_password(
             "user@example.com", "badpass")
         self.assertFalse(success)
         self.assertEqual(message, "Username/password don't match")
-        mock_checkpw.assert_called_once()
+        mock_ph.verify.assert_called_once()
+
+    @patch("services.authentication_service.PasswordHasher")
+    async def test_authenticate_hash_error(self, mock_ph_cls):
+        mock_ph = MagicMock()
+        mock_ph.verify.side_effect = VerificationError()
+        mock_ph_cls.return_value = mock_ph
+        # logon_type=0 (PASSWORD), account_status=1 (ACTIVE)
+        self.mock_user_repository.get_user_by_email.return_value = (42, 0, 1)
+        self.mock_user_repository.get_password_hash.return_value = "$argon2id$v=19$hash"
+        success, message = await self.auth_service.authenticate_password(
+            "user@example.com", "password")
+        self.assertFalse(success)
+        self.assertEqual(message, "Internal authentication error")
+        self.mock_child_logger.error.assert_called()
