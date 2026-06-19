@@ -1,7 +1,7 @@
 [run]
 omit =
     unit_tests/shared/*
-    unit_tests/items_identity/*
+    unit_tests/items.identity/*
     items/shared/*
     /opt/homebrew/*
     /usr/lib/python3/*
