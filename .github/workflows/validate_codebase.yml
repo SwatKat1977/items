@@ -113,7 +113,7 @@ jobs:
         env:
           PYTHONPATH: items/shared:unit_tests/accounts_svc:services/accounts_svc:common
         run: |
-          coverage run --rcfile=.github/workflows/.coveragerc_accounts_svc -m unittest -v main
+          coverage run --rcfile=.github/workflows/.coveragerc_identity_svc -m unittest -v main
           coverage report -m --fail-under=100
 
   verify_cms-svc:
