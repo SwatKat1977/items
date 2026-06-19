@@ -11,12 +11,12 @@ class TestCreateApiRoutes(unittest.IsolatedAsyncioTestCase):
         self.logger = Mock(spec=logging.Logger)
         self.state = Mock(spec=ServiceState)
 
-        # Patch Blueprint and all route factories in apis.__init__
-        self.patcher_bp = patch("apis.quart.Blueprint")
-        self.patcher_health = patch("apis.create_heath_bp", new_callable=Mock)
-        self.patcher_projects = patch("apis.create_projects_bp", new_callable=Mock)
-        self.patcher_testcases = patch("apis.create_testcases_bp", new_callable=Mock)
-        self.patcher_admin = patch("apis.create_admin_routes", new_callable=Mock)
+        # Patch Blueprint and all route factories in routes.__init__
+        self.patcher_bp = patch("routes.quart.Blueprint")
+        self.patcher_health = patch("routes.create_heath_bp", new_callable=Mock)
+        self.patcher_projects = patch("routes.create_projects_bp", new_callable=Mock)
+        self.patcher_testcases = patch("routes.create_testcases_bp", new_callable=Mock)
+        self.patcher_admin = patch("routes.create_admin_routes", new_callable=Mock)
 
         self.mock_blueprint_class = self.patcher_bp.start()
         self.mock_create_health = self.patcher_health.start()

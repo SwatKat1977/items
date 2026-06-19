@@ -24,7 +24,7 @@ class ConfigurationConstants:
     """ Constants for the microservice configuration. """
 
     SECTION_LOGGING: str = 'logging'
-    SECTION_APIS: str = 'apis'
+    SECTION_APIS: str = 'routes'
     SECTION_GENERAL: str = 'general'
 
     LOGGING_LOG_LEVEL: str = 'log_level'

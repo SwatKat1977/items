@@ -13,8 +13,28 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import logging
 
-LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
-LOGGING_DEFAULT_LOG_LEVEL = logging.DEBUG
-LOGGING_LOG_FORMAT_STRING = "%(asctime)s [%(levelname)s] %(message)s"
+SCHEMA_AUTHENTICATE_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+    {
+        "email_address":
+        {
+            "type": "string",
+            "format": "email",
+            "minLength": 3,
+            "maxLength": 320
+        },
+        "password":
+        {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+        },
+    },
+    "required": ["email_address", "password"]
+}

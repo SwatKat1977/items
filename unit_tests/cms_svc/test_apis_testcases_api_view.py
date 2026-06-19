@@ -28,7 +28,7 @@ class TestApiTestCasesApiView(unittest.IsolatedAsyncioTestCase):
 
         self.client = self.app.test_client()
 
-    @patch('apis.testcases_api_view.SqlInterface')
+    @patch('routes.testcases_api_view.SqlInterface')
     async def test_testcase_details_valid_project(self, mock_sql_interface):
         """Test testcase_details with a valid project ID."""
         mock_db = MagicMock()
@@ -60,7 +60,7 @@ class TestApiTestCasesApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(data[0][3][0], {"id": 5, "name": "Invalid Login Test"}, "First test should be 5")
             self.assertEqual(data[0][3][1], {"id": 4, "name": "Valid Login Test"}, "Second test should be 4")
 
-    @patch('apis.testcases_api_view.SqlInterface')
+    @patch('routes.testcases_api_view.SqlInterface')
     async def test_testcase_details_invalid_project(self, mock_sql_interface):
         """Test testcase_details when an invalid project ID is provided."""
         mock_db = MagicMock()
@@ -92,7 +92,7 @@ class TestApiTestCasesApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(data["error"], "Invalid project id",
                              "Error should be should be 'Invalid project id'")
 
-    @patch('apis.testcases_api_view.SqlInterface')
+    @patch('routes.testcases_api_view.SqlInterface')
     async def test_testcase_details_empty_results(self, mock_sql_interface):
         mock_db = MagicMock()
         mock_db.projects.is_valid_project_id.return_value = True
@@ -117,7 +117,7 @@ class TestApiTestCasesApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status_code, http.HTTPStatus.OK)
             self.assertEqual(len(data), 0, 'List should be empty')
 
-    @patch('apis.testcases_api_view.SqlInterface')
+    @patch('routes.testcases_api_view.SqlInterface')
     async def test_testcase_get_case_valid(self, mock_sql_interface):
         """Test `testcase_get_case` with a valid case ID."""
         mock_db = MagicMock()
@@ -163,7 +163,7 @@ class TestApiTestCasesApiView(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(data[0][3], 'Checks login with valid credentials',
                              "Test description should be 'Checks login with valid credentials'")
 
-    @patch('apis.testcases_api_view.SqlInterface')
+    @patch('routes.testcases_api_view.SqlInterface')
     async def test_testcase_get_case_not_found(self, mock_sql_interface):
         """Test `testcase_get_case` when case ID is not found."""
         mock_db = MagicMock()

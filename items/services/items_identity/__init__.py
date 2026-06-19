@@ -1,5 +1,5 @@
 """
-Copyright 2025-2026 Integrated Test Management Suite Development Team
+Copyright 2025 Integrated Test Management Suite Development Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import logging
+from quart import Quart
+from items.services.items_identity.application import Service
 
-LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
-LOGGING_DEFAULT_LOG_LEVEL = logging.DEBUG
-LOGGING_LOG_FORMAT_STRING = "%(asctime)s [%(levelname)s] %(message)s"
+app = Quart(__name__)
+service = Service(app)
