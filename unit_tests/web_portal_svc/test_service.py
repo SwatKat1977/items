@@ -115,7 +115,7 @@ class TestService(unittest.IsolatedAsyncioTestCase):
         expected_logs = [
             ("[logging]",),
             ("=> Logging log level : %s", "DEBUG"),
-            ("[apis]",),
+            ("[routes]",),
             ("=> Gateway Service API : %s", "http://localhost:3000/")
         ]
 

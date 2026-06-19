@@ -13,8 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import logging
 
-LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
-LOGGING_DEFAULT_LOG_LEVEL = logging.DEBUG
-LOGGING_LOG_FORMAT_STRING = "%(asctime)s [%(levelname)s] %(message)s"
+SQL_ADD_USER_PROFILE: str = ("INSERT INTO user_profile (email_address, "
+                             "full_name, display_name, insertion_date, "
+                             "account_status, logon_type) "
+                             "VALUES(?, ?, ?, 0, ?, ?)")
+
+SQL_ADD_USER_AUTH_DETAILS: str = ("INSERT INTO user_auth_details (password, "
+                                  "user_id) VALUES(?, ?)")

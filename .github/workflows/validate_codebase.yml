@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup  # Wait for the setup job to complete
     outputs:
-      accounts_svc_changed: ${{ steps.detect.outputs.accounts_svc_changed }}
+      identity_svc_changed: ${{ steps.detect.outputs.identity_svc_changed }}
       cms_svc_changed: ${{ steps.detect.outputs.cms_svc_changed }}
       gateway_svc_changed: ${{ steps.detect.outputs.gateway_svc_changed }}
       web_portal_svc_changed: ${{ steps.detect.outputs.web_portal_svc_changed }}
@@ -44,12 +44,13 @@ jobs:
           git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1
           changed_files=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.sha }})
 
-          echo "Checking for changes in services/accounts_svc/"
-          if echo "$changed_files" | grep -qE '^(services|unit_tests)/accounts_svc/'; then
-            echo "accounts_svc_changed=true" >> $GITHUB_OUTPUT
-            echo "[INFO] Accounts Service or unit tests have changed"
+          echo "Checking for changes in items/services/items_identity"
+          if echo "$changed_files" | grep -qE '^(items/services|unit_tests)/items_identity/'; then
+            echo "identity_svc_changed=true" >> $GITHUB_OUTPUT
+            echo "[INFO] Identity Service or it's unit tests have changed"
           else
-            echo "accounts_svc_changed=false" >> $GITHUB_OUTPUT
+            echo "identity_svc_changed=false" >> $GITHUB_OUTPUT
+            echo "[INFO] Identity Service or it's unit tests have NOT changed"
           fi
 
           echo "Checking for changes in services/cms_svc/"
@@ -87,10 +88,10 @@ jobs:
             echo "shared_changed=false" >> $GITHUB_OUTPUT
           fi
 
-  verify_accounts-svc:
+  verify_identity-svc:
     runs-on: ubuntu-24.04
     needs: [setup, detect-changes]  # Wait for both setup and detect-changes
-    if: needs.detect-changes.outputs.accounts_svc_changed == 'true'
+    if: needs.detect-changes.outputs.identity_svc_changed == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -99,20 +100,21 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install coverage jsonschema aiohttp quart pylint
+          pip install -r requirements/requirements_identity.txt
+          pip install coverage pylint
 
       - name: Run Pylint
         env:
-          PYTHONPATH: items/shared:services/accounts_svc:common
+          PYTHONPATH: .
         run: |
-          pylint --fail-under=10.0 services/accounts_svc
+          pylint --fail-under=10.0 items/services/items_identity 
 
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:unit_tests/accounts_svc:services/accounts_svc:common
+          PYTHONPATH: .:items/services/items_identity:unit_tests/items_identity
         run: |
-          coverage run --rcfile=.github/workflows/.coveragerc_accounts_svc -m unittest -v main
+          coverage run --rcfile=.github/workflows/.coveragerc_identity_svc -m unittest -v unit_tests/items_identity/main.py
           coverage report -m --fail-under=100
 
   verify_cms-svc:

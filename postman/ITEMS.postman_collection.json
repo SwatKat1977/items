@@ -1,19 +1,19 @@
 {
 	"info": {
-		"_postman_id": "9ecd51cf-abb5-4832-90ad-3c20ba1ad992",
+		"_postman_id": "f5efd86e-c379-4b50-87c4-2ec764314e43",
 		"name": "ITEMS",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "10935426"
 	},
 	"item": [
 		{
-			"name": "Accounts Service",
+			"name": "Identity Service",
 			"item": [
 				{
 					"name": "Authentication",
 					"item": [
 						{
-							"name": "Authentication : Basic",
+							"name": "Authentication : Password",
 							"request": {
 								"method": "POST",
 								"header": [],
@@ -27,13 +27,13 @@
 									}
 								},
 								"url": {
-									"raw": "{{ACCOUNTS_SVC_URL}}/authentication/basic",
+									"raw": "{{IDENTITY_SVC_URL}}/auth/login",
 									"host": [
-										"{{ACCOUNTS_SVC_URL}}"
+										"{{IDENTITY_SVC_URL}}"
 									],
 									"path": [
-										"authentication",
-										"basic"
+										"auth",
+										"login"
 									]
 								}
 							},
@@ -50,13 +50,13 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{ACCOUNTS_SVC_URL}}/health/status",
+									"raw": "{{IDENTITY_SVC_URL}}/system/health",
 									"host": [
-										"{{ACCOUNTS_SVC_URL}}"
+										"{{IDENTITY_SVC_URL}}"
 									],
 									"path": [
-										"health",
-										"status"
+										"system",
+										"health"
 									]
 								}
 							},
@@ -324,6 +324,26 @@
 										}
 									},
 									"response": []
+								},
+								{
+									"name": "New Request",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{GATEWAY_SVC_URL}}/web/admin/projects/4",
+											"host": [
+												"{{GATEWAY_SVC_URL}}"
+											],
+											"path": [
+												"web",
+												"admin",
+												"projects",
+												"4"
+											]
+										}
+									},
+									"response": []
 								}
 							]
 						},
@@ -331,8 +351,24 @@
 							"name": "Admin",
 							"item": [
 								{
-									"name": "Project API (Admin)",
+									"name": "Project API",
 									"item": [
+										{
+											"name": "Test Cases",
+											"item": [
+												{
+													"name": "New Request",
+													"request": {
+														"method": "GET",
+														"header": [],
+														"url": {
+															"raw": ""
+														}
+													},
+													"response": []
+												}
+											]
+										},
 										{
 											"name": "Update a Project",
 											"request": {
@@ -413,7 +449,7 @@
 									]
 								},
 								{
-									"name": "Project API (Admin)",
+									"name": "Project API",
 									"item": [
 										{
 											"name": "Update a Project",
@@ -512,13 +548,13 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/projects/overviews?count_fields=no_of_test_runs",
+									"raw": "{{CMS_SVC_URL}}/projects/?count_fields=no_of_test_runs",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
 										"projects",
-										"overviews"
+										""
 									],
 									"query": [
 										{
@@ -537,7 +573,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"Project Beta_30000\",\n    \"announcement\": \"hello world!\",\n    \"announcement_on_overview\": true\n}",
+									"raw": "{\n    \"name\": \"Project Alpha #1\",\n    \"announcement\": \"This is an alpha project\",\n    \"announcement_on_overview\": true\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -545,13 +581,13 @@
 									}
 								},
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/projects/",
+									"raw": "{{CMS_SVC_URL}}/projects/add",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
 										"projects",
-										""
+										"add"
 									]
 								}
 							},
@@ -560,7 +596,7 @@
 						{
 							"name": "Modify Project",
 							"request": {
-								"method": "POST",
+								"method": "PATCH",
 								"header": [],
 								"body": {
 									"mode": "raw",
@@ -572,13 +608,12 @@
 									}
 								},
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/projects/modify/3",
+									"raw": "{{CMS_SVC_URL}}/projects/3",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
 										"projects",
-										"modify",
 										"3"
 									]
 								}
@@ -600,13 +635,12 @@
 									}
 								},
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/projects/delete/8?hard_delete=false",
+									"raw": "{{CMS_SVC_URL}}/projects/8?hard_delete=false",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
 										"projects",
-										"delete",
 										"8"
 									],
 									"query": [
@@ -625,13 +659,13 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{CMS_SVC_URL}}/projects/2",
+									"raw": "{{CMS_SVC_URL}}/projects/3",
 									"host": [
 										"{{CMS_SVC_URL}}"
 									],
 									"path": [
 										"projects",
-										"2"
+										"3"
 									]
 								}
 							},

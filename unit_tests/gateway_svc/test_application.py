@@ -169,7 +169,7 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         expected_logs = [
             ("[logging]",),
             ("=> Logging log level : %s", "DEBUG"),
-            ("[apis]",),
+            ("[routes]",),
             ("=> Accounts Service API : %s", "http://localhost:3000/"),
             ("=> CMS Service API : %s", "http://localhost:4000/"),
             ("=> Web Portal Service API : %s", "http://localhost:8080/")

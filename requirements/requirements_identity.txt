@@ -1,0 +1,3 @@
+argon2-cffi==23.1.0
+Quart==0.20.0
+https://github.com/SwatKat1977/WeaverFramework/releases/download/V0.2.0/weaver_framework-0.2.0-py3-none-any.whl

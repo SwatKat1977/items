@@ -13,8 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import logging
+from enum import Enum
 
-LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
-LOGGING_DEFAULT_LOG_LEVEL = logging.DEBUG
-LOGGING_LOG_FORMAT_STRING = "%(asctime)s [%(levelname)s] %(message)s"
+
+class LogonType(Enum):
+    """Defines the supported user logon authentication types.
+
+    Attributes:
+        PASSWORD: Standard password-based authentication.
+    """
+
+    PASSWORD = 0
