@@ -50,6 +50,7 @@ jobs:
             echo "[INFO] Identity Service or it's unit tests have changed"
           else
             echo "identity_svc_changed=false" >> $GITHUB_OUTPUT
+            echo "[INFO] Identity Service or it's unit tests have NOT changed"
           fi
 
           echo "Checking for changes in services/cms_svc/"
