@@ -60,6 +60,25 @@ class TestAuthenticationService(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(success)
         self.assertEqual(message, "Account is not active")
 
+    async def test_authenticate_db_error_on_password_lookup(self):
+        self.mock_user_repository.get_user_by_email.return_value = (42, 0, 1)
+        self.mock_user_repository.get_password_hash.side_effect = \
+            SqliteInterfaceException("db error")
+        success, message = await self.auth_service.authenticate_password(
+            "a@b.com", "pass")
+        self.assertFalse(success)
+        self.assertEqual(message, "Internal authentication error")
+        self.mock_child_logger.exception.assert_called()
+
+    async def test_authenticate_no_password_record(self):
+        self.mock_user_repository.get_user_by_email.return_value = (42, 0, 1)
+        self.mock_user_repository.get_password_hash.return_value = None
+        success, message = await self.auth_service.authenticate_password(
+            "a@b.com", "pass")
+        self.assertFalse(success)
+        self.assertEqual(message, "Internal authentication error")
+        self.mock_child_logger.error.assert_called_once()
+
     @patch("services.authentication_service.bcrypt.checkpw", return_value=True)
     async def test_authenticate_success(self, mock_checkpw):
         # logon_type=0 (PASSWORD), account_status=1 (ACTIVE)
