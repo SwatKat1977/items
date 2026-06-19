@@ -1,2 +1,2 @@
-export PYTHONPATH=services/accounts_svc:items/shared:common
-pylint services/accounts_svc
+export PYTHONPATH=.
+pylint items/services/items_identity
