@@ -1,0 +1,7 @@
+[run]
+omit =
+    unit_tests/shared/*
+    unit_tests/identity_svc/*
+    items/shared/*
+    /opt/homebrew/*
+    /usr/lib/python3/*

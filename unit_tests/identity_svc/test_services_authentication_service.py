@@ -1,77 +1,83 @@
 import unittest
 import logging
-from unittest.mock import MagicMock, patch
-from http import HTTPStatus
+from unittest.mock import MagicMock, AsyncMock, patch
+from weaver_framework.database.sqlite_interface import SqliteInterfaceException
 from services.authentication_service import AuthenticationService
 
 
-class TestAuthenticationService(unittest.TestCase):
-    def setUp(self):
-        # Mock logger and its getChild() method
+class TestAuthenticationService(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
         self.mock_logger = MagicMock(spec=logging.Logger)
         self.mock_child_logger = MagicMock(spec=logging.Logger)
         self.mock_logger.getChild.return_value = self.mock_child_logger
 
-        # Mock UserDataAccessLayer
-        self.mock_user_dal = MagicMock()
+        self.mock_user_repository = MagicMock()
+        self.mock_user_repository.get_user_by_email = AsyncMock()
+        self.mock_user_repository.get_password_hash = AsyncMock()
 
-        # Create AuthenticationService instance
-        self.auth_service = AuthenticationService(self.mock_logger, self.mock_user_dal)
+        self.mock_state = MagicMock()
+        self.mock_state.is_available.return_value = True
 
-    def test_authenticate_basic_internal_error(self):
-        """
-        Case: get_user_for_logon returns (None, "some error")
-        Expect: INTERNAL_SERVER_ERROR, log critical called
-        """
-        self.mock_user_dal.get_user_for_logon.return_value = (None, "DB error")
+        self.auth_service = AuthenticationService(
+            self.mock_logger, self.mock_state, self.mock_user_repository)
 
-        status, response = self.auth_service.authenticate_basic("test@example.com", "pass")
+    async def test_authenticate_service_unavailable(self):
+        self.mock_state.is_available.return_value = False
+        success, message = await self.auth_service.authenticate_password(
+            "a@b.com", "pass")
+        self.assertFalse(success)
+        self.assertEqual(message, "Authentication service unavailable")
 
-        self.assertEqual(status, HTTPStatus.INTERNAL_SERVER_ERROR)
-        self.assertEqual(response["status"], 0)
-        self.assertIn("error", response)
-        self.mock_child_logger.critical.assert_called_once_with(
-            "Failed to verify user logon: %s", "DB error"
-        )
+    async def test_authenticate_db_error_on_user_lookup(self):
+        self.mock_user_repository.get_user_by_email.side_effect = \
+            SqliteInterfaceException("db error")
+        success, message = await self.auth_service.authenticate_password(
+            "a@b.com", "pass")
+        self.assertFalse(success)
+        self.assertEqual(message, "Internal authentication error")
+        self.mock_child_logger.exception.assert_called_once()
 
-    def test_authenticate_basic_invalid_user(self):
-        """
-        Case: get_user_for_logon returns ("", "Invalid user")
-        Expect: OK, error message returned
-        """
-        self.mock_user_dal.get_user_for_logon.return_value = ("", "Invalid user")
+    async def test_authenticate_user_not_found(self):
+        self.mock_user_repository.get_user_by_email.return_value = None
+        success, message = await self.auth_service.authenticate_password(
+            "no@user.com", "pass")
+        self.assertFalse(success)
+        self.assertEqual(message, "Username/password don't match")
 
-        status, response = self.auth_service.authenticate_basic("no@user.com", "pass")
+    async def test_authenticate_wrong_logon_type(self):
+        # logon_type=1 does not match LogonType.PASSWORD.value (0)
+        self.mock_user_repository.get_user_by_email.return_value = (42, 1, 1)
+        success, message = await self.auth_service.authenticate_password(
+            "a@b.com", "pass")
+        self.assertFalse(success)
+        self.assertEqual(message, "Username/password don't match")
 
-        self.assertEqual(status, HTTPStatus.OK)
-        self.assertEqual(response, {"status": 0, "error": "Invalid user"})
-        self.mock_child_logger.critical.assert_not_called()
+    async def test_authenticate_inactive_account(self):
+        # logon_type=0 (PASSWORD), account_status=0 (DISABLED)
+        self.mock_user_repository.get_user_by_email.return_value = (42, 0, 0)
+        success, message = await self.auth_service.authenticate_password(
+            "a@b.com", "pass")
+        self.assertFalse(success)
+        self.assertEqual(message, "Account is not active")
 
-    def test_authenticate_basic_success(self):
-        """
-        Case: get_user_for_logon returns valid user_id, authenticate_basic_user returns True
-        Expect: OK, status 1, empty error
-        """
-        self.mock_user_dal.get_user_for_logon.return_value = ("user123", "")
-        self.mock_user_dal.authenticate_basic_user.return_value = (True, "")
+    @patch("services.authentication_service.bcrypt.checkpw", return_value=True)
+    async def test_authenticate_success(self, mock_checkpw):
+        # logon_type=0 (PASSWORD), account_status=1 (ACTIVE)
+        self.mock_user_repository.get_user_by_email.return_value = (42, 0, 1)
+        self.mock_user_repository.get_password_hash.return_value = b"$2b$12$hash"
+        success, message = await self.auth_service.authenticate_password(
+            "user@example.com", "password")
+        self.assertTrue(success)
+        self.assertEqual(message, "Authentication successful")
+        mock_checkpw.assert_called_once()
 
-        status, response = self.auth_service.authenticate_basic("test@example.com", "password")
-
-        self.assertEqual(status, HTTPStatus.OK)
-        self.assertEqual(response, {"status": 1, "error": ""})
-        self.mock_child_logger.critical.assert_not_called()
-        self.mock_user_dal.authenticate_basic_user.assert_called_once_with("user123", "password")
-
-    def test_authenticate_basic_wrong_password(self):
-        """
-        Case: valid user_id, but authentication fails
-        Expect: OK, status 0, error message returned
-        """
-        self.mock_user_dal.get_user_for_logon.return_value = ("user123", "")
-        self.mock_user_dal.authenticate_basic_user.return_value = (False, "Wrong password")
-
-        status, response = self.auth_service.authenticate_basic("test@example.com", "badpass")
-
-        self.assertEqual(status, HTTPStatus.OK)
-        self.assertEqual(response, {"status": 0, "error": "Wrong password"})
-        self.mock_child_logger.critical.assert_not_called()
+    @patch("services.authentication_service.bcrypt.checkpw", return_value=False)
+    async def test_authenticate_wrong_password(self, mock_checkpw):
+        # logon_type=0 (PASSWORD), account_status=1 (ACTIVE)
+        self.mock_user_repository.get_user_by_email.return_value = (42, 0, 1)
+        self.mock_user_repository.get_password_hash.return_value = b"$2b$12$hash"
+        success, message = await self.auth_service.authenticate_password(
+            "user@example.com", "badpass")
+        self.assertFalse(success)
+        self.assertEqual(message, "Username/password don't match")
+        mock_checkpw.assert_called_once()

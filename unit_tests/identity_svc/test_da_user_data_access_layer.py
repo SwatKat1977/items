@@ -1,101 +1,68 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, AsyncMock, patch
 import logging
-import bcrypt
-from data_access.user_data_access_layer import UserDataAccessLayer
-from items_common.service_state import ServiceState
-from account_status import AccountStatus
+from data_access.user_repository import UserRepository
 
 
-class TestUserDataAccessLayer(unittest.TestCase):
+class TestUserRepository(unittest.IsolatedAsyncioTestCase):
 
-    def setUp(self):
-        # Prepare mock state and logger
-        self.state = ServiceState()
+    async def asyncSetUp(self):
         self.logger = logging.getLogger("test")
+        self.mock_config = MagicMock()
+        self.mock_config.backend_db_filename = "test.db"
 
-        # Patch configuration to prevent accessing real config
-        config_patcher = patch("data_access.user_data_access_layer.Configuration")
-        self.addCleanup(config_patcher.stop)
-        mock_config_class = config_patcher.start()
-        mock_config_instance = mock_config_class.return_value
-        mock_config_instance.backend_db_filename = "test.db"
-
-        # Create the mock DB first
         self.mock_db = MagicMock()
+        self.mock_db.run_query = AsyncMock()
 
-        # Then patch SafeSqliteInterface to return it
-        db_patcher = patch("data_access.user_data_access_layer.SafeSqliteInterface", return_value=self.mock_db)
+        patcher = patch("data_access.user_repository.SqliteInterface",
+                        return_value=self.mock_db)
+        self.addCleanup(patcher.stop)
+        patcher.start()
 
-        self.addCleanup(db_patcher.stop)
-        db_patcher.start()
-
-        # Create the DAL (this will now use the mocked SafeSqliteInterface)
-        self.dal = UserDataAccessLayer(self.state, self.logger)
-
-    # -------------------------------------------------------
-    # get_user_for_logon tests
-    # -------------------------------------------------------
-    def test_get_user_for_logon_returns_internal_error_if_row_none(self):
-        self.mock_db.safe_query.return_value = None
-        result = self.dal.get_user_for_logon("a@b.com", 1)
-        self.assertEqual(result, (None, "Internal error"))
-
-    def test_get_user_for_logon_returns_match_error_if_empty(self):
-        self.mock_db.safe_query.return_value = ()
-        result = self.dal.get_user_for_logon("a@b.com", 1)
-        self.assertEqual(result, (0, "Username/password don't match"))
-
-    def test_get_user_for_logon_incorrect_logon_type(self):
-        # Simulate returned row
-        self.mock_db.safe_query.return_value = (1, 2, AccountStatus.ACTIVE.value)
-        result = self.dal.get_user_for_logon("a@b.com", 1)
-        self.assertEqual(result, (0, "Incorrect logon type"))
-
-    def test_get_user_for_logon_inactive_account(self):
-        self.mock_db.safe_query.return_value = (
-            1, 1, AccountStatus.DISABLED.value
-        )
-        result = self.dal.get_user_for_logon("a@b.com", 1)
-        self.assertEqual(result, (0, "Account is not active"))
-
-    def test_get_user_for_logon_valid_user(self):
-        self.mock_db.safe_query.return_value = (
-            42, 1, AccountStatus.ACTIVE.value
-        )
-        result = self.dal.get_user_for_logon("a@b.com", 1)
-        self.assertEqual(result, (42, ""))
+        self.repo = UserRepository(self.logger, self.mock_config)
 
     # -------------------------------------------------------
-    # authenticate_basic_user tests
+    # get_user_by_email tests
     # -------------------------------------------------------
 
-    def test_authenticate_basic_user_returns_internal_error_if_none(self):
-        self.mock_db.safe_query.return_value = None
-        ok, msg = self.dal.authenticate_basic_user(1, "pass")
-        self.assertFalse(ok)
-        self.assertEqual(msg, "Internal error")
+    async def test_get_user_by_email_returns_none_when_not_found(self):
+        self.mock_db.run_query.return_value = None
+        result = await self.repo.get_user_by_email("a@b.com")
+        self.assertIsNone(result)
 
-    def test_authenticate_basic_user_returns_invalid_id_if_empty(self):
-        self.mock_db.safe_query.return_value = ()
-        ok, msg = self.dal.authenticate_basic_user(1, "pass")
-        self.assertFalse(ok)
-        self.assertEqual(msg, "Invalid user id")
+    async def test_get_user_by_email_returns_row(self):
+        expected = (42, 0, 1)
+        self.mock_db.run_query.return_value = expected
+        result = await self.repo.get_user_by_email("a@b.com")
+        self.assertEqual(result, expected)
 
-    @patch("data_access.user_data_access_layer.bcrypt.checkpw", return_value=True)
-    def test_authenticate_basic_user_success(self, mock_checkpw):
-        hashed = bcrypt.hashpw(b"pass", bcrypt.gensalt())
-        self.mock_db.safe_query.return_value = (hashed,)
-        ok, msg = self.dal.authenticate_basic_user(1, "pass")
-        self.assertTrue(ok)
-        self.assertEqual(msg, "")
-        mock_checkpw.assert_called_once()
+    async def test_get_user_by_email_passes_correct_query(self):
+        self.mock_db.run_query.return_value = None
+        await self.repo.get_user_by_email("test@example.com")
+        self.mock_db.run_query.assert_called_once_with(
+            UserRepository.GET_USER_FOR_LOGON_QUERY,
+            ("test@example.com",),
+            fetch_one=True)
 
-    @patch("data_access.user_data_access_layer.bcrypt.checkpw", return_value=False)
-    def test_authenticate_basic_user_password_mismatch(self, mock_checkpw):
-        hashed = bcrypt.hashpw(b"something", bcrypt.gensalt())
-        self.mock_db.safe_query.return_value = (hashed,)
-        ok, msg = self.dal.authenticate_basic_user(1, "wrong")
-        self.assertFalse(ok)
-        self.assertEqual(msg, "Username/password don't match")
-        mock_checkpw.assert_called_once()
+    # -------------------------------------------------------
+    # get_password_hash tests
+    # -------------------------------------------------------
+
+    async def test_get_password_hash_returns_none_when_no_record(self):
+        self.mock_db.run_query.return_value = None
+        result = await self.repo.get_password_hash(1)
+        self.assertIsNone(result)
+
+    async def test_get_password_hash_returns_hash_bytes(self):
+        expected_hash = b"$2b$12$somehash"
+        self.mock_db.run_query.return_value = (expected_hash,)
+        result = await self.repo.get_password_hash(1)
+        self.assertEqual(result, expected_hash)
+
+    async def test_get_password_hash_passes_correct_query(self):
+        self.mock_db.run_query.return_value = None
+        await self.repo.get_password_hash(42)
+        self.mock_db.run_query.assert_called_once_with(
+            UserRepository.GET_PASSWORD_HASH_QUERY,
+            (42,),
+            fetch_one=True)
