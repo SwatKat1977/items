@@ -1,3 +1,4 @@
+import asyncio
 import os
 import unittest
 from unittest.mock import ANY, MagicMock, patch
@@ -106,6 +107,18 @@ class TestApplication(unittest.IsolatedAsyncioTestCase):
         self.mock_logger_instance.info.assert_any_call("[Backend]")
         self.mock_logger_instance.info.assert_any_call(
             "=> Database filename : %s", "mock_db.sqlite")
+
+    async def test_create_tasks_returns_single_task(self):
+        application = Service(self.mock_quart_instance)
+        application._shutdown_event.set()
+        tasks = await application._create_tasks()
+        self.assertEqual(len(tasks), 1)
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def test_dummy_task_completes_on_shutdown(self):
+        application = Service(self.mock_quart_instance)
+        application._shutdown_event.set()
+        await asyncio.wait_for(application._dummy_task(), timeout=1.0)
 
     @patch.dict(os.environ, {
         "ITEMS_IDENTITY_CONFIG_FILE": "config_file_path",
