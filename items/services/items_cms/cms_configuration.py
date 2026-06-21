@@ -1,0 +1,53 @@
+"""
+Copyright 2025-2026 Integrated Test Management Suite Development Team
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+from weaver_framework.configuration_system.configuration_manager import (
+    ConfigurationManager)
+from items.services.items_cms.configuration_layout import \
+    ConfigurationConstants
+
+
+class CMSConfiguration(ConfigurationManager):
+    """Configuration manager for the CMS service.
+
+    This class provides strongly-typed accessors for configuration
+    values used by the cms service. Configuration entries are
+    retrieved through the underlying ``ConfigurationManager`` base
+    class.
+
+    Properties:
+        logging_log_level: Logging level used by the identity service.
+        backend_db_filename: Filename or path of the backend database.
+    """
+
+    @property
+    def logging_log_level(self) -> str:
+        """Return the configured logging level.
+
+        Returns:
+            The configured logging level value.
+        """
+        return self.get_entry(ConfigurationConstants.SECTION_LOGGING,
+                              ConfigurationConstants.LOGGING_LOG_LEVEL)
+
+    @property
+    def backend_db_filename(self) -> str:
+        """Return the backend database filename.
+
+        Returns:
+            The configured backend database filename or path.
+        """
+        return self.get_entry(ConfigurationConstants.SECTION_BACKEND,
+                              ConfigurationConstants.BACKEND_DB_FILENAME)

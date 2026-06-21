@@ -18,11 +18,11 @@ import os
 import signal
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
-from items.services.items_identity import app, service
+from items.services.items_cms import app, service
 
 
 async def main() -> int:
-    """Run the identity service application.
+    """Run the Contents Management System (CMS) service application.
 
     This function performs service initialization, starts the
     background service task, configures graceful shutdown signal
@@ -60,8 +60,8 @@ async def main() -> int:
             # Windows fallback; CTRL+C still cancels asyncio.run().
             pass
 
-    host = os.getenv("ITEMS_IDENTITY_HOST", "127.0.0.1")
-    port = int(os.getenv("ITEMS_IDENTITY_PORT", "5050"))
+    host = os.getenv("ITEMS_CMS_HOST", "127.0.0.1")
+    port = int(os.getenv("ITEMS_CMS_PORT", "6050"))
 
     config = Config()
     config.bind = [f"{host}:{port}"]

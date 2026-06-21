@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from quart import Quart
-from items.services.items_identity.application import Service
+from items.services.items_cms.service import Service
 
 app = Quart(__name__)
 service = Service(app)

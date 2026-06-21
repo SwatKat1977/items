@@ -9,13 +9,13 @@ jobs:
     steps:
       # Step 1: Checkout code with full history
       - name: Checkout code with full history
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Fetch all history for all branches and tags
 
       # Step 2: Set up Python
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'  # Adjust to your Python version
 
@@ -30,7 +30,7 @@ jobs:
       shared_changed: ${{ steps.detect.outputs.shared_changed }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}  # Checkout the head commit of the PR
 
@@ -53,13 +53,13 @@ jobs:
             echo "[INFO] Identity Service or it's unit tests have NOT changed"
           fi
 
-          echo "Checking for changes in services/cms_svc/"
-          if echo "$changed_files" | grep -qE '^(services|unit_tests)/cms_svc/'; then
+          echo "Checking for changes in items/services/items_cms/"
+          if echo "$changed_files" | grep -qE '^(items/services|unit_tests)/items_cms/'; then
             echo "cms_svc_changed=true" >> $GITHUB_OUTPUT
-            echo "[INFO] CMS Service or unit tests have changed"
+            echo "[INFO] CMS Service or it's unit tests have changed"
           else
             echo "cms_svc_changed=false" >> $GITHUB_OUTPUT
-            echo "[INFO] CMS Service or unit tests have NOT changed"
+            echo "[INFO] CMS Service or it's unit tests have NOT changed"
           fi
 
           echo "Checking for changes in services/gateway_svc/"
@@ -94,7 +94,7 @@ jobs:
     if: needs.detect-changes.outputs.identity_svc_changed == 'true'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       #: Install dependencies
       - name: Install dependencies
@@ -123,19 +123,21 @@ jobs:
     if: needs.detect-changes.outputs.cms_svc_changed == 'true'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       #: Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install coverage jsonschema aiohttp quart pylint
+          pip install -r requirements/requirements_cms.txt
+          #pip install coverage jsonschema aiohttp quart pylint
+          pip install coverage pylint
 
       - name: Run Pylint
         env:
-          PYTHONPATH: items/shared:services/cms_svc:common
+          PYTHONPATH: .
         run: |
-          pylint --fail-under=10.0 services/cms_svc
+          pylint --fail-under=10.0 items/services/items_cms
 
       # Run tests and measure coverage
       - name: Run tests with coverage
@@ -151,7 +153,7 @@ jobs:
     if: needs.detect-changes.outputs.gateway_svc_changed == 'true'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Install dependencies
       - name: Install dependencies
@@ -179,7 +181,7 @@ jobs:
     if: needs.detect-changes.outputs.web_portal_svc_changed == 'true'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Install dependencies
       - name: Install dependencies
@@ -207,7 +209,7 @@ jobs:
     if: needs.detect-changes.outputs.shared_changed == 'true'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       #: Install dependencies
       - name: Install dependencies
