@@ -9,13 +9,13 @@ jobs:
     steps:
       # Step 1: Checkout code with full history
       - name: Checkout code with full history
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Fetch all history for all branches and tags
 
       # Step 2: Set up Python
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'  # Adjust to your Python version
 
@@ -30,7 +30,7 @@ jobs:
       shared_changed: ${{ steps.detect.outputs.shared_changed }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}  # Checkout the head commit of the PR
 
@@ -94,7 +94,7 @@ jobs:
     if: needs.detect-changes.outputs.identity_svc_changed == 'true'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       #: Install dependencies
       - name: Install dependencies
@@ -123,7 +123,7 @@ jobs:
     if: needs.detect-changes.outputs.cms_svc_changed == 'true'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       #: Install dependencies
       - name: Install dependencies
@@ -151,7 +151,7 @@ jobs:
     if: needs.detect-changes.outputs.gateway_svc_changed == 'true'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Install dependencies
       - name: Install dependencies
@@ -179,7 +179,7 @@ jobs:
     if: needs.detect-changes.outputs.web_portal_svc_changed == 'true'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Install dependencies
       - name: Install dependencies
@@ -207,7 +207,7 @@ jobs:
     if: needs.detect-changes.outputs.shared_changed == 'true'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       #: Install dependencies
       - name: Install dependencies
