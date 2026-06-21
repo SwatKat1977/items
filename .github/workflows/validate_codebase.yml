@@ -53,13 +53,13 @@ jobs:
             echo "[INFO] Identity Service or it's unit tests have NOT changed"
           fi
 
-          echo "Checking for changes in services/cms_svc/"
-          if echo "$changed_files" | grep -qE '^(services|unit_tests)/cms_svc/'; then
+          echo "Checking for changes in items/services/cms_svc/"
+          if echo "$changed_files" | grep -qE '^(items/services|unit_tests)/cms_svc/'; then
             echo "cms_svc_changed=true" >> $GITHUB_OUTPUT
-            echo "[INFO] CMS Service or unit tests have changed"
+            echo "[INFO] CMS Service or it's unit tests have changed"
           else
             echo "cms_svc_changed=false" >> $GITHUB_OUTPUT
-            echo "[INFO] CMS Service or unit tests have NOT changed"
+            echo "[INFO] CMS Service or it's unit tests have NOT changed"
           fi
 
           echo "Checking for changes in services/gateway_svc/"
