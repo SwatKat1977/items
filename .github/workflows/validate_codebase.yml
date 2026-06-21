@@ -133,9 +133,9 @@ jobs:
 
       - name: Run Pylint
         env:
-          PYTHONPATH: items/shared:services/cms_svc:common
+          PYTHONPATH: .
         run: |
-          pylint --fail-under=10.0 services/cms_svc
+          pylint --fail-under=10.0 items/services/items_cms
 
       # Run tests and measure coverage
       - name: Run tests with coverage
