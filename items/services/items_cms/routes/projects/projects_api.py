@@ -17,12 +17,28 @@ import logging
 from quart import Blueprint
 from items.shared.service_state import ServiceState
 from items.services.items_cms.cms_configuration import CMSConfiguration
+from items.services.items_cms.repositories.project_repository import ProjectRepository
+from items.services.items_cms.services.project_service import ProjectService
+from .get_project_handler import GetProjectHandler
+from .list_projects_handler import ListProjectsHandler
+from .create_project_handler import CreateProjectHandler
+from .modify_project_handler import ModifyProjectHandler
+from .delete_project_handler import DeleteProjectHandler
 
 
 def create_project_routes(logger: logging.Logger,
                           service_state: ServiceState,
                           config: CMSConfiguration) -> Blueprint:
     projects_routes = Blueprint("projects_routes", __name__)
+
+    repository = ProjectRepository(logger, config)
+    service = ProjectService(logger, service_state, repository)
+
+    get_handler = GetProjectHandler(logger, service)
+    list_handler = ListProjectsHandler(logger, service)
+    create_handler = CreateProjectHandler(logger, service)
+    modify_handler = ModifyProjectHandler(logger, service)
+    delete_handler = DeleteProjectHandler(logger, service)
 
     logger.debug("Registering Projects API routes:")
 
@@ -32,8 +48,7 @@ def create_project_routes(logger: logging.Logger,
 
     @projects_routes.route('/projects/<int:project_id>', methods=['GET'])
     async def get_project(project_id: int):
-        return None
-        # return await view.project_details(project_id)
+        return await get_handler.get_project(project_id)
 
     # List all of the available projects.
     logger.debug("=> %s GET /projects",
@@ -41,8 +56,7 @@ def create_project_routes(logger: logging.Logger,
 
     @projects_routes.route('/projects', methods=['GET'])
     async def list_projects():
-        return None
-        # return await view.list_projects()
+        return await list_handler.list_projects()
 
     # Create project
     logger.debug("=> %s POST /projects",
@@ -50,9 +64,7 @@ def create_project_routes(logger: logging.Logger,
 
     @projects_routes.route('/projects', methods=['POST'])
     async def create_project():
-        # pylint: disable=no-value-for-parameter
-        return None
-        # return await view.create_project()
+        return await create_handler.create_project()
 
     # Update project details.
     logger.debug("=> %s PATCH /projects/<int:project_id>",
@@ -60,9 +72,7 @@ def create_project_routes(logger: logging.Logger,
 
     @projects_routes.route('/projects/<int:project_id>', methods=['PATCH'])
     async def update_project(project_id: int):
-        # pylint: disable=no-value-for-parameter
-        return None
-        # return await view.modify_project(project_id)
+        return await modify_handler.modify_project(project_id)
 
     # Delete a project.
     logger.debug("=> %s DELETE /projects/<int:project_id>",
@@ -70,7 +80,6 @@ def create_project_routes(logger: logging.Logger,
 
     @projects_routes.route('/projects/<int:project_id>', methods=['DELETE'])
     async def delete_project(project_id: int):
-        # return await view.delete_project(project_id)
-        return None
+        return await delete_handler.delete_project(project_id)
 
     return projects_routes
