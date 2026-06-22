@@ -26,9 +26,9 @@ from .modify_project_handler import ModifyProjectHandler
 from .delete_project_handler import DeleteProjectHandler
 
 
-def create_project_routes(logger: logging.Logger,
-                          service_state: ServiceState,
-                          config: CMSConfiguration) -> Blueprint:
+def create_projects_routes(logger: logging.Logger,
+                           service_state: ServiceState,
+                           config: CMSConfiguration) -> Blueprint:
     projects_routes = Blueprint("projects_routes", __name__)
 
     repository = ProjectRepository(logger, config)
