@@ -61,7 +61,7 @@ class ProjectsApiView(BaseView):
         self._logger = logger.getChild(__name__)
         self._db: SqlInterface = SqlInterface(logger, state_object)
 
-    async def project_details(self, project_id: int):
+    async def get_project(self, project_id: int):
         """
         Retrieve full details for a specific project by ID.
 
