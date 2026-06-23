@@ -27,12 +27,6 @@ body:
       label: "Why is this important?"
       description: "Explain how this documentation will benefit users or improve the project."
       placeholder: "Describe the importance or impact."
-  - type: input
-    id: deadline
-    attributes:
-      label: "Preferred Deadline (optional)"
-      description: "Is there a specific deadline for this documentation?"
-      placeholder: "e.g., 2025-02-15"
   - type: checkboxes
     id: scope
     attributes:
