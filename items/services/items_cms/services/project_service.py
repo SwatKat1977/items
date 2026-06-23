@@ -30,12 +30,16 @@ class ProjectResult(NamedTuple):
                      new project ID depending on the operation).
         error_msg:   Human-readable error description when success is False.
         is_internal: True when the failure is a server-side fault (maps to
-                     HTTP 500); False when it is a client-side fault (HTTP 400).
+                     HTTP 500); False when it is a client-side fault.
+        not_found:   True when the failure is because the requested resource
+                     does not exist (maps to HTTP 404). Only meaningful when
+                     success is False and is_internal is False.
     """
     success: bool
     data: Optional[Any] = None
     error_msg: str = ""
     is_internal: bool = False
+    not_found: bool = False
 
 
 class ProjectService:
@@ -87,7 +91,9 @@ class ProjectService:
                                  is_internal=True)
 
         if details is None:
-            return ProjectResult(success=False, error_msg="Project not found")
+            return ProjectResult(success=False,
+                                 error_msg="Project not found",
+                                 not_found=True)
 
         return ProjectResult(success=True, data=details)
 
@@ -238,7 +244,9 @@ class ProjectService:
                                  is_internal=True)
 
         if existing is None:
-            return ProjectResult(success=False, error_msg="Invalid project ID")
+            return ProjectResult(success=False,
+                                 error_msg="Invalid project ID",
+                                 not_found=True)
 
         new_name: Optional[str] = None
         if name != existing["name"]:
@@ -305,7 +313,8 @@ class ProjectService:
 
         if not exists:
             return ProjectResult(success=False,
-                                 error_msg="Project id is invalid")
+                                 error_msg="Project id is invalid",
+                                 not_found=True)
 
         try:
             if hard_delete:

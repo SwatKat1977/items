@@ -29,11 +29,31 @@ class CreateProjectHandler(BaseApiRoute):
     def __init__(self,
                  logger: logging.Logger,
                  service: ProjectService) -> None:
+        """Initialise the handler.
+
+        Args:
+            logger:  Parent logger instance.
+            service: Project service used to create projects.
+        """
         self._logger = logger.getChild(__name__)
         self._service = service
 
     @validate_json(SCHEMA_ADD_PROJECT_REQUEST)
     async def create_project(self, request_msg: ApiResponse) -> Response:
+        """Create a new project.
+
+        Request body (JSON):
+            name (str):                     Project name. Must be unique.
+            announcement (str):             Announcement text (may be empty).
+            announcement_on_overview (bool): Whether to display the
+                                             announcement on the overview page.
+
+        Returns:
+            200 with ``{"project_id": <int>}`` on success.
+            400 if the request body is invalid or the project name already
+                exists.
+            500 on an internal database error.
+        """
         body = request_msg.body
         result = self._service.create_project(
             name=body["name"],
@@ -44,7 +64,7 @@ class CreateProjectHandler(BaseApiRoute):
             status = (HTTPStatus.INTERNAL_SERVER_ERROR
                       if result.is_internal else HTTPStatus.BAD_REQUEST)
             return Response(
-                json.dumps({"status": 0, "error_msg": result.error_msg}),
+                json.dumps({"error": result.error_msg}),
                 status=status,
                 content_type="application/json")
 

@@ -29,6 +29,21 @@ from .delete_project_handler import DeleteProjectHandler
 def create_projects_routes(logger: logging.Logger,
                            service_state: ServiceState,
                            config: CMSConfiguration) -> Blueprint:
+    """Create and return the projects API Blueprint.
+
+    Instantiates the project repository and service once, wires them
+    into individual route handlers, and registers all project endpoints
+    with a Quart Blueprint.
+
+    Args:
+        logger:       Parent logger instance.
+        service_state: Shared service operational state.
+        config:       CMS service configuration, used to locate the
+                      database file.
+
+    Returns:
+        A configured Blueprint with all project routes registered.
+    """
     projects_routes = Blueprint("projects_routes", __name__)
 
     repository = ProjectRepository(logger, config)

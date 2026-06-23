@@ -32,10 +32,31 @@ class ListProjectsHandler(BaseApiRoute):
     def __init__(self,
                  logger: logging.Logger,
                  service: ProjectService) -> None:
+        """Initialise the handler.
+
+        Args:
+            logger:  Parent logger instance.
+            service: Project service used to retrieve project data.
+        """
         self._logger = logger.getChild(__name__)
         self._service = service
 
     async def list_projects(self) -> Response:
+        """Retrieve a list of projects with optional field and count filtering.
+
+        Query Parameters:
+            value_fields (str, optional): Comma-separated columns to include
+                in each project entry. Valid values: ``name``. Defaults to
+                ``name`` when omitted.
+            count_fields (str, optional): Comma-separated metrics to calculate
+                per project. Valid values: ``no_of_milestones``,
+                ``no_of_test_runs``.
+
+        Returns:
+            200 with ``{"projects": [...]}`` on success.
+            400 if an unrecognised value or count field is requested.
+            500 on an internal database error.
+        """
         value_fields_param = quart.request.args.get("value_fields")
         count_fields_param = quart.request.args.get("count_fields")
 

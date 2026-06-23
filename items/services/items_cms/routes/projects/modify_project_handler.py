@@ -29,6 +29,12 @@ class ModifyProjectHandler(BaseApiRoute):
     def __init__(self,
                  logger: logging.Logger,
                  service: ProjectService) -> None:
+        """Initialise the handler.
+
+        Args:
+            logger:  Parent logger instance.
+            service: Project service used to update projects.
+        """
         self._logger = logger.getChild(__name__)
         self._service = service
 
@@ -36,6 +42,26 @@ class ModifyProjectHandler(BaseApiRoute):
     async def modify_project(self,
                              request_msg: ApiResponse,
                              project_id: int) -> Response:
+        """Update the details of an existing project.
+
+        Args:
+            project_id: ID of the project to update, taken from the
+                        URL path.
+
+        Request body (JSON):
+            name (str):                     New project name. Must be unique
+                                            if changed.
+            announcement (str):             Updated announcement text.
+            announcement_on_overview (bool): Whether to display the
+                                             announcement on the overview page.
+
+        Returns:
+            200 with ``{"status": 1}`` on success.
+            400 if the request body is invalid or the new name is already
+                taken by another project.
+            404 if no project exists with the given ID.
+            500 on an internal database error.
+        """
         body = request_msg.body
         result = self._service.modify_project(
             project_id=project_id,
@@ -44,10 +70,14 @@ class ModifyProjectHandler(BaseApiRoute):
             announcement_on_overview=body["announcement_on_overview"])
 
         if not result.success:
-            status = (HTTPStatus.INTERNAL_SERVER_ERROR
-                      if result.is_internal else HTTPStatus.BAD_REQUEST)
+            if result.is_internal:
+                status = HTTPStatus.INTERNAL_SERVER_ERROR
+            elif result.not_found:
+                status = HTTPStatus.NOT_FOUND
+            else:
+                status = HTTPStatus.BAD_REQUEST
             return Response(
-                json.dumps({"status": 0, "error_msg": result.error_msg}),
+                json.dumps({"error": result.error_msg}),
                 status=status,
                 content_type="application/json")
 

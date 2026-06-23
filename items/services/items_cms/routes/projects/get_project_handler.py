@@ -27,15 +27,32 @@ class GetProjectHandler(BaseApiRoute):
     def __init__(self,
                  logger: logging.Logger,
                  service: ProjectService) -> None:
+        """Initialise the handler.
+
+        Args:
+            logger:  Parent logger instance.
+            service: Project service used to retrieve project data.
+        """
         self._logger = logger.getChild(__name__)
         self._service = service
 
     async def get_project(self, project_id: int) -> Response:
+        """Retrieve full details for a single project.
+
+        Args:
+            project_id: ID of the project to retrieve, taken from the
+                        URL path.
+
+        Returns:
+            200 with the project details dict on success.
+            404 if no project exists with the given ID.
+            500 on an internal database error.
+        """
         result = self._service.get_project(project_id)
 
         if not result.success:
             status = (HTTPStatus.INTERNAL_SERVER_ERROR
-                      if result.is_internal else HTTPStatus.BAD_REQUEST)
+                      if result.is_internal else HTTPStatus.NOT_FOUND)
             return Response(
                 json.dumps({"error": result.error_msg}),
                 status=status,

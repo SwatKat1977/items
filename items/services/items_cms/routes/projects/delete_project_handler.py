@@ -31,10 +31,34 @@ class DeleteProjectHandler(BaseApiRoute):
     def __init__(self,
                  logger: logging.Logger,
                  service: ProjectService) -> None:
+        """Initialise the handler.
+
+        Args:
+            logger:  Parent logger instance.
+            service: Project service used to delete projects.
+        """
         self._logger = logger.getChild(__name__)
         self._service = service
 
     async def delete_project(self, project_id: int) -> Response:
+        """Delete or soft-delete a project.
+
+        Args:
+            project_id: ID of the project to delete, taken from the
+                        URL path.
+
+        Query Parameters:
+            hard_delete (str, optional): When truthy (``true``, ``1``,
+                ``yes``), permanently removes the project. When falsy
+                (``false``, ``0``, ``no``) or omitted, marks the project
+                as awaiting purge. Any other value is rejected.
+
+        Returns:
+            200 with ``{}`` on success.
+            400 if ``hard_delete`` has an unrecognised value.
+            404 if no project exists with the given ID.
+            500 on an internal database error.
+        """
         hard_delete_param = quart.request.args.get("hard_delete")
 
         if hard_delete_param is None:
@@ -47,8 +71,7 @@ class DeleteProjectHandler(BaseApiRoute):
                 hard_delete = False
             else:
                 return Response(
-                    json.dumps({"status": 0,
-                                "error_msg": "Invalid parameter for hard_delete argument"}),
+                    json.dumps({"error": "Invalid parameter for hard_delete argument"}),
                     status=HTTPStatus.BAD_REQUEST,
                     content_type="application/json")
 
@@ -56,9 +79,9 @@ class DeleteProjectHandler(BaseApiRoute):
 
         if not result.success:
             status = (HTTPStatus.INTERNAL_SERVER_ERROR
-                      if result.is_internal else HTTPStatus.BAD_REQUEST)
+                      if result.is_internal else HTTPStatus.NOT_FOUND)
             return Response(
-                json.dumps({"status": 0, "error_msg": result.error_msg}),
+                json.dumps({"error": result.error_msg}),
                 status=status,
                 content_type="application/json")
 
