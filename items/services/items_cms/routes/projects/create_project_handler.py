@@ -17,7 +17,8 @@ import json
 import logging
 from http import HTTPStatus
 from quart import Response
-from weaver_framework.microservice.base_api_route import BaseApiRoute, validate_json
+from weaver_framework.microservice.base_api_route import BaseApiRoute
+from weaver_framework.microservice.microservice_decorators import validate_json
 from weaver_framework.microservice.api_response import ApiResponse
 from items.services.items_cms.services.project_service import ProjectService
 from items.shared.interfaces.cms.project import SCHEMA_ADD_PROJECT_REQUEST

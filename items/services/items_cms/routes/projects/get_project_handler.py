@@ -48,6 +48,8 @@ class GetProjectHandler(BaseApiRoute):
             404 if no project exists with the given ID.
             500 on an internal database error.
         """
+        # pylint: disable=duplicate-code
+
         result = self._service.get_project(project_id)
 
         if not result.success:

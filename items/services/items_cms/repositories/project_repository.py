@@ -112,14 +112,14 @@ class ProjectRepository:
         rows = self._db.run_query(query, ())
         return rows or []
 
-    def get_no_of_milestones_for_project(self, project_id: int) -> int:
+    def get_no_of_milestones_for_project(self, _project_id: int) -> int:
         """Return the number of milestones for a project.
 
         Not yet implemented — always returns 0.
         """
         return 0
 
-    def get_no_of_testruns_for_project(self, project_id: int) -> int:
+    def get_no_of_testruns_for_project(self, _project_id: int) -> int:
         """Return the number of test runs for a project.
 
         Not yet implemented — always returns 0.

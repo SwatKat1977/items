@@ -227,6 +227,8 @@ class ProjectService:
             ProjectResult indicating success, a client error (invalid ID
             or name conflict), or an internal error on DB failure.
         """
+        # pylint: disable=too-many-return-statements
+
         if not self._state.is_available():
             return ProjectResult(success=False,
                                  error_msg="Service unavailable",

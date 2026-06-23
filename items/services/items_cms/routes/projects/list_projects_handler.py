@@ -57,6 +57,8 @@ class ListProjectsHandler(BaseApiRoute):
             400 if an unrecognised value or count field is requested.
             500 on an internal database error.
         """
+        # pylint: disable=duplicate-code
+
         value_fields_param = quart.request.args.get("value_fields")
         count_fields_param = quart.request.args.get("count_fields")
 

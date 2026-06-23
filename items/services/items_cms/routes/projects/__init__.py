@@ -44,6 +44,8 @@ def create_projects_routes(logger: logging.Logger,
     Returns:
         A configured Blueprint with all project routes registered.
     """
+    # pylint: disable=too-many-locals
+
     projects_routes = Blueprint("projects_routes", __name__)
 
     repository = ProjectRepository(logger, config)
@@ -79,6 +81,7 @@ def create_projects_routes(logger: logging.Logger,
 
     @projects_routes.route('/projects', methods=['POST'])
     async def create_project():
+        # pylint: disable=no-value-for-parameter
         return await create_handler.create_project()
 
     # Update project details.
@@ -87,6 +90,7 @@ def create_projects_routes(logger: logging.Logger,
 
     @projects_routes.route('/projects/<int:project_id>', methods=['PATCH'])
     async def update_project(project_id: int):
+        # pylint: disable=no-value-for-parameter
         return await modify_handler.modify_project(project_id)
 
     # Delete a project.

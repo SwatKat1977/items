@@ -59,6 +59,7 @@ class DeleteProjectHandler(BaseApiRoute):
             404 if no project exists with the given ID.
             500 on an internal database error.
         """
+        # pylint: disable=duplicate-code
         hard_delete_param = quart.request.args.get("hard_delete")
 
         if hard_delete_param is None:

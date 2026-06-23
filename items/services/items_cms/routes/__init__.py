@@ -23,6 +23,19 @@ from .projects import create_projects_routes
 def create_routes(logger: logging.Logger,
                   state: ServiceState,
                   configuration: CMSConfiguration) -> quart.Blueprint:
+    """Create and register all CMS API routes.
+
+    This function creates the root API blueprint for the CMS service and
+    registers all feature-specific route blueprints.
+
+    Args:
+        logger: Logger instance used for route registration and diagnostics.
+        state: Shared service state object containing runtime dependencies.
+        configuration: CMS service configuration.
+
+    Returns:
+        A Quart blueprint containing all registered CMS API routes.
+    """
     routes_bp = quart.Blueprint("api_routes", __name__)
 
     routes_bp.register_blueprint(create_projects_routes(logger, state, configuration))

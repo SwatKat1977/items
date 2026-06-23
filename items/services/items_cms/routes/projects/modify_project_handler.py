@@ -17,7 +17,8 @@ import json
 import logging
 from http import HTTPStatus
 from quart import Response
-from weaver_framework.microservice.base_api_route import BaseApiRoute, validate_json
+from weaver_framework.microservice.base_api_route import BaseApiRoute
+from weaver_framework.microservice.microservice_decorators import validate_json
 from weaver_framework.microservice.api_response import ApiResponse
 from items.services.items_cms.services.project_service import ProjectService
 from items.shared.interfaces.cms.project import SCHEMA_MODIFY_PROJECT_REQUEST
@@ -62,6 +63,8 @@ class ModifyProjectHandler(BaseApiRoute):
             404 if no project exists with the given ID.
             500 on an internal database error.
         """
+        # pylint: disable=duplicate-code
+
         body = request_msg.body
         result = self._service.modify_project(
             project_id=project_id,
