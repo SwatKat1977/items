@@ -1,5 +1,5 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,41 +19,30 @@ from items_common.service_state import ServiceState
 from .testcases_api_view import TestCasesApiView
 
 
-def create_blueprint(logger: logging.Logger,
-                     service_state: ServiceState) -> Blueprint:
-    """
-    Creates and returns a Quart Blueprint for the test cases API.
+def create_testcases_routes(logger: logging.Logger,
+                            _service_state: ServiceState) -> Blueprint:
 
-    This function initializes a `TestcasesApiView` instance and registers
-    asynchronous routes under `/testcases/` for handling requests.
+    # view = TestCasesApiView(logger, service_state)
+    testcases_routes = Blueprint("testcases_routes", __name__)
 
-    Args:
-        logger (logging.Logger): The logger instance used for logging API
-                                 registration.
-        service_state (ServiceState): StateObject instance for database.
+    logger.debug("Registering Testcases API routes:")
 
-    Returns:
-        Blueprint: A Quart Blueprint instance with the registered health status
-                   route.
-    """
-    view = TestCasesApiView(logger, service_state)
+    logger.debug("=> %s GET /testcases?project_id=<id>",
+                 "Get testcases for a project".ljust(40))
 
-    blueprint = Blueprint('testcases_api', __name__)
-
-    logger.debug("-------------- Registering test cases routes --------------")
-
-    logger.debug("=> /testcases/testcase_details [POST]")
-
-    @blueprint.route('/details', methods=['POST'])
+    @testcases_routes.route('/testcases', methods=['GET'])
     async def testcase_details():
         # pylint: disable=no-value-for-parameter
-        return await view.testcase_details()
+        return None
+        # COMMENT OUT UNTIL UPDATED: return await view.testcase_details()
 
-    logger.debug("=> /case/<case_id> [POST]")
+    logger.debug("=> %s GET /testcases/<int:case_id>",
+                 "Get testcase details".ljust(40))
 
-    @blueprint.route('/get_case/<case_id>', methods=['POST'])
+    @testcases_routes.route('/testcases/<int:case_id>', methods=['GET'])
     async def testcase_get_case(case_id: int):
         # pylint: disable=no-value-for-parameter
-        return await view.testcase_get_case(case_id)
+        return None
+        # COMMENT OUT UNTIL UPDATED: return await view.testcase_get_case(case_id)
 
-    return blueprint
+    return testcases_routes
