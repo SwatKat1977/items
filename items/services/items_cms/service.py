@@ -25,6 +25,7 @@ from items.services.items_cms.configuration_layout import \
     CONFIGURATION_LAYOUT
 from items.services.items_cms.cms_configuration import \
     CMSConfiguration
+from items.services.items_cms.routes import create_routes
 
 
 class Service(BaseMicroservice):
@@ -61,8 +62,9 @@ class Service(BaseMicroservice):
                                   db_filename)
             return False
 
-        # self._quart_instance.register_blueprint(
-        #    create_api_routes(self._logger, self._service_state), url_prefix="")
+        self._quart_instance.register_blueprint(
+            create_routes(self._logger, self._service_state, self._config),
+            url_prefix="")
 
         return True
 

@@ -1,0 +1,104 @@
+"""
+Copyright 2025-2026 Integrated Test Management Suite Development Team
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+import logging
+from quart import Blueprint
+from items.shared.service_state import ServiceState
+from items.services.items_cms.cms_configuration import CMSConfiguration
+from items.services.items_cms.repositories.project_repository import ProjectRepository
+from items.services.items_cms.services.project_service import ProjectService
+from .get_project_handler import GetProjectHandler
+from .list_projects_handler import ListProjectsHandler
+from .create_project_handler import CreateProjectHandler
+from .modify_project_handler import ModifyProjectHandler
+from .delete_project_handler import DeleteProjectHandler
+
+
+def create_projects_routes(logger: logging.Logger,
+                           service_state: ServiceState,
+                           config: CMSConfiguration) -> Blueprint:
+    """Create and return the projects API Blueprint.
+
+    Instantiates the project repository and service once, wires them
+    into individual route handlers, and registers all project endpoints
+    with a Quart Blueprint.
+
+    Args:
+        logger:       Parent logger instance.
+        service_state: Shared service operational state.
+        config:       CMS service configuration, used to locate the
+                      database file.
+
+    Returns:
+        A configured Blueprint with all project routes registered.
+    """
+    # pylint: disable=too-many-locals
+
+    projects_routes = Blueprint("projects_routes", __name__)
+
+    repository = ProjectRepository(logger, config)
+    service = ProjectService(logger, service_state, repository)
+
+    get_handler = GetProjectHandler(logger, service)
+    list_handler = ListProjectsHandler(logger, service)
+    create_handler = CreateProjectHandler(logger, service)
+    modify_handler = ModifyProjectHandler(logger, service)
+    delete_handler = DeleteProjectHandler(logger, service)
+
+    logger.debug("Registering Projects API routes:")
+
+    # Get details of a specific project.
+    logger.debug("=> %s GET /projects/<int:project_id>",
+                 "Get project details".ljust(40))
+
+    @projects_routes.route('/projects/<int:project_id>', methods=['GET'])
+    async def get_project(project_id: int):
+        return await get_handler.get_project(project_id)
+
+    # List all of the available projects.
+    logger.debug("=> %s GET /projects",
+                 "List accessible projects".ljust(40))
+
+    @projects_routes.route('/projects', methods=['GET'])
+    async def list_projects():
+        return await list_handler.list_projects()
+
+    # Create project
+    logger.debug("=> %s POST /projects",
+                 "Create new project".ljust(40))
+
+    @projects_routes.route('/projects', methods=['POST'])
+    async def create_project():
+        # pylint: disable=no-value-for-parameter
+        return await create_handler.create_project()
+
+    # Update project details.
+    logger.debug("=> %s PATCH /projects/<int:project_id>",
+                 "Update project".ljust(40))
+
+    @projects_routes.route('/projects/<int:project_id>', methods=['PATCH'])
+    async def update_project(project_id: int):
+        # pylint: disable=no-value-for-parameter
+        return await modify_handler.modify_project(project_id)
+
+    # Delete a project.
+    logger.debug("=> %s DELETE /projects/<int:project_id>",
+                 "Delete a project".ljust(40))
+
+    @projects_routes.route('/projects/<int:project_id>', methods=['DELETE'])
+    async def delete_project(project_id: int):
+        return await delete_handler.delete_project(project_id)
+
+    return projects_routes
