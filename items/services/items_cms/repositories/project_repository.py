@@ -35,7 +35,7 @@ class ProjectRepository:
         self._logger = logger.getChild(__name__)
         self._db = SqliteInterface(self._logger, config.backend_db_filename)
 
-    def is_valid_project_id(self, project_id: int) -> bool:
+    async def is_valid_project_id(self, project_id: int) -> bool:
         """Return True if the project ID exists in the database.
 
         Args:
@@ -48,10 +48,10 @@ class ProjectRepository:
             SqliteInterfaceException: If the database query fails.
         """
         query = f"SELECT id FROM {cms_tables.PRJ_PROJECTS} WHERE id = ?"
-        row = self._db.run_query(query, (project_id,), fetch_one=True)
+        row = await self._db.run_query(query, (project_id,), fetch_one=True)
         return bool(row)
 
-    def get_project_details(self, project_id: int) -> Optional[dict]:
+    async def get_project_details(self, project_id: int) -> Optional[dict]:
         """Retrieve full details for a project by ID.
 
         Projects marked as awaiting purge are treated as non-existent.
@@ -71,7 +71,7 @@ class ProjectRepository:
             f"show_announcement_on_overview "
             f"FROM {cms_tables.PRJ_PROJECTS} WHERE id = ?"
         )
-        row = self._db.run_query(query, (project_id,), fetch_one=True)
+        row = await self._db.run_query(query, (project_id,), fetch_one=True)
 
         if not row:
             return None
@@ -88,7 +88,7 @@ class ProjectRepository:
             "show_announcement_on_overview": show_announcement_on_overview,
         }
 
-    def get_projects(self, value_fields: list[str]) -> list[tuple]:
+    async def get_projects(self, value_fields: list[str]) -> list[tuple]:
         """Retrieve all active projects with the specified fields.
 
         The id column is always included as the first field. Projects
@@ -109,24 +109,24 @@ class ProjectRepository:
             f"SELECT {','.join(all_fields)} FROM {cms_tables.PRJ_PROJECTS} "
             "WHERE awaiting_purge = 0"
         )
-        rows = self._db.run_query(query, ())
+        rows = await self._db.run_query(query, ())
         return rows or []
 
-    def get_no_of_milestones_for_project(self, _project_id: int) -> int:
+    async def get_no_of_milestones_for_project(self, _project_id: int) -> int:
         """Return the number of milestones for a project.
 
         Not yet implemented — always returns 0.
         """
         return 0
 
-    def get_no_of_testruns_for_project(self, _project_id: int) -> int:
+    async def get_no_of_testruns_for_project(self, _project_id: int) -> int:
         """Return the number of test runs for a project.
 
         Not yet implemented — always returns 0.
         """
         return 0
 
-    def project_name_exists(self, project_name: str) -> bool:
+    async def project_name_exists(self, project_name: str) -> bool:
         """Return True if a project with the given name already exists.
 
         Args:
@@ -139,13 +139,13 @@ class ProjectRepository:
             SqliteInterfaceException: If the database query fails.
         """
         query = f"SELECT COUNT(*) FROM {cms_tables.PRJ_PROJECTS} WHERE name = ?"
-        row = self._db.run_query(query, (project_name,), fetch_one=True)
+        row = await self._db.run_query(query, (project_name,), fetch_one=True)
         return bool(row[0])
 
-    def add_project(self,
-                    name: str,
-                    announcement: str,
-                    announcement_on_overview: bool) -> int:
+    async def add_project(self,
+                          name: str,
+                          announcement: str,
+                          announcement_on_overview: bool) -> int:
         """Insert a new project and return its ID.
 
         Args:
@@ -164,14 +164,14 @@ class ProjectRepository:
             f"INSERT INTO {cms_tables.PRJ_PROJECTS}"
             "(name, announcement, show_announcement_on_overview) VALUES(?,?,?)"
         )
-        return self._db.insert_query(
+        return await self._db.insert_query(
             query, (name, announcement, announcement_on_overview))
 
-    def modify_project(self,
-                       project_id: int,
-                       announcement: str,
-                       announcement_on_overview: bool,
-                       name: Optional[str] = None) -> None:
+    async def modify_project(self,
+                             project_id: int,
+                             announcement: str,
+                             announcement_on_overview: bool,
+                             name: Optional[str] = None) -> None:
         """Update project details.
 
         Args:
@@ -190,7 +190,7 @@ class ProjectRepository:
                 "SET announcement = ?, show_announcement_on_overview = ? "
                 "WHERE id = ?"
             )
-            self._db.run_query(
+            await self._db.run_query(
                 query,
                 (announcement, announcement_on_overview, project_id),
                 commit=True)
@@ -200,12 +200,12 @@ class ProjectRepository:
                 "SET name = ?, announcement = ?, show_announcement_on_overview = ? "
                 "WHERE id = ?"
             )
-            self._db.run_query(
+            await self._db.run_query(
                 query,
                 (name, announcement, announcement_on_overview, project_id),
                 commit=True)
 
-    def mark_project_for_purge(self, project_id: int) -> None:
+    async def mark_project_for_purge(self, project_id: int) -> None:
         """Soft-delete a project by marking it as awaiting purge.
 
         Args:
@@ -218,9 +218,9 @@ class ProjectRepository:
             f"UPDATE {cms_tables.PRJ_PROJECTS} "
             "SET awaiting_purge = 1 WHERE id = ?"
         )
-        self._db.run_query(query, (project_id,), commit=True)
+        await self._db.run_query(query, (project_id,), commit=True)
 
-    def hard_delete_project(self, project_id: int) -> None:
+    async def hard_delete_project(self, project_id: int) -> None:
         """Permanently delete a project from the database.
 
         Args:
@@ -230,9 +230,9 @@ class ProjectRepository:
             SqliteInterfaceException: If the database delete fails.
         """
         query = f"DELETE FROM {cms_tables.PRJ_PROJECTS} WHERE id = ?"
-        self._db.run_query(query, (project_id,), commit=True)
+        await self._db.run_query(query, (project_id,), commit=True)
 
-    def get_project_id_by_name(self, project_name: str) -> Optional[int]:
+    async def get_project_id_by_name(self, project_name: str) -> Optional[int]:
         """Return the project ID for a given name.
 
         Args:
@@ -245,5 +245,5 @@ class ProjectRepository:
             SqliteInterfaceException: If the database query fails.
         """
         query = f"SELECT id FROM {cms_tables.PRJ_PROJECTS} WHERE name = ?"
-        row = self._db.run_query(query, (project_name,), fetch_one=True)
+        row = await self._db.run_query(query, (project_name,), fetch_one=True)
         return int(row[0]) if row else None

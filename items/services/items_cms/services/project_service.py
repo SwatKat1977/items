@@ -14,32 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
-from typing import Any, NamedTuple, Optional
+from dataclasses import dataclass
+from typing import Optional
 from weaver_framework.database.sqlite_interface import SqliteInterfaceException
+from items.services.items_cms.services.service_result import ServiceResult
 from items.shared.service_state import ServiceState
 from items.services.items_cms.repositories.project_repository import ProjectRepository
 
 
-class ProjectResult(NamedTuple):
-    """
-    Outcome of a project service operation.
+@dataclass(slots=True)
+class ProjectResult(ServiceResult):
+    """Outcome of a project service operation.
 
-    Attributes:
-        success:     True if the operation completed without error.
-        data:        Operation payload on success (project dict, list, or
-                     new project ID depending on the operation).
-        error_msg:   Human-readable error description when success is False.
-        is_internal: True when the failure is a server-side fault (maps to
-                     HTTP 500); False when it is a client-side fault.
-        not_found:   True when the failure is because the requested resource
-                     does not exist (maps to HTTP 404). Only meaningful when
-                     success is False and is_internal is False.
+    Extends ServiceResult to represent the outcome of operations within
+    the projects domain.
     """
-    success: bool
-    data: Optional[Any] = None
-    error_msg: str = ""
-    is_internal: bool = False
-    not_found: bool = False
 
 
 class ProjectService:
@@ -64,7 +53,7 @@ class ProjectService:
     # Read operations
     # ------------------------------------------------------------------
 
-    def get_project(self, project_id: int) -> ProjectResult:
+    async def get_project(self, project_id: int) -> ProjectResult:
         """Retrieve full details for a single project.
 
         Args:
@@ -81,7 +70,7 @@ class ProjectService:
                                  is_internal=True)
 
         try:
-            details = self._repository.get_project_details(project_id)
+            details = await self._repository.get_project_details(project_id)
         except SqliteInterfaceException as ex:
             self._logger.exception(
                 "Database failure retrieving project %d: %s", project_id, ex)
@@ -97,10 +86,10 @@ class ProjectService:
 
         return ProjectResult(success=True, data=details)
 
-    def list_projects(self,
-                      value_fields: list[str],
-                      count_milestones: bool,
-                      count_test_runs: bool) -> ProjectResult:
+    async def list_projects(self,
+                            value_fields: list[str],
+                            count_milestones: bool,
+                            count_test_runs: bool) -> ProjectResult:
         """Retrieve all active projects with optional metric counts.
 
         Args:
@@ -122,7 +111,7 @@ class ProjectService:
                                  is_internal=True)
 
         try:
-            rows = self._repository.get_projects(value_fields)
+            rows = await self._repository.get_projects(value_fields)
         except SqliteInterfaceException as ex:
             self._logger.exception(
                 "Database failure listing projects: %s", ex)
@@ -144,7 +133,7 @@ class ProjectService:
 
             if count_test_runs:
                 project["no_of_test_runs"] = (
-                    self._repository.get_no_of_testruns_for_project(
+                    await self._repository.get_no_of_testruns_for_project(
                         project["id"]))
 
             projects.append(project)
@@ -155,10 +144,10 @@ class ProjectService:
     # Write operations
     # ------------------------------------------------------------------
 
-    def create_project(self,
-                       name: str,
-                       announcement: str,
-                       announcement_on_overview: bool) -> ProjectResult:
+    async def create_project(self,
+                             name: str,
+                             announcement: str,
+                             announcement_on_overview: bool) -> ProjectResult:
         """Create a new project.
 
         Rejects the request if a project with the same name already exists.
@@ -180,7 +169,7 @@ class ProjectService:
                                  is_internal=True)
 
         try:
-            exists = self._repository.project_name_exists(name)
+            exists = await self._repository.project_name_exists(name)
         except SqliteInterfaceException as ex:
             self._logger.exception(
                 "Database failure checking project name: %s", ex)
@@ -194,7 +183,7 @@ class ProjectService:
                                  error_msg="Project name already exists")
 
         try:
-            new_id = self._repository.add_project(
+            new_id = await self._repository.add_project(
                 name, announcement, announcement_on_overview)
         except SqliteInterfaceException as ex:
             self._logger.exception(
@@ -206,11 +195,11 @@ class ProjectService:
 
         return ProjectResult(success=True, data=new_id)
 
-    def modify_project(self,
-                       project_id: int,
-                       name: str,
-                       announcement: str,
-                       announcement_on_overview: bool) -> ProjectResult:
+    async def modify_project(self,
+                             project_id: int,
+                             name: str,
+                             announcement: str,
+                             announcement_on_overview: bool) -> ProjectResult:
         """Update the details of an existing project.
 
         If the name has changed, checks that the new name is not already
@@ -235,7 +224,7 @@ class ProjectService:
                                  is_internal=True)
 
         try:
-            existing = self._repository.get_project_details(project_id)
+            existing = await self._repository.get_project_details(project_id)
         except SqliteInterfaceException as ex:
             self._logger.exception(
                 "Database failure retrieving project %d for update: %s",
@@ -253,7 +242,7 @@ class ProjectService:
         new_name: Optional[str] = None
         if name != existing["name"]:
             try:
-                name_taken = self._repository.project_name_exists(name)
+                name_taken = await self._repository.project_name_exists(name)
             except SqliteInterfaceException as ex:
                 self._logger.exception(
                     "Database failure checking project name: %s", ex)
@@ -269,7 +258,7 @@ class ProjectService:
             new_name = name
 
         try:
-            self._repository.modify_project(
+            await self._repository.modify_project(
                 project_id, announcement, announcement_on_overview, new_name)
         except SqliteInterfaceException as ex:
             self._logger.exception(
@@ -281,9 +270,9 @@ class ProjectService:
 
         return ProjectResult(success=True)
 
-    def delete_project(self,
-                       project_id: int,
-                       hard_delete: bool) -> ProjectResult:
+    async def delete_project(self,
+                             project_id: int,
+                             hard_delete: bool) -> ProjectResult:
         """Delete or soft-delete a project.
 
         A soft delete marks the project as awaiting purge; a hard delete
@@ -304,7 +293,7 @@ class ProjectService:
                                  is_internal=True)
 
         try:
-            exists = self._repository.is_valid_project_id(project_id)
+            exists = await self._repository.is_valid_project_id(project_id)
         except SqliteInterfaceException as ex:
             self._logger.exception(
                 "Database failure checking project ID %d: %s", project_id, ex)
@@ -321,11 +310,11 @@ class ProjectService:
         try:
             if hard_delete:
                 self._logger.info("Hard-deleting project %d", project_id)
-                self._repository.hard_delete_project(project_id)
+                await self._repository.hard_delete_project(project_id)
             else:
                 self._logger.info(
                     "Marking project %d as awaiting purge", project_id)
-                self._repository.mark_project_for_purge(project_id)
+                await self._repository.mark_project_for_purge(project_id)
 
         except SqliteInterfaceException as ex:
             self._logger.exception(

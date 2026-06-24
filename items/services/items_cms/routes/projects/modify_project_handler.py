@@ -66,7 +66,7 @@ class ModifyProjectHandler(BaseApiRoute):
         # pylint: disable=duplicate-code
 
         body = request_msg.body
-        result = self._service.modify_project(
+        result = await self._service.modify_project(
             project_id=project_id,
             name=body["name"],
             announcement=body["announcement"],

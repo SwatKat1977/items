@@ -90,7 +90,7 @@ class ListProjectsHandler(BaseApiRoute):
             count_milestones = "no_of_milestones" in requested_count_fields
             count_test_runs = "no_of_test_runs" in requested_count_fields
 
-        result = self._service.list_projects(
+        result = await self._service.list_projects(
             requested_fields, count_milestones, count_test_runs)
 
         if not result.success:

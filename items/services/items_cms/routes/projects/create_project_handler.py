@@ -56,7 +56,7 @@ class CreateProjectHandler(BaseApiRoute):
             500 on an internal database error.
         """
         body = request_msg.body
-        result = self._service.create_project(
+        result = await self._service.create_project(
             name=body["name"],
             announcement=body["announcement"],
             announcement_on_overview=body["announcement_on_overview"])

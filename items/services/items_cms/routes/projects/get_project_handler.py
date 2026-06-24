@@ -50,7 +50,7 @@ class GetProjectHandler(BaseApiRoute):
         """
         # pylint: disable=duplicate-code
 
-        result = self._service.get_project(project_id)
+        result = await self._service.get_project(project_id)
 
         if not result.success:
             status = (HTTPStatus.INTERNAL_SERVER_ERROR

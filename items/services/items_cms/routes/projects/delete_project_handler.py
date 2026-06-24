@@ -76,7 +76,7 @@ class DeleteProjectHandler(BaseApiRoute):
                     status=HTTPStatus.BAD_REQUEST,
                     content_type="application/json")
 
-        result = self._service.delete_project(project_id, hard_delete)
+        result = await self._service.delete_project(project_id, hard_delete)
 
         if not result.success:
             status = (HTTPStatus.INTERNAL_SERVER_ERROR
