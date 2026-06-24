@@ -128,7 +128,7 @@ class ProjectService:
 
             if count_milestones:
                 project["no_of_milestones"] = (
-                    self._repository.get_no_of_milestones_for_project(
+                    await self._repository.get_no_of_milestones_for_project(
                         project["id"]))
 
             if count_test_runs:
