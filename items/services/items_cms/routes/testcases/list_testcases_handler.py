@@ -49,6 +49,8 @@ class ListTestcasesHandler(BaseApiRoute):
             400 if ``project_id`` is missing or not an integer.
             500 on an internal database error.
         """
+        # pylint: disable=duplicate-code
+
         project_id_param = quart.request.args.get("project_id")
 
         if project_id_param is None:
@@ -65,7 +67,7 @@ class ListTestcasesHandler(BaseApiRoute):
                 status=HTTPStatus.BAD_REQUEST,
                 content_type="application/json")
 
-        result = self._service.list_testcases(project_id)
+        result = await self._service.list_testcases(project_id)
 
         if not result.success:
             return Response(

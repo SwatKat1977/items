@@ -14,31 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
-from typing import Any, NamedTuple, Optional
+from dataclasses import dataclass
 from weaver_framework.database.sqlite_interface import SqliteInterfaceException
+from items.services.items_cms.services.service_result import ServiceResult
 from items.shared.service_state import ServiceState
 from items.services.items_cms.repositories.testcase_repository import TestcaseRepository
 
 
-class TestcaseResult(NamedTuple):
-    """
-    Outcome of a testcase service operation.
+@dataclass(slots=True)
+class TestcaseResult(ServiceResult):
+    """Outcome of a testcase service operation.
 
-    Attributes:
-        success:     True if the operation completed without error.
-        data:        Operation payload on success.
-        error_msg:   Human-readable error description when success is False.
-        is_internal: True when the failure is a server-side fault (maps to
-                     HTTP 500); False when it is a client-side fault.
-        not_found:   True when the requested resource does not exist (maps
-                     to HTTP 404). Only meaningful when success is False and
-                     is_internal is False.
+    Extends ServiceResult to represent the outcome of operations within
+    the testcases domain.
     """
-    success: bool
-    data: Optional[Any] = None
-    error_msg: str = ""
-    is_internal: bool = False
-    not_found: bool = False
 
 
 class TestcaseService:
@@ -59,7 +48,7 @@ class TestcaseService:
         self._state = state
         self._repository = repository
 
-    def list_testcases(self, project_id: int) -> TestcaseResult:
+    async def list_testcases(self, project_id: int) -> TestcaseResult:
         """Retrieve the folder hierarchy and test case stubs for a project.
 
         Args:
@@ -76,7 +65,7 @@ class TestcaseService:
                                   is_internal=True)
 
         try:
-            data = self._repository.get_testcases(project_id)
+            data = await self._repository.get_testcases(project_id)
         except SqliteInterfaceException as ex:
             self._logger.exception(
                 "Database failure listing testcases for project %d: %s",
@@ -88,7 +77,7 @@ class TestcaseService:
 
         return TestcaseResult(success=True, data=data)
 
-    def get_testcase(self, case_id: int) -> TestcaseResult:
+    async def get_testcase(self, case_id: int) -> TestcaseResult:
         """Retrieve full details for a single test case.
 
         Args:
@@ -105,7 +94,7 @@ class TestcaseService:
                                   is_internal=True)
 
         try:
-            testcase = self._repository.get_testcase(case_id)
+            testcase = await self._repository.get_testcase(case_id)
         except SqliteInterfaceException as ex:
             self._logger.exception(
                 "Database failure retrieving testcase %d: %s", case_id, ex)

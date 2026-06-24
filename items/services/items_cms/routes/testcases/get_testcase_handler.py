@@ -48,7 +48,9 @@ class GetTestcaseHandler(BaseApiRoute):
             404 if no test case exists with the given ID.
             500 on an internal database error.
         """
-        result = self._service.get_testcase(case_id)
+        # pylint: disable=duplicate-code
+
+        result = await self._service.get_testcase(case_id)
 
         if not result.success:
             status = (HTTPStatus.INTERNAL_SERVER_ERROR

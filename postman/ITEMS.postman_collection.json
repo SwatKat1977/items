@@ -1,9 +1,9 @@
 {
   "info": {
-    "_postman_id": "5fe1e254-4dbf-493b-b664-75036e752bff",
+    "_postman_id": "31edb85a-8593-42db-b6e6-06a9b3ebfbb6",
     "name": "ITEMS",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "10935426"
+    "_exporter_id": "49399853"
   },
   "item": [
     {
@@ -672,30 +672,26 @@
           ]
         },
         {
-          "name": "Test Cases",
+          "name": "Testcases",
           "item": [
             {
               "name": "Test Cases For Project",
               "request": {
-                "method": "POST",
+                "method": "GET",
                 "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"project_id\": 1\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
                 "url": {
-                  "raw": "{{CMS_SVC_URL}}/testcases/details",
+                  "raw": "{{CMS_SVC_URL}}/testcases?project_id=1",
                   "host": [
                     "{{CMS_SVC_URL}}"
                   ],
                   "path": [
-                    "testcases",
-                    "details"
+                    "testcases"
+                  ],
+                  "query": [
+                    {
+                      "key": "project_id",
+                      "value": "1"
+                    }
                   ]
                 }
               },
@@ -703,8 +699,11 @@
             },
             {
               "name": "Test Case Details",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
               "request": {
-                "method": "POST",
+                "method": "GET",
                 "header": [],
                 "body": {
                   "mode": "raw",
@@ -716,13 +715,12 @@
                   }
                 },
                 "url": {
-                  "raw": "{{CMS_SVC_URL}}/testcases/get_case/1",
+                  "raw": "{{CMS_SVC_URL}}/testcases/1",
                   "host": [
                     "{{CMS_SVC_URL}}"
                   ],
                   "path": [
                     "testcases",
-                    "get_case",
                     "1"
                   ]
                 }
