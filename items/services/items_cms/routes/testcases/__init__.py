@@ -49,7 +49,7 @@ def create_testcases_routes(logger: logging.Logger,
     list_handler = ListTestcasesHandler(logger, service)
     get_handler = GetTestcaseHandler(logger, service)
 
-    logger.debug("Registering Testcases API routes:")
+    logger.debug("--- Registering Testcases API routes ---")
 
     # List test cases and folder hierarchy for a project.
     logger.debug("=> %s GET /testcases?project_id=<id>",
