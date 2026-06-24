@@ -65,6 +65,21 @@ class TestcaseService:
                                   is_internal=True)
 
         try:
+            exists = await self._repository.is_valid_project_id(project_id)
+        except SqliteInterfaceException as ex:
+            self._logger.exception(
+                "Database failure validating project %d: %s", project_id, ex)
+            self._state.mark_database_failed()
+            return TestcaseResult(success=False,
+                                  error_msg="Internal error in CMS",
+                                  is_internal=True)
+
+        if not exists:
+            return TestcaseResult(success=False,
+                                  error_msg="Project id is invalid",
+                                  not_found=True)
+
+        try:
             data = await self._repository.get_testcases(project_id)
         except SqliteInterfaceException as ex:
             self._logger.exception(

@@ -35,6 +35,22 @@ class TestcaseRepository:
         self._logger = logger.getChild(__name__)
         self._db = SqliteInterface(self._logger, config.backend_db_filename)
 
+    async def is_valid_project_id(self, project_id: int) -> bool:
+        """Return True if the project ID exists in the database.
+
+        Args:
+            project_id: ID of the project to check.
+
+        Returns:
+            True if the project exists, False otherwise.
+
+        Raises:
+            SqliteInterfaceException: If the database query fails.
+        """
+        query = f"SELECT id FROM {cms_tables.PRJ_PROJECTS} WHERE id = ?"
+        row = await self._db.run_query(query, (project_id,), fetch_one=True)
+        return bool(row)
+
     async def get_testcases(self, project_id: int) -> dict:
         """Retrieve folders and test case stubs for a project.
 
