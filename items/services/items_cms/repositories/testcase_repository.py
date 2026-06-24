@@ -35,7 +35,7 @@ class TestcaseRepository:
         self._logger = logger.getChild(__name__)
         self._db = SqliteInterface(self._logger, config.backend_db_filename)
 
-    def get_testcases(self, project_id: int) -> dict:
+    async def get_testcases(self, project_id: int) -> dict:
         """Retrieve folders and test case stubs for a project.
 
         Builds the full folder hierarchy via a recursive CTE, then
@@ -76,8 +76,8 @@ class TestcaseRepository:
             "ORDER BY folder_id, id"
         )
 
-        folder_rows = self._db.run_query(folders_query, (project_id,))
-        cases_rows = self._db.run_query(cases_query, (project_id,))
+        folder_rows = await self._db.run_query(folders_query, (project_id,))
+        cases_rows = await self._db.run_query(cases_query, (project_id,))
 
         return {
             'folders': [
@@ -90,7 +90,7 @@ class TestcaseRepository:
             ]
         }
 
-    def get_testcase(self, case_id: int) -> Optional[dict]:
+    async def get_testcase(self, case_id: int) -> Optional[dict]:
         """Retrieve full details for a single test case.
 
         Args:
@@ -107,7 +107,7 @@ class TestcaseRepository:
             f"SELECT id, folder_id, name, description "
             f"FROM {cms_tables.TC_TEST_CASES} WHERE id = ?"
         )
-        row = self._db.run_query(query, (case_id,), fetch_one=True)
+        row = await self._db.run_query(query, (case_id,), fetch_one=True)
 
         if not row:
             return None
