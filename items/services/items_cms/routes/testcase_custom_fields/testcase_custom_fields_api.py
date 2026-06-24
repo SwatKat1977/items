@@ -18,56 +18,57 @@ from quart import Blueprint
 from items_common.service_state import ServiceState
 from .testcase_custom_fields_api_view import TestcaseCustomFieldsApiView
 
-# For admins
-# POST   /api/web/admin/testcase_custom_fields          # create new
-# PUT    /api/web/admin/testcase_custom_fields/45       # update existing
-# DELETE /api/web/admin/testcase_custom_fields/45       # delete (optional)
-# GET    /api/web/admin/testcase_custom_fields          # list all (optional)
-# PATCH /api/wb/admin/testcase_custom_fields/45         # Move field position
-
 
 def create_blueprint(logger: logging.Logger,
                      state_object: ServiceState) -> Blueprint:
-    """
-    Creates a Quart blueprint that defines admin API routes for managing
-    testcase custom fields.
 
-    Registers the following routes:
-      - POST /testcase_custom_fields:
-        Adds a new custom field to the system.
-
-      - PATCH /testcase_custom_fields/<field_id>/<direction>:
-        Moves a custom field up or down in the ordering.
-
-    Args:
-        logger (logging.Logger): Logger instance for debugging and info logs.
-        state_object (StateObject): Shared application state object used by
-            the view.
-
-    Returns:
-        Blueprint: A configured Quart Blueprint with admin API routes.
-    """
     # pylint: disable=no-value-for-parameter
     view = TestcaseCustomFieldsApiView(logger, state_object)
 
-    blueprint = Blueprint('admin_api', __name__)
+    blueprint = Blueprint('testcase_custom_fields_routes', __name__)
 
-    logger.debug("----- Registering ADMIN testcase custom fields routes -----")
+    logger.debug("--- Registering Testcases custom fields API routes ---")
 
-    logger.debug("=> /admin/testcase_custom_fields [POST]  : Add new field")
-    @blueprint.route('/', methods=['POST'])
+    # Add new field.
+    logger.debug("=> %s POST /testcase_custom_fields",
+                 "Add new field".ljust(40))
+
+    @blueprint.route('/testcase_custom_fields', methods=['POST'])
     async def add_testcase_custom_field_request():
         return await view.add_custom_field()
 
-    logger.debug("=> /admin/testcase_custom_fields [PATCH] : Move position")
-    @blueprint.route('/<int:field_id>/<string:direction>', methods=['PATCH'])
-    async def move_testcase_custom_field_request(field_id: int, direction: str):
-        return await view.move_testcase_custom_field(field_id, direction)
+    # Move position of custom testcase field.
+    logger.debug("=> %s PATCH /testcase_custom_fields/<int:field_id>",
+                 "Move custom field position (up/down)".ljust(40))
 
-    logger.debug("=> /admin/testcase_custom_fields [GET]   : Get all custom "
-                 "fields")
-    @blueprint.route('/', methods=['GET'])
+    @blueprint.route('/testcase_custom_fields/<int:field_id>',
+                     methods=['PATCH'])
+    async def move_testcase_custom_field_request(field_id: int):
+        return await view.move_testcase_custom_field(field_id)
+
+    # Get custom testcase fields.
+    logger.debug("=> %s GET /testcase_custom_fields",
+                 "Get custom testcase fields".ljust(40))
+
+    @blueprint.route('/testcase_custom_fields', methods=['GET'])
     async def get_custom_fields_request():
         return await view.get_custom_fields()
+
+    # Update custom testcase field.
+    logger.debug("=> %s PUT /testcase_custom_fields/<int:field_id>",
+                 "Update custom testcase field".ljust(40))
+
+    @blueprint.route('/testcase_custom_fields/<int:field_id>', methods=['PUT'])
+    async def update_custom_field_request(field_id: int):
+        return await view.update_custom_field(field_id)
+
+    # Delete a custom testcase field.
+    logger.debug("=> %s DELETE /testcase_custom_fields/<int:field_id>",
+                 "Delete a custom testcase field".ljust(40))
+
+    @blueprint.route('/testcase_custom_fields/<int:field_id>',
+                     methods=['DELETE'])
+    async def delete_custom_field_request(field_id: int):
+        return await view.delete_custom_field(field_id)
 
     return blueprint
