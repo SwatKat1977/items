@@ -16,48 +16,63 @@ limitations under the License.
 import json
 import logging
 from http import HTTPStatus
+import quart
 from quart import Response
 from weaver_framework.microservice.base_api_route import BaseApiRoute
-from items.services.items_cms.services.project_service import ProjectService
+from items.services.items_cms.services.testcase_service import TestcaseService
 
 
-class GetProjectHandler(BaseApiRoute):
-    """Handles GET /projects/<project_id> requests."""
+class ListTestcasesHandler(BaseApiRoute):
+    """Handles GET /testcases requests."""
 
     def __init__(self,
                  logger: logging.Logger,
-                 service: ProjectService) -> None:
+                 service: TestcaseService) -> None:
         """Initialise the handler.
 
         Args:
             logger:  Parent logger instance.
-            service: Project service used to retrieve project data.
+            service: Testcase service used to retrieve test case data.
         """
         self._logger = logger.getChild(__name__)
         self._service = service
 
-    async def get_project(self, project_id: int) -> Response:
-        """Retrieve full details for a single project.
+    async def list_testcases(self) -> Response:
+        """Retrieve the folder hierarchy and test cases for a project.
 
-        Args:
-            project_id: ID of the project to retrieve, taken from the
-                        URL path.
+        Query parameters:
+            project_id (int): ID of the project to list test cases for.
+                              Required.
 
         Returns:
-            200 with the project details dict on success.
-            404 if no project exists with the given ID.
+            200 with ``{"folders": [...], "test_cases": [...]}`` on success.
+            400 if ``project_id`` is missing or not an integer.
             500 on an internal database error.
         """
         # pylint: disable=duplicate-code
 
-        result = await self._service.get_project(project_id)
+        project_id_param = quart.request.args.get("project_id")
+
+        if project_id_param is None:
+            return Response(
+                json.dumps({"error": "project_id is required"}),
+                status=HTTPStatus.BAD_REQUEST,
+                content_type="application/json")
+
+        try:
+            project_id = int(project_id_param)
+        except ValueError:
+            return Response(
+                json.dumps({"error": "project_id must be an integer"}),
+                status=HTTPStatus.BAD_REQUEST,
+                content_type="application/json")
+
+        result = await self._service.list_testcases(project_id)
 
         if not result.success:
-            status = (HTTPStatus.INTERNAL_SERVER_ERROR
-                      if result.is_internal else HTTPStatus.NOT_FOUND)
             return Response(
                 json.dumps({"error": result.error_msg}),
-                status=status,
+                status=HTTPStatus.INTERNAL_SERVER_ERROR,
                 content_type="application/json")
 
         return Response(

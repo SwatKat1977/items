@@ -18,39 +18,39 @@ import logging
 from http import HTTPStatus
 from quart import Response
 from weaver_framework.microservice.base_api_route import BaseApiRoute
-from items.services.items_cms.services.project_service import ProjectService
+from items.services.items_cms.services.testcase_service import TestcaseService
 
 
-class GetProjectHandler(BaseApiRoute):
-    """Handles GET /projects/<project_id> requests."""
+class GetTestcaseHandler(BaseApiRoute):
+    """Handles GET /testcases/<case_id> requests."""
 
     def __init__(self,
                  logger: logging.Logger,
-                 service: ProjectService) -> None:
+                 service: TestcaseService) -> None:
         """Initialise the handler.
 
         Args:
             logger:  Parent logger instance.
-            service: Project service used to retrieve project data.
+            service: Testcase service used to retrieve test case data.
         """
         self._logger = logger.getChild(__name__)
         self._service = service
 
-    async def get_project(self, project_id: int) -> Response:
-        """Retrieve full details for a single project.
+    async def get_testcase(self, case_id: int) -> Response:
+        """Retrieve full details for a single test case.
 
         Args:
-            project_id: ID of the project to retrieve, taken from the
-                        URL path.
+            case_id: ID of the test case to retrieve, taken from the
+                     URL path.
 
         Returns:
-            200 with the project details dict on success.
-            404 if no project exists with the given ID.
+            200 with the test case details dict on success.
+            404 if no test case exists with the given ID.
             500 on an internal database error.
         """
         # pylint: disable=duplicate-code
 
-        result = await self._service.get_project(project_id)
+        result = await self._service.get_testcase(case_id)
 
         if not result.success:
             status = (HTTPStatus.INTERNAL_SERVER_ERROR

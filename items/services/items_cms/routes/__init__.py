@@ -18,6 +18,7 @@ import quart
 from items.shared.service_state import ServiceState
 from items.services.items_cms.cms_configuration import CMSConfiguration
 from .projects import create_projects_routes
+from .testcases import create_testcases_routes
 
 
 def create_routes(logger: logging.Logger,
@@ -38,6 +39,11 @@ def create_routes(logger: logging.Logger,
     """
     routes_bp = quart.Blueprint("api_routes", __name__)
 
-    routes_bp.register_blueprint(create_projects_routes(logger, state, configuration))
+    routes_bp.register_blueprint(create_projects_routes(logger,
+                                                        state,
+                                                        configuration))
+    routes_bp.register_blueprint(create_testcases_routes(logger,
+                                                         state,
+                                                         configuration))
 
     return routes_bp
