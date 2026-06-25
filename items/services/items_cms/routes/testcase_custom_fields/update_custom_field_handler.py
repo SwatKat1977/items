@@ -38,7 +38,7 @@ class UpdateCustomFieldHandler(BaseApiRoute):
         self._logger = logger.getChild(__name__)
         self._service = service
 
-    async def update_custom_field(self, field_id: int) -> Response:
+    async def update_custom_field(self, _field_id: int) -> Response:
         """Update a testcase custom field definition.
 
         Not yet implemented.

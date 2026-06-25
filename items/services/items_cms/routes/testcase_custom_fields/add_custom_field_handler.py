@@ -41,7 +41,10 @@ SCHEMA_ADD_TEST_CASE_CUSTOM_FIELD_REQUEST: dict = {
         "system_name": {
             "type": "string",
             "pattern": "^[a-z][a-z0-9_]*$",
-            "description": "Internal system identifier (lowercase letters, digits, and underscores; must start with a letter)."
+            "description": (
+                "Internal system identifier (lowercase letters, digits, "
+                "and underscores; must start with a letter)."
+            )
         },
         "field_type": {
             "type": "string",
@@ -75,7 +78,10 @@ SCHEMA_ADD_TEST_CASE_CUSTOM_FIELD_REQUEST: dict = {
         },
         "projects": {
             "type": "array",
-            "description": "List of project names (required when applies_to_all_projects is false).",
+            "description": (
+                "List of project names "
+                "(required when applies_to_all_projects is false)."
+            ),
             "items": {"type": "string"}
         }
     },

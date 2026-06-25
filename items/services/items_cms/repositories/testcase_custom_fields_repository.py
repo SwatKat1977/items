@@ -358,17 +358,17 @@ class TestcaseCustomFieldsRepository:
         return rows or []
 
     async def update_custom_field(self,
-                                  field_id: int,
-                                  updates: dict) -> bool:
+                                  _field_id: int,
+                                  _updates: dict) -> bool:
         """Update an existing custom field.
 
         Not yet implemented.
 
         Args:
-            field_id: ID of the field to update.
-            updates:  Dict of field names to new values.
+            _field_id: ID of the field to update.
+            _updates:  Dict of field names to new values.
         """
-        # TODO: implement update logic
+        # This is a stub, to be implemented.
         return False
 
     async def delete_custom_field(self, field_id: int) -> bool:
