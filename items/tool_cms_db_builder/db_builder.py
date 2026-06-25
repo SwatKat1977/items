@@ -14,13 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import argparse
+import asyncio
 import logging
 import os.path
 import sql_values
 import db_static_values
 import db_tables_test_cases as tables_test_cases
-from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
-import databases.cms_db_tables as cms_db_tables
+from weaver_framework.database.sqlite_interface import (
+    SqliteInterface,
+    SqliteInterfaceException,
+)
+import cms_db_tables
 
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
 LOGGING_DEFAULT_LOG_LEVEL = logging.DEBUG
@@ -30,49 +34,85 @@ LOGGING_LOG_FORMAT_STRING = "%(asctime)s [%(levelname)s] %(message)s"
 DEFAULT_DB_FILENAME: str = "items_cms_svc.db"
 
 
-def open_db(logger: logging.Logger, filename: str) -> BaseSqliteInterface:
-    """Opens a new SQLite database if it does not already exist.
-
-    Logs the process of opening the database. If the file already exists,
-    logs a critical message and returns None. If an error occurs while
-    creating the database, logs the exception and also returns None.
+def open_db(logger: logging.Logger, filename: str) -> SqliteInterface | None:
+    """Create a SqliteInterface for a new database file.
 
     Args:
-        logger (logging.Logger): Logger instance for logging messages.
-        filename (str): Path to the database file to be created.
+        logger:   Logger instance for logging messages.
+        filename: Path to the database file to be created.
 
     Returns:
-        BaseSqliteInterface: A database interface instance if successful.
-        None: If the file already exists or an error occurs.
+        A SqliteInterface instance, or None if the file already exists.
     """
-
     logger.info("Opening database...")
 
     if os.path.exists(filename):
         logger.critical("Database '%s' already exists!", filename)
         return None
 
-    db = BaseSqliteInterface(filename)
-    logger.info("Database '%s' opened successful", filename)
-
+    db = SqliteInterface(logger, filename)
+    logger.info("Database '%s' opened successfully", filename)
     return db
 
 
-def add_static_td_values_field_types(logger: logging.Logger,
-                                     database: BaseSqliteInterface) -> bool:
-    """Populates the tc custom field types table with predefined static values.
-
-    Inserts static field type ID-name pairs into the custom field types table.
-    Logs the process and handles any exceptions that occur during insertion.
+async def build_database(logger: logging.Logger,
+                         database: SqliteInterface) -> bool:
+    """Create all tables in the new database.
 
     Args:
-        logger (logging.Logger): Logger instance used for logging messages.
-        database (BaseSqliteInterface): Database interface used to execute the insert queries.
+        logger:   Logger instance.
+        database: SqliteInterface connected to the target database.
 
     Returns:
-        bool: True if all values were inserted successfully; False if an error occurred.
+        True if all tables were created successfully, False otherwise.
     """
+    tables = [
+        (cms_db_tables.PRJ_PROJECTS,
+         sql_values.TABLE_SQL_PRJ_PROJECTS),
+        (cms_db_tables.TC_FOLDERS,
+         tables_test_cases.TABLE_SQL_TC_FOLDERS),
+        (cms_db_tables.TC_TEST_CASES,
+         tables_test_cases.TABLE_SQL_TC_TEST_CASES),
+        (cms_db_tables.TC_CUSTOM_FIELD_TYPES,
+         tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_TYPES),
+        (cms_db_tables.TC_CUSTOM_FIELDS,
+         tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELDS),
+        (cms_db_tables.TC_CUSTOM_FIELD_OPTION_KINDS,
+         tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_OPTION_KINDS),
+        (cms_db_tables.TC_CUSTOM_FIELD_OPTION_KIND_VALUES,
+         tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_OPTION_KIND_VALUES),
+        (cms_db_tables.TC_CUSTOM_FIELD_TYPE_OPTIONS,
+         tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_TYPE_OPTIONS),
+        (cms_db_tables.TC_CUSTOM_FIELD_PROJECTS,
+         tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_PROJECTS),
+        (cms_db_tables.TC_CUSTOM_FIELD_TYPE_OPTION_VALUES,
+         tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_TYPE_OPTION_VALUES),
+        (cms_db_tables.TC_CUSTOM_FIELD_OPTION_VALUES,
+         tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_OPTION_VALUES),
+    ]
 
+    try:
+        for table_name, create_sql in tables:
+            logger.info("-> Creating '%s' table", table_name)
+            await database.create_table(create_sql, table_name)
+    except SqliteInterfaceException as ex:
+        logger.critical("Unable to create tables: %s", ex)
+        return False
+
+    return True
+
+
+async def add_static_td_values_field_types(logger: logging.Logger,
+                                           database: SqliteInterface) -> bool:
+    """Populate the custom field types table with predefined static values.
+
+    Args:
+        logger:   Logger instance.
+        database: SqliteInterface connected to the target database.
+
+    Returns:
+        True if all rows were inserted successfully, False otherwise.
+    """
     logger.info("-> Populating test cases 'custom field type' static values")
 
     query: str = (f"INSERT INTO {cms_db_tables.TC_CUSTOM_FIELD_TYPES}(id, name, "
@@ -82,232 +122,155 @@ def add_static_td_values_field_types(logger: logging.Logger,
     try:
         for field_id, field_name, default_value, is_required \
                 in db_static_values.STATIC_VALUES_FIELD_TYPES:
-            database.insert_query(query,
-                                  (int(field_id),
-                                   field_name,
-                                   default_value,
-                                   is_required))
-
-    except SqliteInterfaceException as interface_except:
-        logger.critical("Unable to add custom field type static value, reason: %s",
-                        str(interface_except))
+            await database.insert_query(query,
+                                        (int(field_id),
+                                         field_name,
+                                         default_value,
+                                         is_required))
+    except SqliteInterfaceException as ex:
+        logger.critical("Unable to add custom field type static value: %s", ex)
         return False
 
     return True
 
 
-def add_static_values_system_test_case_fields(logger: logging.Logger,
-                                              database: BaseSqliteInterface) -> bool:
-    """Populates the test_case_custom_fields table with predefined system fields.
-
-    Inserts predefined static values representing system test case fields into
-    the `test_case_custom_fields` table. Each record includes metadata such as
-    field name, system name, field type, entry type, and display position.
-
-    Logs the process and handles any exceptions that occur during insertion.
+async def add_static_values_system_test_case_fields(
+        logger: logging.Logger,
+        database: SqliteInterface) -> bool:
+    """Populate the custom fields table with predefined system fields.
 
     Args:
-        logger (logging.Logger): Logger instance used to log messages.
-        database (BaseSqliteInterface): Database interface used to execute the insert queries.
+        logger:   Logger instance.
+        database: SqliteInterface connected to the target database.
 
     Returns:
-        bool: True if all values were inserted successfully; False if an error occurred.
+        True if all rows were inserted successfully, False otherwise.
     """
-
     logger.info("-> Populating system testcase custom fields")
 
-    # (id, field_mame, system_name, field_type_id, entry_type, enabled,
-    # position, applies_to_all_projects)
     query: str = (f"INSERT INTO {cms_db_tables.TC_CUSTOM_FIELDS}(id, field_name, "
                   "system_name, field_type_id, entry_type, enabled, position, "
                   "applies_to_all_projects) VALUES(?,?,?,?,?,?,?,?)")
 
     try:
-        for field_id, field_mame, system_name, field_type_id, entry_type, \
+        for field_id, field_name, system_name, field_type_id, entry_type, \
                 enabled, position in db_static_values.STATIC_VALUES_SYSTEM_FIELDS:
-
-            values = (field_id, field_mame, system_name, field_type_id, entry_type,
-                      enabled, position, True)
-            database.insert_query(query, values)
-
-    except SqliteInterfaceException as interface_except:
-        logger.critical("Unable to add system test case fields, reason: %s",
-                        str(interface_except))
+            await database.insert_query(
+                query,
+                (field_id, field_name, system_name, field_type_id,
+                 entry_type, enabled, position, True))
+    except SqliteInterfaceException as ex:
+        logger.critical("Unable to add system test case fields: %s", ex)
         return False
 
     return True
 
 
-def add_static_values_test_case_custom_field_option_kinds(
+async def add_static_values_test_case_custom_field_option_kinds(
         logger: logging.Logger,
-        database: BaseSqliteInterface) -> bool:
+        database: SqliteInterface) -> bool:
+    """Populate the custom field option kinds table with predefined values.
+
+    Args:
+        logger:   Logger instance.
+        database: SqliteInterface connected to the target database.
+
+    Returns:
+        True if all rows were inserted successfully, False otherwise.
+    """
     logger.info("-> Populating test case custom field option kinds")
 
-    # (id, field_mame, system_name, field_type_id, entry_type, enabled, position)
     query: str = (f"INSERT INTO {cms_db_tables.TC_CUSTOM_FIELD_OPTION_KINDS}(id, "
                   "option_name) VALUES(?,?)")
 
     try:
-        for kind_id, option_name in db_static_values.STATIC_VALUES_TEST_CASE_CUSTOM_FIELD_OPTION_KINDS:
-
-            values = (kind_id, option_name)
-            database.insert_query(query, values)
-
-    except SqliteInterfaceException as interface_except:
-        logger.critical(("Unable to add test_case_custom_field_option_kinds, "
-                         "reason: %s"),
-                        str(interface_except))
+        for kind_id, option_name in \
+                db_static_values.STATIC_VALUES_TEST_CASE_CUSTOM_FIELD_OPTION_KINDS:
+            await database.insert_query(query, (kind_id, option_name))
+    except SqliteInterfaceException as ex:
+        logger.critical("Unable to add custom field option kinds: %s", ex)
         return False
 
     return True
 
 
-def add_static_values_test_case_custom_field_option_kind_values(
+async def add_static_values_test_case_custom_field_option_kind_values(
         logger: logging.Logger,
-        database: BaseSqliteInterface) -> bool:
+        database: SqliteInterface) -> bool:
+    """Populate the custom field option kind values table with predefined values.
+
+    Args:
+        logger:   Logger instance.
+        database: SqliteInterface connected to the target database.
+
+    Returns:
+        True if all rows were inserted successfully, False otherwise.
+    """
     logger.info("-> Populating test case custom field option kind values")
 
-    # (id, field_mame, kind_id, value)
     query: str = (f"INSERT INTO {cms_db_tables.TC_CUSTOM_FIELD_OPTION_KIND_VALUES}("
                   "id, kind_id, value) VALUES(?,?,?)")
 
     try:
         for option_value_id, kind_id, option_value in \
                 db_static_values.STATIC_VALUES_TEST_CASE_CUSTOM_FIELD_OPTION_VALUES:
-
-            values = (option_value_id, kind_id, option_value)
-            database.insert_query(query, values)
-
-    except SqliteInterfaceException as interface_except:
-        logger.critical(("Unable to add test_case_custom_field_option_values, "
-                         "reason: %s"),
-                        str(interface_except))
+            await database.insert_query(
+                query, (option_value_id, kind_id, option_value))
+    except SqliteInterfaceException as ex:
+        logger.critical("Unable to add custom field option kind values: %s", ex)
         return False
 
     return True
 
 
-def build_database(logger: logging.Logger,
-                   database: BaseSqliteInterface) -> bool:
-    """
-    Build a new, empty database ready for use.
-    """
-
-    try:
-        logger.info("-> Creating '%s' table",
-                    cms_db_tables.PRJ_PROJECTS)
-        database.create_table(sql_values.TABLE_SQL_PRJ_PROJECTS,
-                              cms_db_tables.PRJ_PROJECTS)
-
-        logger.info("-> Creating '%s' table",
-                    cms_db_tables.TC_FOLDERS)
-        database.create_table(tables_test_cases.TABLE_SQL_TC_FOLDERS,
-                              cms_db_tables.TC_FOLDERS)
-
-        logger.info("-> Creating '%s' table",
-                    cms_db_tables.TC_TEST_CASES)
-        database.create_table(tables_test_cases.TABLE_SQL_TC_TEST_CASES,
-                              cms_db_tables.TC_TEST_CASES)
-
-        logger.info("-> Creating '%s' table",
-                    cms_db_tables.TC_CUSTOM_FIELD_TYPES)
-        database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_TYPES,
-                              cms_db_tables.TC_CUSTOM_FIELD_TYPES)
-
-        logger.info("-> Creating '%s' table",
-                    cms_db_tables.TC_CUSTOM_FIELDS)
-        database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELDS,
-                              cms_db_tables.TC_CUSTOM_FIELDS)
-
-        logger.info("-> Creating '%s' table",
-                    cms_db_tables.TC_CUSTOM_FIELD_OPTION_KINDS)
-        database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_OPTION_KINDS,
-                              cms_db_tables.TC_CUSTOM_FIELD_OPTION_KINDS)
-
-        logger.info("-> Creating '%s' table",
-                    cms_db_tables.TC_CUSTOM_FIELD_OPTION_KIND_VALUES)
-        database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_OPTION_KIND_VALUES,
-                              cms_db_tables.TC_CUSTOM_FIELD_OPTION_KIND_VALUES)
-
-        logger.info("-> Creating '%s' table",
-                    cms_db_tables.TC_CUSTOM_FIELD_TYPE_OPTIONS)
-        database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_TYPE_OPTIONS,
-                              cms_db_tables.TC_CUSTOM_FIELD_TYPE_OPTIONS)
-
-        logger.info("-> Creating '%s' table",
-                    cms_db_tables.TC_CUSTOM_FIELD_PROJECTS)
-        database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_PROJECTS,
-                              cms_db_tables.TC_CUSTOM_FIELD_PROJECTS)
-
-        logger.info("-> Creating '%s' table",
-                    cms_db_tables.TC_CUSTOM_FIELD_TYPE_OPTION_VALUES)
-        database.create_table(tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_TYPE_OPTION_VALUES,
-                              cms_db_tables.TC_CUSTOM_FIELD_TYPE_OPTION_VALUES)
-
-    except SqliteInterfaceException as interface_except:
-        logger.critical("Unable to add add tables, reason: %s",
-                        str(interface_except))
-        return False
-
-    return True
-
-
-def main():
-    """Main entry point for initializing and populating the SQLite database.
+async def async_main() -> None:
+    """Async entry point for initializing and populating the SQLite database.
 
     Sets up logging, parses command-line arguments, and creates a new database
-    file (if it does not already exist). If successful, it proceeds to build the
-    database schema and insert predefined static values for field types and
-    system test case fields.
+    file (if it does not already exist). Builds the schema then inserts all
+    predefined static values.
 
     Command-line Args:
-        -d, --dbFile (str): Optional path to the database file. If not provided,
-        a default filename is used.
-
-    Returns:
-        None
+        -d, --dbFile (str): Optional path to the database file. Defaults to
+        ``items_cms_svc.db`` in the current directory.
     """
     logger: logging.Logger = logging.getLogger(__name__)
 
-    log_format: logging.Formatter =(
-        logging.Formatter(LOGGING_LOG_FORMAT_STRING,
-                          LOGGING_DATETIME_FORMAT_STRING))
-    console_stream: logging.StreamHandler = logging.StreamHandler()
+    log_format = logging.Formatter(LOGGING_LOG_FORMAT_STRING,
+                                   LOGGING_DATETIME_FORMAT_STRING)
+    console_stream = logging.StreamHandler()
     console_stream.setFormatter(log_format)
     logger.setLevel(LOGGING_DEFAULT_LOG_LEVEL)
     logger.addHandler(console_stream)
 
-    # Build arguments parser.
-    parser: argparse.ArgumentParser = argparse.ArgumentParser()
-    parser.add_argument("-d",
-                        "--dbFile",
-                        type=str, help="Database filename")
-
-    # Parse the arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--dbFile", type=str, help="Database filename")
     args = parser.parse_args()
 
-    filename: str = DEFAULT_DB_FILENAME if not args.dbFile \
-        else args.dbFile
+    filename: str = DEFAULT_DB_FILENAME if not args.dbFile else args.dbFile
     logger.info("Database file: %s", filename)
 
-    db: BaseSqliteInterface = open_db(logger, filename)
+    db = open_db(logger, filename)
     if not db:
         return
 
-    build_database(logger, db)
-
-    if not add_static_td_values_field_types(logger, db):
+    if not await build_database(logger, db):
         return
 
-    if not add_static_values_system_test_case_fields(logger, db):
+    if not await add_static_td_values_field_types(logger, db):
         return
 
-    if not add_static_values_test_case_custom_field_option_kinds(logger, db):
+    if not await add_static_values_system_test_case_fields(logger, db):
         return
 
-    if not add_static_values_test_case_custom_field_option_kind_values(logger, db):
+    if not await add_static_values_test_case_custom_field_option_kinds(logger, db):
         return
+
+    if not await add_static_values_test_case_custom_field_option_kind_values(logger, db):
+        return
+
+    logger.info("Database build complete.")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(async_main())
