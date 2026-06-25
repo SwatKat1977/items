@@ -58,6 +58,39 @@ class TestcaseCustomFieldsService:
     # Read operations
     # ------------------------------------------------------------------
 
+    async def get_custom_field(self, field_id: int) -> TestcaseCustomFieldResult:
+        """Retrieve full details for a single custom field.
+
+        Args:
+            field_id: ID of the custom field to retrieve.
+
+        Returns:
+            TestcaseCustomFieldResult with data set to the field row on
+            success, a not_found result if no field has that ID, or an
+            internal error result on DB failure.
+        """
+        if not self._state.is_available():
+            return TestcaseCustomFieldResult(success=False,
+                                             error_msg="Service unavailable",
+                                             is_internal=True)
+
+        try:
+            row = await self._repository.get_custom_field(field_id)
+        except SqliteInterfaceException as ex:
+            self._logger.exception(
+                "Database failure retrieving custom field %d: %s", field_id, ex)
+            self._state.mark_database_failed()
+            return TestcaseCustomFieldResult(success=False,
+                                             error_msg="Internal error in CMS",
+                                             is_internal=True)
+
+        if row is None:
+            return TestcaseCustomFieldResult(success=False,
+                                             error_msg="Custom field not found",
+                                             not_found=True)
+
+        return TestcaseCustomFieldResult(success=True, data=row)
+
     async def get_custom_fields(
             self,
             project_id: Optional[int] = None) -> TestcaseCustomFieldResult:

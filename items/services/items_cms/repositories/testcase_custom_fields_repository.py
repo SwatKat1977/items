@@ -236,6 +236,49 @@ class TestcaseCustomFieldsRepository:
             commit=True)
         return True
 
+    async def get_custom_field(self, field_id: int) -> Optional[tuple]:
+        """Retrieve full details for a single custom field by ID.
+
+        Args:
+            field_id: Primary key of the custom field.
+
+        Returns:
+            A row tuple if found, or None if no field has that ID.
+
+        Raises:
+            SqliteInterfaceException: If the database query fails.
+        """
+        query = f"""
+            SELECT
+                cf.id,
+                cf.field_name,
+                cf.description,
+                cf.system_name,
+                ft.name AS field_type_name,
+                cf.entry_type,
+                cf.enabled,
+                cf.position,
+                cf.is_required,
+                cf.default_value,
+                cf.applies_to_all_projects,
+                CASE
+                    WHEN cf.applies_to_all_projects = 0 THEN
+                         GROUP_CONCAT(p.id || ':' || p.name)
+                    ELSE NULL
+                END AS linked_projects
+            FROM {cms_tables.TC_CUSTOM_FIELDS} AS cf
+            LEFT JOIN {cms_tables.TC_CUSTOM_FIELD_TYPES} AS ft
+                ON cf.field_type_id = ft.id
+            LEFT JOIN {cms_tables.TC_CUSTOM_FIELD_PROJECTS} AS cfp
+                ON cf.id = cfp.field_id
+            LEFT JOIN {cms_tables.PRJ_PROJECTS} AS p
+                ON cfp.project_id = p.id
+            WHERE cf.id = ?
+            GROUP BY cf.id
+        """
+        row = await self._db.run_query(query, (field_id,), fetch_one=True)
+        return row if row else None
+
     async def get_all_fields(self) -> Optional[list]:
         """Retrieve all custom fields with their type and project assignments.
 

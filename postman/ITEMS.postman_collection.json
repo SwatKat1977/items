@@ -572,7 +572,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"name\": \"Project Alpha #1\",\n    \"announcement\": \"This is an alpha project\",\n    \"announcement_on_overview\": true\n}",
+                  "raw": "{\n    \"name\": \"Project Beta_2\",\n    \"announcement\": \"This is a beta project\",\n    \"announcement_on_overview\": false\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -721,7 +721,7 @@
           "name": "Test Case Custom Fields",
           "item": [
             {
-              "name": "Move Custom Test case field",
+              "name": "Move Custom Testcase field",
               "request": {
                 "method": "PATCH",
                 "header": [],
@@ -748,7 +748,24 @@
               "response": []
             },
             {
-              "name": "Get Custom Fields for project",
+              "name": "Get Custom Testcase Fields for project",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcase_custom_fields"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Custom Testcase Field",
               "request": {
                 "method": "GET",
                 "header": [],
@@ -766,7 +783,7 @@
               "response": []
             },
             {
-              "name": "Get All Custom Fields",
+              "name": "Get All Custom Testcase Fields",
               "request": {
                 "method": "GET",
                 "header": [],
@@ -783,13 +800,13 @@
               "response": []
             },
             {
-              "name": "Add Custom Test case Field",
+              "name": "Add Custom Testcase Field",
               "request": {
                 "method": "POST",
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": " {\n    \"field_name\": \"new type stringb\",\n    \"description\": \"default\",\n    \"system_name\": \"new_system_name_sdf\",\n    \"field_type\": \"String\",\n    \"enabled\": true,\n    \"is_required\": false,\n    \"default_value\": \"\",\n    \"applies_to_all_projects\": false,\n    \"projects\": [\n          \"Project Delta_1\",\n          \"Project Beta_2\"\n    ]\n}\n",
+                  "raw": " {\n    \"field_name\": \"new type string Trial 124\",\n    \"description\": \"default\",\n    \"system_name\": \"new_system_name_trial_124\",\n    \"field_type\": \"String\",\n    \"enabled\": true,\n    \"is_required\": false,\n    \"default_value\": \"\",\n    \"applies_to_all_projects\": false,\n    \"projects\": [\n          \"Project Delta_1\",\n          \"Project Beta_2\"\n    ]\n}\n",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -797,13 +814,11 @@
                   }
                 },
                 "url": {
-                  "raw": "{{CMS_SVC_URL}}/admin/testcase_custom_fields/testcase_custom_fields",
+                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields",
                   "host": [
                     "{{CMS_SVC_URL}}"
                   ],
                   "path": [
-                    "admin",
-                    "testcase_custom_fields",
                     "testcase_custom_fields"
                   ]
                 }

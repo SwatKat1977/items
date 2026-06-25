@@ -24,6 +24,7 @@ from items.services.items_cms.services.testcase_custom_fields_service import (
     TestcaseCustomFieldsService,
 )
 from .add_custom_field_handler import AddCustomFieldHandler
+from .get_custom_field_handler import GetCustomFieldHandler
 from .get_custom_fields_handler import GetCustomFieldsHandler
 from .move_custom_field_handler import MoveCustomFieldHandler
 from .update_custom_field_handler import UpdateCustomFieldHandler
@@ -55,6 +56,7 @@ def create_testcase_custom_fields_routes(logger: logging.Logger,
 
     add_handler = AddCustomFieldHandler(logger, service)
     get_handler = GetCustomFieldsHandler(logger, service)
+    get_one_handler = GetCustomFieldHandler(logger, service)
     move_handler = MoveCustomFieldHandler(logger, service)
     update_handler = UpdateCustomFieldHandler(logger, service)
     delete_handler = DeleteCustomFieldHandler(logger, service)
@@ -75,6 +77,14 @@ def create_testcase_custom_fields_routes(logger: logging.Logger,
     @custom_fields_routes.route('/testcase_custom_fields', methods=['GET'])
     async def get_testcase_custom_fields():
         return await get_handler.get_custom_fields()
+
+    logger.debug("=> %s GET /testcase_custom_fields/<field_id>",
+                 "Get testcase custom field".ljust(40))
+
+    @custom_fields_routes.route(
+        '/testcase_custom_fields/<int:field_id>', methods=['GET'])
+    async def get_testcase_custom_field(field_id: int):
+        return await get_one_handler.get_custom_field(field_id)
 
     logger.debug("=> %s PATCH /testcase_custom_fields/<field_id>",
                  "Move testcase custom field".ljust(40))
