@@ -23,7 +23,83 @@ from weaver_framework.microservice.api_response import ApiResponse
 from items.services.items_cms.services.testcase_custom_fields_service import (
     TestcaseCustomFieldsService,
 )
-from items.shared.interfaces.cms.admin import SCHEMA_ADD_TEST_CASE_CUSTOM_FIELD_REQUEST
+
+SCHEMA_ADD_TEST_CASE_CUSTOM_FIELD_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Custom Field Definition",
+    "type": "object",
+    "properties": {
+        "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The display name of the custom field."
+        },
+        "description": {
+            "type": "string",
+            "description": "A human-readable description of the field."
+        },
+        "system_name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "description": "Internal system identifier (lowercase letters, digits, and underscores; must start with a letter)."
+        },
+        "field_type": {
+            "type": "string",
+            "description": "The data type of the field.",
+            "enum": [
+                "Checkbox",
+                "Date",
+                "Dropdown",
+                "Integer",
+                "String",
+                "Text",
+                "Url (Link)",
+                "User"
+            ]
+        },
+        "enabled": {
+            "type": "boolean",
+            "description": "Whether the field is active."
+        },
+        "is_required": {
+            "type": "boolean",
+            "description": "Whether the field must be filled in for test cases."
+        },
+        "default_value": {
+            "type": "string",
+            "description": "Optional default value for the field."
+        },
+        "applies_to_all_projects": {
+            "type": "boolean",
+            "description": "If true, the field applies to all projects."
+        },
+        "projects": {
+            "type": "array",
+            "description": "List of project names (required when applies_to_all_projects is false).",
+            "items": {"type": "string"}
+        }
+    },
+    "required": [
+        "field_name",
+        "description",
+        "system_name",
+        "field_type",
+        "enabled",
+        "is_required",
+        "default_value",
+        "applies_to_all_projects"
+    ],
+    "additionalProperties": False,
+    "allOf": [
+        {
+            "if": {
+                "properties": {"applies_to_all_projects": {"const": True}}
+            },
+            "then": {"not": {"required": ["projects"]}},
+            "else": {"required": ["projects"]}
+        }
+    ]
+}
 
 
 class AddCustomFieldHandler(BaseApiRoute):

@@ -23,7 +23,21 @@ from weaver_framework.microservice.api_response import ApiResponse
 from items.services.items_cms.services.testcase_custom_fields_service import (
     TestcaseCustomFieldsService,
 )
-from items.shared.interfaces.cms.admin import SCHEMA_MOVE_CUSTOM_FIELD_REQUEST
+
+SCHEMA_MOVE_CUSTOM_FIELD_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Move Custom Field",
+    "type": "object",
+    "properties": {
+        "direction": {
+            "type": "string",
+            "enum": ["up", "down"],
+            "description": "Direction to move the custom field in the ordered list."
+        }
+    },
+    "required": ["direction"],
+    "additionalProperties": False
+}
 
 
 class MoveCustomFieldHandler(BaseApiRoute):

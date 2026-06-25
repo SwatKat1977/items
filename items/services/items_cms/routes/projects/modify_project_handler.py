@@ -21,7 +21,18 @@ from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.microservice_decorators import validate_json
 from weaver_framework.microservice.api_response import ApiResponse
 from items.services.items_cms.services.project_service import ProjectService
-from items.shared.interfaces.cms.project import SCHEMA_MODIFY_PROJECT_REQUEST
+
+SCHEMA_MODIFY_PROJECT_REQUEST: dict = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "name": {"type": "string"},
+        "announcement": {"type": "string"},
+        "announcement_on_overview": {"type": "boolean"}
+    },
+    "required": ["name", "announcement", "announcement_on_overview"]
+}
 
 
 class ModifyProjectHandler(BaseApiRoute):
