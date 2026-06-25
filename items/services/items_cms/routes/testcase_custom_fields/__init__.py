@@ -49,6 +49,8 @@ def create_testcase_custom_fields_routes(logger: logging.Logger,
     Returns:
         A configured Blueprint with all testcase custom field routes registered.
     """
+    # pylint: disable=too-many-locals
+
     custom_fields_routes = Blueprint("testcase_custom_fields_routes", __name__)
 
     repository = TestcaseCustomFieldsRepository(logger, config)

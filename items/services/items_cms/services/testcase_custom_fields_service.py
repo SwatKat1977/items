@@ -168,67 +168,10 @@ class TestcaseCustomFieldsService:
                                              error_msg="Service unavailable",
                                              is_internal=True)
 
-        # --- All validation (reads) before any writes ---
-
-        try:
-            name_taken = await self._repository.custom_field_name_exists(
-                field_name)
-        except SqliteInterfaceException as ex:
-            self._logger.exception(
-                "Database failure checking field name uniqueness: %s", ex)
-            self._state.mark_database_failed()
-            return TestcaseCustomFieldResult(success=False,
-                                             error_msg="Internal error in CMS",
-                                             is_internal=True)
-
-        if name_taken:
-            return TestcaseCustomFieldResult(
-                success=False,
-                error_msg=f"Custom field name '{field_name}' already exists",
-                is_conflict=True)
-
-        try:
-            system_name_taken = await self._repository.system_name_exists(
-                system_name)
-        except SqliteInterfaceException as ex:
-            self._logger.exception(
-                "Database failure checking system name uniqueness: %s", ex)
-            self._state.mark_database_failed()
-            return TestcaseCustomFieldResult(success=False,
-                                             error_msg="Internal error in CMS",
-                                             is_internal=True)
-
-        if system_name_taken:
-            return TestcaseCustomFieldResult(
-                success=False,
-                error_msg=f"System name '{system_name}' already exists",
-                is_conflict=True)
-
-        project_ids: list[int] = []
-        if not applies_to_all_projects and projects:
-            if len(projects) != len(set(projects)):
-                return TestcaseCustomFieldResult(
-                    success=False,
-                    error_msg="Duplicate project names in the request")
-
-            try:
-                resolved = await self._repository.resolve_project_names(projects)
-            except SqliteInterfaceException as ex:
-                self._logger.exception(
-                    "Database failure resolving project names: %s", ex)
-                self._state.mark_database_failed()
-                return TestcaseCustomFieldResult(success=False,
-                                                 error_msg="Internal error in CMS",
-                                                 is_internal=True)
-
-            if resolved is None:
-                return TestcaseCustomFieldResult(
-                    success=False,
-                    error_msg="One or more project names are invalid")
-
-            project_ids = resolved
-
-        # --- All validation passed; now write ---
+        error, project_ids = await self._validate_add_request(
+            field_name, system_name, applies_to_all_projects, projects)
+        if error is not None:
+            return error
 
         try:
             field_id = await self._repository.add_custom_field(
@@ -267,6 +210,93 @@ class TestcaseCustomFieldsService:
                                                  is_internal=True)
 
         return TestcaseCustomFieldResult(success=True, data=field_id)
+
+    async def _validate_add_request(
+            self,
+            field_name: str,
+            system_name: str,
+            applies_to_all_projects: bool,
+            projects: Optional[list[str]]
+    ) -> tuple[Optional[TestcaseCustomFieldResult], list[int]]:
+        """Validate a custom field creation request before any writes.
+
+        Checks name uniqueness, system name uniqueness, and resolves project
+        names to IDs. All checks are read-only — no data is written.
+
+        Args:
+            field_name:              Display name to check for uniqueness.
+            system_name:             System name to check for uniqueness.
+            applies_to_all_projects: If True, project list is not checked.
+            projects:                Project names to resolve (when not global).
+
+        Returns:
+            A tuple of ``(error_result, project_ids)``. On success,
+            ``error_result`` is None and ``project_ids`` contains the resolved
+            IDs (empty list when ``applies_to_all_projects`` is True). On
+            failure, ``error_result`` is set and ``project_ids`` is empty.
+        """
+        # pylint: disable=too-many-return-statements
+
+        empty: list[int] = []
+
+        try:
+            name_taken = await self._repository.custom_field_name_exists(
+                field_name)
+        except SqliteInterfaceException as ex:
+            self._logger.exception(
+                "Database failure checking field name uniqueness: %s", ex)
+            self._state.mark_database_failed()
+            return (TestcaseCustomFieldResult(success=False,
+                                              error_msg="Internal error in CMS",
+                                              is_internal=True), empty)
+
+        if name_taken:
+            return (TestcaseCustomFieldResult(
+                success=False,
+                error_msg=f"Custom field name '{field_name}' already exists",
+                is_conflict=True), empty)
+
+        try:
+            system_name_taken = await self._repository.system_name_exists(
+                system_name)
+        except SqliteInterfaceException as ex:
+            self._logger.exception(
+                "Database failure checking system name uniqueness: %s", ex)
+            self._state.mark_database_failed()
+            return (TestcaseCustomFieldResult(success=False,
+                                              error_msg="Internal error in CMS",
+                                              is_internal=True), empty)
+
+        if system_name_taken:
+            return (TestcaseCustomFieldResult(
+                success=False,
+                error_msg=f"System name '{system_name}' already exists",
+                is_conflict=True), empty)
+
+        if applies_to_all_projects or not projects:
+            return (None, empty)
+
+        if len(projects) != len(set(projects)):
+            return (TestcaseCustomFieldResult(
+                success=False,
+                error_msg="Duplicate project names in the request"), empty)
+
+        try:
+            resolved = await self._repository.resolve_project_names(projects)
+        except SqliteInterfaceException as ex:
+            self._logger.exception(
+                "Database failure resolving project names: %s", ex)
+            self._state.mark_database_failed()
+            return (TestcaseCustomFieldResult(success=False,
+                                              error_msg="Internal error in CMS",
+                                              is_internal=True), empty)
+
+        if resolved is None:
+            return (TestcaseCustomFieldResult(
+                success=False,
+                error_msg="One or more project names are invalid"), empty)
+
+        return (None, resolved)
 
     async def delete_custom_field(self, field_id: int) -> TestcaseCustomFieldResult:
         """Permanently remove a custom field and all its dependent data.
