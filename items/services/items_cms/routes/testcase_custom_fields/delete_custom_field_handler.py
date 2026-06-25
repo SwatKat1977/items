@@ -41,15 +41,33 @@ class DeleteCustomFieldHandler(BaseApiRoute):
     async def delete_custom_field(self, field_id: int) -> Response:
         """Permanently remove a testcase custom field.
 
-        Not yet implemented.
+        Deletes the field definition, its project assignments, its type
+        options, and any type option values. Test case field values are
+        removed automatically via database cascade.
 
         Path parameters:
             field_id (int): ID of the field to delete.
 
         Returns:
-            501 Not Implemented.
+            200 with ``{}`` on success.
+            404 if no custom field exists with the given ID.
+            500 on an internal database error.
         """
+        result = await self._service.delete_custom_field(field_id)
+
+        if not result.success:
+            if result.is_internal:
+                status = HTTPStatus.INTERNAL_SERVER_ERROR
+            elif result.not_found:
+                status = HTTPStatus.NOT_FOUND
+            else:
+                status = HTTPStatus.BAD_REQUEST
+            return Response(
+                json.dumps({"error": result.error_msg}),
+                status=status,
+                content_type="application/json")
+
         return Response(
-            json.dumps({"error": "Delete custom field is not yet implemented"}),
-            status=HTTPStatus.NOT_IMPLEMENTED,
+            json.dumps({}),
+            status=HTTPStatus.OK,
             content_type="application/json")

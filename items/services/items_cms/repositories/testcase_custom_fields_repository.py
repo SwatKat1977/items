@@ -18,7 +18,7 @@ import logging
 from typing import Optional
 from weaver_framework.database.sqlite_interface import SqliteInterface
 from items.services.items_cms.cms_configuration import CMSConfiguration
-import items.shared.databases.cms_db_tables as cms_tables
+import items.services.items_cms.cms_db_tables as cms_tables
 
 
 class CustomFieldMoveDirection(enum.Enum):
@@ -372,15 +372,56 @@ class TestcaseCustomFieldsRepository:
         return False
 
     async def delete_custom_field(self, field_id: int) -> bool:
-        """Permanently remove a custom field.
+        """Permanently remove a custom field and all dependent rows.
 
-        Not yet implemented.
+        Deletes in dependency order before removing the field record itself.
+        ``TC_CUSTOM_FIELD_OPTION_VALUES`` is omitted because it carries an
+        ``ON DELETE CASCADE`` on ``field_id`` and is removed automatically.
+        Positions of the remaining fields are compacted after deletion.
 
         Args:
             field_id: ID of the field to delete.
+
+        Returns:
+            True on success, False if no field with that ID exists.
+
+        Raises:
+            SqliteInterfaceException: If any database operation fails.
         """
-        # TODO: implement delete logic
-        return False
+        pos_query = (
+            f"SELECT position FROM {cms_tables.TC_CUSTOM_FIELDS} WHERE id = ?"
+        )
+        row = await self._db.run_query(pos_query, (field_id,), fetch_one=True)
+        if not row:
+            return False
+
+        position = int(row[0])
+
+        await self._db.run_query(
+            f"DELETE FROM {cms_tables.TC_CUSTOM_FIELD_TYPE_OPTION_VALUES} "
+            "WHERE case_field_id = ?",
+            (field_id,), commit=True)
+
+        await self._db.run_query(
+            f"DELETE FROM {cms_tables.TC_CUSTOM_FIELD_TYPE_OPTIONS} "
+            "WHERE field_id = ?",
+            (field_id,), commit=True)
+
+        await self._db.run_query(
+            f"DELETE FROM {cms_tables.TC_CUSTOM_FIELD_PROJECTS} "
+            "WHERE field_id = ?",
+            (field_id,), commit=True)
+
+        await self._db.run_query(
+            f"DELETE FROM {cms_tables.TC_CUSTOM_FIELDS} WHERE id = ?",
+            (field_id,), commit=True)
+
+        await self._db.run_query(
+            f"UPDATE {cms_tables.TC_CUSTOM_FIELDS} "
+            "SET position = position - 1 WHERE position > ?",
+            (position,), commit=True)
+
+        return True
 
     # ------------------------------------------------------------------
     # Private helpers

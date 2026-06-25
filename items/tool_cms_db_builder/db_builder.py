@@ -24,7 +24,7 @@ from weaver_framework.database.sqlite_interface import (
     SqliteInterface,
     SqliteInterfaceException,
 )
-import cms_db_tables
+from items.services.items_cms import cms_db_tables
 
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
 LOGGING_DEFAULT_LOG_LEVEL = logging.DEBUG
