@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import databases.cms_db_tables as cms_db_tables
+import cms_db_tables as cms_db_tables
 
 """
 Table: projects
