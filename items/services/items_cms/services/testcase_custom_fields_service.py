@@ -268,6 +268,38 @@ class TestcaseCustomFieldsService:
 
         return TestcaseCustomFieldResult(success=True, data=field_id)
 
+    async def delete_custom_field(self, field_id: int) -> TestcaseCustomFieldResult:
+        """Permanently remove a custom field and all its dependent data.
+
+        Args:
+            field_id: ID of the custom field to delete.
+
+        Returns:
+            TestcaseCustomFieldResult indicating success, not_found if no
+            field has that ID, or an internal error result on DB failure.
+        """
+        if not self._state.is_available():
+            return TestcaseCustomFieldResult(success=False,
+                                             error_msg="Service unavailable",
+                                             is_internal=True)
+
+        try:
+            deleted = await self._repository.delete_custom_field(field_id)
+        except SqliteInterfaceException as ex:
+            self._logger.exception(
+                "Database failure deleting custom field %d: %s", field_id, ex)
+            self._state.mark_database_failed()
+            return TestcaseCustomFieldResult(success=False,
+                                             error_msg="Internal error in CMS",
+                                             is_internal=True)
+
+        if not deleted:
+            return TestcaseCustomFieldResult(success=False,
+                                             error_msg="Custom field not found",
+                                             not_found=True)
+
+        return TestcaseCustomFieldResult(success=True)
+
     async def move_custom_field(self,
                                 field_id: int,
                                 direction: str) -> TestcaseCustomFieldResult:
