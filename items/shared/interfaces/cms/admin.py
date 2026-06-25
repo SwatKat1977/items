@@ -14,6 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+SCHEMA_MOVE_CUSTOM_FIELD_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Move Custom Field",
+    "type": "object",
+    "properties": {
+        "direction": {
+            "type": "string",
+            "enum": ["up", "down"],
+            "description": "Direction to move the custom field in the ordered list."
+        }
+    },
+    "required": ["direction"],
+    "additionalProperties": False
+}
+
 SCHEMA_ADD_TEST_CASE_CUSTOM_FIELD_REQUEST: dict = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Custom Field Definition",
@@ -30,8 +45,8 @@ SCHEMA_ADD_TEST_CASE_CUSTOM_FIELD_REQUEST: dict = {
         },
         "system_name": {
             "type": "string",
-            "pattern": "^[a-z][a-z_]*$",
-            "description": "Internal system identifier (lowercase letters and underscores only)."
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "description": "Internal system identifier (lowercase letters, digits, and underscores; must start with a letter)."
         },
         "field_type": {
             "type": "string",
