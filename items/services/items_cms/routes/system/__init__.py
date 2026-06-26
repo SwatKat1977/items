@@ -1,5 +1,5 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,38 +15,34 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from items_common.service_state import ServiceState
+from items.shared.service_state import ServiceState
 from .health_api_view import HealthApiView
 
 
-def create_blueprint(logger: logging.Logger,
-                     service_state: ServiceState) -> Blueprint:
-    """
-    Creates and returns a Quart Blueprint for the Health Status API.
+def create_system_routes(logger: logging.Logger,
+                         service_state: ServiceState) -> Blueprint:
+    """Create and return the system API Blueprint.
 
-    This function initializes a `HealthApiView` instance and registers an
-    asynchronous route `/health/status` for handling health check requests. The
-    route is logged upon registration.
+    Instantiates the system repository and service once, wires them
+    into individual route handlers, and registers all system endpoints
+    with a Quart Blueprint.
 
     Args:
-        logger (logging.Logger): The logger instance used for logging API
-                                 registration.
-        service_state (ServiceState): The application state object passed to the
-                                    view.
+        logger:       Parent logger instance.
+        service_state: Shared service operational state.
 
     Returns:
-        Blueprint: A Quart Blueprint instance with the registered health status
-                   route.
+        A configured Blueprint with all system routes registered.
     """
-    view = HealthApiView(logger, service_state)
+    #view = HealthApiView(logger, service_state)
 
-    blueprint = Blueprint('health_api', __name__)
+    system_routes = Blueprint("system_routes", __name__)
 
-    logger.debug("---------------- Registering health routes ----------------")
+    logger.debug("--- Registering System API routes ---")
 
     logger.debug("=> /health/status [GET]    : Get health status")
-    @blueprint.route('/status', methods=['GET'])
+    @system_routes.route('/status', methods=['GET'])
     async def authenticate_request():
         return await view.health()
 
-    return blueprint
+    return system_routes
