@@ -45,8 +45,8 @@ jobs:
             echo "[INFO] CMS Service or it's unit tests have NOT changed"
           fi
 
-          echo "Checking for changes in services/gateway_svc/"
-          if echo "$changed_files" | grep -qE '^(services|unit_tests)/gateway_svc/'; then
+          echo "Checking for changes in items/services/items_gateway/"
+          if echo "$changed_files" | grep -qE '^(items/services|unit_tests)/items_gateway/'; then
             echo "gateway_svc_changed=true" >> $GITHUB_OUTPUT
             echo "[INFO] Gateway Service or unit tests have changed"
           else
@@ -54,8 +54,8 @@ jobs:
             echo "[INFO] Gateway Service or unit tests have NOT changed"
           fi
 
-          echo "Checking for changes in services/web_portal_svc/"
-          if echo "$changed_files" | grep -qE '^(services|unit_tests)/web_portal_svc/'; then
+          echo "Checking for changes in items/services/items_web_portal/"
+          if echo "$changed_files" | grep -qE '^(items/services|unit_tests)/web_portal_svc/'; then
             echo "web_portal_svc_changed=true" >> $GITHUB_OUTPUT
             echo "[INFO] services/web_portal_svc has changed"
           else
@@ -145,14 +145,14 @@ jobs:
 
       - name: Run Pylint
         env:
-          PYTHONPATH: items/shared:services/gateway_svc
+          PYTHONPATH: .
         run: |
-          pylint --fail-under=10.0 services/gateway_svc
+          pylint --fail-under=10.0 items/services/items_gateway
 
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:unit_tests/gateway_svc:services/gateway_svc
+          PYTHONPATH: .
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_gateway_svc -m unittest -v main
           coverage report -m --fail-under=100
@@ -173,9 +173,9 @@ jobs:
 
       - name: Run Pylint
         env:
-          PYTHONPATH: items/shared:services/web_portal_svc:common
+          PYTHONPATH: .
         run: |
-          pylint --fail-under=10.0 services/web_portal_svc
+          pylint --fail-under=10.0 items/services/web_portal_svc
 
       # Run tests and measure coverage
       - name: Run tests with coverage
