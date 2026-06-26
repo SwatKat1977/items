@@ -98,7 +98,7 @@ typing-extensions==4.12.2
     # via referencing
 tzlocal==5.3.1
     # via -r docker/requirements-gateway_svc.in
-urllib3==2.3.0
+urllib3==2.7.0
     # via requests
 uvicorn==0.34.0
     # via -r docker/requirements-gateway_svc.in

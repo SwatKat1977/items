@@ -20,6 +20,7 @@ from items.services.items_cms.cms_configuration import CMSConfiguration
 from .projects import create_projects_routes
 from .testcases import create_testcases_routes
 from .testcase_custom_fields import create_testcase_custom_fields_routes
+from .system import create_system_routes
 
 
 def create_routes(logger: logging.Logger,
@@ -46,7 +47,8 @@ def create_routes(logger: logging.Logger,
     routes_bp.register_blueprint(create_testcases_routes(logger,
                                                          state,
                                                          configuration))
-    routes_bp.register_blueprint(
-        create_testcase_custom_fields_routes(logger, state, configuration))
+    routes_bp.register_blueprint(create_testcase_custom_fields_routes(
+        logger, state, configuration))
+    routes_bp.register_blueprint(create_system_routes(logger, state))
 
     return routes_bp

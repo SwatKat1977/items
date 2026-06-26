@@ -1,9 +1,9 @@
 {
   "info": {
-    "_postman_id": "b1da79ca-cde1-454c-94cf-41c3b7ae8c02",
+    "_postman_id": "c641c8b7-93c0-4b32-a4ba-8a9760dc62b1",
     "name": "ITEMS",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "10935426"
+    "_exporter_id": "49399853"
   },
   "item": [
     {
@@ -828,7 +828,7 @@
           ]
         },
         {
-          "name": "Health",
+          "name": "System",
           "item": [
             {
               "name": "Status",
@@ -836,13 +836,13 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{CMS_SVC_URL}}/health/status",
+                  "raw": "{{CMS_SVC_URL}}/system/health",
                   "host": [
                     "{{CMS_SVC_URL}}"
                   ],
                   "path": [
-                    "health",
-                    "status"
+                    "system",
+                    "health"
                   ]
                 }
               },
