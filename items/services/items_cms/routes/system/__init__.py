@@ -14,35 +14,43 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
-from quart import Blueprint
+from quart import Blueprint, Response
 from items.shared.service_state import ServiceState
-from .health_api_view import HealthApiView
+from items.services.items_cms.routes.system.health_handler import HealthHandler
 
 
 def create_system_routes(logger: logging.Logger,
-                         service_state: ServiceState) -> Blueprint:
-    """Create and return the system API Blueprint.
+                         state_object: ServiceState) -> Blueprint:
+    """Create and register system-related blueprints.
 
-    Instantiates the system repository and service once, wires them
-    into individual route handlers, and registers all system endpoints
-    with a Quart Blueprint.
+    This function creates the parent system blueprint and registers
+    all system-level route blueprints, such as health check routes.
 
     Args:
-        logger:       Parent logger instance.
-        service_state: Shared service operational state.
+        logger: Logger instance used by system route handlers.
+        state_object (ServiceState): A StateObject instance.
 
     Returns:
-        A configured Blueprint with all system routes registered.
+        The configured system blueprint containing all registered
+        system routes.
     """
-    #view = HealthApiView(logger, service_state)
-
     system_routes = Blueprint("system_routes", __name__)
+
+    # Health route handler
+    health_route_handler: HealthHandler = HealthHandler(logger, state_object)
 
     logger.debug("--- Registering System API routes ---")
 
-    logger.debug("=> /health/status [GET]    : Get health status")
-    @system_routes.route('/status', methods=['GET'])
-    async def authenticate_request():
-        return await view.health()
+    logger.debug("=> %s GET /system/health",
+                 'Get system health'.ljust(40))
+
+    @system_routes.route('/system/health', methods=['GET'])
+    async def health_request():
+        """Handle incoming system health requests.
+
+        Returns:
+            A response containing the current system health status.
+        """
+        return await health_route_handler.health()
 
     return system_routes
