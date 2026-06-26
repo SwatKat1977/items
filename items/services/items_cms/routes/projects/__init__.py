@@ -57,7 +57,7 @@ def create_projects_routes(logger: logging.Logger,
     modify_handler = ModifyProjectHandler(logger, service)
     delete_handler = DeleteProjectHandler(logger, service)
 
-    logger.debug("Registering Projects API routes:")
+    logger.debug("--- Registering Projects API routes ---")
 
     # Get details of a specific project.
     logger.debug("=> %s GET /projects/<int:project_id>",

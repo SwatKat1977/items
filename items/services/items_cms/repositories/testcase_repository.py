@@ -17,7 +17,7 @@ import logging
 from typing import Optional
 from weaver_framework.database.sqlite_interface import SqliteInterface
 from items.services.items_cms.cms_configuration import CMSConfiguration
-import items.shared.databases.cms_db_tables as cms_tables
+import items.services.items_cms.cms_db_tables as cms_tables
 
 
 class TestcaseRepository:

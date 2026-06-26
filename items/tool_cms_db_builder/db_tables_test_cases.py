@@ -13,8 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import sql_values as misc_tables
-import databases.cms_db_tables as cms_db_tables
+from items.services.items_cms import cms_db_tables as cms_db_tables
 
 # ###############
 # All tables related to Test Cases will be prefixed with 'tc'
@@ -129,14 +128,14 @@ CREATE TABLE {cms_db_tables.TC_CUSTOM_FIELD_PROJECTS} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     field_id INTEGER NOT NULL,
     project_id INTEGER NOT NULL,
-    FOREIGN KEY (field_id) REFERENCES {cms_db_tables.TC_CUSTOM_FIELD_TYPES}(id) ON DELETE CASCADE,
+    FOREIGN KEY (field_id) REFERENCES {cms_db_tables.TC_CUSTOM_FIELDS}(id) ON DELETE CASCADE,
     FOREIGN KEY (project_id) REFERENCES {cms_db_tables.PRJ_PROJECTS}(id) ON DELETE CASCADE
 );
 """
 
 # Values for a Test Case field option.
 TABLE_SQL_TC_CUSTOM_FIELD_TYPE_OPTION_VALUES: str = f"""
-CREATE TABLE test_case_custom_field_type_option_values (
+CREATE TABLE {cms_db_tables.TC_CUSTOM_FIELD_TYPE_OPTION_VALUES} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     case_field_id INTEGER NOT NULL,
     field_type_option_id INTEGER NOT NULL,
