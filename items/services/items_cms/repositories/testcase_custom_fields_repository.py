@@ -420,6 +420,7 @@ class TestcaseCustomFieldsRepository:
             SqliteInterfaceException: If any database operation fails.
         """
         # pylint: disable=too-many-arguments, too-many-positional-arguments
+        # pylint: disable=(too-many-locals
 
         row = await self._db.run_query(
             f"SELECT field_type_id, entry_type FROM {cms_tables.TC_CUSTOM_FIELDS} "
