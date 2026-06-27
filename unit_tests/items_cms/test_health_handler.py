@@ -20,7 +20,10 @@ class TestApiHealthApiView(unittest.IsolatedAsyncioTestCase):
 
         # Default to healthy state
         self.mock_state.database_health = ComponentDegradationLevel.NONE
-        self.mock_state.database_health_state_str = "OK"
+        self.mock_state.database_health_reason = None
+        self.mock_state.service_health = ComponentDegradationLevel.NONE
+        self.mock_state.service_health_reason = None
+
         self.view = HealthHandler(self.mock_logger, self.mock_state)
 
     async def test_health_healthy(self):
@@ -33,12 +36,14 @@ class TestApiHealthApiView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(data["issues"], None)
         self.assertEqual(data["uptime_seconds"], 5000)
         self.assertEqual(data["version"], "1.2.3")
-        self.assertEqual(data["dependencies"],
-                         {"database": ComponentDegradationLevel.NONE.value, })
+        self.assertEqual(data["dependencies"], {
+            "database": ComponentDegradationLevel.NONE.value,
+            "service": ComponentDegradationLevel.NONE.value,
+        })
 
     async def test_health_degraded(self):
         self.mock_state.database_health = ComponentDegradationLevel.PART_DEGRADED
-        self.mock_state.database_health_state_str = "Slow queries detected"
+        self.mock_state.database_health_reason = "Slow queries detected"
 
         response = await self.view.health()
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -53,7 +58,7 @@ class TestApiHealthApiView(unittest.IsolatedAsyncioTestCase):
 
     async def test_health_critical(self):
         self.mock_state.database_health = ComponentDegradationLevel.FULLY_DEGRADED
-        self.mock_state.database_health_state_str = "Database down"
+        self.mock_state.database_health_reason = "Database down"
 
         response = await self.view.health()
         self.assertEqual(response.status_code, HTTPStatus.OK)

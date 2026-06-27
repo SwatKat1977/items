@@ -1,12 +1,7 @@
 [run]
 omit =
-    items/unittests_shared/*
-    unit_tests/cms_svc/*
+    unit_tests/items_cms/*
     items/shared/*
-    services/cms_svc/apis/health_api.py
-    services/cms_svc/apis/projects_api.py
-    services/cms_svc/apis/testcases_api.py
-    services/cms_svc/apis/admin/testcase_custom_fields_api.py
     common/*
     /opt/homebrew/*
     /usr/lib/python3/*
