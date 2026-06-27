@@ -5,10 +5,10 @@ import logging
 import time
 from quart import Response
 from http import HTTPStatus
-from apis.health_api_view import HealthApiView
-from items_common.service_state import ServiceState
-from service_health_enums import (ComponentDegradationLevel,
-                                  ServiceDegradationStatus)
+from items.services.items_cms.routes.system.health_handler import HealthHandler
+from items.shared.service_state import ServiceState
+from items.shared.service_health_enums import (ComponentDegradationLevel,
+                                               ServiceDegradationStatus)
 
 
 class TestApiHealthApiView(unittest.IsolatedAsyncioTestCase):
@@ -21,7 +21,7 @@ class TestApiHealthApiView(unittest.IsolatedAsyncioTestCase):
         # Default to healthy state
         self.mock_state.database_health = ComponentDegradationLevel.NONE
         self.mock_state.database_health_state_str = "OK"
-        self.view = HealthApiView(self.mock_logger, self.mock_state)
+        self.view = HealthHandler(self.mock_logger, self.mock_state)
 
     async def test_health_healthy(self):
         response = await self.view.health()
