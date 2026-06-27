@@ -1,9 +1,9 @@
 {
   "info": {
-    "_postman_id": "c641c8b7-93c0-4b32-a4ba-8a9760dc62b1",
+    "_postman_id": "1c12d1d6-98a0-4897-9c89-83cf3c0dc048",
     "name": "ITEMS",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "49399853"
+    "_exporter_id": "10935426"
   },
   "item": [
     {
@@ -721,13 +721,13 @@
           "name": "Test Case Custom Fields",
           "item": [
             {
-              "name": "Move Custom Testcase field",
+              "name": "Add Custom Testcase Field",
               "request": {
-                "method": "PATCH",
+                "method": "POST",
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n    \"direction\": \"up\"\r\n}",
+                  "raw": " {\n    \"field_name\": \"new type string Trial 124\",\n    \"description\": \"default\",\n    \"system_name\": \"new_system_name_trial_124\",\n    \"field_type\": \"String\",\n    \"enabled\": true,\n    \"is_required\": false,\n    \"default_value\": \"\",\n    \"applies_to_all_projects\": false,\n    \"projects\": [\n          \"Project Delta_1\",\n          \"Project Beta_2\"\n    ]\n}\n",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -735,20 +735,19 @@
                   }
                 },
                 "url": {
-                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields/1",
+                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields",
                   "host": [
                     "{{CMS_SVC_URL}}"
                   ],
                   "path": [
-                    "testcase_custom_fields",
-                    "1"
+                    "testcase_custom_fields"
                   ]
                 }
               },
               "response": []
             },
             {
-              "name": "Get Custom Testcase Fields for project",
+              "name": "Get All Custom Testcase Fields",
               "request": {
                 "method": "GET",
                 "header": [],
@@ -783,30 +782,13 @@
               "response": []
             },
             {
-              "name": "Get All Custom Testcase Fields",
+              "name": "Move Custom Testcase field",
               "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields",
-                  "host": [
-                    "{{CMS_SVC_URL}}"
-                  ],
-                  "path": [
-                    "testcase_custom_fields"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Add Custom Testcase Field",
-              "request": {
-                "method": "POST",
+                "method": "PATCH",
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": " {\n    \"field_name\": \"new type string Trial 124\",\n    \"description\": \"default\",\n    \"system_name\": \"new_system_name_trial_124\",\n    \"field_type\": \"String\",\n    \"enabled\": true,\n    \"is_required\": false,\n    \"default_value\": \"\",\n    \"applies_to_all_projects\": false,\n    \"projects\": [\n          \"Project Delta_1\",\n          \"Project Beta_2\"\n    ]\n}\n",
+                  "raw": "{\r\n    \"direction\": \"up\"\r\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -814,12 +796,58 @@
                   }
                 },
                 "url": {
-                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields",
+                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields/1",
                   "host": [
                     "{{CMS_SVC_URL}}"
                   ],
                   "path": [
-                    "testcase_custom_fields"
+                    "testcase_custom_fields",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Custom Testcase Field",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"field_name\": \"Estimate\",\r\n  \"description\": \"A human-readable description of the field.\",\r\n  \"system_name\": \"unsafe\",\r\n  \"field_type\": \"Integer\",\r\n  \"enabled\": false,\r\n  \"is_required\": true,\r\n  \"default_value\": \"123\",\r\n  \"applies_to_all_projects\": true\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields/4",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcase_custom_fields",
+                    "4"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Custom Testcase Field",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields/2",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcase_custom_fields",
+                    "2"
                   ]
                 }
               },

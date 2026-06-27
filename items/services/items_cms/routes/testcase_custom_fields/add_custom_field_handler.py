@@ -96,15 +96,11 @@ SCHEMA_ADD_TEST_CASE_CUSTOM_FIELD_REQUEST: dict = {
         "applies_to_all_projects"
     ],
     "additionalProperties": False,
-    "allOf": [
-        {
-            "if": {
-                "properties": {"applies_to_all_projects": {"const": True}}
-            },
-            "then": {"not": {"required": ["projects"]}},
-            "else": {"required": ["projects"]}
-        }
-    ]
+    "if": {
+        "properties": {"applies_to_all_projects": {"const": False}},
+        "required": ["applies_to_all_projects"]
+    },
+    "then": {"required": ["projects"]}
 }
 
 
