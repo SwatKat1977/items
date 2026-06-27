@@ -124,9 +124,9 @@ jobs:
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: items/shared:unit_tests/cms_svc:services/cms_svc:common
+          PYTHONPATH: unit_tests/items_cms
         run: |
-          coverage run --rcfile=.github/workflows/.coveragerc_cms_svc -m unittest -v main
+          coverage run --rcfile=.github/workflows/.coveragerc_cms_svc -m unittest -v unit_tests/items_cms/main.py
           coverage report -m --fail-under=100
 
   verify_gateway-svc:
