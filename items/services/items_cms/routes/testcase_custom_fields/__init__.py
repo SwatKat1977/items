@@ -103,6 +103,7 @@ def create_testcase_custom_fields_routes(logger: logging.Logger,
     @custom_fields_routes.route(
         '/testcase_custom_fields/<int:field_id>', methods=['PUT'])
     async def update_testcase_custom_field(field_id: int):
+        # pylint: disable=no-value-for-parameter
         return await update_handler.update_custom_field(field_id)
 
     logger.debug("=> %s DELETE /testcase_custom_fields/<field_id>",

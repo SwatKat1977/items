@@ -43,40 +43,66 @@ class TestcaseCustomFieldsRepository:
         self._logger = logger.getChild(__name__)
         self._db = SqliteInterface(self._logger, config.backend_db_filename)
 
-    async def custom_field_name_exists(self, field_name: str) -> bool:
+    async def custom_field_name_exists(self, field_name: str,
+                                        exclude_id: Optional[int] = None
+                                        ) -> bool:
         """Return True if a custom field with the given name already exists.
 
-        Case-insensitive match.
+        Case-insensitive match. Pass ``exclude_id`` when updating an existing
+        field so the field's own current name does not trigger a false conflict.
 
         Args:
-            field_name: Display name to check.
+            field_name:  Display name to check.
+            exclude_id:  ID of the field being updated (excluded from check).
 
         Raises:
             SqliteInterfaceException: If the database query fails.
         """
-        query = (
-            f"SELECT 1 FROM {cms_tables.TC_CUSTOM_FIELDS} "
-            "WHERE LOWER(field_name) = LOWER(?) LIMIT 1"
-        )
-        row = await self._db.run_query(query, (field_name,), fetch_one=True)
+        if exclude_id is not None:
+            query = (
+                f"SELECT 1 FROM {cms_tables.TC_CUSTOM_FIELDS} "
+                "WHERE LOWER(field_name) = LOWER(?) AND id != ? LIMIT 1"
+            )
+            row = await self._db.run_query(query, (field_name, exclude_id),
+                                           fetch_one=True)
+        else:
+            query = (
+                f"SELECT 1 FROM {cms_tables.TC_CUSTOM_FIELDS} "
+                "WHERE LOWER(field_name) = LOWER(?) LIMIT 1"
+            )
+            row = await self._db.run_query(query, (field_name,),
+                                           fetch_one=True)
         return bool(row)
 
-    async def system_name_exists(self, system_name: str) -> bool:
+    async def system_name_exists(self, system_name: str,
+                                  exclude_id: Optional[int] = None) -> bool:
         """Return True if a custom field with the given system name exists.
 
-        Case-insensitive match.
+        Case-insensitive match. Pass ``exclude_id`` when updating an existing
+        field so the field's own current system name does not trigger a false
+        conflict.
 
         Args:
             system_name: Internal system name to check.
+            exclude_id:  ID of the field being updated (excluded from check).
 
         Raises:
             SqliteInterfaceException: If the database query fails.
         """
-        query = (
-            f"SELECT 1 FROM {cms_tables.TC_CUSTOM_FIELDS} "
-            "WHERE LOWER(system_name) = LOWER(?) LIMIT 1"
-        )
-        row = await self._db.run_query(query, (system_name,), fetch_one=True)
+        if exclude_id is not None:
+            query = (
+                f"SELECT 1 FROM {cms_tables.TC_CUSTOM_FIELDS} "
+                "WHERE LOWER(system_name) = LOWER(?) AND id != ? LIMIT 1"
+            )
+            row = await self._db.run_query(query, (system_name, exclude_id),
+                                           fetch_one=True)
+        else:
+            query = (
+                f"SELECT 1 FROM {cms_tables.TC_CUSTOM_FIELDS} "
+                "WHERE LOWER(system_name) = LOWER(?) LIMIT 1"
+            )
+            row = await self._db.run_query(query, (system_name,),
+                                           fetch_one=True)
         return bool(row)
 
     async def add_custom_field(self,
@@ -358,22 +384,98 @@ class TestcaseCustomFieldsRepository:
         return rows or []
 
     async def update_custom_field(self,
-                                  _field_id: int,
-                                  _updates: dict) -> bool:
+                                  field_id: int,
+                                  field_name: str,
+                                  description: str,
+                                  system_name: str,
+                                  field_type: str,
+                                  enabled: bool,
+                                  is_required: bool,
+                                  default_value: str,
+                                  applies_to_all_projects: bool,
+                                  project_ids: list[int]) -> Optional[bool]:
         """Update an existing custom field.
 
-        Not yet implemented.
+        If ``field_type`` changes, any type-specific option rows are cleared
+        before the new type is applied. Project associations are replaced in
+        full: all existing links are deleted then the new set is inserted.
 
         Args:
-            _field_id: ID of the field to update.
-            _updates:  Dict of field names to new values.
-        """
-        # This is a stub, to be implemented.
-        return False
+            field_id:                ID of the field to update.
+            field_name:              New display name.
+            description:             New description.
+            system_name:             New internal identifier.
+            field_type:              New type name (must exist in types table).
+            enabled:                 Whether the field should be active.
+            is_required:             Whether the field must be filled in.
+            default_value:           New default value (may be empty string).
+            applies_to_all_projects: If True, clears per-project links.
+            project_ids:             Pre-resolved project IDs to link to.
 
-    async def delete_custom_field(self, field_id: int) -> bool:
+        Returns:
+            True on success, False if no field with ``field_id`` exists, or
+            None if ``field_type`` is not found in the types table.
+
+        Raises:
+            SqliteInterfaceException: If any database operation fails.
+        """
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
+
+        row = await self._db.run_query(
+            f"SELECT field_type_id FROM {cms_tables.TC_CUSTOM_FIELDS} "
+            "WHERE id = ?",
+            (field_id,), fetch_one=True)
+        if not row:
+            return False
+
+        current_type_id = int(row[0])
+
+        field_type_info = await self._get_field_type_info(field_type)
+        if field_type_info is None:
+            return None
+
+        new_type_id, _, _ = field_type_info
+
+        if new_type_id != current_type_id:
+            await self._db.run_query(
+                f"DELETE FROM {cms_tables.TC_CUSTOM_FIELD_TYPE_OPTION_VALUES} "
+                "WHERE case_field_id = ?",
+                (field_id,), commit=True)
+            await self._db.run_query(
+                f"DELETE FROM {cms_tables.TC_CUSTOM_FIELD_TYPE_OPTIONS} "
+                "WHERE field_id = ?",
+                (field_id,), commit=True)
+
+        await self._db.run_query(
+            f"UPDATE {cms_tables.TC_CUSTOM_FIELDS} "
+            "SET field_name = ?, description = ?, system_name = ?, "
+            "field_type_id = ?, enabled = ?, is_required = ?, "
+            "default_value = ?, applies_to_all_projects = ? "
+            "WHERE id = ?",
+            (field_name, description, system_name, new_type_id,
+             enabled, is_required, default_value, applies_to_all_projects,
+             field_id),
+            commit=True)
+
+        await self._db.run_query(
+            f"DELETE FROM {cms_tables.TC_CUSTOM_FIELD_PROJECTS} "
+            "WHERE field_id = ?",
+            (field_id,), commit=True)
+
+        if project_ids:
+            insert_query = (
+                f"INSERT INTO {cms_tables.TC_CUSTOM_FIELD_PROJECTS}"
+                "(field_id, project_id) VALUES (?, ?)"
+            )
+            insert_values = [(field_id, pid) for pid in project_ids]
+            await self._db.bulk_insert_query(insert_query, insert_values)
+
+        return True
+
+    async def delete_custom_field(self, field_id: int) -> Optional[bool]:
         """Permanently remove a custom field and all dependent rows.
 
+        System fields (``entry_type = 'system'``) cannot be deleted.
         Deletes in dependency order before removing the field record itself.
         ``TC_CUSTOM_FIELD_OPTION_VALUES`` is omitted because it carries an
         ``ON DELETE CASCADE`` on ``field_id`` and is removed automatically.
@@ -383,19 +485,23 @@ class TestcaseCustomFieldsRepository:
             field_id: ID of the field to delete.
 
         Returns:
-            True on success, False if no field with that ID exists.
+            True on success, False if no field with that ID exists, or None
+            if the field has ``entry_type = 'system'`` and cannot be deleted.
 
         Raises:
             SqliteInterfaceException: If any database operation fails.
         """
         pos_query = (
-            f"SELECT position FROM {cms_tables.TC_CUSTOM_FIELDS} WHERE id = ?"
+            f"SELECT position, entry_type FROM {cms_tables.TC_CUSTOM_FIELDS} "
+            "WHERE id = ?"
         )
         row = await self._db.run_query(pos_query, (field_id,), fetch_one=True)
         if not row:
             return False
 
-        position = int(row[0])
+        position, entry_type = int(row[0]), row[1]
+        if entry_type == "system":
+            return None
 
         await self._db.run_query(
             f"DELETE FROM {cms_tables.TC_CUSTOM_FIELD_TYPE_OPTION_VALUES} "

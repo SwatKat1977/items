@@ -1,9 +1,9 @@
 {
   "info": {
-    "_postman_id": "c641c8b7-93c0-4b32-a4ba-8a9760dc62b1",
+    "_postman_id": "1c12d1d6-98a0-4897-9c89-83cf3c0dc048",
     "name": "ITEMS",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "49399853"
+    "_exporter_id": "10935426"
   },
   "item": [
     {
@@ -768,6 +768,24 @@
               "name": "Get Custom Testcase Field",
               "request": {
                 "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields/2",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcase_custom_fields",
+                    "2"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Custom Testcase Field",
+              "request": {
+                "method": "DELETE",
                 "header": [],
                 "url": {
                   "raw": "{{CMS_SVC_URL}}/testcase_custom_fields/2",
