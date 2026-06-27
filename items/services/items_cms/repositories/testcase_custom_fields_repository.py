@@ -422,13 +422,15 @@ class TestcaseCustomFieldsRepository:
         # pylint: disable=too-many-arguments, too-many-positional-arguments
 
         row = await self._db.run_query(
-            f"SELECT field_type_id FROM {cms_tables.TC_CUSTOM_FIELDS} "
+            f"SELECT field_type_id, entry_type FROM {cms_tables.TC_CUSTOM_FIELDS} "
             "WHERE id = ?",
             (field_id,), fetch_one=True)
         if not row:
             return False
 
-        current_type_id = int(row[0])
+        current_type_id, entry_type = int(row[0]), row[1]
+        if entry_type == "system":
+            return None
 
         field_type_info = await self._get_field_type_info(field_type)
         if field_type_info is None:
@@ -437,6 +439,10 @@ class TestcaseCustomFieldsRepository:
         new_type_id, _, _ = field_type_info
 
         if new_type_id != current_type_id:
+            await self._db.run_query(
+                f"DELETE FROM {cms_tables.TC_CUSTOM_FIELD_OPTION_VALUES} "
+                "WHERE field_id = ?",
+                (field_id,), commit=True)
             await self._db.run_query(
                 f"DELETE FROM {cms_tables.TC_CUSTOM_FIELD_TYPE_OPTION_VALUES} "
                 "WHERE case_field_id = ?",
