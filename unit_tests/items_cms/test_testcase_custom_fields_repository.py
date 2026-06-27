@@ -17,7 +17,7 @@ import os
 import sqlite3
 import tempfile
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from items.services.items_cms.repositories.testcase_custom_fields_repository import (
     TestcaseCustomFieldsRepository,
     CustomFieldMoveDirection,
@@ -396,6 +396,16 @@ class TestTestcaseCustomFieldsRepository(unittest.IsolatedAsyncioTestCase):
         result = await self.repo.move_custom_field(
             field_id, CustomFieldMoveDirection.DOWN)
         self.assertIsNone(result)
+
+    async def test_move_returns_false_on_inconsistent_db_state(self):
+        # Simulate a data inconsistency where _get_id_at_position finds nothing
+        id1 = self._insert_field("First", "first", position=1)
+        self._insert_field("Second", "second", position=2)
+        with patch.object(self.repo, '_get_id_at_position',
+                          new=AsyncMock(return_value=None)):
+            result = await self.repo.move_custom_field(
+                id1, CustomFieldMoveDirection.DOWN)
+        self.assertFalse(result)
 
     async def test_move_up_swaps_positions(self):
         id1 = self._insert_field("First", "first", position=1)

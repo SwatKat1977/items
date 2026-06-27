@@ -28,6 +28,14 @@ from test_testcase_custom_fields_service import (
 from test_testcase_custom_fields_repository import (
     TestTestcaseCustomFieldsRepository,
 )
+from test_project_repository import TestProjectRepository
+from test_testcase_repository import TestTestcaseRepository
+from test_route_factories import TestRouteWiring
+from test_service import (
+    TestServiceManageConfiguration,
+    TestServiceInitialise,
+    TestServiceTasks,
+)
 
 
 if __name__ == "__main__":
