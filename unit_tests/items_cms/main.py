@@ -1,6 +1,7 @@
 import unittest
 from test_health_handler import TestApiHealthApiView
 from test_project_service import TestProjectService
+from test_testcase_service import TestTestcaseService
 from test_testcase_custom_fields_service import (
     TestTestcaseCustomFieldsService,
 )
