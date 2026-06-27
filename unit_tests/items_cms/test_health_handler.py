@@ -70,3 +70,18 @@ class TestApiHealthApiView(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(data["issues"][0]["status"],
                          ComponentDegradationLevel.FULLY_DEGRADED.value)
         self.assertEqual(data["issues"][0]["details"], "Database down")
+
+    async def test_health_service_degraded_adds_service_issue(self):
+        self.mock_state.service_health = ComponentDegradationLevel.PART_DEGRADED
+        self.mock_state.service_health_reason = "Memory pressure"
+
+        response = await self.view.health()
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        data = json.loads(await response.get_data(as_text=True))
+        self.assertEqual(data["status"], ServiceDegradationStatus.DEGRADED.value)
+        self.assertEqual(len(data["issues"]), 1)
+        self.assertEqual(data["issues"][0]["component"], "service")
+        self.assertEqual(data["issues"][0]["status"],
+                         ComponentDegradationLevel.PART_DEGRADED.value)
+        self.assertEqual(data["issues"][0]["details"], "Memory pressure")

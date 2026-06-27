@@ -1,5 +1,7 @@
 [run]
+source = items/services/items_cms
 omit =
+    items/services/items_cms/run.py
     unit_tests/items_cms/*
     items/shared/*
     common/*
