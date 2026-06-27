@@ -8,6 +8,18 @@ from test_project_handlers import (
     TestDeleteProjectHandler,
 )
 from test_project_service import TestProjectService
+from test_testcase_handlers import (
+    TestGetTestcaseHandler,
+    TestListTestcasesHandler,
+)
+from test_testcase_custom_field_handlers import (
+    TestGetCustomFieldHandler,
+    TestGetCustomFieldsHandler,
+    TestAddCustomFieldHandler,
+    TestDeleteCustomFieldHandler,
+    TestMoveCustomFieldHandler,
+    TestUpdateCustomFieldHandler,
+)
 from test_testcase_service import TestTestcaseService
 from test_testcase_custom_fields_service import (
     TestTestcaseCustomFieldsService,
