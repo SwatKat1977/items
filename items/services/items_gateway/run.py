@@ -18,7 +18,7 @@ import os
 import signal
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
-from items.services.items_cms import app, service
+from items.services.items_gateway import app, service
 
 
 async def main() -> int:
