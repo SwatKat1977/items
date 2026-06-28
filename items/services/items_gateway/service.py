@@ -331,9 +331,12 @@ class Service(BaseMicroservice):
         if not self._manage_configuration():
             return False
 
-        self.logger.info('Setting logging level to %s',
+        self.logger.info("Setting logging level to %s",
                          self._config.logging_log_level)
         self.logger.setLevel(self._config.logging_log_level)
+
+        if not self._metadata_handler.read_metadata_file():
+            return False
 
         return True
 
