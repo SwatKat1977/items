@@ -1,5 +1,5 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,50 +13,49 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from configuration.configuration_manager import ConfigurationManager
-from configuration_layout import ConfigurationConstants as Constants
-from thread_safe_singleton import ThreadSafeSingleton
+from weaver_framework.configuration_system.configuration_manager import (
+    ConfigurationManager)
+from items.services.items_gateway.configuration_layout import \
+    ConfigurationConstants
 
 
-class ThreadSafeConfiguration(ConfigurationManager,
-                              metaclass=ThreadSafeSingleton):
-    """ Thread-safe singleton for the config """
+class GatewayConfiguration(ConfigurationManager):
 
     @property
     def logging_log_level(self) -> str:
         """ Configuration property : Logging | log level """
-        return ThreadSafeConfiguration().get_entry(
-            Constants.SECTION_LOGGING,
-            Constants.LOGGING_LOG_LEVEL)
+        return self.get_entry(ConfigurationConstants.SECTION_LOGGING,
+                              ConfigurationConstants.LOGGING_LOG_LEVEL)
 
     @property
     def general_metadata_config_file(self) -> str:
         """ Configuration property : General | metadata config file """
-        return ThreadSafeConfiguration().get_entry(
-            Constants.SECTION_GENERAL,
-            Constants.GENERAL_METADATA_CONFIG_FILE)
+
+        return self.get_entry(ConfigurationConstants.SECTION_GENERAL,
+                              ConfigurationConstants.GENERAL_METADATA_CONFIG_FILE)
 
     @property
     def general_api_signing_secret(self) -> str:
         """ Configuration property : General | API signing secret """
-        return ThreadSafeConfiguration().get_entry(
-            Constants.SECTION_GENERAL,
-            Constants.GENERAL_API_SIGNING_SECRET)
+        return self.get_entry(ConfigurationConstants.SECTION_GENERAL,
+                              ConfigurationConstants.GENERAL_API_SIGNING_SECRET)
 
     @property
-    def apis_accounts_svc(self) -> str:
-        """ Configuration property : APIs | Accounts Service base path """
-        return ThreadSafeConfiguration().get_entry(
-            Constants.SECTION_APIS, Constants.APIS_ACCOUNTS_SVC)
+    def apis_identity_svc(self) -> str:
+        """ Configuration property : APIs | Identity Service base path """
+        return self.get_entry(ConfigurationConstants.SECTION_APIS,
+                              ConfigurationConstants.APIS_IDENTITY_SVC)
+
 
     @property
     def apis_cms_svc(self) -> str:
         """ Configuration property : APIs | CMS Service base path """
-        return ThreadSafeConfiguration().get_entry(
-            Constants.SECTION_APIS, Constants.APIS_CMS_SVC)
+        return self.get_entry(ConfigurationConstants.SECTION_APIS,
+                              ConfigurationConstants.APIS_CMS_SVC)
+
 
     @property
     def apis_web_portal_svc(self) -> str:
         """ Configuration property : APIs | Web Portal Service base path """
-        return ThreadSafeConfiguration().get_entry(
-            Constants.SECTION_APIS, Constants.APIS_WEB_PORTAL_SVC)
+        return self.get_entry(ConfigurationConstants.SECTION_APIS,
+                              ConfigurationConstants.APIS_WEB_PORTAL_SVC)
