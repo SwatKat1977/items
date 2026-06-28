@@ -1,5 +1,5 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -186,6 +186,7 @@ SERVER_SETTINGS_INSTANCE_NAME: str = "instance_name"
 SERVER_SETTINGS_DEFAULT_TIME_ZONE: str = "default_time_zone"
 
 INFINITE_UPDATE_RETRIES: int = -1
+
 
 @dataclasses.dataclass
 class MetadataSettings:
