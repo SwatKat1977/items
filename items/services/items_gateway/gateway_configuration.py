@@ -46,13 +46,11 @@ class GatewayConfiguration(ConfigurationManager):
         return self.get_entry(ConfigurationConstants.SECTION_APIS,
                               ConfigurationConstants.APIS_IDENTITY_SVC)
 
-
     @property
     def apis_cms_svc(self) -> str:
         """ Configuration property : APIs | CMS Service base path """
         return self.get_entry(ConfigurationConstants.SECTION_APIS,
                               ConfigurationConstants.APIS_CMS_SVC)
-
 
     @property
     def apis_web_portal_svc(self) -> str:
