@@ -33,11 +33,11 @@ class ConfigurationConstants:
     GENERAL_METADATA_CONFIG_FILE_DEFAULT: str = "metadata.config"
     GENERAL_API_SIGNING_SECRET: str = "api_signing_secret"
 
-    APIS_ACCOUNTS_SVC: str = "accounts_svc"
+    APIS_IDENTITY_SVC: str = "identity_svc"
     APIS_CMS_SVC: str = "cms_svc"
     APIS_WEB_PORTAL_SVC: str = "web_portal_svc"
-    APIS_ACCOUNTS_SVC_DEFAULT: str = "http://localhost:4000/"
-    APIS_CMS_SVC_DEFAULT: str = "http://localhost:5000/"
+    APIS_IDENTITY_SVC_DEFAULT: str = "http://localhost:5050/"
+    APIS_CMS_SVC_DEFAULT: str = "http://localhost:6050/"
     APIS_WEB_PORTAL_SVC_DEFAULT: str = "http://localhost:8080/"
 
 
@@ -66,10 +66,10 @@ CONFIGURATION_LAYOUT = ConfigurationSetup(
 
         ConfigurationConstants.SECTION_APIS: [
             ConfigurationSetupItem(
-                ConfigurationConstants.APIS_ACCOUNTS_SVC,
+                ConfigurationConstants.APIS_IDENTITY_SVC,
                 ConfigItemDataType.STRING,
                 default_value=
-                ConfigurationConstants.APIS_ACCOUNTS_SVC_DEFAULT),
+                ConfigurationConstants.APIS_IDENTITY_SVC_DEFAULT),
             ConfigurationSetupItem(
                 ConfigurationConstants.APIS_CMS_SVC,
                 ConfigItemDataType.STRING,
