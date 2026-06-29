@@ -1,5 +1,5 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@ limitations under the License.
 """
 # pylint: disable=R0801
 
-SCHEMA_ACCOUNTS_SVC_HEALTH_RESPONSE: dict = {
+SCHEMA_IDENTITY_SVC_HEALTH_RESPONSE: dict = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "$defs": {
