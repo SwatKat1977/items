@@ -235,7 +235,7 @@ from weaver_framework.microservice.rest_client import RestClient
 from items.shared import LICENSE_TEXT, SERVICE_COPYRIGHT_TEXT, __version__
 from items.shared.service_state import ServiceState
 from items.shared.interfaces.identity.health import (
-    SCHEMA_ACCOUNTS_SVC_HEALTH_RESPONSE)
+    SCHEMA_IDENTITY_SVC_HEALTH_RESPONSE)
 from items.shared.service_health_enums import ServiceDegradationStatus
 from items.services.items_gateway.configuration_layout import \
     CONFIGURATION_LAYOUT
@@ -356,7 +356,6 @@ class Service(BaseMicroservice):
     async def _shutdown_wait_task(self) -> None:
         await self.shutdown_event.wait()
 
-
     async def _check_identity_svc_status(self) -> bool:
         perform_check: bool = True
 
@@ -397,7 +396,7 @@ class Service(BaseMicroservice):
 
         try:
             jsonschema.validate(instance=response.body,
-                                schema=SCHEMA_ACCOUNTS_SVC_HEALTH_RESPONSE)
+                                schema=SCHEMA_IDENTITY_SVC_HEALTH_RESPONSE)
 
         except jsonschema.exceptions.ValidationError as ex:
             raise RuntimeError(
