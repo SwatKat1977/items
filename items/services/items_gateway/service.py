@@ -234,7 +234,7 @@ from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.rest_client import RestClient
 from items.shared import LICENSE_TEXT, SERVICE_COPYRIGHT_TEXT, __version__
 from items.shared.service_state import ServiceState
-from items.shared.interfaces.accounts.health import (
+from items.shared.interfaces.identity.health import (
     SCHEMA_ACCOUNTS_SVC_HEALTH_RESPONSE)
 from items.shared.service_health_enums import ServiceDegradationStatus
 from items.services.items_gateway.configuration_layout import \
