@@ -14,16 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import dataclasses
-import http
 import json
 import logging
 import os
-import time
 import jsonschema
-import requests
 import tzlocal
-from threadsafe_configuration import ThreadSafeConfiguration as Configuration
-from base_view import BaseView
+from items.services.items_gateway.gateway_configuration import GatewayConfiguration
+
 
 TIME_ZONES = [
     {"display": "American Samoa", "id": "US/Samoa"},
@@ -185,8 +182,6 @@ SECTION_SERVER_SETTINGS: str = "server_settings"
 SERVER_SETTINGS_INSTANCE_NAME: str = "instance_name"
 SERVER_SETTINGS_DEFAULT_TIME_ZONE: str = "default_time_zone"
 
-INFINITE_UPDATE_RETRIES: int = -1
-
 
 @dataclasses.dataclass
 class MetadataSettings:
@@ -245,15 +240,17 @@ class MetadataHandler:
             Reads the metadata configuration file and loads the settings.
     """
 
-    def __init__(self, logger: logging.Logger):
+    def __init__(self, logger: logging.Logger,
+                 configuration: GatewayConfiguration,):
         """
         Initializes the MetadataHandler with a logger and default metadata settings.
 
         Args:
             logger (logging.Logger): The logger instance used for logging messages and errors.
         """
-        self._logger = logger.getChild(__name__)
-        self.metadata_settings: MetadataSettings = MetadataSettings()
+        self._logger = logger.getChild(type(self).__name__)
+        self._metadata_settings: MetadataSettings = MetadataSettings()
+        self._configuration: GatewayConfiguration = configuration
 
     def read_metadata_file(self) -> bool:
         """
@@ -263,7 +260,7 @@ class MetadataHandler:
             bool: True if the file was successfully read and parsed, False otherwise.
         """
 
-        config_file: str = Configuration().general_metadata_config_file
+        config_file: str = self._configuration.general_metadata_config_file
 
         if not os.path.exists(config_file):
             self._logger.critical("Metadata config file '%s' cannot be opened",
@@ -306,8 +303,8 @@ class MetadataHandler:
                 self._logger.critical("Unable to get server timezone, aborting...")
                 return False
 
-            self.metadata_settings.default_time_zone = server_tz_name
-            self.metadata_settings.using_server_default_time_zone = True
+            self._metadata_settings.default_time_zone = server_tz_name
+            self._metadata_settings.using_server_default_time_zone = True
 
             self._logger.info("Default server time zone: (Server): %s",
                               server_tz_name)
@@ -319,21 +316,21 @@ class MetadataHandler:
                      "is not a valid time zone!"), time_zone)
                 return False
 
-            self.metadata_settings.default_time_zone = time_zone
-            self.metadata_settings.using_server_default_time_zone = False
+            self._metadata_settings.default_time_zone = time_zone
+            self._metadata_settings.using_server_default_time_zone = False
 
             self._logger.info("Default server time zone: (From file): %s",
                               time_zone)
 
-        self.metadata_settings.instance_name = instance_name
+        self._metadata_settings.instance_name = instance_name
         self._logger.info("Server instance name: %s",
-                          self.metadata_settings.instance_name)
+                          self._metadata_settings.instance_name)
 
         return True
 
     def write_metadata_file(self, data: dict) -> bool:
         """Writes metadata configuration to a file with error handling."""
-        config_file: str = Configuration().general_metadata_config_file
+        config_file: str = self._configuration.general_metadata_config_file
 
         try:
             with open(config_file, "w", encoding="utf-8") as file:
@@ -360,66 +357,6 @@ class MetadataHandler:
         # Return False on failure
         return False
 
-    def update_web_portal_webhook(self, retries: int = 0) -> bool:
-        """
-        Sends an update request to the Web Portal webhook with metadata configuration.
-
-        This method generates metadata, signs the request, and attempts to send it
-        to the Web Portal service. If the update fails, it retries a specified number
-        of times before logging a critical failure.
-
-        Args:
-            retries (int, optional): The number of retry attempts. If set to 0 or
-                                     INFINITE_UPDATE_RETRIES, it retries indefinitely.
-
-        Returns:
-            bool: True if the update is successful, False otherwise.
-        """
-        perform_update: int = 1 if retries in (0,INFINITE_UPDATE_RETRIES) \
-                                else retries
-
-        metadata_items: dict = self.build_metadata_dictionary()
-
-        secret: bytes = Configuration().general_api_signing_secret.encode()
-        signature: str = BaseView.generate_api_signature(secret,
-                                                         metadata_items)
-        headers = {
-            "Content-Type": "application/json",
-            "X-Signature": signature
-        }
-
-        base_path: str = Configuration().apis_web_portal_svc
-        url: str = f"{base_path}webhook/update_metadata"
-
-        while perform_update != 0:
-            try:
-                response = requests.post(url,
-                                         json.dumps(metadata_items),
-                                         timeout=1,
-                                         headers=headers)
-
-                if response.status_code == http.HTTPStatus.OK:
-                    self._logger.info("Updated Web Portal with metadata "
-                                      "configuration items")
-                    return True
-
-            except requests.exceptions.ConnectionError as ex:
-                self._logger.error(("Connection to web portal service timed "
-                                    "out whilst update metadata: %s"),
-                                   str(ex))
-
-            self._logger.warning("Unable to update Web Portal with metadata "
-                                 "configuration items")
-
-            if retries != INFINITE_UPDATE_RETRIES:
-                perform_update -= 1
-
-            time.sleep(3)
-
-        self._logger.critical("Failed to update Web Portal with metadata "
-                              "configuration items")
-        return False
-
     def build_metadata_dictionary(self) -> dict:
         """
         Builds and returns a dictionary containing metadata configuration.
@@ -429,9 +366,9 @@ class MetadataHandler:
                   server default settings, and instance name.
         """
         metadata_items: dict = {
-            "default_time_zone": self.metadata_settings.default_time_zone,
+            "default_time_zone": self._metadata_settings.default_time_zone,
             "using_server_default_time_zone":
-                self.metadata_settings.using_server_default_time_zone,
-            "instance_name": self.metadata_settings.instance_name
+                self._metadata_settings.using_server_default_time_zone,
+            "instance_name": self._metadata_settings.instance_name
         }
         return metadata_items

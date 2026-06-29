@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-
-
 '''
 import asyncio
 import json
@@ -23,7 +21,6 @@ import logging
 import os
 import time
 import typing
-import jsonschema
 import requests
 from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
                            LOGGING_DEFAULT_LOG_LEVEL, \
@@ -153,76 +150,6 @@ class Application(BaseApplication):
 
         return True
 
-    def _check_accounts_svc_api_status(self, version_info: str) -> bool:
-        perform_check: bool = True
-
-        while perform_check:
-            try:
-                data = self._accounts_svc_api_health_check(version_info)
-
-                if data:
-                    self._logger.info("[Accounts API]")
-                    self._logger.info("=> Status: %s", data["status"])
-                    self._logger.info("=> Version: %s", data["version"])
-                    perform_check = False
-
-                else:
-                    time.sleep(3)
-
-            except RuntimeError as ex:
-                self._logger.critical(str(ex))
-                return False
-
-        return True
-
-    def _accounts_svc_api_health_check(self, version_info: str) \
-            -> typing.Optional[dict]:
-        url: str = f"{Configuration().apis_accounts_svc}health/status"
-
-        try:
-            response = requests.get(url, timeout=1)
-
-        except requests.exceptions.ConnectionError as ex:
-            self._logger.error("Connection to accounts service timed out: %s",
-                               str(ex))
-            return None
-
-        if response is None:
-            raise RuntimeError(
-                "Missing/invalid JSON accounts svc health call JSON body")
-
-        try:
-            json_data = json.loads(response.text)
-
-        except (TypeError, json.JSONDecodeError) as ex:
-            raise RuntimeError(
-                "Invalid JSON body type for accounts svc health call") from ex
-
-        try:
-            jsonschema.validate(instance=json_data,
-                                schema=SCHEMA_ACCOUNTS_SVC_HEALTH_RESPONSE)
-
-        except jsonschema.exceptions.ValidationError as ex:
-            raise RuntimeError(
-                "Schema for accounts service health check invalid!") from ex
-
-        if json_data["version"] != version_info:
-            self._logger.warning(
-                "Accounts Service version (%s) does not match gateway (%s),"
-                ", unforeseen issues may occur!", json_data["version"],
-                version_info)
-
-        if json_data["status"] == ServiceDegradationStatus.CRITICAL.value:
-            msg: str = "Accounts service critically degraded, access to "\
-                       "accounts service discontinued until it is fixed"
-            raise RuntimeError(msg)
-
-        if json_data["status"] == ServiceDegradationStatus.DEGRADED.value:
-            self._logger.warning("Accounts service degraded, can continue, but"
-                                 " retries/slow-down may occur..")
-
-        return json_data
-
     def _check_cms_svc_api_status(self, version_info: str) -> bool:
         perform_check: bool = True
 
@@ -295,21 +222,33 @@ class Application(BaseApplication):
 '''
 
 import asyncio
+import http
+import typing
+import jsonschema
+import aiohttp
 from quart import Quart
 from weaver_framework.configuration_system.configuration_manager import (
     ConfigurationError)
 from weaver_framework.microservice.base_microservice import BaseMicroservice
+from weaver_framework.microservice.api_response import ApiResponse
+from weaver_framework.microservice.rest_client import RestClient
 from items.shared import LICENSE_TEXT, SERVICE_COPYRIGHT_TEXT, __version__
 from items.shared.service_state import ServiceState
+from items.shared.interfaces.accounts.health import (
+    SCHEMA_ACCOUNTS_SVC_HEALTH_RESPONSE)
+from items.shared.service_health_enums import ServiceDegradationStatus
 from items.services.items_gateway.configuration_layout import \
     CONFIGURATION_LAYOUT
 from items.services.items_gateway.gateway_configuration import \
     GatewayConfiguration
+from items.services.items_gateway.metadata_handler import MetadataHandler
+from items.services.items_gateway.web_portal_client import WebPortalClient
 
 
 class Service(BaseMicroservice):
     """ ITEMS CMS Microservice """
 
+    SERVICE_NAME: str = "Gateway"
     CONFIG_FILE_ENV: str = "ITEMS_GATEWAY_CONFIG_FILE"
     CONFIG_REQUIRED_ENV: str = "ITEMS_GATEWAY_CONFIG_FILE_REQUIRED"
 
@@ -318,6 +257,10 @@ class Service(BaseMicroservice):
         self._quart_instance = quart_instance
         self._service_state: ServiceState = ServiceState()
         self._config: GatewayConfiguration = GatewayConfiguration()
+        self._http_session: aiohttp.ClientSession | None = None
+        self._metadata_handler: MetadataHandler | None = None
+        self._web_portal_client: WebPortalClient | None = None
+        self._rest_client: RestClient | None = None
 
         self._service_state.database_enabled = True
 
@@ -335,8 +278,23 @@ class Service(BaseMicroservice):
                          self._config.logging_log_level)
         self.logger.setLevel(self._config.logging_log_level)
 
+        self._http_session = aiohttp.ClientSession()
+        self._metadata_handler = MetadataHandler(self.logger, self._config)
+        self._web_portal_client = WebPortalClient(
+            self.logger,
+            self._metadata_handler,
+            self._config,
+            self._http_session)
+        self._rest_client: RestClient = RestClient(self._http_session)
+
         if not self._metadata_handler.read_metadata_file():
             return False
+
+        if not await self._check_identity_svc_status():
+            return False
+
+        #if not self._check_cms_svc_status():
+        #    return False
 
         return True
 
@@ -346,6 +304,8 @@ class Service(BaseMicroservice):
 
     async def _shutdown(self):
         """ Abstract method for application shutdown. """
+        if self._http_session:
+            await self._http_session.close()
 
     def _manage_configuration(self) -> bool:
         """
@@ -395,3 +355,67 @@ class Service(BaseMicroservice):
 
     async def _shutdown_wait_task(self) -> None:
         await self.shutdown_event.wait()
+
+
+    async def _check_identity_svc_status(self) -> bool:
+        perform_check: bool = True
+
+        while perform_check:
+            try:
+                data = await self._identity_svc_health_check()
+
+                if data:
+                    self._logger.info("[Identity Service]")
+                    self._logger.info("=> Status: %s", data["status"])
+                    self._logger.info("=> Version: %s", data["version"])
+                    perform_check = False
+
+                else:
+                    await asyncio.sleep(3)
+
+            except RuntimeError as ex:
+                self._logger.critical(str(ex))
+                return False
+
+        return True
+
+    async def _identity_svc_health_check(self) -> typing.Optional[dict]:
+        url: str = f"{self._config.apis_identity_svc}system/health"
+
+        response: ApiResponse = await self._rest_client.get(url, timeout=1)
+
+        if response.exception_msg:
+            self._logger.error("Connection to identity service timed out: %s",
+                               response.exception_msg)
+            return None
+
+        if response.status_code != http.HTTPStatus.OK:
+            self._logger.warning(
+                "Connection to identity service returned status %s",
+                response.status_code)
+            return None
+
+        try:
+            jsonschema.validate(instance=response.body,
+                                schema=SCHEMA_ACCOUNTS_SVC_HEALTH_RESPONSE)
+
+        except jsonschema.exceptions.ValidationError as ex:
+            raise RuntimeError(
+                "Schema for accounts service health check invalid!") from ex
+
+        if response.body["version"] != __version__:
+            self._logger.warning(
+                "Identity Service version (%s) does not match gateway (%s),"
+                ", unforeseen issues may occur!", response.body["version"],
+                __version__)
+
+        if response.body["status"] == ServiceDegradationStatus.CRITICAL.value:
+            msg: str = "Identity service critically degraded, access to "\
+                       "accounts service discontinued until it is fixed"
+            raise RuntimeError(msg)
+
+        if response.body["status"] == ServiceDegradationStatus.DEGRADED.value:
+            self._logger.warning("Identity service degraded, can continue, but"
+                                 " retries/slow-down may occur..")
+
+        return response.body
