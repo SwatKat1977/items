@@ -1,5 +1,5 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,37 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import asyncio
-import sys
 from quart import Quart
-from application import Application
+from items.services.items_gateway.service import Service
 
-# Quart application instance
 app = Quart(__name__)
-
-application = Application(app)
-
-
-@app.before_serving
-async def startup() -> None:
-    """
-    Code executed before Quart has began serving http requests.
-
-    returns:
-        None
-    """
-    app.service_task = asyncio.ensure_future(application.run())
-
-
-@app.after_serving
-async def shutdown() -> None:
-    """
-    Code executed after Quart has stopped serving http requests.
-
-    returns:
-        None
-    """
-    application.stop()
-
-if not application.initialise():
-    sys.exit()
+service = Service(app)
