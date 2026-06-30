@@ -36,6 +36,7 @@ from items.services.items_gateway.gateway_configuration import \
     GatewayConfiguration
 from items.services.items_gateway.metadata_handler import MetadataHandler
 from items.services.items_gateway.web_portal_client import WebPortalClient
+# from items.services.items_gateway.sessions import Sessions
 
 
 class Service(BaseMicroservice):
@@ -54,6 +55,7 @@ class Service(BaseMicroservice):
         self._metadata_handler: MetadataHandler | None = None
         self._web_portal_client: WebPortalClient | None = None
         self._rest_client: RestClient | None = None
+        # self._sessions: Sessions = Sessions()
 
         self._service_state.database_enabled = True
 
