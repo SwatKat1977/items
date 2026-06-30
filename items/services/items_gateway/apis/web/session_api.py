@@ -1,5 +1,5 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,14 +15,22 @@ limitations under the License.
 """
 import logging
 from quart import Blueprint
-from .session_api_view import SessionApiView
-from sessions import Sessions
+from weaver_framework.microservice.rest_client import RestClient
+from items.services.items_gateway.gateway_configuration import GatewayConfiguration
+from items.services.items_gateway.routes.sessions.new_session_password_handler \
+    import NewSessionPasswordHandler
+from items.services.items_gateway.routes.sessions.delete_session_handler \
+    import DeleteSessionHandler
+from items.services.items_gateway.routes.sessions.refresh_session_handler import RefreshSessionHandler
+from items.services.items_gateway.sessions import Sessions
 
 
-def create_blueprint(logger: logging.Logger,
-                     sessions: Sessions) -> Blueprint:
+def create_sessions_routes(logger: logging.Logger,
+                           sessions: Sessions,
+                           configuration: GatewayConfiguration,
+                           rest_client: RestClient) -> Blueprint:
     """
-    Creates and registers a Flask Blueprint for handling authentication
+    Creates and registers a Quart Blueprint for handling authentication
     handshake API routes.
 
     This function initializes a `View` object with the provided SQL interface
@@ -30,38 +38,54 @@ def create_blueprint(logger: logging.Logger,
 
     Args:
         logger (logging.Logger): A logger instance for logging messages.
-        sessions (Sessions): A sessions instance,
-        prefix (str): API prefix (.e.g. /handshake)
+        sessions (Sessions): A sessions instance.
+        configuration (GatewayConfiguration): A gateway configuration instance.
+        rest_client (RestClient) Instance of rest_client.
 
     Returns:
-        Blueprint: A Flask `Blueprint` object containing the registered route.
+        Blueprint: A Quart `Blueprint` object containing the registered route.
     """
-    view = SessionApiView(logger, sessions)
+    sessions_routes = Blueprint("sessions_routes", __name__)
 
-    blueprint = Blueprint('session_api', __name__)
+    new_session_password_handler: NewSessionPasswordHandler = \
+        NewSessionPasswordHandler(logger,
+                                  sessions,
+                                  configuration,
+                                  rest_client)
+    delete_session_handler: DeleteSessionHandler = DeleteSessionHandler(logger,
+                                                                        sessions)
+    refresh_session_handler: RefreshSessionHandler = RefreshSessionHandler(
+        logger, sessions)
 
-    logger.debug("-------------- Registering Web Session routes -------------")
+    logger.debug("--- Registering Sessions API routes ---")
 
-    logger.debug(f"=> {'Log in/create new session'.ljust(30)}"
-                 "POST /web/session")
+    logger.debug("=> %s POST /sessions",
+                 "Log in/create new session".ljust(40))
 
-    @blueprint.route('/session', methods=['POST'])
+    @sessions_routes.route('/sessions', methods=['POST'])
     async def create_new_session_request():
-        return await view.create_new_session()
+        return await NewSessionPasswordHandler.create_new_session()
 
-    logger.debug(f"=> {'Check if session is valid'.ljust(30)}"
-                 "GET /web/session/validate")
+    logger.debug("=> %s POST /sessions/validate",
+                 "Check if session is valid".ljust(40))
 
-    @blueprint.route('/session/validate', methods=['POST'])
+    @sessions_routes.route('/sessions/validate', methods=['POST'])
     async def session_validate_request():
-        # pylint: disable=unused-variable
-        return await view.validate_session()
+        return None
+        #return await view.validate_session()
 
-    logger.debug(f"=> {'Log out (invalidate session)'.ljust(30)}"
-                 "DELETE /web/session")
+    logger.debug("=> %s POST /sessions/refresh",
+                 "Refresh session (remember me)".ljust(40))
 
-    @blueprint.route('/session', methods=['DELETE'])
+    @sessions_routes.route('/sessions/refresh', methods=['POST'])
+    async def refresh_session_request():
+        return await refresh_session_handler.refresh_session()
+
+    logger.debug("=> %s DELETE /sessions",
+                 "Log out (invalidate session)".ljust(40))
+
+    @sessions_routes.route('/sessions', methods=['DELETE'])
     async def logout_user():
-        # pylint: disable=unused-variable
-        return await view.delete_session()
-    return blueprint
+        return await delete_session_handler.delete_session()
+
+    return sessions_routes

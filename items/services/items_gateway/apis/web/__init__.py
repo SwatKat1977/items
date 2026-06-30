@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
+'''
 import logging
 import quart
 from metadata_handler import MetadataHandler
@@ -52,3 +54,4 @@ def create_web_routes(logger: logging.Logger,
     web_bp.register_blueprint(create_web_admin_routes(logger, sessions), url_prefix="/admin")
 
     return web_bp
+'''

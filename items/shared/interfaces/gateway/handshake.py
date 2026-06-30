@@ -14,69 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-SCHEMA_SESSION_CREATE_REQUEST: dict = {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "title": "SessionAuthenticationRequest",
-    "type": "object",
-    "properties": {
-        "type": {
-            "type": "string",
-            "enum": ["basic", "token"]
-        }
-    },
-    "required": ["type"],
-    "allOf": [
-        {
-            "if": {
-                "properties": {"type": {"const": "basic"}}
-            },
-            "then": {
-                "type": "object",
-                "properties": {
-                    "type": {"const": "basic"},
-                    "email_address": {"type": "string", "minLength": 3},
-                    "password": {"type": "string", "minLength": 8}
-                },
-                "required": ["email_address", "password"],
-                "additionalProperties": False
-            }
-        },
-        {
-            "if": {
-                "properties": {"type": {"const": "token"}}
-            },
-            "then": {
-                "type": "object",
-                "properties": {
-                    "type": {"const": "token"},
-                    "token": {"type": "string", "minLength": 1}
-                },
-                "required": ["token"],
-                "additionalProperties": False
-            }
-        }
-    ]
-}
-
-SCHEMA_LOGOUT_REQUEST: dict = {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-
-    "type": "object",
-    "additionalProperties": False,
-
-    "properties":
-        {
-            "email_address":
-                {
-                    "type": "string"
-                },
-            "token":
-                {
-                    "type": "string"
-                },
-        },
-    "required": ["email_address", "token"]
-}
 
 SCHEMA_SESSION_VALIDATE_REQUEST = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
