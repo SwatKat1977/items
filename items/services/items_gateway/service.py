@@ -149,76 +149,6 @@ class Application(BaseApplication):
                           Configuration().apis_web_portal_svc)
 
         return True
-
-    def _check_cms_svc_api_status(self, version_info: str) -> bool:
-        perform_check: bool = True
-
-        while perform_check:
-            try:
-                data = self._cms_svc_api_health_check(version_info)
-
-                if data:
-                    self._logger.info("[CMS API]")
-                    self._logger.info("=> Status: %s", data["status"])
-                    self._logger.info("=> Version: %s", data["version"])
-                    perform_check = False
-
-                else:
-                    time.sleep(3)
-
-            except RuntimeError as ex:
-                self._logger.critical(str(ex))
-                return False
-
-        return True
-
-    def _cms_svc_api_health_check(self, version_info: str) \
-            -> typing.Optional[dict]:
-        url: str = f"{Configuration().apis_cms_svc}health/status"
-
-        try:
-            response = requests.get(url, timeout=1)
-
-        except requests.exceptions.ConnectionError as ex:
-            self._logger.error("Connection to cms service timed out: %s",
-                               str(ex))
-            return None
-
-        if response is None:
-            raise RuntimeError(
-                "Missing/invalid JSON cms svc health call JSON body")
-
-        try:
-            json_data = json.loads(response.text)
-
-        except (TypeError, json.JSONDecodeError) as ex:
-            raise RuntimeError(
-                "Invalid JSON body type for cms svc health call") from ex
-
-        try:
-            jsonschema.validate(instance=json_data,
-                                schema=SCHEMA_CMS_SVC_HEALTH_RESPONSE)
-
-        except jsonschema.exceptions.ValidationError as ex:
-            raise RuntimeError(
-                "Schema for cms service health check invalid!") from ex
-
-        if json_data["version"] != version_info:
-            self._logger.warning(
-                "CMS Service version (%s) does not match gateway (%s),"
-                ", unforeseen issues may occur!", json_data["version"],
-                version_info)
-
-        if json_data["status"] == ServiceDegradationStatus.CRITICAL.value:
-            msg: str = "CMS service critically degraded, access to "\
-                       "cms service discontinued until it is fixed"
-            raise RuntimeError(msg)
-
-        if json_data["status"] == ServiceDegradationStatus.DEGRADED.value:
-            self._logger.warning("CMS service degraded, can continue, but"
-                                 " retries/slow-down may occur..")
-
-        return json_data
 '''
 
 import asyncio
@@ -236,6 +166,7 @@ from items.shared import LICENSE_TEXT, SERVICE_COPYRIGHT_TEXT, __version__
 from items.shared.service_state import ServiceState
 from items.shared.interfaces.identity.health import (
     SCHEMA_IDENTITY_SVC_HEALTH_RESPONSE)
+from items.shared.interfaces.cms.health import SCHEMA_CMS_SVC_HEALTH_RESPONSE
 from items.shared.service_health_enums import ServiceDegradationStatus
 from items.services.items_gateway.configuration_layout import \
     CONFIGURATION_LAYOUT
@@ -293,8 +224,8 @@ class Service(BaseMicroservice):
         if not await self._check_identity_svc_status():
             return False
 
-        #if not self._check_cms_svc_status():
-        #    return False
+        if not await self._check_cms_svc_status():
+            return False
 
         return True
 
@@ -314,7 +245,7 @@ class Service(BaseMicroservice):
         error_status, required, config_file = self._check_for_configuration(
             self.CONFIG_FILE_ENV,self.CONFIG_REQUIRED_ENV)
         if error_status:
-            self._logger.critical(error_status)
+            self.logger.critical(error_status)
             return False
 
         self._config.configure(CONFIGURATION_LAYOUT, config_file, required)
@@ -323,33 +254,33 @@ class Service(BaseMicroservice):
             self._config.process_config()
 
         except ConfigurationError as ex:
-            self._logger.critical("Configuration error : %s", str(ex))
+            self.logger.critical("Configuration error : %s", str(ex))
             return False
 
         except ValueError as ex:
-            self._logger.critical("Configuration error : %s", str(ex))
+            self.logger.critical("Configuration error : %s", str(ex))
             return False
 
-        self._logger.info("Configuration")
-        self._logger.info("=============")
+        self.logger.info("Configuration")
+        self.logger.info("=============")
 
-        self._logger.info("Configuration file required: %s",
-                          "True" if required else "False")
-        self._logger.info("Configuration file : %s",
-                          "None"if not required else config_file)
-        self._logger.info("[logging]")
-        self._logger.info("=> Logging log level : %s",
-                          self._config.logging_log_level)
-        self._logger.info("[general]")
-        self._logger.info("=> Metadata config file : %s",
-                          self._config.general_metadata_config_file)
-        self._logger.info("[routes]")
-        self._logger.info("=> Identity Service API : %s",
-                          self._config.apis_identity_svc)
-        self._logger.info("=> CMS Service API : %s",
-                          self._config.apis_cms_svc)
-        self._logger.info("=> Web Portal Service API : %s",
-                          self._config.apis_web_portal_svc)
+        self.logger.info("Configuration file required: %s",
+                         "True" if required else "False")
+        self.logger.info("Configuration file : %s",
+                         "None"if not required else config_file)
+        self.logger.info("[logging]")
+        self.logger.info("=> Logging log level : %s",
+                         self._config.logging_log_level)
+        self.logger.info("[general]")
+        self.logger.info("=> Metadata config file : %s",
+                         self._config.general_metadata_config_file)
+        self.logger.info("[routes]")
+        self.logger.info("=> Identity Service API : %s",
+                         self._config.apis_identity_svc)
+        self.logger.info("=> CMS Service API : %s",
+                         self._config.apis_cms_svc)
+        self.logger.info("=> Web Portal Service API : %s",
+                         self._config.apis_web_portal_svc)
 
         return True
 
@@ -364,9 +295,9 @@ class Service(BaseMicroservice):
                 data = await self._identity_svc_health_check()
 
                 if data:
-                    self._logger.info("[Identity Service]")
-                    self._logger.info("=> Status: %s", data["status"])
-                    self._logger.info("=> Version: %s", data["version"])
+                    self.logger.info("[Identity Service]")
+                    self.logger.info("=> Status: %s", data["status"])
+                    self.logger.info("=> Version: %s", data["version"])
                     perform_check = False
 
                 else:
@@ -384,12 +315,12 @@ class Service(BaseMicroservice):
         response: ApiResponse = await self._rest_client.get(url, timeout=1)
 
         if response.exception_msg:
-            self._logger.error("Connection to identity service timed out: %s",
-                               response.exception_msg)
+            self.logger.error("Connection to identity service timed out: %s",
+                              response.exception_msg)
             return None
 
         if response.status_code != http.HTTPStatus.OK:
-            self._logger.warning(
+            self.logger.warning(
                 "Connection to identity service returned status %s",
                 response.status_code)
             return None
@@ -403,7 +334,7 @@ class Service(BaseMicroservice):
                 "Schema for accounts service health check invalid!") from ex
 
         if response.body["version"] != __version__:
-            self._logger.warning(
+            self.logger.warning(
                 "Identity Service version (%s) does not match gateway (%s),"
                 ", unforeseen issues may occur!", response.body["version"],
                 __version__)
@@ -414,7 +345,70 @@ class Service(BaseMicroservice):
             raise RuntimeError(msg)
 
         if response.body["status"] == ServiceDegradationStatus.DEGRADED.value:
-            self._logger.warning("Identity service degraded, can continue, but"
+            self.logger.warning("Identity service degraded, can continue, but"
+                                " retries/slow-down may occur..")
+
+        return response.body
+
+    async def _check_cms_svc_status(self) -> bool:
+        perform_check: bool = True
+
+        while perform_check:
+            try:
+                data = await self._cms_svc_health_check()
+
+                if data:
+                    self.logger.info("[CMS Service]")
+                    self.logger.info("=> Status: %s", data["status"])
+                    self.logger.info("=> Version: %s", data["version"])
+                    perform_check = False
+
+                else:
+                    await asyncio.sleep(3)
+
+            except RuntimeError as ex:
+                self._logger.critical(str(ex))
+                return False
+
+        return True
+
+    async def _cms_svc_health_check(self) -> typing.Optional[dict]:
+        url: str = f"{self._config.apis_cms_svc}system/health"
+
+        response: ApiResponse = await self._rest_client.get(url, timeout=1)
+
+        if response.exception_msg:
+            self.logger.error("Connection to CMS service timed out: %s",
+                              response.exception_msg)
+            return None
+
+        if response.status_code != http.HTTPStatus.OK:
+            self.logger.warning(
+                "Connection to CMS service returned status %s",
+                response.status_code)
+            return None
+
+        try:
+            jsonschema.validate(instance=response.body,
+                                schema=SCHEMA_CMS_SVC_HEALTH_RESPONSE)
+
+        except jsonschema.exceptions.ValidationError as ex:
+            raise RuntimeError(
+                "Schema for cms service health check invalid!") from ex
+
+        if response.body["version"] != __version__:
+            self._logger.warning(
+                "CMS Service version (%s) does not match gateway (%s),"
+                ", unforeseen issues may occur!", response.body["version"],
+                __version__)
+
+        if response.body["status"] == ServiceDegradationStatus.CRITICAL.value:
+            msg: str = "CMS service critically degraded, access to "\
+                       "cms service discontinued until it is fixed"
+            raise RuntimeError(msg)
+
+        if response.body["status"] == ServiceDegradationStatus.DEGRADED.value:
+            self._logger.warning("CMS service degraded, can continue, but"
                                  " retries/slow-down may occur..")
 
         return response.body
