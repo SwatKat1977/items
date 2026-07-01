@@ -1,9 +1,9 @@
 {
   "info": {
-    "_postman_id": "1c12d1d6-98a0-4897-9c89-83cf3c0dc048",
+    "_postman_id": "6a3c8842-d4a4-469b-ab21-53e5bd628bd9",
     "name": "ITEMS",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "10935426"
+    "_exporter_id": "49399853"
   },
   "item": [
     {
@@ -72,93 +72,6 @@
         {
           "name": "Web",
           "item": [
-            {
-              "name": "Session",
-              "item": [
-                {
-                  "name": "Create Session (Basic Auth)",
-                  "request": {
-                    "method": "POST",
-                    "header": [],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "{\n    \"type\": \"basic\",\n    \"email_address\": \"admin@localhost\",\n    \"password\": \"TestPassword\"\n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/session",
-                      "host": [
-                        "{{GATEWAY_SVC_URL}}"
-                      ],
-                      "path": [
-                        "web",
-                        "session"
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "Is Session Valid",
-                  "request": {
-                    "method": "POST",
-                    "header": [],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "{\n    \"email_address\": \"admin@localhost\",\n    \"token\": \"abcdefabcdefabcdefabcdef12345679\"\n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/session/validate",
-                      "host": [
-                        "{{GATEWAY_SVC_URL}}"
-                      ],
-                      "path": [
-                        "web",
-                        "session",
-                        "validate"
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "Logout",
-                  "request": {
-                    "method": "DELETE",
-                    "header": [],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "{\n    \"email_address\": \"admin@localhost\",\n    \"token\": \"invalidtoken\"\n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/session",
-                      "host": [
-                        "{{GATEWAY_SVC_URL}}"
-                      ],
-                      "path": [
-                        "web",
-                        "session"
-                      ]
-                    }
-                  },
-                  "response": []
-                }
-              ]
-            },
             {
               "name": "Project API",
               "item": [
@@ -531,6 +444,90 @@
                   ]
                 }
               ]
+            }
+          ]
+        },
+        {
+          "name": "Session",
+          "item": [
+            {
+              "name": "Create Session (Password)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email_address\": \"admin@localhost\",\n    \"password\": \"item_admin_2025\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{GATEWAY_SVC_URL}}/sessions",
+                  "host": [
+                    "{{GATEWAY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "sessions"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Is Session Valid",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email_address\": \"admin@localhost\",\n    \"token\": \"abcdefabcdefabcdefabcdef12345679\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{GATEWAY_SVC_URL}}/sessions/validate",
+                  "host": [
+                    "{{GATEWAY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "sessions",
+                    "validate"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Logout",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email_address\": \"admin@localhost\",\n    \"token\": \"08d36d4bb72542ed93520d9ac4c666f9\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{GATEWAY_SVC_URL}}/sessions",
+                  "host": [
+                    "{{GATEWAY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "sessions"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         }

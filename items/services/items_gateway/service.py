@@ -93,10 +93,11 @@ class Service(BaseMicroservice):
         if not await self._check_cms_svc_status():
             return False
 
-        create_routes(self.logger,
-                      self._sessions,
-                      self._config,
-                      self._rest_client)
+        self._quart_instance.register_blueprint(create_routes(
+            self.logger,
+            self._sessions,
+            self._config,
+            self._rest_client))
 
         return True
 
