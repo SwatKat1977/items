@@ -60,7 +60,7 @@ class DeleteSessionHandler(BaseApiRoute):
     __slots__ = ['_logger', '_sql_interface']
 
     def __init__(self, logger : logging.Logger, sessions: Sessions) -> None:
-        self._logger = logger.getChild(__name__)
+        self._logger = logger.getChild(type(self).__name__)
         self._sessions = sessions
 
     @validate_json(SCHEMA_LOGOUT_REQUEST)
@@ -72,11 +72,16 @@ class DeleteSessionHandler(BaseApiRoute):
             Instance of Quart Response class.
         """
 
-        if self._sessions.is_valid_session(request_msg.body.email_address,
-                                           request_msg.body.token):
-            await self._sessions.delete_session(request_msg.body.email_address)
+        if await self._sessions.is_valid_session(request_msg.body["email_address"],
+                                                 request_msg.body["token"]):
+            await self._sessions.delete_session(request_msg.body["email_address"],)
             self._logger.info("User '%s' logged out",
-                              request_msg.body.email_address)
+                              request_msg.body["email_address"])
+
+        else:
+            self._logger.info(
+                "Attempt to log out invalid session for user '%s'",
+                request_msg.body["email_address"])
 
         response = "OK"
         response_status = HTTPStatus.OK

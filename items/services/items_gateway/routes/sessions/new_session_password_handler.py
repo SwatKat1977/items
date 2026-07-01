@@ -68,10 +68,13 @@ class NewSessionPasswordHandler(BaseApiRoute):
             Response: Quart Response with session token on success, or an error
                       response on failure.
         """
-        auth_url: str = f"{self._configuration.apis_identity_svc}authentication/basic"
+        email_address: str = request_msg.body["email_address"]
+        password:  str = request_msg.body["password"]
+
+        auth_url: str = f"{self._configuration.apis_identity_svc}auth/login"
         auth_request: dict = {
-            "email_address": request_msg.body["email_address"],
-            "password": request_msg.body["password"]
+            "email_address": email_address,
+            "password": password
         }
 
         response: ApiResponse = await self._rest_client.post(
@@ -87,33 +90,36 @@ class NewSessionPasswordHandler(BaseApiRoute):
                 content_type="application/json"
             )
 
-        if not response.success:
-            self._logger.critical("Identity service request failed with status %s",
-                                  response.status_code)
-            return Response(
-                json.dumps({"status": 0, "error": "Internal error!"}),
-                status=HTTPStatus.INTERNAL_SERVER_ERROR,
-                content_type="application/json"
-            )
-
-        if not response.body.get("status"):
-            return Response(
-                json.dumps({"status": 0, "error": response.body.get("error")}),
-                status=HTTPStatus.OK,
-                content_type="application/json"
-            )
+        if response.status_code != HTTPStatus.OK:
+            if response.status_code == HTTPStatus.UNAUTHORIZED:
+                self._logger.warning(
+                    "User '%s' login failed (email/password mismatch)",
+                    email_address)
+                return Response(status=HTTPStatus.UNAUTHORIZED,
+                                content_type="application/json")
+            else:
+                self._logger.critical(
+                    "Identity service request failed with status %s",
+                    response.status_code)
+                return Response(
+                    json.dumps({"status": 0, "error": "Internal error!"}),
+                    status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                    content_type="application/json")
 
         token: str = uuid.uuid4().hex
-        await self._sessions.add_session(
-            request_msg.body["email_address"],
-            token,
-            AccountLogonType.BASIC
-        )
 
-        self._logger.info("User '%s' logged in", request_msg.body["email_address"])
+        if await self._sessions.has_session(email_address):
+            self._logger.info("User '%s' is being re-logged in",
+                              email_address)
+        else:
+            self._logger.info("User '%s' logged in",
+                              email_address)
+
+        await self._sessions.add_session(email_address,
+                                         token,
+                                         AccountLogonType.BASIC)
 
         return Response(
             json.dumps({"status": 1, "token": token}),
             status=HTTPStatus.OK,
-            content_type="application/json"
-        )
+            content_type="application/json")

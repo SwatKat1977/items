@@ -22,6 +22,7 @@ from items.services.items_gateway.routes.sessions.new_session_password_handler \
 from items.services.items_gateway.routes.sessions.delete_session_handler \
     import DeleteSessionHandler
 from items.services.items_gateway.routes.sessions.refresh_session_handler import RefreshSessionHandler
+from items.services.items_gateway.routes.sessions.validate_session_handler import ValidateSessionHandler
 from items.services.items_gateway.sessions import Sessions
 
 
@@ -56,6 +57,8 @@ def create_sessions_routes(logger: logging.Logger,
                                                                         sessions)
     refresh_session_handler: RefreshSessionHandler = RefreshSessionHandler(
         logger, sessions)
+    valid_session_handler: ValidateSessionHandler = ValidateSessionHandler(
+        logger, sessions)
 
     logger.debug("--- Registering Sessions API routes ---")
 
@@ -64,15 +67,14 @@ def create_sessions_routes(logger: logging.Logger,
 
     @sessions_routes.route('/sessions', methods=['POST'])
     async def create_new_session_request():
-        return await NewSessionPasswordHandler.create_new_session()
+        return await new_session_password_handler.create_new_session()
 
     logger.debug("=> %s POST /sessions/validate",
                  "Check if session is valid".ljust(40))
 
     @sessions_routes.route('/sessions/validate', methods=['POST'])
     async def session_validate_request():
-        return None
-        #return await view.validate_session()
+        return await valid_session_handler.validate_session()
 
     logger.debug("=> %s POST /sessions/refresh",
                  "Refresh session (remember me)".ljust(40))
