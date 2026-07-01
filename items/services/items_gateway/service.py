@@ -25,7 +25,7 @@ from weaver_framework.microservice.base_microservice import BaseMicroservice
 from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.rest_client import RestClient
 
-from items.services.items_gateway.apis import create_routes
+from items.services.items_gateway.routes import create_routes
 from items.shared import LICENSE_TEXT, SERVICE_COPYRIGHT_TEXT, __version__
 from items.shared.service_state import ServiceState
 from items.shared.interfaces.identity.health import (

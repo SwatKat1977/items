@@ -17,12 +17,12 @@ import logging
 import quart
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.sessions import Sessions
-from items.services.items_gateway.apis.web.session_api import create_sessions_routes
+from items.services.items_gateway.routes.sessions import create_sessions_routes
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
 
 
 def create_routes(logger: logging.Logger,
-                  sessions: Sessions,
+                  sessions_instance: Sessions,
                   configuration: GatewayConfiguration,
                   rest_client: RestClient) -> quart.Blueprint:
     """Create and register all CMS API routes.
@@ -32,7 +32,7 @@ def create_routes(logger: logging.Logger,
 
     Args:
         logger: Logger instance used for route registration and diagnostics.
-        sessions: User sessions.
+        sessions_instance: User sessions.
         configuration (GatewayConfiguration): Gateway configuration.
         rest_client (RestClient) Instance of rest_client.
 
@@ -42,7 +42,7 @@ def create_routes(logger: logging.Logger,
     routes_bp = quart.Blueprint("api_routes", __name__)
 
     routes_bp.register_blueprint(create_sessions_routes(logger,
-                                                        sessions,
+                                                        sessions_instance,
                                                         configuration,
                                                         rest_client))
     '''
