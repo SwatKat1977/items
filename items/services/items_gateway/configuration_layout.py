@@ -23,7 +23,7 @@ class ConfigurationConstants:
 
     SECTION_LOGGING: str = "logging"
     SECTION_GENERAL: str = "general"
-    SECTION_APIS: str = "routes"
+    SECTION_APIS: str = "apis"
 
     LOGGING_LOG_LEVEL: str = "log_level"
     LOGGING_LOG_LEVEL_DEBUG: str = "DEBUG"

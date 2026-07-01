@@ -1,5 +1,5 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,17 +21,6 @@ from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.microservice_decorators import validate_json
 from items.services.items_gateway.sessions import Sessions
-'''
-
-
-import requests
-import uuid
-from base_view import ApiResponse, BaseView
-import interfaces.gateway.handshake as handshake_api
-from threadsafe_configuration import ThreadSafeConfiguration
-
-from account_logon_type import AccountLogonType
-'''
 
 SCHEMA_SESSION_VALIDATE_REQUEST = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -50,21 +39,37 @@ SCHEMA_SESSION_VALIDATE_REQUEST = {
     "additionalProperties": False
 }
 
-class ValidateSessionHandler(BaseApiRoute):
 
-    def __init__(self, logger : logging.Logger, sessions: Sessions) -> None:
+class ValidateSessionHandler(BaseApiRoute):
+    """API handler for validating user sessions."""
+
+    def __init__(self, logger: logging.Logger, sessions: Sessions) -> None:
+        """Initialise the session validation handler.
+
+        Args:
+            logger: Logger instance used for diagnostic logging.
+            sessions: Session manager used to validate active sessions.
+        """
         self._logger = logger.getChild(__name__)
         self._sessions = sessions
 
     @validate_json(SCHEMA_SESSION_VALIDATE_REQUEST)
     async def validate_session(self, request_msg: ApiResponse):
-        """
-        Endpoint to check to see if the current session is valid.
+        """Validate whether a user's session token is currently valid.
 
-        returns:
-            Response instance
+        The request body must contain an email address and session token.
+        A JSON response is returned indicating whether the session is
+        valid.
+
+        Args:
+            request_msg: Incoming API request containing the validated JSON
+                request body.
+
+        Returns:
+            Response: HTTP response containing a JSON object with a
+            ``status`` field set to either ``"VALID"`` or ``"INVALID"``.
         """
-        email_address: str =  request_msg.body["email_address"]
+        email_address: str = request_msg.body["email_address"]
         token: str = request_msg.body["token"]
 
         valid = await self._sessions.is_valid_session(email_address, token)
