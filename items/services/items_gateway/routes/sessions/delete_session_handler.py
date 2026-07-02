@@ -1,5 +1,5 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,19 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
-'''
-from http import HTTPStatus
-import json
-import logging
-import requests
-from quart import request, Response
-from base_view import ApiResponse, BaseView
-import interfaces.gateway.handshake as handshake_api
-from threadsafe_configuration import ThreadSafeConfiguration
-from sessions import Sessions
-from account_logon_type import AccountLogonType
-'''
 from http import HTTPStatus
 import logging
 from quart import Response
@@ -57,19 +44,34 @@ SCHEMA_LOGOUT_REQUEST: dict = {
 
 
 class DeleteSessionHandler(BaseApiRoute):
-    __slots__ = ['_logger', '_sql_interface']
+    """API handler for deleting user sessions (logging users out)."""
 
     def __init__(self, logger : logging.Logger, sessions: Sessions) -> None:
+        """Initialise the session deletion handler.
+
+        Args:
+            logger: Logger instance used for diagnostic logging.
+            sessions: Session manager used to validate and delete user
+                sessions.
+        """
         self._logger = logger.getChild(type(self).__name__)
         self._sessions = sessions
 
     @validate_json(SCHEMA_LOGOUT_REQUEST)
     async def delete_session(self, request_msg: ApiResponse) -> Response:
-        """
-        Handler method for user session logout endpoint.
+        """Delete a user's active session.
 
-        returns:
-            Instance of Quart Response class.
+        If the supplied email address and session token identify a valid
+        session, the session is deleted. Invalid logout requests are logged
+        but still return a successful response.
+
+        Args:
+            request_msg: Incoming API request containing the validated JSON
+                request body.
+
+        Returns:
+            Response: HTTP response indicating that the logout request has
+            been processed.
         """
 
         if await self._sessions.is_valid_session(request_msg.body["email_address"],

@@ -21,8 +21,10 @@ from items.services.items_gateway.routes.sessions.new_session_password_handler \
     import NewSessionPasswordHandler
 from items.services.items_gateway.routes.sessions.delete_session_handler \
     import DeleteSessionHandler
-from items.services.items_gateway.routes.sessions.refresh_session_handler import RefreshSessionHandler
-from items.services.items_gateway.routes.sessions.validate_session_handler import ValidateSessionHandler
+from items.services.items_gateway.routes.sessions.refresh_session_handler \
+    import RefreshSessionHandler
+from items.services.items_gateway.routes.sessions.validate_session_handler \
+    import ValidateSessionHandler
 from items.services.items_gateway.sessions import Sessions
 
 
@@ -67,6 +69,7 @@ def create_sessions_routes(logger: logging.Logger,
 
     @sessions_routes.route('/sessions', methods=['POST'])
     async def create_new_session_request():
+        # pylint: disable=no-value-for-parameter
         return await new_session_password_handler.create_new_session()
 
     logger.debug("=> %s POST /sessions/validate",
@@ -74,6 +77,7 @@ def create_sessions_routes(logger: logging.Logger,
 
     @sessions_routes.route('/sessions/validate', methods=['POST'])
     async def session_validate_request():
+        # pylint: disable=no-value-for-parameter
         return await valid_session_handler.validate_session()
 
     logger.debug("=> %s POST /sessions/refresh",
@@ -88,6 +92,7 @@ def create_sessions_routes(logger: logging.Logger,
 
     @sessions_routes.route('/sessions', methods=['DELETE'])
     async def logout_user():
+        # pylint: disable=no-value-for-parameter
         return await delete_session_handler.delete_session()
 
     return sessions_routes

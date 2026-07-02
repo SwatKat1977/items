@@ -41,12 +41,23 @@ SCHEMA_NEW_SESSION_PASSWORD_REQUEST: dict = {
 
 
 class NewSessionPasswordHandler(BaseApiRoute):
+    """API handler for creating password-authenticated user sessions."""
 
     def __init__(self,
                  logger: logging.Logger,
                  sessions: Sessions,
                  configuration: GatewayConfiguration,
                  rest_client: RestClient) -> None:
+        """Initialise the password session creation handler.
+
+        Args:
+            logger: Logger instance used for diagnostic logging.
+            sessions: Session manager used to create and track user sessions.
+            configuration: Gateway configuration containing service endpoint
+                information.
+            rest_client: REST client used to communicate with the identity
+                service.
+        """
         self._logger = logger.getChild(type(self).__name__)
         self._sessions: Sessions = sessions
         self._configuration: GatewayConfiguration = configuration
@@ -54,19 +65,20 @@ class NewSessionPasswordHandler(BaseApiRoute):
 
     @validate_json(SCHEMA_NEW_SESSION_PASSWORD_REQUEST)
     async def create_new_session(self, request_msg: ApiResponse) -> Response:
-        """
-        Handler for creating a new user session.
+        """Create a new authenticated user session.
 
-        Validates the request body, authenticates the user against the identity
-        service, and creates a session token on success.
+        The supplied credentials are validated against the identity service.
+        If authentication succeeds, a new session token is generated and
+        stored before being returned to the client.
 
         Args:
-            request_msg (ApiResponse): Validated request body passed by the
-                                       @validate_json decorator.
+            request_msg: Incoming API request containing the validated JSON
+                request body.
 
         Returns:
-            Response: Quart Response with session token on success, or an error
-                      response on failure.
+            Response: HTTP response containing the newly created session token
+            on success, or an appropriate error response if authentication or
+            session creation fails.
         """
         email_address: str = request_msg.body["email_address"]
         password:  str = request_msg.body["password"]
@@ -97,14 +109,14 @@ class NewSessionPasswordHandler(BaseApiRoute):
                     email_address)
                 return Response(status=HTTPStatus.UNAUTHORIZED,
                                 content_type="application/json")
-            else:
-                self._logger.critical(
-                    "Identity service request failed with status %s",
-                    response.status_code)
-                return Response(
-                    json.dumps({"status": 0, "error": "Internal error!"}),
-                    status=HTTPStatus.INTERNAL_SERVER_ERROR,
-                    content_type="application/json")
+
+            self._logger.critical(
+                "Identity service request failed with status %s",
+                response.status_code)
+            return Response(
+                json.dumps({"status": 0, "error": "Internal error!"}),
+                status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                content_type="application/json")
 
         token: str = uuid.uuid4().hex
 

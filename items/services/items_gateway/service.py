@@ -43,6 +43,7 @@ from items.services.items_gateway.sessions import Sessions
 
 class Service(BaseMicroservice):
     """ ITEMS Gateway Microservice """
+    # pylint: disable=too-many-instance-attributes
 
     SERVICE_NAME: str = "Gateway"
     CONFIG_FILE_ENV: str = "ITEMS_GATEWAY_CONFIG_FILE"
