@@ -24,6 +24,8 @@ from weaver_framework.configuration_system.configuration_manager import (
 from weaver_framework.microservice.base_microservice import BaseMicroservice
 from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.rest_client import RestClient
+
+from items.services.items_gateway.routes import create_routes
 from items.shared import LICENSE_TEXT, SERVICE_COPYRIGHT_TEXT, __version__
 from items.shared.service_state import ServiceState
 from items.shared.interfaces.identity.health import (
@@ -36,11 +38,12 @@ from items.services.items_gateway.gateway_configuration import \
     GatewayConfiguration
 from items.services.items_gateway.metadata_handler import MetadataHandler
 from items.services.items_gateway.web_portal_client import WebPortalClient
-# from items.services.items_gateway.sessions import Sessions
+from items.services.items_gateway.sessions import Sessions
 
 
 class Service(BaseMicroservice):
-    """ ITEMS CMS Microservice """
+    """ ITEMS Gateway Microservice """
+    # pylint: disable=too-many-instance-attributes
 
     SERVICE_NAME: str = "Gateway"
     CONFIG_FILE_ENV: str = "ITEMS_GATEWAY_CONFIG_FILE"
@@ -55,7 +58,7 @@ class Service(BaseMicroservice):
         self._metadata_handler: MetadataHandler | None = None
         self._web_portal_client: WebPortalClient | None = None
         self._rest_client: RestClient | None = None
-        # self._sessions: Sessions = Sessions()
+        self._sessions: Sessions = Sessions()
 
         self._service_state.database_enabled = True
 
@@ -90,6 +93,12 @@ class Service(BaseMicroservice):
 
         if not await self._check_cms_svc_status():
             return False
+
+        self._quart_instance.register_blueprint(create_routes(
+            self.logger,
+            self._sessions,
+            self._config,
+            self._rest_client))
 
         return True
 

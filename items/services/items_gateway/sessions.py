@@ -1,5 +1,5 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,10 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import asyncio
 from dataclasses import dataclass
-import threading
-import typing
-from account_logon_type import AccountLogonType
+from items.shared.account_logon_type import AccountLogonType
+
 
 @dataclass
 class SessionEntry:
@@ -37,39 +37,31 @@ class SessionEntry:
 
 class Sessions:
     """
-    Manages user authentication sessions with thread safety.
+    Manages user authentication sessions.
 
-    This class maintains a dictionary of active sessions and ensures
-    thread-safe access using a mutex lock. Sessions are stored with unique
+    This class maintains an in-memory dictionary of active sessions and ensures
+    safe concurrent access using an asyncio lock. Sessions are stored with unique
     tokens and are associated with email addresses and authentication types.
     """
 
     def __init__(self):
-        # Shared resource (dictionary of sessions)
-        self._sessions: typing.Dict[str, SessionEntry] = {}
+        self._sessions: dict[str, SessionEntry] = {}
+        self._lock: asyncio.Lock = asyncio.Lock()
 
-        # Mutex to ensure thread safety
-        self._thread_lock = threading.Lock()
-
-    def add_session(self,
-                    email_address: str,
-                    token: str,
-                    auth_type: AccountLogonType) -> None:
+    async def add_session(self,
+                          email_address: str,
+                          token: str,
+                          auth_type: AccountLogonType) -> None:
         """
-        Add an authentication session to the REDIS database. It will attempt to
-        lock the record before adding it to ensure concurrency consistency.
+        Add an authentication session. Any existing session for the same email
+        address is invalidated and replaced.
 
-        parameters :
-            email_address - Email address of the user
-            token - Unique token specific for the session
-            auth_type - Type of authentication that occurred
+        Args:
+            email_address (str): Email address of the user.
+            token (str): Unique token for the session.
+            auth_type (AccountLogonType): Type of authentication used.
         """
-
-        # Ensure only one thread modifies sessions at a time
-        with self._thread_lock:
-
-            # Session timeouts haven't been implemented yet, so the expiry will
-            # always be set to a value of 0 (no expiry).
+        async with self._lock:
             entry: SessionEntry = SessionEntry()
             entry.email_address = email_address
             entry.token = token
@@ -79,49 +71,41 @@ class Sessions:
             self._sessions.pop(email_address, None)
             self._sessions[email_address] = entry
 
-    def delete_session(self, email_address: str) -> None:
+    async def delete_session(self, email_address: str) -> None:
         """
-        Remove an authentication session.It will attempt to lock the record
-        before deleting it to ensure concurrency consistency.
+        Remove an authentication session.
 
-        parameters :
-            email_address - Email address of the user
+        Args:
+            email_address (str): Email address of the user.
         """
-
-        # Ensure only one thread modifies sessions at a time
-        with self._thread_lock:
+        async with self._lock:
             self._sessions.pop(email_address, None)
 
-    def is_valid_session(self, email_address: str, token: str) -> bool:
+    async def is_valid_session(self, email_address: str, token: str) -> bool:
         """
         Verify if a session token for a given email address is valid.
 
-        parameters :
-            emailAddress - Email address of the user\n
-            token - Token value
+        Args:
+            email_address (str): Email address of the user.
+            token (str): Token value to validate.
 
-        returns :
-            bool - Validity boolean.
+        Returns:
+            bool: True if the session exists and the token matches, False otherwise.
         """
-
-        # Ensure only one thread modifies sessions at a time
-        with self._thread_lock:
+        async with self._lock:
             if email_address in self._sessions:
-                entry = self._sessions[email_address]
-                return entry.token == token
-
+                return self._sessions[email_address].token == token
         return False
 
-    def has_session(self, email_address: str) -> bool:
+    async def has_session(self, email_address: str) -> bool:
         """
-        Verify if a session exits for a given email address.
+        Check whether a session exists for a given email address.
 
-        parameters :
-            email_address - Email address of the user\n
+        Args:
+            email_address (str): Email address of the user.
 
-        returns :
-            bool - Validity boolean.
+        Returns:
+            bool: True if a session exists, False otherwise.
         """
-        # Ensure only one thread modifies sessions at a time
-        with self._thread_lock:
+        async with self._lock:
             return email_address in self._sessions

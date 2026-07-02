@@ -141,7 +141,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install coverage jsonschema aiohttp quart pylint tzlocal
+          pip install -r requirements/requirements_gateway.txt
+          pip install coverage pylint
 
       - name: Run Pylint
         env:

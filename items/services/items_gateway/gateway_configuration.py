@@ -20,6 +20,7 @@ from items.services.items_gateway.configuration_layout import \
 
 
 class GatewayConfiguration(ConfigurationManager):
+    """Provides typed access to gateway configuration settings."""
 
     @property
     def logging_log_level(self) -> str:
