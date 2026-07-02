@@ -16,9 +16,11 @@ limitations under the License.
 import logging
 import quart
 from weaver_framework.microservice.rest_client import RestClient
+
+from items.services.items_gateway.routes.projects.projects_api import create_projects_routes
 from items.services.items_gateway.sessions import Sessions
-from items.services.items_gateway.routes.sessions import create_sessions_routes
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
+from items.services.items_gateway.routes.sessions import create_sessions_routes
 
 
 def create_routes(logger: logging.Logger,
@@ -41,9 +43,19 @@ def create_routes(logger: logging.Logger,
     """
     routes_bp = quart.Blueprint("api_routes", __name__)
 
+    logger.debug("|--- Registering WEB routes ---|")
+
+    # Register sessions routes.
     routes_bp.register_blueprint(create_sessions_routes(logger,
                                                         sessions_instance,
                                                         configuration,
-                                                        rest_client))
+                                                        rest_client),
+                                 url_prefix="/web")
+
+    # Register projects routes.
+    routes_bp.register_blueprint(create_projects_routes(logger,
+                                                        configuration,
+                                                        rest_client),
+                                 url_prefix="/web")
 
     return routes_bp

@@ -21,8 +21,7 @@ from .testcase_custom_fields_api \
     import create_blueprint as create_tc_custom_fields_bp
 
 
-def create_web_admin_routes(logger: logging.Logger,
-                            sessions: Sessions):
+def create_web_admin_routes(logger: logging.Logger) -> quart.Blueprint:
     web_bp = quart.Blueprint("web_admin_routes", __name__)
 
     # Projects API routes

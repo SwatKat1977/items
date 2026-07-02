@@ -62,7 +62,7 @@ def create_sessions_routes(logger: logging.Logger,
     valid_session_handler: ValidateSessionHandler = ValidateSessionHandler(
         logger, sessions)
 
-    logger.debug("--- Registering Sessions API routes ---")
+    logger.debug(" Sessions WEB routes:")
 
     logger.debug("=> %s POST /sessions",
                  "Log in/create new session".ljust(40))
