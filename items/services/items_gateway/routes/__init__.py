@@ -45,10 +45,5 @@ def create_routes(logger: logging.Logger,
                                                         sessions_instance,
                                                         configuration,
                                                         rest_client))
-    '''
-    routes_bp.register_blueprint(create_testcases_routes(logger,
-                                                         state,
-                                                         configuration))
-    '''
 
     return routes_bp
