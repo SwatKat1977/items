@@ -4,8 +4,9 @@ ITEMS is a web-based test management tool written in Python that can be used by 
 
 ## News  
 
-### 30th June 20025
-Gateway and CMS build issues are now resolved and work again.
+### 3rd July 2026
+Rework of the entire service is in progress. You cannot run ITEMS from
+the main branch.
 
 ### Previous News
 - Important Information: The version is currently at V0.0.0 [MVP] on the main branch
@@ -39,6 +40,24 @@ Python packages:
 - jsonschema
 - requests
 - bcrypt
+
+### Contents Management System (CMS) Service
+
+To build the docker image:
+```
+./scripts/dev/createDockerCMS.sh <tag>
+
+e.g.
+./scripts/dev/createDockerCMS.sh v0.0.1
+```
+
+To run/start the docker image:
+```
+./scripts/dev/runCmsDocker.sh <config file> <db file> <tag>
+
+e.g.
+./scripts/dev/runCmsDocker.sh configs/cms.cfg databases/items_cms.LATEST.db latest
+```
 
 ### Gateway Service
 
