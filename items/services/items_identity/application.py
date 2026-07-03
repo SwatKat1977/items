@@ -1,5 +1,6 @@
 """
 Copyright 2025-2026 Integrated Test Management Suite Development Team
+Copyright 2019-2025 INTMAC Test Management Suite Development Team [Defunct]
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,6 +17,7 @@ limitations under the License.
 import asyncio
 from pathlib import Path
 from quart import Quart
+from weaver_framework.configuration_system.configuration_manager import ConfigurationError
 from weaver_framework.microservice.base_microservice import BaseMicroservice
 from items.shared import LICENSE_TEXT, SERVICE_COPYRIGHT_TEXT, __version__
 from items.shared.service_state import ServiceState
@@ -99,6 +101,10 @@ class Service(BaseMicroservice):
 
         try:
             self._config.process_config()
+
+        except ConfigurationError as ex:
+            self._logger.critical("Configuration error : %s", str(ex))
+            return False
 
         except ValueError as ex:
             self._logger.critical("Configuration error : %s", str(ex))
