@@ -185,12 +185,7 @@ class Service(BaseMicroservice):
     async def _identity_svc_health_check(self) -> typing.Optional[dict]:
         url: str = f"{self._config.apis_identity_svc}system/health"
 
-        response: ApiResponse = await self._rest_client.get(url, timeout=1)
-
-        if response.exception_msg:
-            self.logger.error("Connection to identity service timed out: %s",
-                              response.exception_msg)
-            return None
+        response: ApiResponse = await self._rest_client.get(url, timeout=5)
 
         if response.status_code != http.HTTPStatus.OK:
             self.logger.warning(
@@ -213,9 +208,9 @@ class Service(BaseMicroservice):
                 __version__)
 
         if response.body["status"] == ServiceDegradationStatus.CRITICAL.value:
-            msg: str = "Identity service critically degraded, access to "\
-                       "accounts service discontinued until it is fixed"
-            raise RuntimeError(msg)
+            self.logger.warning("Identity service critically degraded, "
+                                "retrying...")
+            return None
 
         if response.body["status"] == ServiceDegradationStatus.DEGRADED.value:
             self.logger.warning("Identity service degraded, can continue, but"
@@ -248,12 +243,7 @@ class Service(BaseMicroservice):
     async def _cms_svc_health_check(self) -> typing.Optional[dict]:
         url: str = f"{self._config.apis_cms_svc}system/health"
 
-        response: ApiResponse = await self._rest_client.get(url, timeout=1)
-
-        if response.exception_msg:
-            self.logger.error("Connection to CMS service timed out: %s",
-                              response.exception_msg)
-            return None
+        response: ApiResponse = await self._rest_client.get(url, timeout=5)
 
         if response.status_code != http.HTTPStatus.OK:
             self.logger.warning(
@@ -276,9 +266,9 @@ class Service(BaseMicroservice):
                 __version__)
 
         if response.body["status"] == ServiceDegradationStatus.CRITICAL.value:
-            msg: str = "CMS service critically degraded, access to "\
-                       "cms service discontinued until it is fixed"
-            raise RuntimeError(msg)
+            self._logger.warning("CMS service critically degraded, "
+                                 "retrying...")
+            return None
 
         if response.body["status"] == ServiceDegradationStatus.DEGRADED.value:
             self._logger.warning("CMS service degraded, can continue, but"
