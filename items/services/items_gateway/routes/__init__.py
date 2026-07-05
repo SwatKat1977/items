@@ -25,7 +25,7 @@ def create_routes(logger: logging.Logger,
                   sessions_instance: Sessions,
                   configuration: GatewayConfiguration,
                   rest_client: RestClient) -> quart.Blueprint:
-    """Create and register all CMS API routes.
+    """Create and register routes for web.
 
     This function creates the root API blueprint for the Gateway service and
     registers all feature-specific route blueprints.
@@ -40,8 +40,6 @@ def create_routes(logger: logging.Logger,
         A Quart blueprint containing all registered Gateway API routes.
     """
     routes_bp = quart.Blueprint("api_routes", __name__)
-
-    logger.debug("|--- Registering WEB routes ---|")
 
     # Register web routes.
     routes_bp.register_blueprint(create_web_routes(logger,
