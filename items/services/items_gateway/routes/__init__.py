@@ -39,7 +39,7 @@ def create_routes(logger: logging.Logger,
     Returns:
         A Quart blueprint containing all registered Gateway API routes.
     """
-    routes_bp = quart.Blueprint("api_routes", __name__)
+    routes_bp = quart.Blueprint("public_routes", __name__)
 
     # Register web routes.
     routes_bp.register_blueprint(create_web_routes(logger,
