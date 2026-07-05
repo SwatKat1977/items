@@ -51,13 +51,11 @@ def create_web_routes(logger: logging.Logger,
     routes_bp.register_blueprint(create_sessions_routes(logger,
                                                         sessions_instance,
                                                         configuration,
-                                                        rest_client),
-                                 url_prefix="/web")
+                                                        rest_client))
 
     # Register projects routes.
     routes_bp.register_blueprint(create_projects_routes(logger,
                                                         configuration,
-                                                        rest_client),
-                                 url_prefix="/web")
+                                                        rest_client))
 
     return routes_bp
