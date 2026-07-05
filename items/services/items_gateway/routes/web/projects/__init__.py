@@ -20,6 +20,8 @@ from items.services.items_gateway.gateway_configuration import (
     GatewayConfiguration)
 from items.services.items_gateway.routes.web.projects.add_project_handler \
     import AddProjectHandler
+from items.services.items_gateway.routes.web.projects.get_all_projects_handler \
+    import GetAllProjectsHandler
 
 
 def create_projects_routes(logger: logging.Logger,
@@ -29,6 +31,10 @@ def create_projects_routes(logger: logging.Logger,
     handler_add_project: AddProjectHandler = AddProjectHandler(logger,
                                                                config,
                                                                rest_client)
+    handler_get_all_projects: GetAllProjectsHandler = GetAllProjectsHandler(
+        logger,
+        config,
+        rest_client)
 
     projects_routes = Blueprint("projects_routes", __name__)
 
@@ -49,8 +55,7 @@ def create_projects_routes(logger: logging.Logger,
 
     @projects_routes.route('/projects', methods=['GET'])
     async def list_projects():
-        return None
-        return await list_handler.list_projects()
+        return await handler_get_all_projects.list_all_projects()
 
     # Create project
     logger.debug("=> %s POST /projects",

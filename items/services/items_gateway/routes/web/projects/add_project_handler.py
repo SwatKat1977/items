@@ -16,8 +16,6 @@ limitations under the License.
 from http import HTTPStatus
 import json
 import logging
-from http.client import responses
-
 from quart import Response
 from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.base_api_route import BaseApiRoute
@@ -48,6 +46,7 @@ SCHEMA_ADD_PROJECT_REQUEST: dict = {
         },
     "required": ["name", "announcement", "announcement_on_overview"]
 }
+
 
 class AddProjectHandler(BaseApiRoute):
     """Handles POST /projects requests."""
