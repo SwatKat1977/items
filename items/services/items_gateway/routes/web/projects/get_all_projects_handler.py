@@ -49,7 +49,7 @@ class GetAllProjectsHandler(BaseApiRoute):
             else ""
         joiner_str = "&" if value_fields and count_fields else ""
         cms_svc: str = self._config.apis_cms_svc
-        url: str = f"{cms_svc}projects/?{value_fields_str}" + \
+        url: str = f"{cms_svc}projects?{value_fields_str}" + \
                    f"{joiner_str}{count_fields_str}"
 
         response: ApiResponse = await self._rest_client.get(url)
@@ -73,31 +73,6 @@ class GetAllProjectsHandler(BaseApiRoute):
                 status=HTTPStatus.INTERNAL_SERVER_ERROR,
                 content_type="application/json")
 
-
-
-
-
-
-
-
-
-
-
-
-        api_response = await self._call_api_get(url)
-
-
-        if api_response.status_code != HTTPStatus.OK:
-            self._logger.critical("CMS SVC /projects/overviews request invalid"
-                                  " - Reason: %s",api_response.exception_msg)
-            response_json = {
-                "status": 0,
-                'error': 'Internal error!'
-            }
-            return Response(json.dumps(response_json),
-                                  status=HTTPStatus.INTERNAL_SERVER_ERROR,
-                                  content_type="application/json")
-
-        return Response(json.dumps(api_response.body),
-                              status=HTTPStatus.OK,
-                              content_type="application/json")
+        return Response(json.dumps(response.body),
+                        status=HTTPStatus.OK,
+                        content_type="application/json")
