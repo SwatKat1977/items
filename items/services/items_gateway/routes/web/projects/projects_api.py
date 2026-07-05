@@ -16,8 +16,10 @@ limitations under the License.
 import logging
 from quart import Blueprint
 from weaver_framework.microservice.rest_client import RestClient
-from items.services.items_gateway.gateway_configuration import GatewayConfiguration
-from items.services.items_gateway.routes.projects.add_project_handler import AddProjectHandler
+from items.services.items_gateway.gateway_configuration import (
+    GatewayConfiguration)
+from items.services.items_gateway.routes.web.projects.add_project_handler \
+    import AddProjectHandler
 
 
 def create_projects_routes(logger: logging.Logger,
