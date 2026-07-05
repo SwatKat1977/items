@@ -19,7 +19,7 @@ from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.sessions import Sessions
 from items.services.items_gateway.gateway_configuration import (
     GatewayConfiguration)
-from items.services.items_gateway.routes.web.projects.projects_api import (
+from items.services.items_gateway.routes.web.projects import (
     create_projects_routes)
 from items.services.items_gateway.routes.web.sessions import (
     create_sessions_routes)

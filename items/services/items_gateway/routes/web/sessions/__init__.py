@@ -17,13 +17,13 @@ import logging
 from quart import Blueprint
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
-from items.services.items_gateway.routes.sessions.new_session_password_handler \
+from items.services.items_gateway.routes.web.sessions.new_session_password_handler \
     import NewSessionPasswordHandler
-from items.services.items_gateway.routes.sessions.delete_session_handler \
+from items.services.items_gateway.routes.web.sessions.delete_session_handler \
     import DeleteSessionHandler
-from items.services.items_gateway.routes.sessions.refresh_session_handler \
+from items.services.items_gateway.routes.web.sessions.refresh_session_handler \
     import RefreshSessionHandler
-from items.services.items_gateway.routes.sessions.validate_session_handler \
+from items.services.items_gateway.routes.web.sessions.validate_session_handler \
     import ValidateSessionHandler
 from items.services.items_gateway.sessions import Sessions
 
