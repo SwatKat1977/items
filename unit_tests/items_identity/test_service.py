@@ -4,6 +4,8 @@ import unittest
 from unittest.mock import ANY, MagicMock, patch
 from service import Service
 from identity_configuration import IdentityConfiguration
+from weaver_framework.configuration_system.configuration_manager import (
+    ConfigurationError)
 
 
 class TestService(unittest.IsolatedAsyncioTestCase):
@@ -119,6 +121,26 @@ class TestService(unittest.IsolatedAsyncioTestCase):
         service = Service(self.mock_quart_instance)
         service._shutdown_event.set()
         await asyncio.wait_for(service._dummy_task(), timeout=1.0)
+
+    @patch.dict(os.environ, {
+        "ITEMS_IDENTITY_CONFIG_FILE": "config_file_path",
+        "ITEMS_IDENTITY_CONFIG_FILE_REQUIRED": "1"
+    })
+
+    def test_manage_configuration_process_config_configuration_error(self):
+        mock_config = MagicMock()
+        mock_config.process_config = MagicMock(
+            side_effect=ConfigurationError("bad config"))
+
+        service = Service(self.mock_quart_instance)
+        service._logger = self.mock_logger_instance
+        service._config = mock_config
+
+        result = service._manage_configuration()
+
+        self.assertFalse(result)
+        self.mock_logger_instance.critical.assert_called_with(
+            "Configuration error : %s", "bad config")
 
     @patch.dict(os.environ, {
         "ITEMS_IDENTITY_CONFIG_FILE": "config_file_path",
