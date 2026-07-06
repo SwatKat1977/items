@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
-from configuration_layout import ConfigurationConstants as consts
-from identity_configuration import IdentityConfiguration
+from items.services.items_identity.configuration_layout import ConfigurationConstants as consts
+from items.services.items_identity.identity_configuration import IdentityConfiguration
 
 
 class TestIdentityConfiguration(unittest.TestCase):

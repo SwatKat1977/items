@@ -2,8 +2,8 @@ import asyncio
 import os
 import unittest
 from unittest.mock import ANY, MagicMock, patch
-from application import Service
-from identity_configuration import IdentityConfiguration
+from items.services.items_identity.service import Service
+from items.services.items_identity.identity_configuration import IdentityConfiguration
 
 
 class TestApplication(unittest.IsolatedAsyncioTestCase):
