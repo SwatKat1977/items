@@ -1,7 +1,0 @@
-aiohttp
-jsonschema
-quart
-redis
-requests
-tzlocal
-uvicorn

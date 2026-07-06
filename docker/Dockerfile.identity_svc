@@ -1,3 +1,27 @@
+FROM python:3.13.2-alpine
+
+# Add a user and group for ITEMS and then setup file paths.
+RUN addgroup -S items && \
+    adduser -S items -G items && \
+    mkdir /usr/local/items &&  \
+    chown items:items /usr/local/items
+
+RUN apk add --no-cache
+
+# Switch to the non-root user
+USER items
+
+
+
+
+
+
+
+
+
+
+
+
 FROM python:3.14.6-alpine
 
 # Add a user and group for ITEMS and then setup file paths.
@@ -10,9 +34,9 @@ RUN addgroup -S items && \
 WORKDIR /usr/local/items
 
 # Install Python dependencies
-COPY requirements/requirements_cms.txt .
+COPY requirements/requirements_identity.txt .
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements_cms.txt
+    pip install --no-cache-dir -r requirements_identity.txt
 
 # Copy application
 COPY --chown=items:items items ./items
@@ -21,18 +45,18 @@ COPY --chown=items:items items ./items
 ENV PYTHONPATH=/usr/local/items
 
 # These should match the names your application actually uses
-ENV ITEMS_CMS_CONFIG_FILE_REQUIRED=1
-ENV ITEMS_CMS_CONFIG_FILE=/usr/local/items/cms.cfg
+ENV ITEMS_IDENTITY_CONFIG_FILE_REQUIRED=1
+ENV ITEMS_IDENTITY_CONFIG_FILE=/usr/local/items/identity.cfg
 
 # Listen on all interfaces inside the container
-ENV ITEMS_CMS_HOST=0.0.0.0
-ENV ITEMS_CMS_PORT=6050
+ENV ITEMS_IDENTITY_HOST=0.0.0.0
+ENV ITEMS_IDENTITY_PORT=5050
 
 # Optional logging
 ENV LOGGING_LOG_LEVEL=DEBUG
 
-EXPOSE 6050
+EXPOSE 5050
 
 USER items
 
-CMD ["python", "-m", "items.services.items_cms.run"]
+CMD ["python", "-m", "items.services.items_identity.run"]

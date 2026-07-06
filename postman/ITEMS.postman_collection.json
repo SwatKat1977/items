@@ -1,9 +1,9 @@
 {
   "info": {
-    "_postman_id": "03f48a4d-00cc-4568-9145-692479b68b08",
+    "_postman_id": "459a031b-dba9-4887-85a1-30b557a16a02",
     "name": "ITEMS",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "10935426"
+    "_exporter_id": "49399853"
   },
   "item": [
     {
@@ -93,14 +93,14 @@
                       }
                     },
                     "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/projects/3",
+                      "raw": "{{GATEWAY_SVC_URL}}/web/projects/6",
                       "host": [
                         "{{GATEWAY_SVC_URL}}"
                       ],
                       "path": [
                         "web",
                         "projects",
-                        "3"
+                        "6"
                       ]
                     }
                   },
@@ -129,6 +129,96 @@
                           "key": "count_fields",
                           "value": "no_of_test_runs,no_of_milestones"
                         }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Add Project",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"name\": \"test project35\",\n    \"announcement\": \"Test that announcement are written\",\n    \"announcement_on_overview\": true\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/projects",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "projects"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Delete Project",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"name\": \"Beta Project\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/projects/5?hard_delete=false",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "projects",
+                        "5"
+                      ],
+                      "query": [
+                        {
+                          "key": "hard_delete",
+                          "value": "false"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Update a Project",
+                  "request": {
+                    "method": "PATCH",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"name\": \"Project bob\",\n    \"announcement\": \"This is test project Gamma\",\n    \"announcement_on_overview\": false\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/admin/projects/1",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "admin",
+                        "projects",
+                        "1"
                       ]
                     }
                   },
@@ -283,35 +373,6 @@
                       ]
                     },
                     {
-                      "name": "Update a Project",
-                      "request": {
-                        "method": "PATCH",
-                        "header": [],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "{\n    \"name\": \"Project bob\",\n    \"announcement\": \"This is test project Gamma\",\n    \"announcement_on_overview\": false\n}",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{GATEWAY_SVC_URL}}/web/admin/projects/1",
-                          "host": [
-                            "{{GATEWAY_SVC_URL}}"
-                          ],
-                          "path": [
-                            "web",
-                            "admin",
-                            "projects",
-                            "1"
-                          ]
-                        }
-                      },
-                      "response": []
-                    },
-                    {
                       "name": "Delete Project",
                       "request": {
                         "method": "DELETE",
@@ -326,116 +387,6 @@
                             "admin",
                             "projects",
                             "4"
-                          ]
-                        }
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "Add Project",
-                      "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "{\n    \"name\": \"test project32\",\n    \"announcement\": \"Test that announcement are written\",\n    \"announcement_on_overview\": true\n}",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{GATEWAY_SVC_URL}}/web/admin/projects",
-                          "host": [
-                            "{{GATEWAY_SVC_URL}}"
-                          ],
-                          "path": [
-                            "web",
-                            "admin",
-                            "projects"
-                          ]
-                        }
-                      },
-                      "response": []
-                    }
-                  ]
-                },
-                {
-                  "name": "Project API",
-                  "item": [
-                    {
-                      "name": "Update a Project",
-                      "request": {
-                        "method": "PATCH",
-                        "header": [],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "{\n    \"name\": \"Project bob\",\n    \"announcement\": \"This is test project Gamma\",\n    \"announcement_on_overview\": false\n}",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{GATEWAY_SVC_URL}}/web/admin/projects/1",
-                          "host": [
-                            "{{GATEWAY_SVC_URL}}"
-                          ],
-                          "path": [
-                            "web",
-                            "admin",
-                            "projects",
-                            "1"
-                          ]
-                        }
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "Delete Project",
-                      "request": {
-                        "method": "DELETE",
-                        "header": [],
-                        "url": {
-                          "raw": "{{GATEWAY_SVC_URL}}/web/admin/projects/4",
-                          "host": [
-                            "{{GATEWAY_SVC_URL}}"
-                          ],
-                          "path": [
-                            "web",
-                            "admin",
-                            "projects",
-                            "4"
-                          ]
-                        }
-                      },
-                      "response": []
-                    },
-                    {
-                      "name": "Add Project",
-                      "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                          "mode": "raw",
-                          "raw": "{\n    \"name\": \"test project32\",\n    \"announcement\": \"Test that announcement are written\",\n    \"announcement_on_overview\": true\n}",
-                          "options": {
-                            "raw": {
-                              "language": "json"
-                            }
-                          }
-                        },
-                        "url": {
-                          "raw": "{{GATEWAY_SVC_URL}}/web/admin/projects",
-                          "host": [
-                            "{{GATEWAY_SVC_URL}}"
-                          ],
-                          "path": [
-                            "web",
-                            "admin",
-                            "projects"
                           ]
                         }
                       },
@@ -444,73 +395,101 @@
                   ]
                 }
               ]
-            }
-          ]
-        },
-        {
-          "name": "Session",
-          "item": [
-            {
-              "name": "Create Session (Password)",
-              "request": {
-                "method": "POST",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"email_address\": \"admin@localhost\",\n    \"password\": \"item_admin_2025\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{GATEWAY_SVC_URL}}/sessions",
-                  "host": [
-                    "{{GATEWAY_SVC_URL}}"
-                  ],
-                  "path": [
-                    "sessions"
-                  ]
-                }
-              },
-              "response": []
             },
             {
-              "name": "Is Session Valid",
-              "request": {
-                "method": "POST",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"email_address\": \"admin@localhost\",\n    \"token\": \"abcdefabcdefabcdefabcdef12345679\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
+              "name": "Session",
+              "item": [
+                {
+                  "name": "Create Session (Password)",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"email_address\": \"admin@localhost\",\n    \"password\": \"item_admin_2025\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/sessions",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "sessions"
+                      ]
                     }
-                  }
+                  },
+                  "response": []
                 },
-                "url": {
-                  "raw": "{{GATEWAY_SVC_URL}}/sessions/validate",
-                  "host": [
-                    "{{GATEWAY_SVC_URL}}"
-                  ],
-                  "path": [
-                    "sessions",
-                    "validate"
-                  ]
+                {
+                  "name": "Is Session Valid",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"email_address\": \"admin@localhost\",\n    \"token\": \"abcdefabcdefabcdefabcdef12345679\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/sessions/validate",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "sessions",
+                        "validate"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Logout",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"email_address\": \"admin@localhost\",\n    \"token\": \"08d36d4bb72542ed93520d9ac4c666f9\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/sessions",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "sessions"
+                      ]
+                    }
+                  },
+                  "response": []
                 }
-              },
-              "response": []
+              ]
             },
             {
-              "name": "Logout",
+              "name": "Update a Project",
               "request": {
-                "method": "DELETE",
+                "method": "PATCH",
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"email_address\": \"admin@localhost\",\n    \"token\": \"08d36d4bb72542ed93520d9ac4c666f9\"\n}",
+                  "raw": "{\n    \"name\": \"Project bob\",\n    \"announcement\": \"This is test project Gamma\",\n    \"announcement_on_overview\": false\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -518,12 +497,15 @@
                   }
                 },
                 "url": {
-                  "raw": "{{GATEWAY_SVC_URL}}/sessions",
+                  "raw": "{{GATEWAY_SVC_URL}}/web/admin/projects/1",
                   "host": [
                     "{{GATEWAY_SVC_URL}}"
                   ],
                   "path": [
-                    "sessions"
+                    "web",
+                    "admin",
+                    "projects",
+                    "1"
                   ]
                 }
               },

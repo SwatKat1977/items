@@ -1,5 +1,5 @@
 import unittest
-from test_application import TestApplication
+from test_service import TestService
 from test_threadsafe_configuration import TestIdentityConfiguration
 from test_da_user_data_access_layer import TestUserRepository
 from test_apis_authentication_api import TestAuthenticatePasswordHandler

@@ -17,15 +17,15 @@ import logging
 import quart
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.sessions import Sessions
-from items.services.items_gateway.routes.sessions import create_sessions_routes
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
+from items.services.items_gateway.routes.web import create_web_routes
 
 
 def create_routes(logger: logging.Logger,
                   sessions_instance: Sessions,
                   configuration: GatewayConfiguration,
                   rest_client: RestClient) -> quart.Blueprint:
-    """Create and register all CMS API routes.
+    """Create and register routes for web.
 
     This function creates the root API blueprint for the Gateway service and
     registers all feature-specific route blueprints.
@@ -39,11 +39,13 @@ def create_routes(logger: logging.Logger,
     Returns:
         A Quart blueprint containing all registered Gateway API routes.
     """
-    routes_bp = quart.Blueprint("api_routes", __name__)
+    routes_bp = quart.Blueprint("public_routes", __name__)
 
-    routes_bp.register_blueprint(create_sessions_routes(logger,
-                                                        sessions_instance,
-                                                        configuration,
-                                                        rest_client))
+    # Register web routes.
+    routes_bp.register_blueprint(create_web_routes(logger,
+                                                   sessions_instance,
+                                                   configuration,
+                                                   rest_client),
+                                 url_prefix="/web")
 
     return routes_bp
