@@ -13,42 +13,103 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from http import HTTPStatus
+import json
+import logging
+from quart import Response
+from weaver_framework.microservice.api_response import ApiResponse
+from weaver_framework.microservice.base_api_route import BaseApiRoute
+from weaver_framework.microservice.rest_client import RestClient
+from weaver_framework.microservice.microservice_decorators import validate_json
+from items.services.items_gateway.gateway_configuration import GatewayConfiguration
+
+SCHEMA_UPDATE_PROJECT_REQUEST: dict = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+        {
+            "name":
+                {
+                    "type": "string"
+                },
+            "announcement":
+                {
+                    "type": "string"
+                },
+            "announcement_on_overview":
+                {
+                    "type": "boolean"
+                }
+        },
+    "required": ["name", "announcement", "announcement_on_overview"]
+}
 
 
-class ProjectsApiView(BaseView):
-    __slots__ = ['_logger']
+class UpdateProjectHandler(BaseApiRoute):
 
-    def __init__(self, logger : logging.Logger) -> None:
-        self._logger = logger.getChild(__name__)
+    def __init__(self,
+                 logger: logging.Logger,
+                 config: GatewayConfiguration,
+                 rest_client: RestClient) -> None:
+        """Initialise the handler.
 
-    @validate_json(json_schemas.SCHEMA_MODIFY_PROJECT_REQUEST)
-    async def modify_project(self,
+        Args:
+            logger:  Parent logger instance.
+        """
+        self._logger = logger.getChild(type(self).__name__)
+        self._config: GatewayConfiguration = config
+        self._rest_client: RestClient = rest_client
+
+    @validate_json(SCHEMA_UPDATE_PROJECT_REQUEST)
+    async def update_project(self,
                              request_msg: ApiResponse,
                              project_id: int):
-        cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
-        url: str = f"{cms_svc}projects/modify/{project_id}"
+        cms_svc: str = self._config.apis_cms_svc
+        url: str = f"{cms_svc}projects/{project_id}"
 
-        cms_request: dict = {
-            "name": request_msg.body.name,
-            "announcement": request_msg.body.announcement,
+        request: dict = {
+            "name": request_msg.body["name"],
+            "announcement": request_msg.body["announcement"],
             "announcement_on_overview":
-                request_msg.body.announcement_on_overview,
+                request_msg.body["announcement_on_overview"],
         }
-        api_response = await self._call_api_post(url, cms_request)
+        response: ApiResponse = await self._rest_client.patch(
+            url, json_data=request)
 
-        if api_response.status_code != http.HTTPStatus.OK:
-            self._logger.critical("CMS SVC /projects/modify request invalid"
-                                  " - Reason: %s",api_response.exception_msg)
+        if response.status_code == HTTPStatus.NOT_FOUND:
+            self._logger.critical("Pproject update request invalid, "
+                                  "project ID is invalid")
             response_json = {
                 "status": 0,
-                'error': api_response.body['error_msg']
+                'error': "project ID is invalid"
             }
-            return quart.Response(json.dumps(response_json),
-                                  status=http.HTTPStatus.BAD_REQUEST,
-                                  content_type="application/json")
+            return Response(json.dumps(response_json),
+                            status=HTTPStatus.NOT_FOUND)
+
+        if response.status_code == HTTPStatus.BAD_REQUEST:
+            self._logger.critical("Project update request invalid, "
+                                  "reason: %s", response.body.get("error"))
+            response_json = {
+                "status": 0,
+                'error': response.body.get("error")
+            }
+            return Response(json.dumps(response_json),
+                            status=HTTPStatus.BAD_REQUEST)
+
+        if response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
+            self._logger.critical("Project update request internal error, "
+                                  "reason: %s", response.exception_msg)
+            response_json = {
+                "status": 0,
+                'error': response.exception_msg
+            }
+            return Response(json.dumps(response_json),
+                            status=HTTPStatus.BAD_REQUEST)
 
         response_json: dict = {"status": 1}
-        return quart.Response(json.dumps(response_json),
-                              status=http.HTTPStatus.OK,
-                              content_type="application/json")
-
+        return Response(json.dumps(response_json),
+                        status=HTTPStatus.OK,
+                        content_type="application/json")

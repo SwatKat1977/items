@@ -25,6 +25,8 @@ from items.services.items_gateway.routes.web.projects.get_all_projects_handler \
     import GetAllProjectsHandler
 from items.services.items_gateway.routes.web.projects.get_project_handler \
     import GetProjectHandler
+from items.services.items_gateway.routes.web.projects.update_project_handler \
+    import UpdateProjectHandler
 
 
 def create_projects_routes(logger: logging.Logger,
@@ -44,6 +46,8 @@ def create_projects_routes(logger: logging.Logger,
     handler_get_project: GetProjectHandler = GetProjectHandler(logger,
                                                                config,
                                                                rest_client)
+    handler_update_project: UpdateProjectHandler = UpdateProjectHandler(
+        logger, config, rest_client)
 
     projects_routes = Blueprint("projects_routes", __name__)
 
@@ -81,8 +85,7 @@ def create_projects_routes(logger: logging.Logger,
     @projects_routes.route('/projects/<int:project_id>', methods=['PATCH'])
     async def update_project(project_id: int):
         # pylint: disable=no-value-for-parameter
-        return None
-        return await modify_handler.modify_project(project_id)
+        return await handler_update_project.update_project(project_id)
 
     # Delete a project.
     logger.debug("=> %s DELETE /projects/<int:project_id>",
