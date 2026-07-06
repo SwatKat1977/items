@@ -52,6 +52,11 @@ class GetProjectHandler(BaseApiRoute):
 
         result = await self._service.get_project(project_id)
 
+        if result.not_found:
+            return Response(
+                json.dumps(result.data),
+                status=HTTPStatus.NOT_FOUND)
+
         if not result.success:
             status = (HTTPStatus.INTERNAL_SERVER_ERROR
                       if result.is_internal else HTTPStatus.NOT_FOUND)
