@@ -20,7 +20,8 @@ from items.services.items_gateway.gateway_configuration import (
     GatewayConfiguration)
 from items.services.items_gateway.routes.web.projects.add_project_handler \
     import AddProjectHandler
-from items.services.items_gateway.routes.web.projects.delete_project_handler import DeleteProjectHandler
+from items.services.items_gateway.routes.web.projects.delete_project_handler \
+    import DeleteProjectHandler
 from items.services.items_gateway.routes.web.projects.get_all_projects_handler \
     import GetAllProjectsHandler
 from items.services.items_gateway.routes.web.projects.get_project_handler \
@@ -32,7 +33,32 @@ from items.services.items_gateway.routes.web.projects.update_project_handler \
 def create_projects_routes(logger: logging.Logger,
                            config: GatewayConfiguration,
                            rest_client: RestClient) -> Blueprint:
+    """Create the project management API routes.
 
+    Creates and configures the Blueprint containing all project-related
+    gateway endpoints. Each route delegates request handling to a dedicated
+    handler class responsible for communicating with the CMS service.
+
+    The following endpoints are registered:
+
+    - ``GET /projects`` - List all accessible projects.
+    - ``GET /projects/<project_id>`` - Retrieve a specific project.
+    - ``POST /projects`` - Create a new project.
+    - ``PATCH /projects/<project_id>`` - Update an existing project.
+    - ``DELETE /projects/<project_id>`` - Delete a project.
+
+    Args:
+        logger: Parent logger used for route registration logging and for
+            creating child loggers within route handlers.
+        config: Gateway configuration containing backend service endpoint
+            information.
+        rest_client: REST client used by the route handlers to communicate
+            with backend services.
+
+    Returns:
+        A configured Quart ``Blueprint`` containing all project-related API
+        routes.
+    """
     handler_add_project: AddProjectHandler = AddProjectHandler(logger,
                                                                config,
                                                                rest_client)

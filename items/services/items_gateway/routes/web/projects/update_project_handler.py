@@ -49,15 +49,27 @@ SCHEMA_UPDATE_PROJECT_REQUEST: dict = {
 
 
 class UpdateProjectHandler(BaseApiRoute):
+    """API route handler for updating projects.
+
+    This handler processes project update requests received by the gateway.
+    Incoming request data is validated against the update project schema
+    before being forwarded to the CMS service. The handler translates backend
+    responses into appropriate HTTP responses for the client.
+    """
 
     def __init__(self,
                  logger: logging.Logger,
                  config: GatewayConfiguration,
                  rest_client: RestClient) -> None:
-        """Initialise the handler.
+        """Initialise the project update handler.
 
         Args:
-            logger:  Parent logger instance.
+            logger: Parent logger instance used to create a child logger for
+                this handler.
+            config: Gateway configuration containing service endpoint
+                information.
+            rest_client: REST client used to communicate with backend
+                services.
         """
         self._logger = logger.getChild(type(self).__name__)
         self._config: GatewayConfiguration = config
@@ -67,6 +79,23 @@ class UpdateProjectHandler(BaseApiRoute):
     async def update_project(self,
                              request_msg: ApiResponse,
                              project_id: int):
+        """Update an existing project.
+
+        The request body is validated using
+        ``SCHEMA_UPDATE_PROJECT_REQUEST`` before this method is invoked.
+        Validated project details are forwarded to the CMS service using a
+        PATCH request.
+
+        Args:
+            request_msg: Validated request payload containing the project
+                details to update.
+            project_id: Unique identifier of the project to update.
+
+        Returns:
+            A Quart ``Response`` indicating whether the project was updated
+            successfully or describing any validation or backend errors that
+            occurred.
+        """
         cms_svc: str = self._config.apis_cms_svc
         url: str = f"{cms_svc}projects/{project_id}"
 
@@ -80,7 +109,7 @@ class UpdateProjectHandler(BaseApiRoute):
             url, json_data=request)
 
         if response.status_code == HTTPStatus.NOT_FOUND:
-            self._logger.critical("Pproject update request invalid, "
+            self._logger.critical("Project update request invalid, "
                                   "project ID is invalid")
             response_json = {
                 "status": 0,

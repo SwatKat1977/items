@@ -24,21 +24,46 @@ from items.services.items_gateway.gateway_configuration import GatewayConfigurat
 
 
 class GetProjectHandler(BaseApiRoute):
+    """API route handler for retrieving project details.
+
+    This handler processes requests to retrieve information about a specific
+    project. It forwards the request to the CMS service and converts the
+    backend response into an appropriate HTTP response for the client.
+    """
 
     def __init__(self,
                  logger: logging.Logger,
                  config: GatewayConfiguration,
                  rest_client: RestClient) -> None:
-        """Initialise the handler.
+        """Initialise the project retrieval handler.
 
         Args:
-            logger:  Parent logger instance.
+            logger: Parent logger instance used to create a child logger for
+                this handler.
+            config: Gateway configuration containing service endpoint
+                information.
+            rest_client: REST client used to communicate with backend
+                services.
         """
         self._logger = logger.getChild(type(self).__name__)
         self._config: GatewayConfiguration = config
         self._rest_client: RestClient = rest_client
 
     async def get_project(self, project_id: int):
+        """Retrieve the details of a project.
+
+        Sends a request to the CMS service to obtain information for the
+        specified project and returns the result to the client. Appropriate
+        error responses are returned if the project cannot be found or if the
+        backend service reports an error.
+
+        Args:
+            project_id: Unique identifier of the project to retrieve.
+
+        Returns:
+            A Quart ``Response`` containing the project details if the request
+            succeeds, or an error response describing why the request failed.
+        """
         cms_svc: str = self._config.apis_cms_svc
         url: str = f"{cms_svc}projects/{project_id}"
 

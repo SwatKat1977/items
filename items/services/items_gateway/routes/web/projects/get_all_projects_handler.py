@@ -24,22 +24,44 @@ from items.services.items_gateway.gateway_configuration import GatewayConfigurat
 
 
 class GetAllProjectsHandler(BaseApiRoute):
-    """Handles POST /projects requests."""
+    """API route handler for listing projects.
+
+    This handler processes requests to retrieve the collection of projects
+    accessible to the client. Optional query parameters are forwarded to the
+    CMS service to control which value and count fields are included in the
+    response.
+    """
 
     def __init__(self,
                  logger: logging.Logger,
                  config: GatewayConfiguration,
                  rest_client: RestClient) -> None:
-        """Initialise the handler.
+        """Initialise the project listing handler.
 
         Args:
-            logger:  Parent logger instance.
+            logger: Parent logger instance used to create a child logger for
+                this handler.
+            config: Gateway configuration containing service endpoint
+                information.
+            rest_client: REST client used to communicate with backend
+                services.
         """
         self._logger = logger.getChild(type(self).__name__)
         self._config: GatewayConfiguration = config
         self._rest_client: RestClient = rest_client
 
     async def list_all_projects(self):
+        """Retrieve the list of accessible projects.
+
+        Forwards the request to the CMS service. If present, the
+        ``value_fields`` and ``count_fields`` query parameters are passed
+        through to control the fields included in the response.
+
+        Returns:
+            A Quart ``Response`` containing the list of projects if the
+            request succeeds, or an error response describing why the request
+            failed.
+        """
         # Get fields from query parameters
         value_fields = request.args.get("value_fields")
         count_fields = request.args.get("count_fields")

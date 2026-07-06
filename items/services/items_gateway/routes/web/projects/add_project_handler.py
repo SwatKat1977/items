@@ -49,16 +49,27 @@ SCHEMA_ADD_PROJECT_REQUEST: dict = {
 
 
 class AddProjectHandler(BaseApiRoute):
-    """Handles POST /projects requests."""
+    """API route handler for creating projects.
+
+    This handler processes requests to create new projects. Incoming request
+    data is validated against the add project schema before being forwarded to
+    the CMS service. The handler translates backend responses into
+    appropriate HTTP responses for the client.
+    """
 
     def __init__(self,
                  logger: logging.Logger,
                  config: GatewayConfiguration,
                  rest_client: RestClient) -> None:
-        """Initialise the handler.
+        """Initialise the project creation handler.
 
         Args:
-            logger:  Parent logger instance.
+            logger: Parent logger instance used to create a child logger for
+                this handler.
+            config: Gateway configuration containing service endpoint
+                information.
+            rest_client: REST client used to communicate with backend
+                services.
         """
         self._logger = logger.getChild(type(self).__name__)
         self._config: GatewayConfiguration = config
@@ -66,7 +77,22 @@ class AddProjectHandler(BaseApiRoute):
 
     @validate_json(SCHEMA_ADD_PROJECT_REQUEST)
     async def add_project(self, request_msg: ApiResponse):
+        """Create a new project.
 
+        The request body is validated using
+        ``SCHEMA_ADD_PROJECT_REQUEST`` before this method is invoked.
+        Validated project details are forwarded to the CMS service to create
+        a new project.
+
+        Args:
+            request_msg: Validated request payload containing the details of
+                the project to create.
+
+        Returns:
+            A Quart ``Response`` indicating whether the project was created
+            successfully or describing any validation or backend errors that
+            occurred.
+        """
         cms_svc: str = self._config.apis_cms_svc
         url: str = f"{cms_svc}projects"
 
