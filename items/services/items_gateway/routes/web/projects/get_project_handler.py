@@ -13,37 +13,60 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from http import HTTPStatus
+import json
+import logging
+from quart import Response
+from weaver_framework.microservice.api_response import ApiResponse
+from weaver_framework.microservice.base_api_route import BaseApiRoute
+from weaver_framework.microservice.rest_client import RestClient
+from items.services.items_gateway.gateway_configuration import GatewayConfiguration
 
 
-class ProjectsApiView(BaseView):
-    __slots__ = ['_logger']
+class GetProjectHandler(BaseApiRoute):
 
-    async def retrieve_a_project(self, project_id: int):
-        cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
+    def __init__(self,
+                 logger: logging.Logger,
+                 config: GatewayConfiguration,
+                 rest_client: RestClient) -> None:
+        """Initialise the handler.
+
+        Args:
+            logger:  Parent logger instance.
+        """
+        self._logger = logger.getChild(type(self).__name__)
+        self._config: GatewayConfiguration = config
+        self._rest_client: RestClient = rest_client
+
+    async def get_project(self, project_id: int):
+        cms_svc: str = self._config.apis_cms_svc
         url: str = f"{cms_svc}projects/{project_id}"
 
-        api_response = await self._call_api_get(url)
+        response: ApiResponse = await self._rest_client.get(url)
 
-        if api_response.status_code == http.HTTPStatus.BAD_REQUEST:
-            response_json = {
-                "status": 0,
-                'error': 'Invalid project ID'
-            }
-            return quart.Response(json.dumps(response_json),
-                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                                  content_type="application/json")
+        if response.status_code == HTTPStatus.NOT_FOUND:
+            self._logger.warning("[WEB Get Project] Failed to get project")
+            return Response(status=HTTPStatus.NOT_FOUND)
 
-        if api_response.status_code != http.HTTPStatus.OK:
-            self._logger.critical("CMS SVC /projects/details request invalid"
-                                  " - Reason: %s",api_response.exception_msg)
-            response_json = {
-                "status": 0,
-                'error': 'Internal error!'
-            }
-            return quart.Response(json.dumps(response_json),
-                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                                  content_type="application/json")
+        if response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
+            error_msg: str = response.body.get("error", "")
+            self._logger.warning(
+                "[WEB Get Project] Failed to get project, reason: %s",
+                error_msg)
+            response_json: dict = {"status": 0, "error": error_msg}
+            return Response(json.dumps(response_json),
+                            status=HTTPStatus.BAD_REQUEST,
+                            content_type="application/json")
 
-        return quart.Response(json.dumps(api_response.body),
-                              status=http.HTTPStatus.OK,
-                              content_type="application/json")
+        if response.status_code != HTTPStatus.OK:
+            self._logger.critical(
+                "[WEB Get Projects] Get projects returned HTTP status %s",
+                response.status_code)
+            return Response(
+                json.dumps({"status": 0, "error": "Internal error!"}),
+                status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                content_type="application/json")
+
+        return Response(json.dumps(response.body),
+                        status=HTTPStatus.OK,
+                        content_type="application/json")

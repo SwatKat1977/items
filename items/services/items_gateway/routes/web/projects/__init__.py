@@ -20,8 +20,11 @@ from items.services.items_gateway.gateway_configuration import (
     GatewayConfiguration)
 from items.services.items_gateway.routes.web.projects.add_project_handler \
     import AddProjectHandler
+from items.services.items_gateway.routes.web.projects.delete_project_handler import DeleteProjectHandler
 from items.services.items_gateway.routes.web.projects.get_all_projects_handler \
     import GetAllProjectsHandler
+from items.services.items_gateway.routes.web.projects.get_project_handler \
+    import GetProjectHandler
 
 
 def create_projects_routes(logger: logging.Logger,
@@ -31,10 +34,16 @@ def create_projects_routes(logger: logging.Logger,
     handler_add_project: AddProjectHandler = AddProjectHandler(logger,
                                                                config,
                                                                rest_client)
+    handler_delete_project: DeleteProjectHandler = DeleteProjectHandler(logger,
+                                                               config,
+                                                               rest_client)
     handler_get_all_projects: GetAllProjectsHandler = GetAllProjectsHandler(
         logger,
         config,
         rest_client)
+    handler_get_project: GetProjectHandler = GetProjectHandler(logger,
+                                                               config,
+                                                               rest_client)
 
     projects_routes = Blueprint("projects_routes", __name__)
 
@@ -46,8 +55,7 @@ def create_projects_routes(logger: logging.Logger,
 
     @projects_routes.route('/projects/<int:project_id>', methods=['GET'])
     async def get_project(project_id: int):
-        return None
-        return await get_handler.get_project(project_id)
+        return await handler_get_project.get_project(project_id)
 
     # List all of the available projects.
     logger.debug("=> %s GET /projects",
@@ -82,7 +90,6 @@ def create_projects_routes(logger: logging.Logger,
 
     @projects_routes.route('/projects/<int:project_id>', methods=['DELETE'])
     async def delete_project(project_id: int):
-        return None
-        return await delete_handler.delete_project(project_id)
+        return await handler_delete_project.delete_project(project_id)
 
     return projects_routes
