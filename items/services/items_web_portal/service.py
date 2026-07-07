@@ -15,121 +15,121 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import asyncio
-import http
-import logging
-import os
-import time
+from http import HTTPStatus
 import uuid
-import requests
-from items_common.base_microservice import BaseMicroservice
-from logging_consts import LOGGING_DATETIME_FORMAT_STRING, \
-                           LOGGING_DEFAULT_LOG_LEVEL, \
-                           LOGGING_LOG_FORMAT_STRING
-from version import BUILD_TAG, BUILD_VERSION, RELEASE_VERSION, \
-                    SERVICE_COPYRIGHT_TEXT, LICENSE_TEXT
-from configuration_layout import CONFIGURATION_LAYOUT
-from threadsafe_configuration import ThreadSafeConfiguration as Configuration
-from base_view import BaseView
-from metadata_settings import MetadataSettings
-from apis import create_api_routes
-
-GET_METADATA_INFINITE_RETRIES: int = -1
+import aiohttp
+from quart import Quart
+from weaver_framework.microservice.api_response import ApiResponse
+from weaver_framework.microservice.base_microservice import BaseMicroservice
+from weaver_framework.configuration_system.configuration_manager import (
+    ConfigurationError)
+from weaver_framework.microservice.rest_client import RestClient
+from items.services.items_web_portal.metadata_settings import MetadataSettings
+from items.shared import LICENSE_TEXT, SERVICE_COPYRIGHT_TEXT, __version__
+from items.services.items_web_portal.configuration_layout import CONFIGURATION_LAYOUT
+from items.services.items_web_portal.configuration import Configuration
+from items.services.items_gateway.api_signature import generate_api_signature
 
 
 class Service(BaseMicroservice):
-    """ ITEMS Accounts Service """
+    """ ITEMS Gateway Microservice """
+    # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, quart_instance):
+    SERVICE_NAME: str = "Web Portal"
+    CONFIG_FILE_ENV: str = "ITEMS_WEB_PORTAL_CONFIG_FILE"
+    CONFIG_REQUIRED_ENV: str = "ITEMS_WEB_PORTAL_CONFIG_FILE_REQUIRED"
+
+    GET_METADATA_INFINITE_RETRIES: int = -1
+
+    def __init__(self, quart_instance: Quart):
         super().__init__()
         self._quart_instance = quart_instance
+        self._config: Configuration = Configuration()
+        self._http_session: aiohttp.ClientSession | None = None
         self._metadata_settings: MetadataSettings = MetadataSettings()
-
-        self._logger = logging.getLogger(__name__)
-        log_format = logging.Formatter(LOGGING_LOG_FORMAT_STRING,
-                                       LOGGING_DATETIME_FORMAT_STRING)
-        console_stream = logging.StreamHandler()
-        console_stream.setFormatter(log_format)
-        self._logger.setLevel(LOGGING_DEFAULT_LOG_LEVEL)
-        self._logger.addHandler(console_stream)
+        self._rest_client: RestClient | None = None
 
     async def _initialise(self) -> bool:
-
-        build = f"V{RELEASE_VERSION}-{BUILD_VERSION}{BUILD_TAG}"
-
-        self._logger.info('ITEMS Web Portal Microservice %s', build)
-        self._logger.info(SERVICE_COPYRIGHT_TEXT)
-        self._logger.info(LICENSE_TEXT)
+        self.logger.info('ITEMS Web Portal Microservice %s', __version__)
+        self.logger.info(SERVICE_COPYRIGHT_TEXT)
+        self.logger.info(LICENSE_TEXT)
 
         if not self._manage_configuration():
             return False
 
-        self._logger.info('Setting logging level to %s',
-                          Configuration().logging_log_level)
-        self._logger.setLevel(Configuration().logging_log_level)
+        self.logger.info("Setting logging level to %s",
+                         self._config.logging_log_level)
+        self.logger.setLevel(self._config.logging_log_level)
 
-        if not self.get_metadata(GET_METADATA_INFINITE_RETRIES):
+        self._http_session = aiohttp.ClientSession()
+        self._metadata_settings: MetadataSettings = MetadataSettings()
+        self._rest_client: RestClient = RestClient(self._http_session)
+
+        if not await self._get_metadata(self.GET_METADATA_INFINITE_RETRIES):
             return False
 
-        create_api_routes(self._logger,
-                          self._metadata_settings)
+        '''
+        self._quart_instance.register_blueprint(create_routes(
+            self.logger,
+            self._sessions,
+            self._config,
+            self._rest_client))
+        '''
 
         return True
 
-    async def _main_loop(self) -> None:
-        """ Abstract method for main application. """
-        await asyncio.sleep(0.1)
+    async def _create_tasks(self) -> list[asyncio.Task]:
+        """ Create and return the service's background tasks. """
+        return [asyncio.create_task(self._shutdown_wait_task())]
 
     async def _shutdown(self):
         """ Abstract method for application shutdown. """
+        if self._http_session:
+            await self._http_session.close()
 
     def _manage_configuration(self) -> bool:
         """
         Manage the service configuration.
         """
-
-        config_file = os.getenv("ITEMS_WEB_PORTAL_SVC_CONFIG_FILE", None)
-
-        config_file_required_str: str = os.getenv(
-            "ITEMS_WEB_PORTAL_SVC_CONFIG_FILE_REQUIRED", None)
-
-        config_file_required: bool = False
-        if config_file_required_str is not None and config_file_required_str == "1":
-            config_file_required = True
-
-        self._logger.info("Configuration file required? %s",
-                          "True" if config_file_required else "False")
-
-        if not config_file and config_file_required:
-            self._logger.critical("Configuration file missing!")
+        error_status, required, config_file = self._check_for_configuration(
+            self.CONFIG_FILE_ENV,self.CONFIG_REQUIRED_ENV)
+        if error_status:
+            self.logger.critical(error_status)
             return False
 
-        if config_file_required:
-            self._logger.info("Configuration file : %s", config_file)
-
-        Configuration().configure(CONFIGURATION_LAYOUT, config_file,
-                                  config_file_required)
+        self._config.configure(CONFIGURATION_LAYOUT, config_file, required)
 
         try:
-            Configuration().process_config()
+            self._config.process_config()
 
-        except ValueError as ex:
-            self._logger.critical("Configuration error : %s", str(ex))
+        except ConfigurationError as ex:
+            self.logger.critical("Configuration error : %s", str(ex))
             return False
 
-        self._logger.info("Configuration")
-        self._logger.info("=============")
+        except ValueError as ex:
+            self.logger.critical("Configuration error : %s", str(ex))
+            return False
 
-        self._logger.info("[logging]")
-        self._logger.info("=> Logging log level : %s",
-                          Configuration().logging_log_level)
+        self.logger.info("Configuration")
+        self.logger.info("=============")
 
+        self.logger.info("Configuration file required: %s",
+                         "True" if required else "False")
+        self.logger.info("Configuration file : %s",
+                         "None"if not required else config_file)
+        self.logger.info("[logging]")
+        self.logger.info("=> Logging log level : %s",
+                         self._config.logging_log_level)
         self._logger.info("[routes]")
         self._logger.info("=> Gateway Service API : %s",
-                          Configuration().apis_gateway_svc)
+                          self._config.apis_gateway_svc)
 
         return True
 
-    def get_metadata(self, retries: int = 0) -> bool:
+    async def _shutdown_wait_task(self) -> None:
+        await self.shutdown_event.wait()
+
+    async def _get_metadata(self, retries: int = 0) -> bool:
         """
         Fetches metadata from the web portal service and updates internal
         settings.
@@ -164,53 +164,54 @@ class Service(BaseMicroservice):
             - Uses a UUID as a nonce for security.
             - Sleeps for 3 seconds between failed attempts before retrying.
         """
-        perform_update: int = 1 if retries in (0,
-                                               GET_METADATA_INFINITE_RETRIES) \
+        perform_update: int = 1 if (retries in
+                                    (0, self.GET_METADATA_INFINITE_RETRIES)) \
                                 else retries
 
         # Generate number used once (NONCE)
         nonce = str(uuid.uuid4())
 
         string_to_sign: str = f"/web/webhook/get_metadata:{nonce}"
-        secret: bytes = Configuration().general_api_signing_secret.encode()
-        signature: str = BaseView.generate_api_signature(secret, string_to_sign)
+        secret: bytes = self._config.general_api_signing_secret.encode()
+        signature: str = generate_api_signature(secret, string_to_sign)
         headers = {
             "Content-Type": "application/json",
             "X-Signature": signature
         }
 
-        base_path: str = Configuration().apis_gateway_svc
+        base_path: str = self._config.apis_gateway_svc
         url: str = f"{base_path}web/webhook/get_metadata?nonce={nonce}"
 
         while perform_update != 0:
-            try:
-                response = requests.get(url, timeout=1, headers=headers)
+            response: ApiResponse = await self._rest_client.get(url,
+                                                                headers=headers,
+                                                                timeout=5)
 
-                if response.status_code == http.HTTPStatus.OK:
-                    data: dict = response.json()
-                    self._metadata_settings.default_time_zone = \
-                        data["default_time_zone"]
-                    self._metadata_settings.using_server_default_time_zone = \
-                        data["using_server_default_time_zone"]
-                    self._metadata_settings.instance_name = \
-                        data["instance_name"]
+            if response.status_code == HTTPStatus.UNAUTHORIZED:
+                self.logger.critical("API secret key mismatch, not "
+                                     "authorised")
+                return False
 
-                    self._logger.info("Successfully updated Web Portal with "
-                                      "metadata configuration items")
-                    return True
+            if response.status_code == HTTPStatus.OK:
+                data: dict = response.body
+                self._metadata_settings.default_time_zone = \
+                    data.get("default_time_zone")
+                self._metadata_settings.using_server_default_time_zone = \
+                    data.get("using_server_default_time_zone")
+                self._metadata_settings.instance_name = \
+                    data.get("instance_name")
 
-            except requests.exceptions.ConnectionError as ex:
-                self._logger.error(("Connection to web portal service timed "
-                                    "out whilst getting metadata: %s"),
-                                   str(ex))
+                self._logger.info("Successfully updated Web Portal with "
+                                  "metadata configuration items")
+                return True
 
             self._logger.warning("Unable to update Web Portal with metadata "
                                  "configuration items")
 
-            if retries != GET_METADATA_INFINITE_RETRIES:
+            if retries != self.GET_METADATA_INFINITE_RETRIES:
                 perform_update -= 1
 
-            time.sleep(3)
+            await asyncio.sleep(3)
 
         self._logger.critical("Failed to update Web Portal with metadata "
                               "configuration items")
