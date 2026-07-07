@@ -100,7 +100,8 @@ class Service(BaseMicroservice):
             logger=self.logger,
             sessions=self._sessions,
             configuration=self._config,
-            rest_client=self._rest_client)
+            rest_client=self._rest_client,
+            metadata_handler=self._metadata_handler)
 
         self._quart_instance.register_blueprint(
             create_routes(route_injections))

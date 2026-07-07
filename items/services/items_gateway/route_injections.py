@@ -17,8 +17,9 @@ limitations under the License.
 from dataclasses import dataclass
 import logging
 from weaver_framework.microservice.rest_client import RestClient
-from items.services.items_gateway.sessions import Sessions
+from items.services.items_gateway.metadata_handler import MetadataHandler
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
+from items.services.items_gateway.sessions import Sessions
 
 
 @dataclass(frozen=True)
@@ -27,3 +28,4 @@ class RouteInjections:
     sessions: Sessions | None = None
     configuration: GatewayConfiguration | None = None
     rest_client: RestClient | None = None
+    metadata_handler: MetadataHandler | None = None
