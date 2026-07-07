@@ -55,12 +55,12 @@ jobs:
           fi
 
           echo "Checking for changes in items/services/items_web_portal/"
-          if echo "$changed_files" | grep -qE '^(items/services|unit_tests)/web_portal_svc/'; then
+          if echo "$changed_files" | grep -qE '^(items/services|unit_tests)/items_web_portal/'; then
             echo "web_portal_svc_changed=true" >> $GITHUB_OUTPUT
-            echo "[INFO] services/web_portal_svc has changed"
+            echo "[INFO] Web Portal or unit tests have changed"
           else
             echo "web_portal_svc_changed=false" >> $GITHUB_OUTPUT
-            echo "[INFO] Web Portal Service or unit tests have NOT changed"
+            echo "[INFO] Web Portal or unit tests have NOT changed"
           fi
 
           echo "Checking for changes in items/shared/"
@@ -170,13 +170,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install coverage jsonschema aiohttp quart pylint
+          pip install -r requirements/requirements_web_portal.txt
+          pip install coverage pylint
 
       - name: Run Pylint
         env:
           PYTHONPATH: .
         run: |
-          pylint --fail-under=10.0 items/services/web_portal_svc
+          pylint --fail-under=10.0 items/services/items_web_portal
 
       # Run tests and measure coverage
       - name: Run tests with coverage
