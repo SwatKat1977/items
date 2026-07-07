@@ -176,7 +176,7 @@ jobs:
         env:
           PYTHONPATH: .
         run: |
-          pylint --fail-under=10.0 items/services/web_portal_svc
+          pylint --fail-under=10.0 items/services/items_web_portal
 
       # Run tests and measure coverage
       - name: Run tests with coverage
