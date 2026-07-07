@@ -1,5 +1,6 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
+Copyright 2017-2025 INTMAC Development Team [Defunct]
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,24 +14,29 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import logging
 from quart import Blueprint
-from .webhook_api_view import WebhookApiView
-from metadata_handler import MetadataHandler
+from items.services.items_gateway.route_injections import RouteInjections
+from items.services.items_gateway.routes.web.webhook.get_metadata_handler \
+    import GetMetadataHandler
 
 
-def create_blueprint(logger: logging.Logger,
-                     metadata_handler: MetadataHandler) -> Blueprint:
-    view = WebhookApiView(logger, metadata_handler)
+def create_webhook_routes(injections: RouteInjections) -> Blueprint:
 
-    blueprint = Blueprint('webhook_api', __name__)
+    handler_get_metadata_handler: GetMetadataHandler = GetMetadataHandler(
+        injections.logger,
+        injections.configuration,
+        injections.metadata_handler)
 
-    logger.debug("-------------- Registering Web Webhook routes -------------")
+    webhook_routes = Blueprint('webhook_routes', __name__)
 
-    logger.debug("=> /web/get_metadata [GET]")
+    injections.logger.debug(" Webhook WEB routes:")
 
-    @blueprint.route('/get_metadata', methods=['GET'])
+    # Get details of a specific project.
+    injections.logger.debug("=> %s GET /web/webhook/metadata",
+                            "Get webhook metadata".ljust(40))
+
+    @webhook_routes.route('/webhook/metadata', methods=['GET'])
     async def get_metadata_request():
-        return await view.get_metadata()
+        return await handler_get_metadata_handler.get_metadata()
 
-    return blueprint
+    return webhook_routes
