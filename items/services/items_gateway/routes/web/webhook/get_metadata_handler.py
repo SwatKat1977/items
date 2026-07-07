@@ -1,5 +1,6 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
+Copyright 2017-2025 INTMAC Development Team [Defunct]
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,17 +18,21 @@ import http
 import json
 import logging
 import quart
-from metadata_handler import MetadataHandler
-from base_view import BaseView
-from threadsafe_configuration import ThreadSafeConfiguration
+from weaver_framework.microservice.base_api_route import BaseApiRoute
+from items.shared.api_signature import (generate_api_signature,
+                                        verify_api_signature)
+from items.services.items_gateway.metadata_handler import MetadataHandler
+from items.services.items_gateway.gateway_configuration import GatewayConfiguration
 
 
-class WebhookApiView:
+class GetMetadataHandler(BaseApiRoute):
 
     def __init__(self,
                  logger: logging.Logger,
+                 config: GatewayConfiguration,
                  metadata_handler: MetadataHandler) -> None:
-        self._logger = logger.getChild(__name__)
+        self._logger = logger.getChild(type(self).__name__)
+        self._config: GatewayConfiguration = config
         self._metadata_handler: MetadataHandler = metadata_handler
 
     async def get_metadata(self):
@@ -47,20 +52,20 @@ class WebhookApiView:
                                   content_type="application/json")
 
         string_to_sign: bytes = f"{request_path}:{nonce}".encode()
-        secret_key: str = ThreadSafeConfiguration().general_api_signing_secret
+        secret_key: str = self._config.general_api_signing_secret
 
         # Verify signature
-        if not BaseView.verify_api_signature(secret_key.encode(),
-                                             string_to_sign,
-                                             received_signature):
+        if not verify_api_signature(secret_key.encode(),
+                                    string_to_sign,
+                                    received_signature):
             return quart.Response(json.dumps({"error": "Invalid signature"}),
                                   status=http.HTTPStatus.UNAUTHORIZED,
                                   content_type="application/json")
 
         metadata = self._metadata_handler.build_metadata_dictionary()
 
-        signature: str = BaseView.generate_api_signature(secret_key.encode(),
-                                                         metadata)
+        signature: str = generate_api_signature(secret_key.encode(),
+                                                metadata)
         headers = {
             "Content-Type": "application/json",
             "X-Signature": signature
