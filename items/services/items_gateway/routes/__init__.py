@@ -37,10 +37,7 @@ def create_routes(injections: RouteInjections) -> quart.Blueprint:
     routes_bp = quart.Blueprint("public_routes", __name__)
 
     # Register web routes.
-    routes_bp.register_blueprint(create_web_routes(injections.logger,
-                                                   injections.sessions,
-                                                   injections.configuration,
-                                                   injections.rest_client),
+    routes_bp.register_blueprint(create_web_routes(injections),
                                  url_prefix="/web")
 
     return routes_bp
