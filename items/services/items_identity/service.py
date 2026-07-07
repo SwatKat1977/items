@@ -1,6 +1,6 @@
 """
 Copyright 2025-2026 Integrated Test Management Suite Development Team
-Copyright 2019-2025 INTMAC Test Management Suite Development Team [Defunct]
+Copyright 2017-2025 INTMAC Development Team [Defunct]
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
