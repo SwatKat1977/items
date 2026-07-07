@@ -14,11 +14,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from configuration import configuration_setup
+from weaver_framework.configuration_system.configuration_setup import (
+    ConfigItemDataType, ConfigurationSetup, ConfigurationSetupItem)
 
-# pylint: disable=too-few-public-methods
+# ___pylint___: disable=too-few-public-methods
 
-APIS_GATEWAY_SVC_DEFAULT = "http://localhost:3000/"
+APIS_GATEWAY_SVC_DEFAULT = "http://localhost:7050/"
 
 
 class ConfigurationConstants:
@@ -37,26 +38,26 @@ class ConfigurationConstants:
     APIS_GATEWAY_SVC: str = "gateway_svc"
 
 
-CONFIGURATION_LAYOUT = configuration_setup.ConfigurationSetup(
+CONFIGURATION_LAYOUT = ConfigurationSetup(
     {
         ConfigurationConstants.SECTION_LOGGING: [
-            configuration_setup.ConfigurationSetupItem(
+            ConfigurationSetupItem(
                 ConfigurationConstants.LOGGING_LOG_LEVEL,
-                configuration_setup.ConfigItemDataType.STRING,
+                ConfigItemDataType.STRING,
                 valid_values=[ConfigurationConstants.LOG_LEVEL_DEBUG,
                               ConfigurationConstants.LOG_LEVEL_INFO],
                 default_value=ConfigurationConstants.LOG_LEVEL_INFO)
         ],
         ConfigurationConstants.SECTION_GENERAL: [
-            configuration_setup.ConfigurationSetupItem(
+            ConfigurationSetupItem(
                 ConfigurationConstants.GENERAL_API_SIGNING_SECRET,
-                configuration_setup.ConfigItemDataType.STRING,
+                ConfigItemDataType.STRING,
                 is_required=True),
         ],
         ConfigurationConstants.SECTION_APIS: [
-            configuration_setup.ConfigurationSetupItem(
+            ConfigurationSetupItem(
                 ConfigurationConstants.APIS_GATEWAY_SVC,
-                configuration_setup.ConfigItemDataType.STRING,
+                ConfigItemDataType.STRING,
                 default_value=APIS_GATEWAY_SVC_DEFAULT)
         ]
     }
