@@ -13,49 +13,42 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import logging
 import quart
-from weaver_framework.microservice.rest_client import RestClient
-from items.services.items_gateway.sessions import Sessions
-from items.services.items_gateway.gateway_configuration import (
-    GatewayConfiguration)
+from items.services.items_gateway.route_injections import RouteInjections
 from items.services.items_gateway.routes.web.projects import (
     create_projects_routes)
 from items.services.items_gateway.routes.web.sessions import (
     create_sessions_routes)
 
 
-def create_web_routes(logger: logging.Logger,
-                      sessions_instance: Sessions,
-                      configuration: GatewayConfiguration,
-                      rest_client: RestClient) -> quart.Blueprint:
+def create_web_routes(injections: RouteInjections) -> quart.Blueprint:
     """Create and register all CMS API routes.
 
     Top-level function to create the WEB routes for the Gateway service and
     registers all feature-specific route blueprints.
 
     Args:
-        logger: Logger instance used for route registration and diagnostics.
-        sessions_instance: User sessions.
-        configuration (GatewayConfiguration): Gateway configuration.
-        rest_client (RestClient) Instance of rest_client.
+        injections: Container providing the shared dependencies required by
+            the route factories, including the logger, session manager,
+            configuration, and REST client.
 
     Returns:
         A Quart blueprint containing all registered Gateway API routes.
     """
     routes_bp = quart.Blueprint("api_routes", __name__)
 
-    logger.debug("|--- Registering WEB routes ---|")
+    injections.logger.debug("|--- Registering WEB routes ---|")
 
     # Register sessions routes.
-    routes_bp.register_blueprint(create_sessions_routes(logger,
-                                                        sessions_instance,
-                                                        configuration,
-                                                        rest_client))
+    routes_bp.register_blueprint(create_sessions_routes(injections.logger,
+                                                        injections.sessions,
+                                                        injections.configuration,
+                                                        injections.rest_client))
 
     # Register projects routes.
-    routes_bp.register_blueprint(create_projects_routes(logger,
-                                                        configuration,
-                                                        rest_client))
+    routes_bp.register_blueprint(create_projects_routes(
+        injections.logger,
+        injections.configuration,
+        injections.rest_client))
 
     return routes_bp
