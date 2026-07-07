@@ -1,5 +1,2 @@
-quart
-Uvicorn
-jsonschema
-requests
-aiohttp
+jsonschema==4.26.0
+aiohttp==3.14.0
