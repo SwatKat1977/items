@@ -62,9 +62,10 @@ def create_projects_routes(logger: logging.Logger,
     handler_add_project: AddProjectHandler = AddProjectHandler(logger,
                                                                config,
                                                                rest_client)
-    handler_delete_project: DeleteProjectHandler = DeleteProjectHandler(logger,
-                                                               config,
-                                                               rest_client)
+    handler_delete_project: DeleteProjectHandler = DeleteProjectHandler(
+        logger,
+        config,
+        rest_client)
     handler_get_all_projects: GetAllProjectsHandler = GetAllProjectsHandler(
         logger,
         config,
