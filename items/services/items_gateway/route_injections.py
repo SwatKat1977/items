@@ -24,6 +24,20 @@ from items.services.items_gateway.sessions import Sessions
 
 @dataclass(frozen=True)
 class RouteInjections:
+    """Container for dependencies required by HTTP route registration.
+
+    This immutable dataclass groups together the shared services and
+    application components that are injected into route factories and request
+    handlers. Providing dependencies through a single object simplifies route
+    construction and testing.
+
+    Attributes:
+        logger: Logger used for diagnostic and operational logging.
+        sessions: Session manager for authenticated user sessions.
+        configuration: Gateway application configuration.
+        rest_client: REST client used to communicate with external services.
+        metadata_handler: Handler responsible for generating webhook metadata.
+    """
     logger: logging.Logger | None = None
     sessions: Sessions | None = None
     configuration: GatewayConfiguration | None = None

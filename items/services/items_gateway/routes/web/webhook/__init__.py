@@ -21,6 +21,21 @@ from items.services.items_gateway.routes.web.webhook.get_metadata_handler \
 
 
 def create_webhook_routes(injections: RouteInjections) -> Blueprint:
+    """Create the webhook Blueprint and register its HTTP routes.
+
+    This function constructs the request handlers required by the webhook
+    endpoints, creates a Flask/Quart Blueprint, registers all webhook routes,
+    and returns the configured Blueprint ready to be attached to the
+    application.
+
+    Args:
+        injections: Collection of shared application dependencies, including
+            the logger, configuration, and metadata handler used by the route
+            handlers.
+
+    Returns:
+        A configured Blueprint containing all webhook-related routes.
+    """
 
     handler_get_metadata_handler: GetMetadataHandler = GetMetadataHandler(
         injections.logger,

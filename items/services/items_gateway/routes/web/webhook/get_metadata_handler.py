@@ -26,16 +26,45 @@ from items.services.items_gateway.gateway_configuration import GatewayConfigurat
 
 
 class GetMetadataHandler(BaseApiRoute):
+    """Handle requests for webhook metadata.
+
+    This handler validates the request signature using the configured API
+    signing secret before returning webhook metadata. The response is signed
+    using the same secret so clients can verify its authenticity.
+    """
 
     def __init__(self,
                  logger: logging.Logger,
                  config: GatewayConfiguration,
                  metadata_handler: MetadataHandler) -> None:
+        """Initialize the metadata request handler.
+
+        Args:
+            logger: Logger used to record diagnostic information.
+            config: Gateway configuration containing the API signing secret.
+            metadata_handler: Component responsible for building the webhook
+                metadata returned to clients.
+        """
         self._logger = logger.getChild(type(self).__name__)
         self._config: GatewayConfiguration = config
         self._metadata_handler: MetadataHandler = metadata_handler
 
     async def get_metadata(self):
+        """Validate the request and return signed webhook metadata.
+
+        The request must include a ``nonce`` query parameter and an
+        ``X-Signature`` header. The signature is verified using the configured
+        API signing secret before the metadata is generated and returned with a
+        response signature.
+
+        Returns:
+            A Quart response containing either:
+
+            * HTTP 200 with the metadata JSON and an ``X-Signature`` response
+              header.
+            * HTTP 401 if the nonce is missing, the request is unsigned, or the
+              signature verification fails.
+        """
         nonce = quart.request.args.get("nonce")
         request_path: str = quart.request.path
 
