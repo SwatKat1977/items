@@ -17,28 +17,80 @@ limitations under the License.
 from http import HTTPStatus
 import json
 import logging
+import quart
 from quart import Response
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
-from items.services.items_gateway.route_injections import RouteInjections
 
 
 class GetAllCustomFieldsHandler(BaseApiRoute):
+    """Handles GET /testcase_custom_fields requests."""
 
-    def __init__(self, injections: RouteInjections) -> None:
-        self._logger: logging.Logger = injections.logger.getChild(
-            type(self).__name__)
-        self._config: GatewayConfiguration = injections.configuration
-        self._rest_client: RestClient = injections.rest_client
+    def __init__(self,
+                 logger: logging.Logger,
+                 configuration: GatewayConfiguration,
+                 rest_client: RestClient) -> None:
+        """Initialise the handler.
 
-    async def get_all_custom_fields(self):
-        cms_svc: str = self._config.apis_cms_svc
-        url: str = f"{cms_svc}admin/testcase_custom_fields/" \
-                   f"testcase_custom_fields"
+        Args:
+            logger:        Parent logger instance.
+            configuration: Gateway configuration containing service endpoint
+                           information.
+            rest_client:   REST client used to communicate with the CMS service.
+        """
+        self._logger = logger.getChild(type(self).__name__)
+        self._configuration = configuration
+        self._rest_client = rest_client
 
-        api_response = await self._call_api_get(url)
+    async def get_all_custom_fields(self) -> Response:
+        """Retrieve testcase custom field definitions from the CMS service.
 
-        return Response(json.dumps(api_response.body),
-                        status=HTTPStatus.OK,
-                        content_type="application/json")
+        Query parameters:
+            project_id (int, optional): If provided, return only fields
+                                        applicable to that project.
+
+        Returns:
+            200 with the list of custom field definitions on success.
+            400 if ``project_id`` is present but not a valid integer.
+            500 if the CMS service is unreachable or returns an error.
+        """
+        params: dict | None = None
+        project_id_param = quart.request.args.get("project_id")
+
+        if project_id_param is not None:
+            try:
+                project_id = int(project_id_param)
+                if project_id <= 0:
+                    raise ValueError
+            except ValueError:
+                return Response(
+                    json.dumps({"error": "project_id must be an integer"}),
+                    status=HTTPStatus.BAD_REQUEST,
+                    content_type="application/json")
+            params = {"project_id": project_id}
+
+        url: str = f"{self._configuration.apis_cms_svc}testcase_custom_fields"
+
+        response = await self._rest_client.get(url, params=params)
+
+        if response.exception_msg is not None:
+            self._logger.error("Connection to CMS service failed: %s",
+                               response.exception_msg)
+            return Response(
+                json.dumps({"error": "Internal error!"}),
+                status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                content_type="application/json")
+
+        if response.status_code != HTTPStatus.OK:
+            self._logger.error("CMS service returned status %s",
+                               response.status_code)
+            return Response(
+                json.dumps(response.body),
+                status=response.status_code,
+                content_type="application/json")
+
+        return Response(
+            json.dumps(response.body),
+            status=HTTPStatus.OK,
+            content_type="application/json")

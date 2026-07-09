@@ -109,6 +109,22 @@ class TestcaseCustomFieldsService:
                                              error_msg="Service unavailable",
                                              is_internal=True)
 
+        if project_id is not None:
+            try:
+                exists = await self._repository.is_valid_project_id(project_id)
+            except SqliteInterfaceException as ex:
+                self._logger.exception(
+                    "Database failure validating project %d: %s", project_id, ex)
+                self._state.mark_database_failed()
+                return TestcaseCustomFieldResult(success=False,
+                                                 error_msg="Internal error in CMS",
+                                                 is_internal=True)
+
+            if not exists:
+                return TestcaseCustomFieldResult(success=False,
+                                                 error_msg="Project id is invalid",
+                                                 not_found=True)
+
         try:
             if project_id is not None:
                 rows = await self._repository.get_fields_for_project(project_id)
