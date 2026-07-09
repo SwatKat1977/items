@@ -16,12 +16,16 @@ limitations under the License.
 """
 from quart import Blueprint
 from items.services.items_gateway.route_injections import RouteInjections
+from items.services.items_gateway.routes.web.testcase_custom_fields.testcase_custom_fields_api_view import \
+    GetAllCustomFieldsHandler
 
 
 def create_testcase_custom_fields_routes(injections: RouteInjections) \
         -> Blueprint:
-
     routes = Blueprint('testcase_custom_fields_routes', __name__)
+
+    handler_get_all_fields: GetAllCustomFieldsHandler = \
+        GetAllCustomFieldsHandler(injections)
 
     injections.logger.debug(" Testcase Custom Fields WEB routes:")
 
@@ -30,7 +34,6 @@ def create_testcase_custom_fields_routes(injections: RouteInjections) \
 
     @routes.route('/testcase_custom_fields/', methods=['GET'])
     async def get_all_custom_fields_request():
-        return None
-        return await view.get_all_custom_fields()
+        return await handler_get_all_fields.get_all_custom_fields()
 
     return routes

@@ -24,7 +24,7 @@ from items.services.items_gateway.gateway_configuration import GatewayConfigurat
 from items.services.items_gateway.route_injections import RouteInjections
 
 
-class AddProjectHandler(BaseApiRoute):
+class GetAllCustomFieldsHandler(BaseApiRoute):
 
     def __init__(self, injections: RouteInjections) -> None:
         self._logger: logging.Logger = injections.logger.getChild(
