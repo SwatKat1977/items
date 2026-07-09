@@ -40,6 +40,7 @@ from items.services.items_gateway.gateway_configuration import \
 from items.services.items_gateway.metadata_handler import MetadataHandler
 from items.services.items_gateway.web_portal_client import WebPortalClient
 from items.services.items_gateway.sessions import Sessions
+from items.services.items_gateway.route_injections import RouteInjections
 
 
 class Service(BaseMicroservice):
@@ -95,11 +96,15 @@ class Service(BaseMicroservice):
         if not await self._check_cms_svc_status():
             return False
 
-        self._quart_instance.register_blueprint(create_routes(
-            self.logger,
-            self._sessions,
-            self._config,
-            self._rest_client))
+        route_injections: RouteInjections = RouteInjections(
+            logger=self.logger,
+            sessions=self._sessions,
+            configuration=self._config,
+            rest_client=self._rest_client,
+            metadata_handler=self._metadata_handler)
+
+        self._quart_instance.register_blueprint(
+            create_routes(route_injections))
 
         return True
 

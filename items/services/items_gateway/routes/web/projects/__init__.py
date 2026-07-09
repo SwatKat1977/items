@@ -1,5 +1,6 @@
 """
 Copyright 2025-2026 Integrated Test Management Suite Development Team
+Copyright 2017-2025 INTMAC Development Team [Defunct]
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -62,9 +63,10 @@ def create_projects_routes(logger: logging.Logger,
     handler_add_project: AddProjectHandler = AddProjectHandler(logger,
                                                                config,
                                                                rest_client)
-    handler_delete_project: DeleteProjectHandler = DeleteProjectHandler(logger,
-                                                               config,
-                                                               rest_client)
+    handler_delete_project: DeleteProjectHandler = DeleteProjectHandler(
+        logger,
+        config,
+        rest_client)
     handler_get_all_projects: GetAllProjectsHandler = GetAllProjectsHandler(
         logger,
         config,

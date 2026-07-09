@@ -1,5 +1,6 @@
 """
 Copyright 2025-2026 Integrated Test Management Suite Development Team
+Copyright 2017-2025 INTMAC Development Team [Defunct]
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,7 +21,7 @@ from weaver_framework.microservice.rest_client import RestClient
 from weaver_framework.microservice.api_response import ApiResponse
 from items.services.items_gateway.gateway_configuration import (
     GatewayConfiguration)
-from items.services.items_gateway.api_signature import generate_api_signature
+from items.shared.api_signature import generate_api_signature
 from items.services.items_gateway.metadata_handler import MetadataHandler
 
 

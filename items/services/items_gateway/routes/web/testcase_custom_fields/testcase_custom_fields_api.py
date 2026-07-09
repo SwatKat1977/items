@@ -1,5 +1,6 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
+Copyright 2017-2025 INTMAC Development Team [Defunct]
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,23 +14,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import logging
 from quart import Blueprint
-from .testcase_custom_fields_api_view import TestcaseCustomFieldsApiView
+from items.services.items_gateway.route_injections import RouteInjections
 
 
-def create_blueprint(logger: logging.Logger) -> Blueprint:
-    view = TestcaseCustomFieldsApiView(logger)
+def create_testcase_custom_fields_routes(injections: RouteInjections) \
+        -> Blueprint:
 
-    blueprint = Blueprint('web_tc_custom_fields_api', __name__)
+    routes = Blueprint('testcase_custom_fields_routes', __name__)
 
-    logger.debug("---------- Registering Web TC Custom Fields routes --------")
+    injections.logger.debug(" Testcase Custom Fields WEB routes:")
 
-    logger.debug(f"=> {'Get all TC custom fields'.ljust(30)}"
-                 "GET /web/testcase_custom_fields")
+    injections.logger.debug(f"=> {'Get all TC custom fields'.ljust(30)}"
+                            "GET /web/testcase_custom_fields")
 
-    @blueprint.route('/testcase_custom_fields/', methods=['GET'])
+    @routes.route('/testcase_custom_fields/', methods=['GET'])
     async def get_all_custom_fields_request():
+        return None
         return await view.get_all_custom_fields()
 
-    return blueprint
+    return routes
