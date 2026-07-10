@@ -20,6 +20,8 @@ from items.services.items_gateway.routes.web.projects import (
     create_projects_routes)
 from items.services.items_gateway.routes.web.sessions import (
     create_sessions_routes)
+from items.services.items_gateway.routes.web.testcase_custom_fields import (
+    create_testcase_custom_fields_routes)
 from items.services.items_gateway.routes.web.webhook import (
     create_webhook_routes)
 
@@ -53,6 +55,10 @@ def create_web_routes(injections: RouteInjections) -> quart.Blueprint:
         injections.logger,
         injections.configuration,
         injections.rest_client))
+
+    # Register projects routes.
+    routes_bp.register_blueprint(create_testcase_custom_fields_routes(
+        injections))
 
     # Register Webhook routes.
     routes_bp.register_blueprint(create_webhook_routes(injections))

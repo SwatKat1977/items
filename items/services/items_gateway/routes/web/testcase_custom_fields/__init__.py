@@ -25,12 +25,14 @@ def create_testcase_custom_fields_routes(injections: RouteInjections) \
     routes = Blueprint('testcase_custom_fields_routes', __name__)
 
     handler_get_all_fields: GetAllCustomFieldsHandler = \
-        GetAllCustomFieldsHandler(injections)
+        GetAllCustomFieldsHandler(injections.logger,
+                                  injections.configuration,
+                                  injections.rest_client)
 
     injections.logger.debug(" Testcase Custom Fields WEB routes:")
 
-    injections.logger.debug(f"=> {'Get all TC custom fields'.ljust(30)}"
-                            "GET /web/testcase_custom_fields")
+    injections.logger.debug("=> %s GET /web/testcase_custom_fields",
+                            "Get all TC custom fields".ljust(40))
 
     @routes.route('/testcase_custom_fields/', methods=['GET'])
     async def get_all_custom_fields_request():

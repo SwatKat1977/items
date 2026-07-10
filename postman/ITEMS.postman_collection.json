@@ -1,9 +1,9 @@
 {
   "info": {
-    "_postman_id": "459a031b-dba9-4887-85a1-30b557a16a02",
+    "_postman_id": "4714bf39-c417-48d6-9d47-52c017aa1e17",
     "name": "ITEMS",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "49399853"
+    "_exporter_id": "10935426"
   },
   "item": [
     {
@@ -210,13 +210,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/admin/projects/1",
+                      "raw": "{{GATEWAY_SVC_URL}}/web/projects/1",
                       "host": [
                         "{{GATEWAY_SVC_URL}}"
                       ],
                       "path": [
                         "web",
-                        "admin",
                         "projects",
                         "1"
                       ]
@@ -241,14 +240,14 @@
                       }
                     ],
                     "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/webhook/get_metadata?nonce=109",
+                      "raw": "{{GATEWAY_SVC_URL}}/web/webhook/metadata?nonce=109",
                       "host": [
                         "{{GATEWAY_SVC_URL}}"
                       ],
                       "path": [
                         "web",
                         "webhook",
-                        "get_metadata"
+                        "metadata"
                       ],
                       "query": [
                         {
@@ -483,33 +482,45 @@
               ]
             },
             {
-              "name": "Update a Project",
-              "request": {
-                "method": "PATCH",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"name\": \"Project bob\",\n    \"announcement\": \"This is test project Gamma\",\n    \"announcement_on_overview\": false\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
+              "name": "Testcase Custom Fields",
+              "item": [
+                {
+                  "name": "Get details for a test case Copy",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/testcase_custom_fields?project_id=100",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "testcase_custom_fields"
+                      ],
+                      "query": [
+                        {
+                          "key": "project_id",
+                          "value": "100"
+                        }
+                      ]
                     }
-                  }
-                },
-                "url": {
-                  "raw": "{{GATEWAY_SVC_URL}}/web/admin/projects/1",
-                  "host": [
-                    "{{GATEWAY_SVC_URL}}"
-                  ],
-                  "path": [
-                    "web",
-                    "admin",
-                    "projects",
-                    "1"
-                  ]
+                  },
+                  "response": []
                 }
-              },
-              "response": []
+              ]
             }
           ]
         }
