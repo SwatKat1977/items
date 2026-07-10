@@ -15,7 +15,7 @@ limitations under the License.
 """
 from http import HTTPStatus
 import logging
-from base_web_view import BaseWebView
+from base_web_view import PortalPageHandler
 from base_view import ApiResponse
 from quart import make_response, request, Response
 from base_items_exception import BaseItemsException
@@ -24,7 +24,7 @@ from threadsafe_configuration import ThreadSafeConfiguration
 from metadata_settings import MetadataSettings
 
 
-class AuthApiView(BaseWebView):
+class AuthApiView(PortalPageHandler):
     """
     View controller responsible for authentication and session handling.
 
@@ -33,7 +33,7 @@ class AuthApiView(BaseWebView):
     service for validating user credentials, generating authentication
     tokens, and retrieving initial dashboard data.
 
-    The view uses cookie-based authentication and relies on BaseWebView
+    The view uses cookie-based authentication and relies on PortalPageHandler
     for common behaviour such as template rendering, redirect generation,
     and API invocation. Authentication cookies are validated before
     granting access to protected pages.
@@ -144,7 +144,7 @@ class AuthApiView(BaseWebView):
             self._logger.error('Internal Error: %s', ex)
             return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
-        form_data = await self._process_post_form_data(await request.form)
+        form_data = dict(await request.form)
 
         user_email = form_data.get('user_email')
         password = form_data.get('password')

@@ -5,7 +5,7 @@ import json
 import requests
 from quart import Quart
 from base_items_exception import BaseItemsException
-from base_web_view import BaseWebView
+from base_web_view import PortalPageHandler
 from threadsafe_configuration import ThreadSafeConfiguration as Configuration
 
 
@@ -14,7 +14,7 @@ class TestBaseWebView(unittest.IsolatedAsyncioTestCase):
         """Set up the Quart test app and push a request context."""
         self.app = Quart(__name__)
         self.mock_logger_instance = MagicMock()
-        self.view = BaseWebView(self.mock_logger_instance)
+        self.view = PortalPageHandler(self.mock_logger_instance)
 
         self.client = self.app.test_client()
         self.ctx = self.app.test_request_context("/test")

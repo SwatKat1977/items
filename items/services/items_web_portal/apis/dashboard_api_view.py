@@ -17,20 +17,20 @@ import http
 import logging
 import quart
 from base_view import ApiResponse
-from base_web_view import BaseWebView
+from base_web_view import PortalPageHandler
 from metadata_settings import MetadataSettings
 import page_locations as pages
 from threadsafe_configuration import ThreadSafeConfiguration
 
 
-class DashboardApiView(BaseWebView):
+class DashboardApiView(PortalPageHandler):
     """
     Dashboard view handler for administrative pages.
 
     This class provides asynchronous route handlers for the
     administration dashboard, managing projects, users, roles,
     data management, and site settings. It relies on the gateway
-    service for backend operations and uses BaseWebView helpers
+    service for backend operations and uses PortalPageHandler helpers
     for template rendering and API calls.
     """
 
