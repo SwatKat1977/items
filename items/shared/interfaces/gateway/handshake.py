@@ -14,15 +14,3 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-SCHEMA_SESSION_VALIDATE_RESPONSE = {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "type": "object",
-    "properties": {
-        "status": {
-            "type": "string",
-            "enum": ["VALID", "INVALID"]
-        }
-    },
-    "required": ["status"],
-    "additionalProperties": False
-}

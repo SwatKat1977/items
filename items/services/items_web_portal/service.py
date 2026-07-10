@@ -28,7 +28,7 @@ from items.services.items_web_portal.metadata_settings import MetadataSettings
 from items.shared import LICENSE_TEXT, SERVICE_COPYRIGHT_TEXT, __version__
 from items.services.items_web_portal.configuration_layout import CONFIGURATION_LAYOUT
 from items.services.items_web_portal.configuration import Configuration
-from items.services.items_gateway.api_signature import generate_api_signature
+from items.shared.api_signature import generate_api_signature
 
 
 class Service(BaseMicroservice):

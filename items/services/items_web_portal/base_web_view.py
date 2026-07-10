@@ -1,5 +1,6 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
+Copyright 2017-2025 INTMAC Development Team [Defunct]
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,58 +14,71 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from http import HTTPStatus
 import json
-import typing
+import logging
 import jinja2
-import jsonschema
-import requests
 from quart import request, render_template
-from base_view import BaseView
-from threadsafe_configuration import ThreadSafeConfiguration as Configuration
-from base_items_exception import BaseItemsException
-from interfaces.gateway.handshake import SCHEMA_SESSION_VALIDATE_RESPONSE
-import page_locations as pages
+from weaver_framework.microservice.api_response import ApiResponse
+from weaver_framework.microservice.base_api_route import BaseApiRoute
+from weaver_framework.microservice.rest_client import RestClient
+from items.shared.base_items_exception import BaseItemsException
+from items.services.items_web_portal.configuration import Configuration
+import items.services.items_web_portal.page_locations as pages
+
+SCHEMA_SESSION_VALIDATE_RESPONSE = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+        "status": {
+            "type": "string",
+            "enum": ["VALID", "INVALID"]
+        }
+    },
+    "required": ["status"],
+    "additionalProperties": False
+}
 
 
-class BaseWebView(BaseView):
-    """ Base class for views that serve web pages """
-    # pylint: disable=too-few-public-methods
-
+class BaseWebView(BaseApiRoute):
     COOKIE_TOKEN = "items_token"
     COOKIE_USER = "items_user"
 
     REDIRECT_URL = "<meta http-equiv=\"Refresh\" content=\"0; url='{0}\"/>"
 
-    def __init__(self, logger):
+    def __init__(self, logger: logging.Logger,
+                 config: Configuration,
+                 rest_client: RestClient) -> None:
         self._logger = logger.getChild(__name__)
+        self._config: Configuration = config
+        self._rest_client: RestClient = rest_client
 
-    def _generate_redirect(self, redirect_url) -> str:
+    async def _generate_redirect(self, redirect_url) -> str:
         new_url = f"{request.url_root}{redirect_url}"
         return self.REDIRECT_URL.format(new_url)
 
-    def _has_auth_cookies(self) -> bool:
+    async def _has_auth_cookies(self) -> bool:
         retrieved_token = request.cookies.get(self.COOKIE_TOKEN)
         retrieved_username = request.cookies.get(self.COOKIE_USER)
         return retrieved_token is not None and retrieved_username is not None
 
-    def _validate_cookies(self) -> bool:
-
+    async def _validate_cookies(self) -> bool:
         token = request.cookies.get(self.COOKIE_TOKEN)
         username = request.cookies.get(self.COOKIE_USER)
 
-        url = f"{Configuration().apis_gateway_svc}web/session/validate"
+        url = f"{self._config.apis_gateway_svc}web/session/validate"
 
         request_body: dict = {
             "email_address": username,
             "token": token
         }
+        response: ApiResponse = await self._rest_client.post(
+            url,
+            json_data=request_body,
+            timeout=5)
 
-        try:
-            response = requests.post(url, json=request_body, timeout=1)
-
-        except requests.exceptions.ConnectionError as ex:
-            raise BaseItemsException('Connection to gateway api timed out')\
-                from ex
+        if response.status_code != HTTPStatus.OK:
+            raise BaseItemsException('Connection to gateway svc timed out')
 
         if response is None:
             raise BaseItemsException(
@@ -90,8 +104,7 @@ class BaseWebView(BaseView):
 
     async def _render_page(self,
                            page_file:
-                           str, *args, **kwargs) \
-            -> typing.Optional[str]:   # pragma: no cover
+                           str, *args, **kwargs) -> str | None:
         """
         Python unittest and coverage hate quart.render_template so it is
         getting excluded from unittests for now.
