@@ -1,4 +1,4 @@
-name: Build | Accounts Svc Docker
+name: Build | Identity Svc Docker
 permissions:
   contents: read
 
@@ -23,7 +23,7 @@ on:
 
 jobs:
   build-images:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     env:
       BRANCH_NAME: ${{ github.event.inputs.branch || 'main' }}
@@ -60,10 +60,10 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: docker/Dockerfile.accounts_svc
+          file: docker/Dockerfile.identity_svc
           push: ${{ env.PUSH_TO_REGISTRY }}
           no-cache: true
-          tags: swatkat1977/items:items_accounts_svc-${{ env.DOCKER_TAG }}
+          tags: swatkat1977/items:items_identity_svc-${{ env.DOCKER_TAG }}
           platforms: |
             linux/amd64
             linux/arm64
