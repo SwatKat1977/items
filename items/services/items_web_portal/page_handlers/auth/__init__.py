@@ -1,5 +1,6 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
+Copyright 2017-2025 INTMAC Development Team [Defunct]
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,57 +14,52 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import logging
 from quart import Blueprint
-from apis.auth_api_view import AuthApiView
-from metadata_settings import MetadataSettings
+from items.services.items_web_portal.page_handler_injections import (
+    PageHandlerInjections)
 
 
-def create_blueprint(logger: logging.Logger,
-                     metadata: MetadataSettings) -> Blueprint:
-    """
-    Creates and registers a Quart Blueprint for handling authentication
-    handshake API routes.
+def create_auth_page_handlers(injections: PageHandlerInjections) -> Blueprint:
+    # view = AuthApiView(logger, metadata)
 
-    This function initializes a `View` object with the provided meta ddata
-    instance and logger, and then defines an API endpoint for authentication
-    handshake.
+    routes = Blueprint('auth_routes', __name__)
 
-    Args:
-        logger (logging.Logger): A logger instance for logging messages.
-        metadata (MetadataSettings): A metadata settings instance.
+    injections.logger.debug(" Auth Page Handlers:")
 
-    Returns:
-        Blueprint: A Quart `Blueprint` object containing the registered route.
-    """
-    view = AuthApiView(logger, metadata)
+    # Index page: '/'
+    injections.logger.debug("=> %s GET /",
+                            "Home / index page".ljust(40))
 
-    blueprint = Blueprint('auth_api', __name__)
-
-    logger.debug("------------ Registering Authentication routes ------------")
-
-    logger.debug("=> / [GET]       : Home (web page)")
-
-    @blueprint.route('/', methods=['GET'])
+    @routes.route('/', methods=['GET'])
     async def index_page_request():
+        return None
         return await view.index_page()
 
-    logger.debug("=> /login [POST] : Login (authentication)")
+    # Login page (authentication): '/login'
+    injections.logger.debug("=> %s POST /login",
+                            "Login (authentication)".ljust(40))
 
-    @blueprint.route('/login', methods=['POST'])
+    @routes.route('/login', methods=['POST'])
     async def login_page_request_post():
+        return None
         return await view.login_page_post()
 
-    logger.debug("=> /login [GET]  : Login (web page)")
+    # Login page (read): '/login'
+    injections.logger.debug("=> %s GET /login",
+                            "Login (read page)".ljust(40))
 
-    @blueprint.route('/login', methods=['GET'])
+    @routes.route('/login', methods=['GET'])
     async def login_page_request_get():
+        return None
         return await view.login_page_get()
 
-    logger.debug("=> /logout [GET] : Logout (web page)")
+    # Logout page: '/logout'
+    injections.logger.debug("=> %s GET /logout",
+                            "Authentication logout".ljust(40))
 
-    @blueprint.route('/logout', methods=['GET'])
+    @routes.route('/logout', methods=['GET'])
     async def logout_page_request():
+        return None
         return await view.logout_page()
 
-    return blueprint
+    return routes
