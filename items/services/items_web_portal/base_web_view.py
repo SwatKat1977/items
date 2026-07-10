@@ -15,9 +15,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from http import HTTPStatus
-import json
 import logging
 import jinja2
+import jsonschema
 from quart import request, render_template
 from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.base_api_route import BaseApiRoute
@@ -40,16 +40,17 @@ SCHEMA_SESSION_VALIDATE_RESPONSE = {
 }
 
 
-class BaseWebView(BaseApiRoute):
+class SessionAuthMixin:
+    """
+    Cookie/session authentication helpers mixed into PortalPageHandler.
+    """
+
     COOKIE_TOKEN = "items_token"
     COOKIE_USER = "items_user"
 
-    REDIRECT_URL = "<meta http-equiv=\"Refresh\" content=\"0; url='{0}\"/>"
+    REDIRECT_URL = "<meta http-equiv=\"Refresh\" content=\"0; url='{0}'\"/>"
 
-    def __init__(self, logger: logging.Logger,
-                 config: Configuration,
-                 rest_client: RestClient) -> None:
-        self._logger = logger.getChild(__name__)
+    def __init__(self, config: Configuration, rest_client: RestClient) -> None:
         self._config: Configuration = config
         self._rest_client: RestClient = rest_client
 
@@ -78,43 +79,39 @@ class BaseWebView(BaseApiRoute):
             timeout=5)
 
         if response.status_code != HTTPStatus.OK:
-            raise BaseItemsException('Connection to gateway svc timed out')
-
-        if response is None:
+            detail = f": {response.exception_msg}" if response.exception_msg \
+                else ""
             raise BaseItemsException(
-                "Missing/invalid JSON body for gateway svc session validate")
+                f"Gateway svc session validate failed with status "
+                f"{response.status_code}{detail}")
 
         try:
-            json_data = json.loads(response.text)
-
-        except (TypeError, json.JSONDecodeError) as ex:
-            raise BaseItemsException(
-                "Invalid JSON body type for gateway svc session validate")\
-                from ex
-
-        try:
-            jsonschema.validate(instance=json_data,
+            jsonschema.validate(instance=response.body,
                                 schema=SCHEMA_SESSION_VALIDATE_RESPONSE)
 
         except jsonschema.exceptions.ValidationError as ex:
             raise BaseItemsException(
-                "Schema for accounts service health check invalid!") from ex
+                "Schema for gateway svc session validate response "
+                "invalid!") from ex
 
-        return json_data["status"] == "VALID"
+        return response.body["status"] == "VALID"
 
-    async def _render_page(self,
-                           page_file:
-                           str, *args, **kwargs) -> str | None:
+
+class PortalPageHandler(SessionAuthMixin, BaseApiRoute):
+    def __init__(self, logger: logging.Logger,
+                 config: Configuration,
+                 rest_client: RestClient) -> None:
+        super().__init__(config, rest_client)
+        self._logger = logger.getChild(__name__)
+
+    async def _render_page(self, page_file: str, **kwargs) -> str | None:
         """
         Python unittest and coverage hate quart.render_template so it is
         getting excluded from unittests for now.
         """
         try:
-            return await render_template(page_file, *args, **kwargs)
+            return await render_template(page_file, **kwargs)
 
         except jinja2.TemplateError:
             self._logger.error("Failed to render web page '%s'", page_file)
             return await render_template(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
-
-    async def _process_post_form_data(self, form_data) ->dict:
-        return dict(form_data.items())
