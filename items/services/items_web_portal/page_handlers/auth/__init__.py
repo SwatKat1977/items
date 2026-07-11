@@ -17,11 +17,29 @@ limitations under the License.
 from quart import Blueprint
 from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
+from items.services.items_web_portal.page_handlers.auth.index_page_handler \
+    import IndexPageHandler
+from items.services.items_web_portal.page_handlers.auth.login_get_page_handler \
+    import LoginGetPageHandler
+from items.services.items_web_portal.page_handlers.auth.login_post_page_handler \
+    import LoginPostPageHandler
 from items.services.items_web_portal.page_handlers.auth.logout_page_handler \
     import LogoutPageHandler
 
 
 def create_auth_page_handlers(injections: PageHandlerInjections) -> Blueprint:
+    handler_index: IndexPageHandler = IndexPageHandler(
+        injections.logger,
+        injections.config,
+        injections.rest_client)
+    handler_login_get: LoginGetPageHandler = LoginGetPageHandler(
+        injections.logger,
+        injections.config,
+        injections.rest_client)
+    handler_login_post: LoginPostPageHandler = LoginPostPageHandler(
+        injections.logger,
+        injections.config,
+        injections.rest_client)
     handler_logout: LogoutPageHandler = LogoutPageHandler(
         injections.logger,
         injections.config,
@@ -37,8 +55,7 @@ def create_auth_page_handlers(injections: PageHandlerInjections) -> Blueprint:
 
     @routes.route('/', methods=['GET'])
     async def index_page_request():
-        return None
-        return await view.index_page()
+        return await handler_index.index()
 
     # Login page (authentication): '/login'
     injections.logger.debug("=> %s POST /login",
@@ -46,8 +63,7 @@ def create_auth_page_handlers(injections: PageHandlerInjections) -> Blueprint:
 
     @routes.route('/login', methods=['POST'])
     async def login_page_request_post():
-        return None
-        return await view.login_page_post()
+        return await handler_login_post.login_post()
 
     # Login page (read): '/login'
     injections.logger.debug("=> %s GET /login",
@@ -55,8 +71,7 @@ def create_auth_page_handlers(injections: PageHandlerInjections) -> Blueprint:
 
     @routes.route('/login', methods=['GET'])
     async def login_page_request_get():
-        return None
-        return await view.login_page_get()
+        return await handler_login_get.login_get()
 
     # Logout page: '/logout'
     injections.logger.debug("=> %s GET /logout",
