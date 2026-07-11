@@ -34,7 +34,7 @@ class LoginGetPageHandler(PortalPageHandler):
 
     async def login_get(self):
         try:
-            if self._has_auth_cookies() and self._validate_cookies():
+            if await self._has_auth_cookies() and await self._validate_cookies():
                 redirect = self._generate_redirect('')
                 response = await make_response(redirect)
                 return response

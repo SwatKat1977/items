@@ -31,7 +31,8 @@ def create_auth_page_handlers(injections: PageHandlerInjections) -> Blueprint:
     handler_index: IndexPageHandler = IndexPageHandler(
         injections.logger,
         injections.config,
-        injections.rest_client)
+        injections.rest_client,
+        injections.metadata)
     handler_login_get: LoginGetPageHandler = LoginGetPageHandler(
         injections.logger,
         injections.config,
