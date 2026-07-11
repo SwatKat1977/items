@@ -19,6 +19,7 @@ from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_web_portal.configuration import Configuration
 from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
+import items.services.items_web_portal.page_locations as pages
 
 
 class LogoutPageHandler(PortalPageHandler):
@@ -31,4 +32,4 @@ class LogoutPageHandler(PortalPageHandler):
 
     async def logout(self):
         """ PLACEHOLDER """
-        return None
+        return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)

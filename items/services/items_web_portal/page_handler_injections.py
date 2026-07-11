@@ -16,6 +16,8 @@ limitations under the License.
 """
 from dataclasses import dataclass
 import logging
+from weaver_framework.microservice.rest_client import RestClient
+from items.services.items_web_portal.configuration import Configuration
 from items.services.items_web_portal.metadata_settings import MetadataSettings
 
 
@@ -34,5 +36,7 @@ class PageHandlerInjections:
         metadata: Application metadata and configuration settings used by
             page handlers.
     """
+    config: Configuration
     logger: logging.Logger
     metadata: MetadataSettings
+    rest_client: RestClient

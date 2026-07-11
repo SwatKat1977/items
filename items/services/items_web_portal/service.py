@@ -69,7 +69,10 @@ class Service(BaseMicroservice):
         self._rest_client: RestClient = RestClient(self._http_session)
 
         injections: PageHandlerInjections = PageHandlerInjections(
-            self.logger, self._metadata_settings)
+            self._config,
+            self.logger,
+            self._metadata_settings,
+            self._rest_client)
 
         '''
         TEMPORARY DISABLE
