@@ -17,6 +17,7 @@ limitations under the License.
 from http import HTTPStatus
 import logging
 from quart import make_response
+from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.rest_client import RestClient
 from items.shared.base_items_exception import BaseItemsException
 from items.services.items_web_portal.configuration import Configuration
@@ -24,19 +25,6 @@ from items.services.items_web_portal.metadata_settings import MetadataSettings
 import items.services.items_web_portal.page_locations as pages
 from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
-
-
-'''
-from http import HTTPStatus
-
-from base_web_view import PortalPageHandler
-from base_view import ApiResponse
-from quart import make_response, request, Response
-from base_items_exception import BaseItemsException
-import page_locations as pages
-from threadsafe_configuration import ThreadSafeConfiguration
-from metadata_settings import MetadataSettings
-'''
 
 
 class IndexPageHandler(PortalPageHandler):
@@ -51,7 +39,7 @@ class IndexPageHandler(PortalPageHandler):
 
     async def index(self):
         try:
-            if not self._has_auth_cookies() or not self._validate_cookies():
+            if not await self._has_auth_cookies() or not await self._validate_cookies():
                 redirect = self._generate_redirect('login')
                 return await make_response(redirect)
 
@@ -62,7 +50,7 @@ class IndexPageHandler(PortalPageHandler):
         base_url: str = self._config.apis_gateway_svc
         url = f"{base_url}/web/projects?value_fields=name&" + \
               "count_fields=no_of_test_runs,no_of_milestones"
-        response: ApiResponse = await self._call_api_get(url)
+        response: ApiResponse = await self._rest_client.get(url)
 
         if response.status_code != HTTPStatus.OK:
             self._logger.critical("Gateway svc request invalid - Reason: %s",

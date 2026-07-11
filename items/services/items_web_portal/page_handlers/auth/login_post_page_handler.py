@@ -83,7 +83,7 @@ class LoginPostPageHandler(PortalPageHandler):
                                            error_msg=error_msg)
 
         if response.body.get("status") == 1:
-            redirect = self._generate_redirect('')
+            redirect = await self._generate_redirect('')
             login_response: Response = await make_response(redirect)
             login_response.set_cookie(self.COOKIE_USER, user_email)
             login_response.set_cookie(self.COOKIE_TOKEN,
