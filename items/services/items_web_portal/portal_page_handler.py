@@ -67,7 +67,7 @@ class SessionAuthMixin:
         token = request.cookies.get(self.COOKIE_TOKEN)
         username = request.cookies.get(self.COOKIE_USER)
 
-        url = f"{self._config.apis_gateway_svc}web/session/validate"
+        url = f"{self._config.apis_gateway_svc}web/sessions/validate"
 
         request_body: dict = {
             "email_address": username,
