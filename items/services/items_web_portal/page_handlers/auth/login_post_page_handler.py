@@ -36,7 +36,7 @@ class LoginPostPageHandler(PortalPageHandler):
 
     async def login_post(self):
         try:
-            if self._has_auth_cookies() and self._validate_cookies():
+            if await self._has_auth_cookies() and await self._validate_cookies():
                 redirect = self._generate_redirect('')
                 response: Response = await make_response(redirect)
                 return response
@@ -57,18 +57,26 @@ class LoginPostPageHandler(PortalPageHandler):
                                            error_msg=error_msg)
 
         auth_body: dict = {
-                "type": "basic",
                 "email_address": user_email,
                 "password": password
         }
         base_url: str = self._config.apis_gateway_svc
-        url = f"{base_url}web/session"
+        url = f"{base_url}web/sessions"
 
         response: ApiResponse = await self._rest_client.post(url, auth_body)
 
+        if response.status_code == HTTPStatus.UNAUTHORIZED:
+            error_msg = "Invalid username/password"
+            return await self._render_page(pages.TEMPLATE_LOGIN_PAGE,
+                                           generate_error_msg=True,
+                                           error_msg=error_msg)
+
         if response.status_code != HTTPStatus.OK:
-            self._logger.critical("Gateway svc request invalid - Reason: %s",
-                                  response.exception_msg)
+            reason = response.exception_msg or response.body or \
+                HTTPStatus(response.status_code).phrase
+            self._logger.critical(
+                "Gateway svc request invalid - Status: %s Reason: %s",
+                response.status_code, reason)
             error_msg = "Internal Error"
             return await self._render_page(pages.TEMPLATE_LOGIN_PAGE,
                                            generate_error_msg=True,
