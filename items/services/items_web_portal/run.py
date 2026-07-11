@@ -62,7 +62,7 @@ async def main() -> int:
             pass
 
     host = os.getenv("ITEMS_WEB_PORTAL_HOST", "127.0.0.1")
-    port = int(os.getenv("ITEMS_WEB_PORTAL_PORT", "8080"))
+    port = int(os.getenv("ITEMS_WEB_PORTAL_PORT", "8000"))
 
     config = Config()
     config.bind = [f"{host}:{port}"]
