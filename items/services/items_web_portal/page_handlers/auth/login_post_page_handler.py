@@ -14,7 +14,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from http import HTTPStatus
+import logging
+from quart import make_response, request, Response
+from weaver_framework.microservice.rest_client import RestClient
 from items.shared.base_items_exception import BaseItemsException
+from items.services.items_web_portal.configuration import Configuration
+import items.services.items_web_portal.page_locations as pages
+from items.services.items_web_portal.portal_page_handler import (
+    PortalPageHandler)
 
 """
 
@@ -27,14 +35,7 @@ from threadsafe_configuration import ThreadSafeConfiguration
 from metadata_settings import MetadataSettings
 """
 
-from http import HTTPStatus
-import logging
-from quart import make_response, request, Response
-from weaver_framework.microservice.rest_client import RestClient
-from items.services.items_web_portal.configuration import Configuration
-import items.services.items_web_portal.page_locations as pages
-from items.services.items_web_portal.portal_page_handler import (
-    PortalPageHandler)
+
 
 
 class LoginPostPageHandler(PortalPageHandler):
