@@ -16,6 +16,19 @@ limitations under the License.
 """
 from http import HTTPStatus
 import logging
+from quart import make_response
+from weaver_framework.microservice.rest_client import RestClient
+from items.shared.base_items_exception import BaseItemsException
+from items.services.items_web_portal.configuration import Configuration
+from items.services.items_web_portal.metadata_settings import MetadataSettings
+import items.services.items_web_portal.page_locations as pages
+from items.services.items_web_portal.portal_page_handler import (
+    PortalPageHandler)
+
+
+'''
+from http import HTTPStatus
+
 from base_web_view import PortalPageHandler
 from base_view import ApiResponse
 from quart import make_response, request, Response
@@ -23,62 +36,20 @@ from base_items_exception import BaseItemsException
 import page_locations as pages
 from threadsafe_configuration import ThreadSafeConfiguration
 from metadata_settings import MetadataSettings
+'''
 
 
-class AuthApiView(PortalPageHandler):
-    """
-    View controller responsible for authentication and session handling.
-
-    This class provides handlers for user login, logout, and accessing the
-    authenticated home (dashboard) page. It integrates with the gateway
-    service for validating user credentials, generating authentication
-    tokens, and retrieving initial dashboard data.
-
-    The view uses cookie-based authentication and relies on PortalPageHandler
-    for common behaviour such as template rendering, redirect generation,
-    and API invocation. Authentication cookies are validated before
-    granting access to protected pages.
-
-    Attributes:
-        _metadata_settings (MetadataSettings):
-            Instance-level metadata containing configuration such as the
-            displayed instance name.
-
-    Methods:
-        index_page():
-            Main authenticated entry point ("/"). Validates auth cookies,
-            fetches dashboard project metadata, and renders the dashboard.
-
-        login_page_get():
-            GET handler for the login page. Redirects authenticated users
-            to the home page.
-
-        login_page_post():
-            POST handler for login. Validates submitted credentials via
-            the gateway service and establishes session cookies.
-
-        logout_page():
-            Placeholder logout handler. Intended to clear cookies and
-            redirect users once implemented.
-    """
+class IndexPageHandler(PortalPageHandler):
 
     def __init__(self,
                  logger: logging.Logger,
+                 config: Configuration,
+                 rest_client: RestClient,
                  metadata: MetadataSettings):
-        super().__init__(logger)
+        super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
-    async def index_page(self):
-        """
-        Handler method for home page (e.g. '/').
-
-        parameters:
-            api_request - REST API request object
-
-        returns:
-            Instance of Quart Response class.
-        """
-
+    async def index(self):
         try:
             if not self._has_auth_cookies() or not self._validate_cookies():
                 redirect = self._generate_redirect('login')
@@ -88,7 +59,7 @@ class AuthApiView(PortalPageHandler):
             self._logger.error('Internal Error: %s', ex)
             return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
-        base_url: str = ThreadSafeConfiguration().apis_gateway_svc
+        base_url: str = self._config.apis_gateway_svc
         url = f"{base_url}/web/projects?value_fields=name&" + \
               "count_fields=no_of_test_runs,no_of_milestones"
         response: ApiResponse = await self._call_api_get(url)
@@ -106,87 +77,3 @@ class AuthApiView(PortalPageHandler):
             active_page=page,
             projects=projects,
             instance_name=self._metadata_settings.instance_name)
-
-    async def login_page_get(self):
-        """
-        GET Handler method for login page.
-
-        returns:
-            Instance of Quart Response class.
-        """
-
-        try:
-            if self._has_auth_cookies() and self._validate_cookies():
-                redirect = self._generate_redirect('')
-                response = await make_response(redirect)
-                return response
-
-        except BaseItemsException as ex:
-            self._logger.error('Internal Error: %s', ex)
-            return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
-
-        return await self._render_page(pages.TEMPLATE_LOGIN_PAGE)
-
-    async def login_page_post(self):
-        """
-        POST Handler method for login page.
-
-        returns:
-            Instance of Quart Response class.
-        """
-
-        try:
-            if self._has_auth_cookies() and self._validate_cookies():
-                redirect = self._generate_redirect('')
-                response = await make_response(redirect)
-                return response
-
-        except BaseItemsException as ex:
-            self._logger.error('Internal Error: %s', ex)
-            return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
-
-        form_data = dict(await request.form)
-
-        user_email = form_data.get('user_email')
-        password = form_data.get('password')
-
-        if not user_email or not password:
-            error_msg = "Invalid username/password"
-            return await self._render_page(pages.TEMPLATE_LOGIN_PAGE,
-                                           generate_error_msg=True,
-                                           error_msg=error_msg)
-
-        auth_body: dict = {
-                "type": "basic",
-                "email_address": user_email,
-                "password": password
-        }
-        base_url: str = ThreadSafeConfiguration().apis_gateway_svc
-        url = f"{base_url}web/session"
-
-        response: ApiResponse = await self._call_api_post(url, auth_body)
-
-        if response.status_code != HTTPStatus.OK:
-            self._logger.critical("Gateway svc request invalid - Reason: %s",
-                                  response.exception_msg)
-            error_msg = "Internal Error"
-            return await self._render_page(pages.TEMPLATE_LOGIN_PAGE,
-                                           generate_error_msg=True,
-                                           error_msg=error_msg)
-
-        if response.body.get("status") == 1:
-            redirect = self._generate_redirect('')
-            login_response: Response = await make_response(redirect)
-            login_response.set_cookie(self.COOKIE_USER, user_email)
-            login_response.set_cookie(self.COOKIE_TOKEN,
-                                      response.body.get("token"))
-            return login_response
-
-        error_msg = "Invalid username/password"
-        return await self._render_page(pages.TEMPLATE_LOGIN_PAGE,
-                                       generate_error_msg = True,
-                                       error_msg=error_msg)
-
-    async def logout_page(self):
-        """ PLACEHOLDER """
-        return None
