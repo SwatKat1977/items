@@ -21,7 +21,7 @@ from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
 
 
-class AuthLogoutPageHandler(PortalPageHandler):
+class LogoutPageHandler(PortalPageHandler):
 
     def __init__(self,
                  logger: logging.Logger,
@@ -29,6 +29,6 @@ class AuthLogoutPageHandler(PortalPageHandler):
                  rest_client: RestClient):
         super().__init__(logger, config, rest_client)
 
-    async def logout_page(self):
+    async def logout(self):
         """ PLACEHOLDER """
         return None

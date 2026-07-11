@@ -17,10 +17,15 @@ limitations under the License.
 from quart import Blueprint
 from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
+from items.services.items_web_portal.page_handlers.auth.logout_page_handler \
+    import LogoutPageHandler
 
 
 def create_auth_page_handlers(injections: PageHandlerInjections) -> Blueprint:
-    # view = AuthApiView(logger, metadata)
+    handler_logout: LogoutPageHandler = LogoutPageHandler(
+        injections.logger,
+        injections.config,
+        injections.rest_client)
 
     routes = Blueprint('auth_routes', __name__)
 
@@ -59,7 +64,6 @@ def create_auth_page_handlers(injections: PageHandlerInjections) -> Blueprint:
 
     @routes.route('/logout', methods=['GET'])
     async def logout_page_request():
-        return None
-        return await view.logout_page()
+        return await handler_logout.logout()
 
     return routes
