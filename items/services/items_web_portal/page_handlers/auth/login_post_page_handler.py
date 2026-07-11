@@ -17,25 +17,13 @@ limitations under the License.
 from http import HTTPStatus
 import logging
 from quart import make_response, request, Response
+from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.rest_client import RestClient
 from items.shared.base_items_exception import BaseItemsException
 from items.services.items_web_portal.configuration import Configuration
 import items.services.items_web_portal.page_locations as pages
 from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
-
-"""
-
-from base_web_view import PortalPageHandler
-from base_view import ApiResponse
-from quart import make_response, request, Response
-from base_items_exception import BaseItemsException
-import page_locations as pages
-from threadsafe_configuration import ThreadSafeConfiguration
-from metadata_settings import MetadataSettings
-"""
-
-
 
 
 class LoginPostPageHandler(PortalPageHandler):
@@ -50,7 +38,7 @@ class LoginPostPageHandler(PortalPageHandler):
         try:
             if self._has_auth_cookies() and self._validate_cookies():
                 redirect = self._generate_redirect('')
-                response = await make_response(redirect)
+                response: Response = await make_response(redirect)
                 return response
 
         except BaseItemsException as ex:
@@ -76,7 +64,7 @@ class LoginPostPageHandler(PortalPageHandler):
         base_url: str = self._config.apis_gateway_svc
         url = f"{base_url}web/session"
 
-        response: ApiResponse = await self._call_api_post(url, auth_body)
+        response: ApiResponse = await self._rest_client.post(url, auth_body)
 
         if response.status_code != HTTPStatus.OK:
             self._logger.critical("Gateway svc request invalid - Reason: %s",
