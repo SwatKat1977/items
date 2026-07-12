@@ -41,9 +41,14 @@ SCHEMA_SESSION_VALIDATE_RESPONSE = {
 
 
 class SessionAuthMixin:
+    """Provides shared session authentication functionality for page handlers.
+
+    This mixin encapsulates common operations related to user session
+    management, including authentication cookie handling, session validation,
+    and redirect generation. It is intended to be inherited by page handlers
+    that require authenticated user sessions.
     """
-    Cookie/session authentication helpers mixed into PortalPageHandler.
-    """
+    # pylint: disable=too-few-public-methods
 
     COOKIE_TOKEN = "items_token"
     COOKIE_USER = "items_user"
@@ -51,19 +56,53 @@ class SessionAuthMixin:
     REDIRECT_URL = "<meta http-equiv=\"Refresh\" content=\"0; url='{0}'\"/>"
 
     def __init__(self, config: Configuration, rest_client: RestClient) -> None:
+        """Initializes the session authentication mixin.
+
+        Args:
+            config: Application configuration.
+            rest_client: REST client used to communicate with backend services.
+        """
         self._config: Configuration = config
         self._rest_client: RestClient = rest_client
 
-    async def _generate_redirect(self, redirect_url) -> str:
+    async def _generate_redirect(self, redirect_url: str) -> str:
+        """Generates an HTML redirect response.
+
+        Args:
+            redirect_url: Relative URL to redirect the client to.
+
+        Returns:
+            An HTML document that immediately redirects the client to the
+            specified URL.
+        """
         new_url = f"{request.url_root}{redirect_url}"
         return self.REDIRECT_URL.format(new_url)
 
     async def _has_auth_cookies(self) -> bool:
+        """Determines whether the required authentication cookies exist.
+
+        Returns:
+            ``True`` if both the authentication token and username cookies are
+            present; otherwise, ``False``.
+        """
         retrieved_token = request.cookies.get(self.COOKIE_TOKEN)
         retrieved_username = request.cookies.get(self.COOKIE_USER)
         return retrieved_token is not None and retrieved_username is not None
 
     async def _validate_cookies(self) -> bool:
+        """Validates the current authentication session.
+
+        The stored authentication cookies are submitted to the gateway service
+        for validation. The response is validated against the expected schema
+        before the session status is returned.
+
+        Returns:
+            ``True`` if the session is valid; otherwise, ``False``.
+
+        Raises:
+            BaseItemsException: If the gateway service returns an unexpected
+                response or the response schema is invalid.
+        """
         token = request.cookies.get(self.COOKIE_TOKEN)
         username = request.cookies.get(self.COOKIE_USER)
 
@@ -98,16 +137,40 @@ class SessionAuthMixin:
 
 
 class PortalPageHandler(SessionAuthMixin, BaseApiRoute):
+    """Base class for web portal page handlers.
+
+    This class provides common functionality shared by portal page handlers,
+    including session authentication, logging, and template rendering.
+    """
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, logger: logging.Logger,
                  config: Configuration,
                  rest_client: RestClient) -> None:
+        """Initializes the portal page handler.
+
+        Args:
+            logger: Logger instance used for diagnostic and error messages.
+            config: Application configuration.
+            rest_client: REST client used to communicate with backend services.
+        """
         super().__init__(config, rest_client)
         self._logger = logger.getChild(__name__)
 
     async def _render_page(self, page_file: str, **kwargs) -> str | None:
-        """
-        Python unittest and coverage hate quart.render_template so it is
-        getting excluded from unittests for now.
+        """Renders a portal page template.
+
+        Attempts to render the specified Jinja template. If template rendering
+        fails, the error is logged and the internal error page is rendered
+        instead.
+
+        Args:
+            page_file: Template file to render.
+            **kwargs: Context variables supplied to the template.
+
+        Returns:
+            The rendered HTML page, or the rendered internal error page if
+            template rendering fails.
         """
         try:
             return await render_template(page_file, **kwargs)
