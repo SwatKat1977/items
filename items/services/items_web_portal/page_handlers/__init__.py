@@ -21,6 +21,21 @@ from .auth import create_auth_page_handlers
 
 
 def create_page_handlers(injections: PageHandlerInjections) -> quart.Blueprint:
+    """Creates and registers the application's page handlers.
+
+    This function creates the root blueprint for the web portal, registers all
+    page handler blueprints, and returns the configured blueprint for
+    registration with the application.
+
+    Args:
+        injections: Collection of shared application dependencies required by
+            the page handlers, including the logger, configuration, REST
+            client, and metadata settings.
+
+    Returns:
+        A configured Quart ``Blueprint`` containing all registered page
+        handler routes.
+    """
     routes = quart.Blueprint("page_handler_routes", __name__)
 
     routes.register_blueprint(create_auth_page_handlers(injections))

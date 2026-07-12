@@ -28,6 +28,29 @@ from items.services.items_web_portal.page_handlers.auth.logout_page_handler \
 
 
 def create_auth_page_handlers(injections: PageHandlerInjections) -> Blueprint:
+    """Creates the authentication-related page handlers and routes.
+
+    This function instantiates the page handler objects responsible for
+    authentication and portal navigation, registers their associated HTTP
+    routes on a Quart blueprint, and returns the configured blueprint for
+    registration with the application.
+
+    The following routes are registered:
+
+    - ``GET /`` – Displays the portal dashboard.
+    - ``GET /login`` – Displays the login page.
+    - ``POST /login`` – Authenticates a user.
+    - ``GET /logout`` – Logs the current user out.
+
+    Args:
+        injections: Collection of shared application dependencies required by
+            the page handlers, including the logger, configuration, REST
+            client, and metadata settings.
+
+    Returns:
+        A configured Quart ``Blueprint`` containing the authentication-related
+        routes.
+    """
     handler_index: IndexPageHandler = IndexPageHandler(
         injections.logger,
         injections.config,

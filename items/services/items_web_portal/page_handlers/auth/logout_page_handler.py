@@ -14,22 +14,27 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import logging
-from weaver_framework.microservice.rest_client import RestClient
-from items.services.items_web_portal.configuration import Configuration
 from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
 import items.services.items_web_portal.page_locations as pages
 
 
 class LogoutPageHandler(PortalPageHandler):
+    """Handles user logout requests.
 
-    def __init__(self,
-                 logger: logging.Logger,
-                 config: Configuration,
-                 rest_client: RestClient):
-        super().__init__(logger, config, rest_client)
+    This handler is responsible for terminating an authenticated user session.
+    The current implementation is a placeholder and returns the internal error
+    page until logout functionality has been implemented.
+    """
 
     async def logout(self):
-        """ PLACEHOLDER """
+        """Handles a logout request.
+
+        This method will eventually invalidate the user's authenticated session,
+        remove any authentication cookies, and redirect the user to the login
+        page. It is currently a placeholder implementation.
+
+        Returns:
+            A Quart response containing the internal error page.
+        """
         return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)

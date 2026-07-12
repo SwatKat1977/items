@@ -28,16 +28,46 @@ from items.services.items_web_portal.portal_page_handler import (
 
 
 class IndexPageHandler(PortalPageHandler):
+    """Handles requests for the application dashboard.
+
+    This handler serves the portal's index page. It verifies that the user has
+    a valid authenticated session before retrieving project information from
+    the gateway service and rendering the dashboard.
+    """
 
     def __init__(self,
                  logger: logging.Logger,
                  config: Configuration,
                  rest_client: RestClient,
                  metadata: MetadataSettings):
+        """Initializes the index page handler.
+
+        Args:
+            logger: Logger instance used for diagnostic and error messages.
+            config: Application configuration.
+            rest_client: REST client used to communicate with backend services.
+            metadata: Application metadata used when rendering portal pages.
+        """
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
     async def index(self):
+        """Handles a request for the portal dashboard.
+
+        The handler performs the following steps:
+
+        - Verifies that the user has a valid authenticated session.
+        - Redirects unauthenticated users to the login page.
+        - Retrieves project summary information from the gateway service.
+        - Renders the dashboard page using the retrieved project data.
+
+        Returns:
+            A Quart response containing either:
+
+            - A redirect to the login page for unauthenticated users.
+            - The dashboard page populated with project information.
+            - The internal error page if an error occurs.
+        """
         try:
             if not await self._has_auth_cookies() or not await self._validate_cookies():
                 redirect = self._generate_redirect('login')

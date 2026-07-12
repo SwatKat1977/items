@@ -15,26 +15,45 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from http import HTTPStatus
-import logging
 from quart import make_response, request, Response
 from weaver_framework.microservice.api_response import ApiResponse
-from weaver_framework.microservice.rest_client import RestClient
 from items.shared.base_items_exception import BaseItemsException
-from items.services.items_web_portal.configuration import Configuration
 import items.services.items_web_portal.page_locations as pages
 from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
 
 
 class LoginPostPageHandler(PortalPageHandler):
+    """Handles HTTP POST requests for user login.
 
-    def __init__(self,
-                 logger: logging.Logger,
-                 config: Configuration,
-                 rest_client: RestClient):
-        super().__init__(logger, config, rest_client)
+    This handler processes login form submissions, authenticates the supplied
+    credentials with the gateway service, and establishes an authenticated
+    session by setting the appropriate cookies. If authentication fails or an
+    error occurs, the login page is re-rendered with an appropriate error
+    message.
+    """
 
     async def login_post(self):
+        """Handles a POST request for user authentication.
+
+        The handler performs the following steps:
+
+        - Verifies whether the user already has a valid authenticated session.
+        - Reads and validates the submitted login form.
+        - Sends the credentials to the gateway authentication service.
+        - Creates an authenticated session by setting login cookies when
+          authentication succeeds.
+        - Re-renders the login page with an error message if authentication
+          fails or an internal error occurs.
+
+        Returns:
+            A Quart response containing either:
+
+            - A redirect to the authenticated landing page.
+            - The login page with validation or authentication errors.
+            - The internal error page if an unexpected exception occurs.
+        """
+        # pylint: disable=too-many-return-statements
         try:
             if await self._has_auth_cookies() and await self._validate_cookies():
                 redirect = self._generate_redirect('')

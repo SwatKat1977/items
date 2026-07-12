@@ -14,25 +14,42 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import logging
 from quart import make_response
-from weaver_framework.microservice.rest_client import RestClient
 from items.shared.base_items_exception import BaseItemsException
-from items.services.items_web_portal.configuration import Configuration
 import items.services.items_web_portal.page_locations as pages
 from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
 
 
 class LoginGetPageHandler(PortalPageHandler):
+    """Handles HTTP GET requests for the login page.
 
-    def __init__(self,
-                 logger: logging.Logger,
-                 config: Configuration,
-                 rest_client: RestClient):
-        super().__init__(logger, config, rest_client)
+    This handler determines whether the user already has a valid authenticated
+    session. If valid authentication cookies are present, the user is redirected
+    to the portal home page. Otherwise, the login page is rendered.
+
+    Attributes:
+        _logger: Logger used for diagnostic and error messages.
+        _config: Application configuration.
+        _rest_client: REST client used for backend communication.
+    """
 
     async def login_get(self):
+        """Handles a GET request for the login page.
+
+        If the user has authentication cookies and they are successfully
+        validated, the user is redirected to the application's default page.
+        Otherwise, the login page is rendered.
+
+        If an internal error occurs while validating the session, an error is
+        logged and the internal error page is returned.
+
+        Returns:
+            A Quart response containing either:
+                - A redirect to the authenticated landing page.
+                - The login page.
+                - The internal error page if an exception occurs.
+        """
         try:
             if await self._has_auth_cookies() and await self._validate_cookies():
                 redirect = self._generate_redirect('')
