@@ -19,7 +19,7 @@ from items.services.items_web_portal.portal_page_handler import (
 import items.services.items_web_portal.page_locations as pages
 
 
-class ProjectsApiView(PortalPageHandler):
+class GetProjectOverviewPageHandler(PortalPageHandler):
 
     async def project_overview(self, _project_id: int):
         """ PLACEHOLDER """
