@@ -21,22 +21,42 @@ from items.services.items_web_portal.configuration_layout import \
 
 
 class Configuration(ConfigurationManager):
+    """Provides strongly typed access to application configuration settings.
+
+    This class extends :class:`ConfigurationManager` by exposing commonly used
+    configuration values as typed properties. Each property retrieves its value
+    from the underlying configuration store using the appropriate section and
+    key.
+    """
 
     @property
     def logging_log_level(self) -> str:
-        """ Configuration property : Logging | log level """
+        """Gets the configured logging level.
+
+        Returns:
+            The logging level configured for the application (for example,
+            ``"DEBUG"``, ``"INFO"``, ``"WARNING"``, or ``"ERROR"``).
+        """
         return self.get_entry(ConfigurationConstants.SECTION_LOGGING,
                               ConfigurationConstants.LOGGING_LOG_LEVEL)
 
     @property
     def general_api_signing_secret(self) -> str:
-        """ Configuration property : General | API signing secret """
+        """Gets the API signing secret.
+
+        Returns:
+            The secret used to sign and verify API requests.
+        """
         return self.get_entry(
             ConfigurationConstants.SECTION_GENERAL,
             ConfigurationConstants.GENERAL_API_SIGNING_SECRET)
 
     @property
     def apis_gateway_svc(self) -> str:
-        """ Configuration property : APIs | Gateway Service base path """
+        """Gets the gateway service base URL.
+
+        Returns:
+            The base URL used to communicate with the gateway service.
+        """
         return self.get_entry(ConfigurationConstants.SECTION_APIS,
                               ConfigurationConstants.APIS_GATEWAY_SVC)

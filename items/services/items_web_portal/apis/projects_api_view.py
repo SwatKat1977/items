@@ -1,5 +1,6 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
+Copyright 2017-2025 INTMAC Development Team [Defunct]
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,13 +18,13 @@ import http
 import json
 import logging
 import quart
-from base_web_view import BaseWebView
+from base_web_view import PortalPageHandler
 import page_locations as pages
 from threadsafe_configuration import ThreadSafeConfiguration
 from metadata_settings import MetadataSettings
 
 
-class ProjectsApiView(BaseWebView):
+class ProjectsApiView(PortalPageHandler):
     """
     Provides API endpoints for project-related web views, including retrieval
     and transformation of test case details for display in HTML templates.

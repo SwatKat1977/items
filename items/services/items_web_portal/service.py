@@ -25,10 +25,13 @@ from weaver_framework.configuration_system.configuration_manager import (
     ConfigurationError)
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_web_portal.metadata_settings import MetadataSettings
+from items.services.items_web_portal.page_handlers import create_page_handlers
 from items.shared import LICENSE_TEXT, SERVICE_COPYRIGHT_TEXT, __version__
 from items.services.items_web_portal.configuration_layout import CONFIGURATION_LAYOUT
 from items.services.items_web_portal.configuration import Configuration
-from items.services.items_gateway.api_signature import generate_api_signature
+from items.shared.api_signature import generate_api_signature
+from items.services.items_web_portal.page_handler_injections import (
+    PageHandlerInjections)
 
 
 class Service(BaseMicroservice):
@@ -65,16 +68,18 @@ class Service(BaseMicroservice):
         self._metadata_settings: MetadataSettings = MetadataSettings()
         self._rest_client: RestClient = RestClient(self._http_session)
 
-        if not await self._get_metadata(self.GET_METADATA_INFINITE_RETRIES):
-            return False
-
-        '''
-        self._quart_instance.register_blueprint(create_routes(
-            self.logger,
-            self._sessions,
+        injections: PageHandlerInjections = PageHandlerInjections(
             self._config,
-            self._rest_client))
-        '''
+            self.logger,
+            self._metadata_settings,
+            self._rest_client)
+
+        # TEMPORARY DISABLE
+        # if not await self._get_metadata(self.GET_METADATA_INFINITE_RETRIES):
+        #     return False
+
+        self._quart_instance.register_blueprint(create_page_handlers(
+            injections))
 
         return True
 
