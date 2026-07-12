@@ -9,9 +9,7 @@
 
 body
 {
-    background-image: url('http://getwallpapers.com/wallpaper/full/a/5/d/544750.jpg');
-    background-size: cover;
-    background-repeat: no-repeat;
+    background-color: #294665;
     height: 100%;
     min-height: 93vh
 }

@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import AsyncMock, patch, MagicMock
 from quart import Quart, request
 from apis.auth_api_view import AuthApiView
-from base_web_view import BaseWebView
+from base_web_view import PortalPageHandler
 from base_items_exception import BaseItemsException
 from threadsafe_configuration import ThreadSafeConfiguration
 from configuration.configuration_manager import ConfigurationManager
@@ -28,9 +28,9 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
     async def asyncTearDown(self):
         await self.app_ctx.__aexit__(None, None, None)
 
-    @patch.object(BaseWebView, '_generate_redirect', return_value="redirect_html")
-    @patch.object(BaseWebView, '_has_auth_cookies', return_value=False)
-    @patch.object(BaseWebView, '_validate_cookies', return_value=False)
+    @patch.object(PortalPageHandler, '_generate_redirect', return_value="redirect_html")
+    @patch.object(PortalPageHandler, '_has_auth_cookies', return_value=False)
+    @patch.object(PortalPageHandler, '_validate_cookies', return_value=False)
     async def test_index_page_no_auth_cookies(self, mock_validate_cookies,
                                               mock_has_auth_cookies,
                                               mock_redirect):
@@ -44,9 +44,9 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
                 mock_validate_cookies.assert_not_called()
                 self.assertEqual(await result.get_data(), b"redirect_html")
 
-    @patch.object(BaseWebView, '_generate_redirect', return_value="redirect_html")
-    @patch.object(BaseWebView, '_has_auth_cookies', return_value=True)
-    @patch.object(BaseWebView, '_validate_cookies', return_value=False)
+    @patch.object(PortalPageHandler, '_generate_redirect', return_value="redirect_html")
+    @patch.object(PortalPageHandler, '_has_auth_cookies', return_value=True)
+    @patch.object(PortalPageHandler, '_validate_cookies', return_value=False)
     async def test_index_page_has_invalid_auth_cookies(self, mock_validate_cookies,
                                                        mock_has_auth_cookies,
                                                        mock_redirect):
@@ -61,8 +61,8 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(await result.get_data(), b"redirect_html")
 
     @patch.object(ConfigurationManager, 'get_entry')
-    @patch.object(BaseWebView, '_has_auth_cookies', return_value=True)
-    @patch.object(BaseWebView, '_validate_cookies', return_value=True)
+    @patch.object(PortalPageHandler, '_has_auth_cookies', return_value=True)
+    @patch.object(PortalPageHandler, '_validate_cookies', return_value=True)
     async def test_index_page_has_valid_auth_cookies(self,
                                                      mock_validate_cookies,
                                                      mock_has_auth_cookies,
@@ -87,8 +87,8 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
                 mock_validate_cookies.assert_called_once()
 
     @patch.object(ConfigurationManager, 'get_entry')
-    @patch.object(BaseWebView, '_has_auth_cookies', return_value=True)
-    @patch.object(BaseWebView, '_validate_cookies', return_value=True)
+    @patch.object(PortalPageHandler, '_has_auth_cookies', return_value=True)
+    @patch.object(PortalPageHandler, '_validate_cookies', return_value=True)
     async def test_index_page_invalid_gateway_request(self,
                                                       mock_validate_cookies,
                                                       mock_has_auth_cookies,
@@ -210,10 +210,7 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
     @patch.object(ThreadSafeConfiguration,
                   "get_entry",
                   return_value="https://mocked-url.com/")
-    @patch.object(BaseWebView, '_process_post_form_data',
-                  return_value={"user_email": "test", "password": "pass"})
     async def test_login_page_post_valid_login(self,
-                                               mock_process_post_form_data,
                                                mock_config):
         """Test login_page_post handles successful login."""
         mock_response = AsyncMock(
@@ -223,7 +220,9 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
         # Mock the API call
         with patch.object(self.auth_api_view, "_call_api_post", return_value=mock_response):
             with patch.object(self.auth_api_view, "_render_page", return_value="login_page"):
-                async with self.app.test_request_context('/login', method="POST"):
+                async with self.app.test_request_context(
+                        '/login', method="POST",
+                        data={"user_email": "test", "password": "pass"}):
                     result = await self.auth_api_view.login_page_post()
 
                     # Ensure the mock API call was made correctly
@@ -239,10 +238,7 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
     @patch.object(ThreadSafeConfiguration,
                   "get_entry",
                   return_value="https://mocked-url.com/")
-    @patch.object(BaseWebView, '_process_post_form_data',
-                  return_value={"user_email": "test", "password": "pass"})
     async def test_login_page_post_api_failure(self,
-                                               mock_process_post_form_data,
                                                mock_config):
         """Test login_page_post handles successful login."""
         mock_response = AsyncMock(
@@ -252,7 +248,9 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
         # Mock the API call
         with patch.object(self.auth_api_view, "_call_api_post", return_value=mock_response):
             with patch.object(self.auth_api_view, "_render_page", return_value="login_page"):
-                async with self.app.test_request_context('/login', method="POST"):
+                async with self.app.test_request_context(
+                        '/login', method="POST",
+                        data={"user_email": "test", "password": "pass"}):
                     result = await self.auth_api_view.login_page_post()
 
                     # Ensure the mock API call was made correctly
@@ -270,10 +268,7 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
     @patch.object(ThreadSafeConfiguration,
                   "get_entry",
                   return_value="https://mocked-url.com/")
-    @patch.object(BaseWebView, '_process_post_form_data',
-                  return_value={"type": "basic", "user_email": "test", "password": "pass"})
     async def test_login_page_post_invalid_username_or_password(self,
-                                               mock_process_post_form_data,
                                                mock_config):
         """Test login_page_post handles successful login."""
         mock_response = AsyncMock(
@@ -283,7 +278,9 @@ class TestApisAuthApiView(unittest.IsolatedAsyncioTestCase):
         # Mock the API call
         with patch.object(self.auth_api_view, "_call_api_post", return_value=mock_response):
             with patch.object(self.auth_api_view, "_render_page", return_value="login_page"):
-                async with self.app.test_request_context('/login', method="POST"):
+                async with self.app.test_request_context(
+                        '/login', method="POST",
+                        data={"user_email": "test", "password": "pass"}):
                     result = await self.auth_api_view.login_page_post()
 
                     # Ensure the mock API call was made correctly
