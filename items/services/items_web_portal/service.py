@@ -74,11 +74,9 @@ class Service(BaseMicroservice):
             self._metadata_settings,
             self._rest_client)
 
-        '''
-        TEMPORARY DISABLE
-        if not await self._get_metadata(self.GET_METADATA_INFINITE_RETRIES):
-            return False
-        '''
+        # TEMPORARY DISABLE
+        # if not await self._get_metadata(self.GET_METADATA_INFINITE_RETRIES):
+        #     return False
 
         self._quart_instance.register_blueprint(create_page_handlers(
             injections))
