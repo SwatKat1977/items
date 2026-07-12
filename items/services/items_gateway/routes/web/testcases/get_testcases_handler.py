@@ -14,6 +14,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from http import HTTPStatus
+import json
+import logging
+from quart import Response
+from items.services.items_gateway.gateway_configuration import \
+    GatewayConfiguration
+
+'''
 import http
 import json
 import logging
@@ -22,17 +30,19 @@ import requests
 from sessions import Sessions
 from base_view import ApiResponse, BaseView, validate_json
 from threadsafe_configuration import ThreadSafeConfiguration
+'''
 
 
-class TestCasesApiView(BaseView):
-    __slots__ = ['_logger']
+class GetTestcasesHandler(BaseApiRoute):
 
-    def __init__(self, logger: logging.Logger, sessions: Sessions) -> None:
-        self._logger = logger.getChild(__name__)
-        self._sessions: Sessions = sessions
+    def __init__(self,
+                 logger: logging.Logger,
+                 configuration: GatewayConfiguration) -> None:
+        self._logger = logger.getChild(type(self).__name__)
+        self._config = configuration
 
-    async def testcases_details(self, project_id: int) -> quart.Response:
-        cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
+    async def testcases_details(self, project_id: int) -> Response:
+        cms_svc: str = self._config.apis_cms_svc
 
         request_body: dict = {
             "project_id": project_id
@@ -42,15 +52,15 @@ class TestCasesApiView(BaseView):
         try:
             api_response = await self._call_api_post(details_url, request_body)
 
-            if api_response.status_code != http.HTTPStatus.OK:
+            if api_response.status_code != HTTPStatus.OK:
                 self._logger.critical("CMS svc /testcases/details request invalid"
                                       " - Reason: %s",api_response.exception_msg)
                 response_json = {
                     "status": 0,
                     'error': 'Internal error!'
                 }
-                return quart.Response(json.dumps(response_json),
-                                      status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                return Response(json.dumps(response_json),
+                                      status=HTTPStatus.INTERNAL_SERVER_ERROR,
                                       content_type="application/json")
 
         except requests.exceptions.ConnectionError as ex:
@@ -61,51 +71,10 @@ class TestCasesApiView(BaseView):
                 "status":  0,
                 "error": str(ex)
             }
-            return quart.Response(json.dumps(response_json),
-                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+            return Response(json.dumps(response_json),
+                                  status=HTTPStatus.INTERNAL_SERVER_ERROR,
                                   content_type="application/json")
 
-        return quart.Response(json.dumps(api_response.body),
-                              status=http.HTTPStatus.OK,
-                              content_type="application/json")
-
-    async def get_testcase(self,
-                           project_id: int,
-                           case_id: int) -> quart.Response:
-
-        cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
-
-        request_body: dict = {
-            "project_id": project_id
-        }
-        details_url: str = f"{cms_svc}testcases/get_case/{case_id}"
-
-        try:
-            api_response = await self._call_api_post(details_url, request_body)
-
-            if api_response.status_code != http.HTTPStatus.OK:
-                self._logger.critical("CMS svc /testcases/get_case request invalid"
-                                      " - Reason: %s",api_response.exception_msg)
-                response_json = {
-                    "status": 0,
-                    'error': 'Internal error!'
-                }
-                return quart.Response(json.dumps(response_json),
-                                      status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                                      content_type="application/json")
-
-        except requests.exceptions.ConnectionError as ex:
-            except_str = f"Internal error: {ex}"
-            self._logger.error(except_str)
-
-            response_json = {
-                "status":  0,
-                "error": str(ex)
-            }
-            return quart.Response(json.dumps(response_json),
-                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                                  content_type="application/json")
-
-        return quart.Response(json.dumps(api_response.body),
-                              status=http.HTTPStatus.OK,
+        return Response(json.dumps(api_response.body),
+                              status=HTTPStatus.OK,
                               content_type="application/json")
