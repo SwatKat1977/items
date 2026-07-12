@@ -24,6 +24,7 @@ APIS_GATEWAY_SVC_DEFAULT = "http://localhost:7050/"
 
 class ConfigurationConstants:
     """ Constants for the microservice configuration. """
+    # pylint: disable=too-few-public-methods
 
     SECTION_LOGGING: str = 'logging'
     SECTION_APIS: str = 'routes'
