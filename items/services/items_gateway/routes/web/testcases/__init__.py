@@ -37,7 +37,7 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
     injections.logger.debug(" Testcases WEB routes:")
 
     injections.logger.debug("=> %s GET /web/<project_id>/testcases",
-                 "Get testcases for a project".ljust(40))
+                            "Get testcases for a project".ljust(40))
 
     @routes.route('/<int:project_id>/testcases',
                   methods=['GET'])
@@ -47,13 +47,12 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
 
     injections.logger.debug(
         "=> %s GET /web/testcases/<int:case_id>",
-        "Get testcase for a project".ljust(40))
+        "Get details of a testcase".ljust(40))
 
-    @routes.route('/<int:project_id>/testcases/<int:case_id>',
-                     methods=['GET'])
+    @routes.route('/testcases/<int:case_id>',
+                  methods=['GET'])
     async def get_case_request(case_id: int):
         # pylint: disable=unused-variable
-        print(f"Get Test Case Request for project {project_id} and case id {case_id}")
-        return await handler_get_testcase.get_testcase(project_id, case_id)
+        return await handler_get_testcase.get_testcase(case_id)
 
     return routes

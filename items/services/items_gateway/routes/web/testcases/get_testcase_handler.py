@@ -34,39 +34,34 @@ class GetTestcaseHandler(BaseApiRoute):
         self._config = configuration
         self._rest_client: RestClient = rest_client
 
-    async def get_testcase(self, project_id: int, case_id: int) -> Response:
+    async def get_testcase(self, case_id: int) -> Response:
         cms_svc: str = self._config.apis_cms_svc
 
-        details_url: str = f"{cms_svc}web/testcases/{case_id}"
+        details_url: str = f"{cms_svc}testcases/{case_id}"
 
         api_response: ApiResponse = await self._rest_client.get(details_url)
 
-        try:
-
-            if api_response.status_code != HTTPStatus.OK:
-                print(api_response.body)
-                self._logger.critical("CMS svc /testcases/get_case request invalid"
-                                      " - Reason: %s",api_response.exception_msg)
-                response_json = {
-                    "status": 0,
-                    'error': 'Internal error!'
-                }
-                return Response(json.dumps(response_json),
-                                status=HTTPStatus.INTERNAL_SERVER_ERROR,
-                                content_type="application/json")
-
-        except requests.exceptions.ConnectionError as ex:
-            except_str = f"Internal error: {ex}"
-            self._logger.error(except_str)
-
+        if api_response.status_code == HTTPStatus.NOT_FOUND:
             response_json = {
-                "status":  0,
-                "error": str(ex)
+                "status": 0,
+                'error': api_response.body.get("error", "unknown error")
             }
             return Response(json.dumps(response_json),
-                                  status=HTTPStatus.INTERNAL_SERVER_ERROR,
-                                  content_type="application/json")
+                            status=HTTPStatus.NOT_FOUND,
+                            content_type="application/json")
+
+        if api_response.status_code != HTTPStatus.OK:
+            print(api_response.body)
+            self._logger.critical("CMS svc /testcases/get_case request invalid"
+                                  " - Reason: %s", api_response.exception_msg)
+            response_json = {
+                "status": 0,
+                'error': 'Internal error!'
+            }
+            return Response(json.dumps(response_json),
+                            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                            content_type="application/json")
 
         return Response(json.dumps(api_response.body),
-                              status=HTTPStatus.OK,
-                              content_type="application/json")
+                        status=HTTPStatus.OK,
+                        content_type="application/json")
