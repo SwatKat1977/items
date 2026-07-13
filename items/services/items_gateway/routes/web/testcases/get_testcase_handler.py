@@ -18,7 +18,9 @@ from http import HTTPStatus
 import json
 import logging
 from quart import Response
+from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.base_api_route import BaseApiRoute
+from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
 
 
@@ -26,22 +28,23 @@ class GetTestcaseHandler(BaseApiRoute):
 
     def __init__(self,
                  logger: logging.Logger,
-                 configuration: GatewayConfiguration) -> None:
+                 configuration: GatewayConfiguration,
+                 rest_client: RestClient) -> None:
         self._logger = logger.getChild(type(self).__name__)
         self._config = configuration
+        self._rest_client: RestClient = rest_client
 
     async def get_testcase(self, project_id: int, case_id: int) -> Response:
         cms_svc: str = self._config.apis_cms_svc
 
-        request_body: dict = {
-            "project_id": project_id
-        }
-        details_url: str = f"{cms_svc}testcases/get_case/{case_id}"
+        details_url: str = f"{cms_svc}web/testcases/{case_id}"
+
+        api_response: ApiResponse = await self._rest_client.get(details_url)
 
         try:
-            api_response = await self._call_api_post(details_url, request_body)
 
             if api_response.status_code != HTTPStatus.OK:
+                print(api_response.body)
                 self._logger.critical("CMS svc /testcases/get_case request invalid"
                                       " - Reason: %s",api_response.exception_msg)
                 response_json = {

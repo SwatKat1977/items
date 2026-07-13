@@ -18,30 +18,23 @@ from http import HTTPStatus
 import json
 import logging
 from quart import Response
+from weaver_framework.microservice.base_api_route import BaseApiRoute
+from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.gateway_configuration import \
     GatewayConfiguration
-
-'''
-import http
-import json
-import logging
-import quart
-import requests
-from sessions import Sessions
-from base_view import ApiResponse, BaseView, validate_json
-from threadsafe_configuration import ThreadSafeConfiguration
-'''
 
 
 class GetTestcasesHandler(BaseApiRoute):
 
     def __init__(self,
                  logger: logging.Logger,
-                 configuration: GatewayConfiguration) -> None:
+                 configuration: GatewayConfiguration,
+                 rest_client: RestClient) -> None:
         self._logger = logger.getChild(type(self).__name__)
         self._config = configuration
+        self._rest_client: RestClient = rest_client
 
-    async def testcases_details(self, project_id: int) -> Response:
+    async def get_testcases(self, project_id: int) -> Response:
         cms_svc: str = self._config.apis_cms_svc
 
         request_body: dict = {
@@ -49,27 +42,38 @@ class GetTestcasesHandler(BaseApiRoute):
         }
         details_url: str = f"{cms_svc}testcases/details"
 
-        try:
-            api_response = await self._call_api_post(details_url, request_body)
+        '''
+        if not result.success:
+            status = (HTTPStatus.INTERNAL_SERVER_ERROR
+                      if result.is_internal else HTTPStatus.NOT_FOUND)
+            return Response(
+                json.dumps({"error": result.error_msg}),
+                status=status,
+                content_type="application/json")
 
-            if api_response.status_code != HTTPStatus.OK:
-                self._logger.critical("CMS svc /testcases/details request invalid"
-                                      " - Reason: %s",api_response.exception_msg)
-                response_json = {
-                    "status": 0,
-                    'error': 'Internal error!'
-                }
-                return Response(json.dumps(response_json),
-                                      status=HTTPStatus.INTERNAL_SERVER_ERROR,
-                                      content_type="application/json")
+        return Response(
+            json.dumps(result.data),
+            status=HTTPStatus.OK,
+            content_type="application/json")
+        '''
 
-        except requests.exceptions.ConnectionError as ex:
-            except_str = f"Internal error: {ex}"
-            self._logger.error(except_str)
+        api_response = await self._rest_client.get(details_url, request_body)
 
+        if api_response.status_code == HTTPStatus.NOT_FOUND:
             response_json = {
-                "status":  0,
-                "error": str(ex)
+                "status": 0,
+                "error": "Testcase not found!"
+            }
+            return Response(json.dumps(response_json),
+                            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                            content_type="application/json")
+
+        if api_response.status_code != HTTPStatus.OK:
+            self._logger.critical("CMS svc /web/testcases/<id> request invalid"
+                                  " - Reason: %s",api_response.exception_msg)
+            response_json = {
+                "status": 0,
+                'error': 'Internal error!'
             }
             return Response(json.dumps(response_json),
                                   status=HTTPStatus.INTERNAL_SERVER_ERROR,

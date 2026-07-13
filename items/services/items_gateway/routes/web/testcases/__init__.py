@@ -14,39 +14,46 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-'''
-import logging
 from quart import Blueprint
-from .testcases_api_view import TestCasesApiView
-from sessions import Sessions
-'''
+from items.services.items_gateway.route_injections import RouteInjections
+from items.services.items_gateway.routes.web.testcases.get_testcase_handler \
+    import GetTestcaseHandler
+from items.services.items_gateway.routes.web.testcases.get_testcases_handler \
+    import GetTestcasesHandler
 
-# get_testcase_handler
 
+def create_testcases_routes(injections: RouteInjections) -> Blueprint:
+    handler_get_testcase: GetTestcaseHandler = GetTestcaseHandler(
+        injections.logger,
+        injections.configuration,
+        injections.rest_client)
+    handler_get_testcases: GetTestcasesHandler = GetTestcasesHandler(
+        injections.logger,
+        injections.configuration,
+        injections.rest_client)
 
+    routes = Blueprint('testcases_routes', __name__)
 
-def create_blueprint(logger: logging.Logger, sessions: Sessions) -> Blueprint:
-    view = TestCasesApiView(logger, sessions)
+    injections.logger.debug(" Testcases WEB routes:")
 
-    blueprint = Blueprint('testcase_api', __name__)
+    injections.logger.debug("=> %s GET /web/<project_id>/testcases",
+                 "Get testcases for a project".ljust(40))
 
-    logger.debug("-------------- Registering Web Testcases routes -----------")
-
-    logger.debug(f"=> {'Get all testcase for projects'.ljust(30)}"
-                 "POST /web/<project_id>/testcase/testcase_details")
-
-    @blueprint.route('/<int:project_id>/testcase/testcases_details',
-                     methods=['POST'])
+    @routes.route('/<int:project_id>/testcases',
+                  methods=['GET'])
     async def testcases_details_request(project_id: int):
-        return await view.testcases_details(project_id)
+        print("Get testcases for a project {}".format(project_id))
+        return await handler_get_testcases.get_testcases(project_id)
 
-    logger.debug(f"=> {'Get testcase details'.ljust(30)}"
-                 "POST /web/<int:project_id>/testcase/get_case/<int:case_id>")
+    injections.logger.debug(
+        "=> %s GET /web/testcases/<int:case_id>",
+        "Get testcase for a project".ljust(40))
 
-    @blueprint.route('/<int:project_id>/testcase/get_case/<int:case_id>',
-                     methods=['POST'])
-    async def get_case_request(project_id: int, case_id: int):
+    @routes.route('/<int:project_id>/testcases/<int:case_id>',
+                     methods=['GET'])
+    async def get_case_request(case_id: int):
         # pylint: disable=unused-variable
-        return await view.get_testcase(project_id, case_id)
+        print(f"Get Test Case Request for project {project_id} and case id {case_id}")
+        return await handler_get_testcase.get_testcase(project_id, case_id)
 
-    return blueprint
+    return routes
