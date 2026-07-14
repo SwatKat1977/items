@@ -362,7 +362,7 @@ class TestcaseCustomFieldsService:
                                              error_msg="Service unavailable",
                                              is_internal=True)
 
-        if await self._repository.is_valid_custom_field_id(field_id) is False:
+        if not await self._repository.is_valid_custom_field_id(field_id):
             return TestcaseCustomFieldResult(success=False,
                                              error_msg="Custom field not found",
                                              not_found=True)
