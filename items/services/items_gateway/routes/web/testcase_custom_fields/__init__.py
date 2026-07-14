@@ -18,8 +18,8 @@ from quart import Blueprint
 from items.services.items_gateway.route_injections import RouteInjections
 from items.services.items_gateway.routes.web.testcase_custom_fields.\
     get_all_custom_fields_handler import GetAllCustomFieldsHandler
-from items.services.items_gateway.routes.admin.testcase_custom_fields_api_view \
-    import ModifyCustomFieldHandler
+from items.services.items_gateway.routes.web.testcase_custom_fields.\
+    modify_custom_field_handler import ModifyCustomFieldHandler
 
 
 def create_testcase_custom_fields_routes(injections: RouteInjections) \
