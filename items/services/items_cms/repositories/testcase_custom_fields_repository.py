@@ -61,7 +61,7 @@ class TestcaseCustomFieldsRepository:
 
     async def is_valid_custom_field_id(self, field_id: int) -> bool:
         query = (f"SELECT 1 FROM {cms_tables.TC_CUSTOM_FIELDS} WHERE id "
-                 "!= ? LIMIT 1")
+                 "= ? LIMIT 1")
         row = await self._db.run_query(query, (field_id,), fetch_one=True)
         return bool(row)
 
