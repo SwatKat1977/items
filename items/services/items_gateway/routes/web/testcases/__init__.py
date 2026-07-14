@@ -42,7 +42,6 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
     @routes.route('/<int:project_id>/testcases',
                   methods=['GET'])
     async def testcases_details_request(project_id: int):
-        print("Get testcases for a project {}".format(project_id))
         return await handler_get_testcases.get_testcases(project_id)
 
     injections.logger.debug(

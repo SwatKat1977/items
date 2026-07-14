@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "4714bf39-c417-48d6-9d47-52c017aa1e17",
+    "_postman_id": "7f2a81e6-89ad-4a75-a51b-e8ef88752622",
     "name": "ITEMS",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "10935426"
@@ -265,83 +265,38 @@
               "name": "Testcases",
               "item": [
                 {
-                  "name": "Details of test cases",
-                  "request": {
-                    "method": "POST",
-                    "header": [],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "{\n    \n}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/1/testcase/testcases_details",
-                      "host": [
-                        "{{GATEWAY_SVC_URL}}"
-                      ],
-                      "path": [
-                        "web",
-                        "1",
-                        "testcase",
-                        "testcases_details"
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "Get details for a test case",
-                  "request": {
-                    "method": "POST",
-                    "header": [],
-                    "body": {
-                      "mode": "raw",
-                      "raw": "{}",
-                      "options": {
-                        "raw": {
-                          "language": "json"
-                        }
-                      }
-                    },
-                    "url": {
-                      "raw": "http://127.0.0.1:5000/1/testcase/get_case/1",
-                      "protocol": "http",
-                      "host": [
-                        "127",
-                        "0",
-                        "0",
-                        "1"
-                      ],
-                      "port": "5000",
-                      "path": [
-                        "1",
-                        "testcase",
-                        "get_case",
-                        "1"
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "New Request",
+                  "name": "Get testcases for Project",
                   "request": {
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/admin/projects/4",
+                      "raw": "{{GATEWAY_SVC_URL}}/web/1/testcases",
                       "host": [
                         "{{GATEWAY_SVC_URL}}"
                       ],
                       "path": [
                         "web",
-                        "admin",
-                        "projects",
-                        "4"
+                        "1",
+                        "testcases"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Get a test case",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/testcases/1",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "testcases",
+                        "1"
                       ]
                     }
                   },

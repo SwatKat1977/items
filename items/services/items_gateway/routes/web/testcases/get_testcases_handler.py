@@ -18,6 +18,7 @@ from http import HTTPStatus
 import json
 import logging
 from quart import Response
+from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.gateway_configuration import \
@@ -37,48 +38,31 @@ class GetTestcasesHandler(BaseApiRoute):
     async def get_testcases(self, project_id: int) -> Response:
         cms_svc: str = self._config.apis_cms_svc
 
-        request_body: dict = {
-            "project_id": project_id
-        }
-        details_url: str = f"{cms_svc}testcases/details"
+        url: str = f"{cms_svc}testcases?project_id={project_id}"
 
-        '''
-        if not result.success:
-            status = (HTTPStatus.INTERNAL_SERVER_ERROR
-                      if result.is_internal else HTTPStatus.NOT_FOUND)
-            return Response(
-                json.dumps({"error": result.error_msg}),
-                status=status,
-                content_type="application/json")
-
-        return Response(
-            json.dumps(result.data),
-            status=HTTPStatus.OK,
-            content_type="application/json")
-        '''
-
-        api_response = await self._rest_client.get(details_url, request_body)
+        api_response: ApiResponse = await self._rest_client.get(url)
 
         if api_response.status_code == HTTPStatus.NOT_FOUND:
             response_json = {
                 "status": 0,
-                "error": "Testcase not found!"
+                'error': api_response.body.get("error", "unknown error")
             }
             return Response(json.dumps(response_json),
-                            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                            status=HTTPStatus.NOT_FOUND,
                             content_type="application/json")
 
         if api_response.status_code != HTTPStatus.OK:
-            self._logger.critical("CMS svc /web/testcases/<id> request invalid"
-                                  " - Reason: %s",api_response.exception_msg)
+            self._logger.critical("CMS GET /testcases?project_id=<id> request "
+                                  "invalid - Reason: %s",
+                                  api_response.exception_msg)
             response_json = {
                 "status": 0,
                 'error': 'Internal error!'
             }
             return Response(json.dumps(response_json),
-                                  status=HTTPStatus.INTERNAL_SERVER_ERROR,
-                                  content_type="application/json")
+                            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                            content_type="application/json")
 
         return Response(json.dumps(api_response.body),
-                              status=HTTPStatus.OK,
-                              content_type="application/json")
+                        status=HTTPStatus.OK,
+                        content_type="application/json")

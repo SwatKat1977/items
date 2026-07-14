@@ -51,8 +51,7 @@ class GetTestcaseHandler(BaseApiRoute):
                             content_type="application/json")
 
         if api_response.status_code != HTTPStatus.OK:
-            print(api_response.body)
-            self._logger.critical("CMS svc /testcases/get_case request invalid"
+            self._logger.critical("CMS GET /testcases/<id> request invalid"
                                   " - Reason: %s", api_response.exception_msg)
             response_json = {
                 "status": 0,
