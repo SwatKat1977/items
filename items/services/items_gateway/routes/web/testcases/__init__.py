@@ -23,6 +23,27 @@ from items.services.items_gateway.routes.web.testcases.get_testcases_handler \
 
 
 def create_testcases_routes(injections: RouteInjections) -> Blueprint:
+    """Create the Blueprint containing testcase web routes.
+
+    This function creates and configures the routes used to retrieve testcase
+    information through the web interface. It instantiates the required request
+    handlers, registers the available endpoints, and logs the registered routes
+    during application startup.
+
+    Registered routes:
+        - GET /<project_id>/testcases:
+            Retrieve all testcases belonging to the specified project.
+        - GET /testcases/<case_id>:
+            Retrieve the details of a specific testcase.
+
+    Args:
+        injections: Collection of shared application dependencies, including
+            the logger, configuration, and REST client used by the route
+            handlers.
+
+    Returns:
+        Blueprint: A configured Quart Blueprint containing the testcase routes.
+    """
     handler_get_testcase: GetTestcaseHandler = GetTestcaseHandler(
         injections.logger,
         injections.configuration,

@@ -25,16 +25,44 @@ from items.services.items_gateway.gateway_configuration import GatewayConfigurat
 
 
 class GetTestcaseHandler(BaseApiRoute):
+    """Handle requests for retrieving a single testcase.
+
+    This handler acts as a proxy between the web application and the CMS
+    service, requesting testcase details from the CMS API and translating the
+    response into an appropriate HTTP response for the client.
+    """
 
     def __init__(self,
                  logger: logging.Logger,
                  configuration: GatewayConfiguration,
                  rest_client: RestClient) -> None:
+        """Initialise the handler.
+
+        Args:
+            logger: Application logger used for diagnostic and error logging.
+            configuration: Gateway configuration containing service endpoint
+                information.
+            rest_client: REST client used to communicate with the CMS service.
+        """
         self._logger = logger.getChild(type(self).__name__)
         self._config = configuration
         self._rest_client: RestClient = rest_client
 
     async def get_testcase(self, case_id: int) -> Response:
+        """Retrieve the details of a single testcase.
+
+        The request is forwarded to the CMS service. A successful response is
+        returned directly to the client. If the testcase cannot be found, a
+        404 response is returned. Any other CMS error is treated as an internal
+        server error.
+
+        Args:
+            case_id: Unique identifier of the testcase to retrieve.
+
+        Returns:
+            Response: A JSON response containing the testcase details or an
+            error message.
+        """
         cms_svc: str = self._config.apis_cms_svc
 
         details_url: str = f"{cms_svc}testcases/{case_id}"

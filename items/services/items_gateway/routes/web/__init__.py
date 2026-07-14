@@ -45,17 +45,17 @@ def create_web_routes(injections: RouteInjections) -> quart.Blueprint:
 
     injections.logger.debug("|--- Registering WEB routes ---|")
 
-    # Register sessions routes.
-    routes_bp.register_blueprint(create_sessions_routes(injections.logger,
-                                                        injections.sessions,
-                                                        injections.configuration,
-                                                        injections.rest_client))
-
     # Register projects routes.
     routes_bp.register_blueprint(create_projects_routes(
         injections.logger,
         injections.configuration,
         injections.rest_client))
+
+    # Register sessions routes.
+    routes_bp.register_blueprint(create_sessions_routes(injections.logger,
+                                                        injections.sessions,
+                                                        injections.configuration,
+                                                        injections.rest_client))
 
     # Register testcase custom fields routes.
     routes_bp.register_blueprint(create_testcase_custom_fields_routes(

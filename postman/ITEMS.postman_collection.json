@@ -1,9 +1,9 @@
 {
   "info": {
-    "_postman_id": "7f2a81e6-89ad-4a75-a51b-e8ef88752622",
+    "_postman_id": "ed2eeaaf-e7ad-4003-8ad5-c719334b0dbe",
     "name": "ITEMS",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "10935426"
+    "_exporter_id": "49399853"
   },
   "item": [
     {
@@ -440,7 +440,7 @@
               "name": "Testcase Custom Fields",
               "item": [
                 {
-                  "name": "Get details for a test case Copy",
+                  "name": "Get All Testcase Fields",
                   "protocolProfileBehavior": {
                     "disableBodyPruning": true
                   },
@@ -457,7 +457,7 @@
                       }
                     },
                     "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/testcase_custom_fields?project_id=100",
+                      "raw": "{{GATEWAY_SVC_URL}}/web/testcase_custom_fields?project_id=10000",
                       "host": [
                         "{{GATEWAY_SVC_URL}}"
                       ],
@@ -468,8 +468,36 @@
                       "query": [
                         {
                           "key": "project_id",
-                          "value": "100"
+                          "value": "10000"
                         }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Update Testcase Field",
+                  "request": {
+                    "method": "PUT",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n  \"field_name\": \"Estimate\",\r\n  \"description\": \"A human-readable description of the field.\",\r\n  \"system_name\": \"unsafe\",\r\n  \"field_type\": \"Integer\",\r\n  \"enabled\": false,\r\n  \"is_required\": true,\r\n  \"default_value\": \"123\",\r\n  \"applies_to_all_projects\": true\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/testcase_custom_fields/4",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "testcase_custom_fields",
+                        "4"
                       ]
                     }
                   },

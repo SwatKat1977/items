@@ -1,5 +1,6 @@
 """
-Copyright 2025 Integrated Test Management Suite Development Team
+Copyright 2025-2026 Integrated Test Management Suite Development Team
+Copyright 2017-2025 INTMAC Development Team [Defunct]
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,23 +14,221 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import http
+from http import HTTPStatus
 import json
 import logging
-import quart
-from base_view import ApiResponse, BaseView, validate_json
-import interfaces.gateway.project as json_schemas
-from threadsafe_configuration import ThreadSafeConfiguration
+from quart import Response
+from weaver_framework.microservice.api_response import ApiResponse
+from weaver_framework.microservice.base_api_route import BaseApiRoute
+from weaver_framework.microservice.microservice_decorators import validate_json
+from weaver_framework.microservice.rest_client import RestClient
+from items.services.items_gateway.gateway_configuration import GatewayConfiguration
 
 
-class TestcaseCustomFieldsApiView(BaseView):
+SCHEMA_UPDATE_CUSTOM_FIELD_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Update Custom Field",
+    "type": "object",
+    "properties": {
+        "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The display name of the custom field."
+        },
+        "description": {
+            "type": "string",
+            "description": "A human-readable description of the field."
+        },
+        "system_name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "description": (
+                "Internal system identifier (lowercase letters, digits, "
+                "and underscores; must start with a letter)."
+            )
+        },
+        "field_type": {
+            "type": "string",
+            "description": "The data type of the field.",
+            "enum": [
+                "Checkbox",
+                "Date",
+                "Dropdown",
+                "Integer",
+                "String",
+                "Text",
+                "Url (Link)",
+                "User"
+            ]
+        },
+        "enabled": {
+            "type": "boolean",
+            "description": "Whether the field is active."
+        },
+        "is_required": {
+            "type": "boolean",
+            "description": "Whether the field must be filled in for test cases."
+        },
+        "default_value": {
+            "type": "string",
+            "description": "Optional default value for the field."
+        },
+        "applies_to_all_projects": {
+            "type": "boolean",
+            "description": "If true, the field applies to all projects."
+        },
+        "projects": {
+            "type": "array",
+            "description": (
+                "List of project names "
+                "(required when applies_to_all_projects is false)."
+            ),
+            "items": {"type": "string"}
+        }
+    },
+    "required": [
+        "field_name",
+        "description",
+        "system_name",
+        "field_type",
+        "enabled",
+        "is_required",
+        "default_value",
+        "applies_to_all_projects"
+    ],
+    "additionalProperties": False,
+    "if": {
+        "properties": {"applies_to_all_projects": {"const": False}},
+        "required": ["applies_to_all_projects"]
+    },
+    "then": {"required": ["projects"]}
+}
 
-    def __init__(self, logger : logging.Logger) -> None:
-        self._logger = logger.getChild(__name__)
 
-    @validate_json(json_schemas.SCHEMA_MODIFY_TC_CUSTOM_FIELD_REQUEST)
+class ModifyCustomFieldHandler(BaseApiRoute):
+
+    def __init__(self,
+                 logger: logging.Logger,
+                 configuration: GatewayConfiguration,
+                 rest_client: RestClient) -> None:
+        self._logger = logger.getChild(type(self).__name__)
+        self._configuration = configuration
+        self._rest_client = rest_client
+
+
+    @validate_json(SCHEMA_UPDATE_CUSTOM_FIELD_REQUEST)
     async def modify_custom_field(self, request_msg: ApiResponse,
                                   field_id: int):
+        url = (f"{self._configuration.apis_cms_svc}testcase_custom_fields"
+               f"/{field_id}")
+
+        response: ApiResponse = await self._rest_client.put(url, request_msg.body)
+        print("RESPONSE: ", response)
+        print("-> Status    :", response.status_code)
+        print("-> Body      :", response.body)
+        print("-> Exception :", response.exception_msg)
+
+        if response.status_code != HTTPStatus.OK:
+            body: dict = {
+                "status": 0,
+                "error": response.body.get("error", "Unknown error")
+            }
+            return Response(json.dumps(body),
+                            status=response.status_code,
+                            content_type="application/json")
+
+        '''
+        if not result.success:
+            if result.is_internal:
+                status = HTTPStatus.INTERNAL_SERVER_ERROR
+            elif result.not_found:
+                status = HTTPStatus.NOT_FOUND
+            elif result.is_conflict:
+                status = HTTPStatus.CONFLICT
+            else:
+                status = HTTPStatus.BAD_REQUEST
+            return Response(
+                json.dumps({"error": result.error_msg}),
+                status=status,
+                content_type="application/json")
+
+        return Response(
+            json.dumps({}),
+            status=HTTPStatus.OK,
+            content_type="application/json")
+        '''
+
+        if hasattr(request_msg.body, "position"):
+            return await self._move_custom_field(request_msg, field_id)
+
+        return await self._modify_custom_field(request_msg, field_id)
+
+
+'''
+
+
+SCHEMA_MOVE_CUSTOM_FIELD_POSITION_REQUEST: dict = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "TestcaseCustomFieldPatch",
+    "type": "object",
+    "oneOf": [
+        {
+            "required": ["position"],
+            "properties": {
+                "position": {
+                    "type": "string",
+                    "enum": ["up", "down"]
+                }
+            },
+            "additionalProperties": False
+        },
+        {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["text", "dropdown", "checkbox", "number"]
+                },
+                "required": {
+                    "type": "boolean"
+                }
+            },
+            "required": [],
+            "minProperties": 1,
+            "additionalProperties": False
+            }
+    ]
+}
+
+
+class ModifyCustomFieldHandler(BaseApiRoute):
+    """Handles GET /testcase_custom_fields requests."""
+
+    def __init__(self,
+                 logger: logging.Logger,
+                 configuration: GatewayConfiguration,
+                 rest_client: RestClient) -> None:
+        """Initialise the handler.
+
+        Args:
+            logger:        Parent logger instance.
+            configuration: Gateway configuration containing service endpoint
+                           information.
+            rest_client:   REST client used to communicate with the CMS service.
+        """
+        self._logger = logger.getChild(type(self).__name__)
+        self._configuration = configuration
+        self._rest_client = rest_client
+
+    @validate_json(SCHEMA_MODIFY_TC_CUSTOM_FIELD_REQUEST)
+    async def modify_custom_field(self, request_msg: ApiResponse,
+                                  field_id: int):
+        url = (f"{self._configuration.apis_cms_svc}testcase_custom_fields"
+               f"/{field_id}")
+
         if hasattr(request_msg.body, "position"):
             return await self._move_custom_field(request_msg, field_id)
 
@@ -56,14 +255,14 @@ class TestcaseCustomFieldsApiView(BaseView):
                             move fails.
         """
         move_position: str = request_msg.body.position
-        cms_svc: str = ThreadSafeConfiguration().apis_cms_svc
+        cms_svc: str = self._configuration.apis_cms_svc
         url: str = f"{cms_svc}admin/testcase_custom_fields/" \
                    f"testcase_custom_fields/{field_id}/{move_position}"
 
         api_response = await self._call_api_patch(url)
 
-        return quart.Response(json.dumps(api_response.body),
-                              status=http.HTTPStatus.BAD_REQUEST,
+        return Response(json.dumps(api_response.body),
+                              status=HTTPStatus.BAD_REQUEST,
                               content_type="application/json")
 
     async def _modify_custom_field(self, request_msg: ApiResponse,
@@ -72,6 +271,7 @@ class TestcaseCustomFieldsApiView(BaseView):
             "status": -1,
             "error": "placeholder"
         }
-        return quart.Response(json.dumps(response_body),
-                              status=http.HTTPStatus.BAD_REQUEST,
+        return Response(json.dumps(response_body),
+                              status=HTTPStatus.BAD_REQUEST,
                               content_type="application/json")
+'''
