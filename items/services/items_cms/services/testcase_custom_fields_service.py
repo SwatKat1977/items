@@ -362,6 +362,11 @@ class TestcaseCustomFieldsService:
                                              error_msg="Service unavailable",
                                              is_internal=True)
 
+        if not self._repository.is_valid_custom_field_id(field_id):
+            return TestcaseCustomFieldResult(success=False,
+                                             error_msg="Custom field not found",
+                                             not_found=True)
+
         error, project_ids = await self._validate_update_request(
             field_id, field_name, system_name, applies_to_all_projects,
             projects)

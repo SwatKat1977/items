@@ -59,9 +59,15 @@ class TestcaseCustomFieldsRepository:
         row = await self._db.run_query(query, (project_id,), fetch_one=True)
         return bool(row)
 
-    async def custom_field_name_exists(self, field_name: str,
-                                        exclude_id: Optional[int] = None
-                                        ) -> bool:
+    async def is_valid_custom_field_id(self, field_id: int) -> bool:
+        query = (f"SELECT 1 FROM {cms_tables.TC_CUSTOM_FIELDS} WHERE id "
+                 "!= ? LIMIT 1")
+        row = await self._db.run_query(query, (field_id,), fetch_one=True)
+        return bool(row)
+
+    async def custom_field_name_exists(self,
+                                       field_name: str,
+                                       exclude_id: Optional[int] = None) -> bool:
         """Return True if a custom field with the given name already exists.
 
         Case-insensitive match. Pass ``exclude_id`` when updating an existing
@@ -91,7 +97,7 @@ class TestcaseCustomFieldsRepository:
         return bool(row)
 
     async def system_name_exists(self, system_name: str,
-                                  exclude_id: Optional[int] = None) -> bool:
+                                 exclude_id: Optional[int] = None) -> bool:
         """Return True if a custom field with the given system name exists.
 
         Case-insensitive match. Pass ``exclude_id`` when updating an existing
