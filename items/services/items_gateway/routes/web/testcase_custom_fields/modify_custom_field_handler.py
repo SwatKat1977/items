@@ -106,11 +106,32 @@ SCHEMA_UPDATE_CUSTOM_FIELD_REQUEST: dict = {
 
 
 class ModifyCustomFieldHandler(BaseApiRoute):
+    """Handles requests to modify an existing custom field.
+
+    This handler validates the incoming request payload and forwards the
+    update request to the CMS service. If the downstream service reports an
+    error, the error is propagated back to the client. On success, a simple
+    success response is returned.
+
+    Attributes:
+        _logger: Logger instance scoped to this handler.
+        _configuration: Gateway configuration containing service endpoints.
+        _rest_client: REST client used to communicate with the CMS service.
+    """
 
     def __init__(self,
                  logger: logging.Logger,
                  configuration: GatewayConfiguration,
                  rest_client: RestClient) -> None:
+        """Initializes the custom field modification handler.
+
+        Args:
+            logger: Root logger used to create a handler-specific logger.
+            configuration: Gateway configuration containing API endpoint
+                information.
+            rest_client: REST client used to communicate with backend
+                services.
+        """
         self._logger = logger.getChild(type(self).__name__)
         self._configuration = configuration
         self._rest_client = rest_client
@@ -118,6 +139,21 @@ class ModifyCustomFieldHandler(BaseApiRoute):
     @validate_json(SCHEMA_UPDATE_CUSTOM_FIELD_REQUEST)
     async def modify_custom_field(self, request_msg: ApiResponse,
                                   field_id: int):
+        """Modifies an existing custom field.
+
+        Validates the request payload, forwards the update request to the
+        CMS service, and returns the result to the caller.
+
+        Args:
+            request_msg: The validated API request containing the updated
+                custom field data.
+            field_id: The unique identifier of the custom field to modify.
+
+        Returns:
+            Response: A Quart JSON response indicating whether the operation
+            succeeded. If the CMS service returns an error, the response
+            includes the error message and corresponding HTTP status code.
+        """
         url = (f"{self._configuration.apis_cms_svc}testcase_custom_fields"
                f"/{field_id}")
 
