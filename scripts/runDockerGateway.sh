@@ -32,9 +32,8 @@ fi
 
 docker run \
     --rm \
-    -p 5050:5050 \
+    -p 7050:7050 \
     --name items-gateway \
     --network "${NETWORK_NAME}" \
     -v "${CONFIG_FILE}:/usr/local/items/gateway.cfg:ro" \
-    -d \
     "items_gateway:${IMAGE_TAG}"
