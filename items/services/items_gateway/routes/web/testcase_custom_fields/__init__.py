@@ -25,7 +25,7 @@ from items.services.items_gateway.routes.web.testcase_custom_fields.\
 from items.services.items_gateway.routes.web.testcase_custom_fields.\
     modify_custom_field_handler import ModifyCustomFieldHandler
 from items.services.items_gateway.routes.web.testcase_custom_fields.\
-    testcase_custom_fields_api_view import MoveCustomFieldHandler
+    move_custom_field_handler import MoveCustomFieldHandler
 
 
 def create_testcase_custom_fields_routes(injections: RouteInjections) \
