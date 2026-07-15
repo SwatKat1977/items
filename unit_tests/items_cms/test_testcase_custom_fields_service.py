@@ -121,7 +121,24 @@ class TestTestcaseCustomFieldsService(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result.is_internal)
         self.mock_state.mark_database_failed.assert_called_once()
 
+    async def test_get_fields_for_project_invalid_project_id_db_exception(self):
+        self.mock_repo.is_valid_project_id.side_effect = (
+            SqliteInterfaceException("err"))
+        result = await self.service.get_custom_fields(project_id=5)
+        self.assertFalse(result.success)
+        self.assertTrue(result.is_internal)
+        self.mock_state.mark_database_failed.assert_called_once()
+        self.mock_repo.get_fields_for_project.assert_not_called()
+
+    async def test_get_fields_for_project_invalid_project_id_returns_not_found(self):
+        self.mock_repo.is_valid_project_id.return_value = False
+        result = await self.service.get_custom_fields(project_id=5)
+        self.assertFalse(result.success)
+        self.assertTrue(result.not_found)
+        self.mock_repo.get_fields_for_project.assert_not_called()
+
     async def test_get_fields_for_project_db_exception(self):
+        self.mock_repo.is_valid_project_id.return_value = True
         self.mock_repo.get_fields_for_project.side_effect = (
             SqliteInterfaceException("err"))
         result = await self.service.get_custom_fields(project_id=5)

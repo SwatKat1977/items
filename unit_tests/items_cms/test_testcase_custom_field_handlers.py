@@ -160,11 +160,23 @@ class TestGetCustomFieldsHandler(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, 400)
         self.mock_service.get_custom_fields.assert_not_called()
 
+    async def test_get_fields_non_positive_project_id_returns_400(self):
+        async with self.client as c:
+            response = await c.get("/custom_fields?project_id=0")
+        self.assertEqual(response.status_code, 400)
+        self.mock_service.get_custom_fields.assert_not_called()
+
     async def test_get_fields_service_error_returns_500(self):
         self.mock_service.get_custom_fields.return_value = _internal()
         async with self.client as c:
             response = await c.get("/custom_fields")
         self.assertEqual(response.status_code, 500)
+
+    async def test_get_fields_invalid_project_returns_404(self):
+        self.mock_service.get_custom_fields.return_value = _not_found()
+        async with self.client as c:
+            response = await c.get("/custom_fields?project_id=5")
+        self.assertEqual(response.status_code, 404)
 
 
 # ------------------------------------------------------------------
