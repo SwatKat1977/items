@@ -1,9 +1,9 @@
 {
   "info": {
-    "_postman_id": "ed2eeaaf-e7ad-4003-8ad5-c719334b0dbe",
+    "_postman_id": "513b7cd4-d023-4724-b3f1-4e821bf70009",
     "name": "ITEMS",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "49399853"
+    "_exporter_id": "10935426"
   },
   "item": [
     {
@@ -490,14 +490,14 @@
                       }
                     },
                     "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/testcase_custom_fields/4",
+                      "raw": "{{GATEWAY_SVC_URL}}/web/testcase_custom_fields/400",
                       "host": [
                         "{{GATEWAY_SVC_URL}}"
                       ],
                       "path": [
                         "web",
                         "testcase_custom_fields",
-                        "4"
+                        "400"
                       ]
                     }
                   },
