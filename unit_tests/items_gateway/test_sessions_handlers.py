@@ -1,0 +1,213 @@
+"""
+Copyright 2025-2026 Integrated Test Management Suite Development Team
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+import unittest
+from unittest.mock import AsyncMock, MagicMock
+from quart import Quart
+from weaver_framework.microservice.api_response import ApiResponse
+from items.services.items_gateway.routes.web.sessions.new_session_password_handler \
+    import NewSessionPasswordHandler
+from items.services.items_gateway.routes.web.sessions.delete_session_handler \
+    import DeleteSessionHandler
+from items.services.items_gateway.routes.web.sessions.refresh_session_handler \
+    import RefreshSessionHandler
+from items.services.items_gateway.routes.web.sessions.validate_session_handler \
+    import ValidateSessionHandler
+
+_LOGGER = MagicMock()
+_VALID_TOKEN = "a" * 32
+
+
+# ------------------------------------------------------------------
+# NewSessionPasswordHandler
+# ------------------------------------------------------------------
+
+class TestNewSessionPasswordHandler(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.mock_sessions = AsyncMock()
+        self.mock_config = MagicMock()
+        self.mock_config.apis_identity_svc = "http://identity/"
+        self.mock_rest_client = AsyncMock()
+        handler = NewSessionPasswordHandler(
+            _LOGGER, self.mock_sessions, self.mock_config, self.mock_rest_client)
+
+        app = Quart(__name__)
+
+        @app.route("/sessions", methods=["POST"])
+        async def create_session():
+            return await handler.create_new_session()
+
+        self.client = app.test_client()
+
+    async def _post(self, body):
+        async with self.client as c:
+            return await c.post("/sessions", json=body)
+
+    async def test_missing_fields_returns_400(self):
+        response = await self._post({"email_address": "a@b.com"})
+        self.assertEqual(response.status_code, 400)
+        self.mock_rest_client.post.assert_not_called()
+
+    async def test_identity_connection_failure_returns_500(self):
+        self.mock_rest_client.post.return_value = ApiResponse(
+            status_code=None, exception_msg="connection refused")
+        response = await self._post(
+            {"email_address": "a@b.com", "password": "password1"})
+        self.assertEqual(response.status_code, 500)
+
+    async def test_identity_unauthorized_returns_401(self):
+        self.mock_rest_client.post.return_value = ApiResponse(status_code=401)
+        response = await self._post(
+            {"email_address": "a@b.com", "password": "password1"})
+        self.assertEqual(response.status_code, 401)
+
+    async def test_identity_other_error_returns_500(self):
+        self.mock_rest_client.post.return_value = ApiResponse(status_code=503)
+        response = await self._post(
+            {"email_address": "a@b.com", "password": "password1"})
+        self.assertEqual(response.status_code, 500)
+
+    async def test_success_new_login(self):
+        self.mock_sessions.has_session.return_value = False
+        self.mock_rest_client.post.return_value = ApiResponse(status_code=200)
+        response = await self._post(
+            {"email_address": "a@b.com", "password": "password1"})
+        self.assertEqual(response.status_code, 200)
+        data = await response.get_json()
+        self.assertEqual(data["status"], 1)
+        self.mock_sessions.add_session.assert_called_once()
+
+    async def test_success_relogin(self):
+        self.mock_sessions.has_session.return_value = True
+        self.mock_rest_client.post.return_value = ApiResponse(status_code=200)
+        response = await self._post(
+            {"email_address": "a@b.com", "password": "password1"})
+        self.assertEqual(response.status_code, 200)
+        self.mock_sessions.add_session.assert_called_once()
+
+
+# ------------------------------------------------------------------
+# DeleteSessionHandler
+# ------------------------------------------------------------------
+
+class TestDeleteSessionHandler(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.mock_sessions = AsyncMock()
+        handler = DeleteSessionHandler(_LOGGER, self.mock_sessions)
+
+        app = Quart(__name__)
+
+        @app.route("/sessions", methods=["DELETE"])
+        async def delete_session():
+            return await handler.delete_session()
+
+        self.client = app.test_client()
+
+    async def _delete(self, body):
+        async with self.client as c:
+            return await c.delete("/sessions", json=body)
+
+    async def test_missing_fields_returns_400(self):
+        response = await self._delete({"email_address": "a@b.com"})
+        self.assertEqual(response.status_code, 400)
+
+    async def test_valid_session_deletes_and_returns_200(self):
+        self.mock_sessions.is_valid_session.return_value = True
+        response = await self._delete(
+            {"email_address": "a@b.com", "token": _VALID_TOKEN})
+        self.assertEqual(response.status_code, 200)
+        self.mock_sessions.delete_session.assert_called_once_with("a@b.com")
+
+    async def test_invalid_session_still_returns_200(self):
+        self.mock_sessions.is_valid_session.return_value = False
+        response = await self._delete(
+            {"email_address": "a@b.com", "token": _VALID_TOKEN})
+        self.assertEqual(response.status_code, 200)
+        self.mock_sessions.delete_session.assert_not_called()
+
+
+# ------------------------------------------------------------------
+# RefreshSessionHandler
+# ------------------------------------------------------------------
+
+class TestRefreshSessionHandler(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.mock_sessions = AsyncMock()
+        handler = RefreshSessionHandler(_LOGGER, self.mock_sessions)
+
+        app = Quart(__name__)
+
+        @app.route("/sessions/refresh", methods=["POST"])
+        async def refresh_session():
+            return await handler.refresh_session()
+
+        self.client = app.test_client()
+
+    async def test_returns_not_implemented(self):
+        async with self.client as c:
+            response = await c.post("/sessions/refresh")
+        self.assertEqual(response.status_code, 501)
+        data = await response.get_json()
+        self.assertEqual(data["status"], 0)
+
+
+# ------------------------------------------------------------------
+# ValidateSessionHandler
+# ------------------------------------------------------------------
+
+class TestValidateSessionHandler(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.mock_sessions = AsyncMock()
+        handler = ValidateSessionHandler(_LOGGER, self.mock_sessions)
+
+        app = Quart(__name__)
+
+        @app.route("/sessions/validate", methods=["POST"])
+        async def validate_session():
+            return await handler.validate_session()
+
+        self.client = app.test_client()
+
+    async def _post(self, body):
+        async with self.client as c:
+            return await c.post("/sessions/validate", json=body)
+
+    async def test_missing_fields_returns_400(self):
+        response = await self._post({"email_address": "a@b.com"})
+        self.assertEqual(response.status_code, 400)
+
+    async def test_valid_session_returns_valid(self):
+        self.mock_sessions.is_valid_session.return_value = True
+        response = await self._post(
+            {"email_address": "a@b.com", "token": _VALID_TOKEN})
+        self.assertEqual(response.status_code, 200)
+        data = await response.get_json()
+        self.assertEqual(data["status"], "VALID")
+
+    async def test_invalid_session_returns_invalid(self):
+        self.mock_sessions.is_valid_session.return_value = False
+        response = await self._post(
+            {"email_address": "a@b.com", "token": _VALID_TOKEN})
+        self.assertEqual(response.status_code, 200)
+        data = await response.get_json()
+        self.assertEqual(data["status"], "INVALID")
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -137,7 +137,19 @@ class UpdateProjectHandler(BaseApiRoute):
                 'error': response.exception_msg
             }
             return Response(json.dumps(response_json),
-                            status=HTTPStatus.BAD_REQUEST)
+                            status=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        if response.status_code != HTTPStatus.OK:
+            self._logger.critical(
+                "Project update request failed with unexpected HTTP status %s",
+                response.status_code)
+            response_json = {
+                "status": 0,
+                'error': "Internal error!"
+            }
+            return Response(json.dumps(response_json),
+                            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                            content_type="application/json")
 
         response_json: dict = {"status": 1}
         return Response(json.dumps(response_json),

@@ -112,7 +112,7 @@ class AddProjectHandler(BaseApiRoute):
                                response.exception_msg)
             return Response(
                 json.dumps({"status": 0, "error": "Internal error!"}),
-                status=HTTPStatus.BAD_REQUEST,
+                status=HTTPStatus.INTERNAL_SERVER_ERROR,
                 content_type="application/json")
 
         if response.status_code == HTTPStatus.BAD_REQUEST:

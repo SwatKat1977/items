@@ -81,7 +81,7 @@ class GetProjectHandler(BaseApiRoute):
                 error_msg)
             response_json: dict = {"status": 0, "error": error_msg}
             return Response(json.dumps(response_json),
-                            status=HTTPStatus.BAD_REQUEST,
+                            status=HTTPStatus.INTERNAL_SERVER_ERROR,
                             content_type="application/json")
 
         if response.status_code != HTTPStatus.OK:
