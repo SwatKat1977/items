@@ -155,7 +155,7 @@ jobs:
         env:
           PYTHONPATH: .
         run: |
-          coverage run --rcfile=.github/workflows/.coveragerc_gateway_svc -m unittest -v main
+          coverage run --rcfile=.github/workflows/.coveragerc_gateway_svc -m unittest -v unit_tests/items_gateway/main.py
           coverage report -m --fail-under=100
 
   verify_web-portal-svc:
