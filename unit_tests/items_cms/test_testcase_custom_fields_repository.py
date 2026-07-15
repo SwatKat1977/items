@@ -175,6 +175,19 @@ class TestTestcaseCustomFieldsRepository(unittest.IsolatedAsyncioTestCase):
         return rows[0][0] if rows else None
 
     # ------------------------------------------------------------------
+    # is_valid_project_id
+    # ------------------------------------------------------------------
+
+    async def test_is_valid_project_id_returns_true_for_existing_project(self):
+        project_id = self._insert_project("Alpha")
+        result = await self.repo.is_valid_project_id(project_id)
+        self.assertTrue(result)
+
+    async def test_is_valid_project_id_returns_false_for_missing_project(self):
+        result = await self.repo.is_valid_project_id(999)
+        self.assertFalse(result)
+
+    # ------------------------------------------------------------------
     # custom_field_name_exists
     # ------------------------------------------------------------------
 

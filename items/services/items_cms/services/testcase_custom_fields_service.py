@@ -109,6 +109,22 @@ class TestcaseCustomFieldsService:
                                              error_msg="Service unavailable",
                                              is_internal=True)
 
+        if project_id is not None:
+            try:
+                exists = await self._repository.is_valid_project_id(project_id)
+            except SqliteInterfaceException as ex:
+                self._logger.exception(
+                    "Database failure validating project %d: %s", project_id, ex)
+                self._state.mark_database_failed()
+                return TestcaseCustomFieldResult(success=False,
+                                                 error_msg="Internal error in CMS",
+                                                 is_internal=True)
+
+            if not exists:
+                return TestcaseCustomFieldResult(success=False,
+                                                 error_msg="Project id is invalid",
+                                                 not_found=True)
+
         try:
             if project_id is not None:
                 rows = await self._repository.get_fields_for_project(project_id)
@@ -340,11 +356,17 @@ class TestcaseCustomFieldsService:
             appropriate error result on failure.
         """
         # pylint: disable=too-many-arguments, too-many-positional-arguments
+        # pylint: disable=too-many-return-statements
 
         if not self._state.is_available():
             return TestcaseCustomFieldResult(success=False,
                                              error_msg="Service unavailable",
                                              is_internal=True)
+
+        if not await self._repository.is_valid_custom_field_id(field_id):
+            return TestcaseCustomFieldResult(success=False,
+                                             error_msg="Custom field not found",
+                                             not_found=True)
 
         error, project_ids = await self._validate_update_request(
             field_id, field_name, system_name, applies_to_all_projects,

@@ -51,16 +51,16 @@ def create_sessions_routes(logger: logging.Logger,
     """
     sessions_routes = Blueprint("sessions_routes", __name__)
 
-    new_session_password_handler: NewSessionPasswordHandler = \
+    handler_new_session_password: NewSessionPasswordHandler = \
         NewSessionPasswordHandler(logger,
                                   sessions,
                                   configuration,
                                   rest_client)
-    delete_session_handler: DeleteSessionHandler = DeleteSessionHandler(logger,
+    handler_delete_session: DeleteSessionHandler = DeleteSessionHandler(logger,
                                                                         sessions)
-    refresh_session_handler: RefreshSessionHandler = RefreshSessionHandler(
+    handler_refresh_session: RefreshSessionHandler = RefreshSessionHandler(
         logger, sessions)
-    valid_session_handler: ValidateSessionHandler = ValidateSessionHandler(
+    handler_valid_session: ValidateSessionHandler = ValidateSessionHandler(
         logger, sessions)
 
     logger.debug(" Sessions WEB routes:")
@@ -71,7 +71,7 @@ def create_sessions_routes(logger: logging.Logger,
     @sessions_routes.route('/sessions', methods=['POST'])
     async def create_new_session_request():
         # pylint: disable=no-value-for-parameter
-        return await new_session_password_handler.create_new_session()
+        return await handler_new_session_password.create_new_session()
 
     logger.debug("=> %s POST /sessions/validate",
                  "Check if session is valid".ljust(40))
@@ -79,14 +79,14 @@ def create_sessions_routes(logger: logging.Logger,
     @sessions_routes.route('/sessions/validate', methods=['POST'])
     async def session_validate_request():
         # pylint: disable=no-value-for-parameter
-        return await valid_session_handler.validate_session()
+        return await handler_valid_session.validate_session()
 
     logger.debug("=> %s POST /sessions/refresh",
                  "Refresh session (remember me)".ljust(40))
 
     @sessions_routes.route('/sessions/refresh', methods=['POST'])
     async def refresh_session_request():
-        return await refresh_session_handler.refresh_session()
+        return await handler_refresh_session.refresh_session()
 
     logger.debug("=> %s DELETE /sessions",
                  "Log out (invalidate session)".ljust(40))
@@ -94,6 +94,6 @@ def create_sessions_routes(logger: logging.Logger,
     @sessions_routes.route('/sessions', methods=['DELETE'])
     async def logout_user():
         # pylint: disable=no-value-for-parameter
-        return await delete_session_handler.delete_session()
+        return await handler_delete_session.delete_session()
 
     return sessions_routes

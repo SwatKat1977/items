@@ -47,6 +47,7 @@ class ListTestcasesHandler(BaseApiRoute):
         Returns:
             200 with ``{"folders": [...], "test_cases": [...]}`` on success.
             400 if ``project_id`` is missing or not an integer.
+            404 if ``project_id`` does not refer to an existing project.
             500 on an internal database error.
         """
         # pylint: disable=duplicate-code
@@ -70,9 +71,11 @@ class ListTestcasesHandler(BaseApiRoute):
         result = await self._service.list_testcases(project_id)
 
         if not result.success:
+            status = (HTTPStatus.INTERNAL_SERVER_ERROR
+                      if result.is_internal else HTTPStatus.NOT_FOUND)
             return Response(
                 json.dumps({"error": result.error_msg}),
-                status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                status=status,
                 content_type="application/json")
 
         return Response(

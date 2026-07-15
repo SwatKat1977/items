@@ -129,6 +129,12 @@ class TestListTestcasesHandler(unittest.IsolatedAsyncioTestCase):
             response = await c.get("/testcases?project_id=3")
         self.assertEqual(response.status_code, 500)
 
+    async def test_list_testcases_invalid_project_id_returns_404(self):
+        self.mock_service.list_testcases.return_value = _not_found()
+        async with self.client as c:
+            response = await c.get("/testcases?project_id=3")
+        self.assertEqual(response.status_code, 404)
+
 
 if __name__ == "__main__":
     unittest.main()

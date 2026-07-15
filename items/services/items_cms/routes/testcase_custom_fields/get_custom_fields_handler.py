@@ -58,6 +58,8 @@ class GetCustomFieldsHandler(BaseApiRoute):
         if project_id_param is not None:
             try:
                 project_id = int(project_id_param)
+                if project_id <= 0:
+                    raise ValueError
             except ValueError:
                 return Response(
                     json.dumps({"error": "project_id must be an integer"}),
@@ -67,9 +69,13 @@ class GetCustomFieldsHandler(BaseApiRoute):
         result = await self._service.get_custom_fields(project_id)
 
         if not result.success:
+            if result.not_found:
+                status = HTTPStatus.NOT_FOUND
+            else:
+                status = HTTPStatus.INTERNAL_SERVER_ERROR
             return Response(
                 json.dumps({"error": result.error_msg}),
-                status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                status=status,
                 content_type="application/json")
 
         return Response(
