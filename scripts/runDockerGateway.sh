@@ -3,16 +3,17 @@
 set -euo pipefail
 
 usage() {
-    echo "Usage: $0 <config-file> <tag>"
+    echo "Usage: $0 <config-file> <secret> <tag>"
     exit 1
 }
 
-if [ $# -ne 2 ]; then
+if [ $# -ne 3 ]; then
     usage
 fi
 
 CONFIG_FILE="$(realpath "$1")"
-IMAGE_TAG="$2"
+API_SECRET="$2"
+IMAGE_TAG="$3"
 
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "Error: Config file not found:"
@@ -35,5 +36,6 @@ docker run \
     -p 7050:7050 \
     --name items-gateway \
     --network "${NETWORK_NAME}" \
+    -e GENERAL_API_SIGNING_SECRET="{API_SECRET}" \
     -v "${CONFIG_FILE}:/usr/local/items/gateway.cfg:ro" \
     "items_gateway:${IMAGE_TAG}"
