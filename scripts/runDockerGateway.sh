@@ -7,13 +7,12 @@ usage() {
     exit 1
 }
 
-if [ $# -ne 3 ]; then
+if [ $# -ne 2 ]; then
     usage
 fi
 
 CONFIG_FILE="$(realpath "$1")"
-DB_FILE="$(realpath "$2")"
-IMAGE_TAG="$3"
+IMAGE_TAG="$2"
 
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "Error: Config file not found:"
