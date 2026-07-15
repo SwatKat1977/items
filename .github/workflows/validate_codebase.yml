@@ -153,7 +153,7 @@ jobs:
       # Run tests and measure coverage
       - name: Run tests with coverage
         env:
-          PYTHONPATH: .
+          PYTHONPATH: unit_tests/items_gateway
         run: |
           coverage run --rcfile=.github/workflows/.coveragerc_gateway_svc -m unittest -v unit_tests/items_gateway/main.py
           coverage report -m --fail-under=100
