@@ -13,7 +13,7 @@ fi
 
 CONFIG_FILE="$(realpath "$1")"
 API_SECRET="$2"
-METADATA_FILE="$3"
+METADATA_FILE="$(realpath "$3")"
 IMAGE_TAG="$4"
 
 if [ ! -f "$CONFIG_FILE" ]; then
