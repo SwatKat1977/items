@@ -3,7 +3,7 @@
 set -euo pipefail
 
 usage() {
-    echo "Usage: $0 <config-file> <db-file> <tag>"
+    echo "Usage: $0 <config-file> <tag>"
     exit 1
 }
 
