@@ -60,6 +60,17 @@ class TestcaseCustomFieldsRepository:
         return bool(row)
 
     async def is_valid_custom_field_id(self, field_id: int) -> bool:
+        """Return True if the custom field ID exists in the database.
+
+        Args:
+            field_id: ID of the custom field to check.
+
+        Returns:
+            True if the field ID exists, False otherwise.
+
+        Raises:
+            SqliteInterfaceException: If the database query fails.
+        """
         query = (f"SELECT 1 FROM {cms_tables.TC_CUSTOM_FIELDS} WHERE id "
                  "= ? LIMIT 1")
         row = await self._db.run_query(query, (field_id,), fetch_one=True)

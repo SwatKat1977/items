@@ -356,6 +356,7 @@ class TestcaseCustomFieldsService:
             appropriate error result on failure.
         """
         # pylint: disable=too-many-arguments, too-many-positional-arguments
+        # pylint: disable=too-many-return-statements
 
         if not self._state.is_available():
             return TestcaseCustomFieldResult(success=False,
