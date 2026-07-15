@@ -7,6 +7,350 @@
   },
   "item": [
     {
+      "name": "CMS Service",
+      "item": [
+        {
+          "name": "project",
+          "item": [
+            {
+              "name": "List Projects",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/projects?count_fields=no_of_test_runs",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "projects"
+                  ],
+                  "query": [
+                    {
+                      "key": "count_fields",
+                      "value": "no_of_test_runs"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create New Project",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Project Beta_2\",\n    \"announcement\": \"This is a beta project\",\n    \"announcement_on_overview\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/projects",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "projects"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Modify Project",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Zeta Project\",\n    \"announcement\": \"This is a test for Zeta\",\n    \"announcement_on_overview\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/projects/1",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "projects",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Project",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Beta Project\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/projects/3?hard_delete=true",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "projects",
+                    "3"
+                  ],
+                  "query": [
+                    {
+                      "key": "hard_delete",
+                      "value": "true"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Project",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/projects/1",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "projects",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Testcases",
+          "item": [
+            {
+              "name": "Test Cases For Project",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcases?project_id=10000",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcases"
+                  ],
+                  "query": [
+                    {
+                      "key": "project_id",
+                      "value": "10000"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Test Case Details",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcases/1",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcases",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Test Case Custom Fields",
+          "item": [
+            {
+              "name": "Add Custom Testcase Field",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": " {\n    \"field_name\": \"new type string Trial 124\",\n    \"description\": \"default\",\n    \"system_name\": \"new_system_name_trial_124\",\n    \"field_type\": \"String\",\n    \"enabled\": true,\n    \"is_required\": false,\n    \"default_value\": \"\",\n    \"applies_to_all_projects\": false,\n    \"projects\": [\n          \"Project Delta_1\",\n          \"Project Beta_2\"\n    ]\n}\n",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcase_custom_fields"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get All Custom Testcase Fields",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcase_custom_fields"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Custom Testcase Field",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields/2",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcase_custom_fields",
+                    "2"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Move Custom Testcase field",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"direction\": \"up\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields/1",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcase_custom_fields",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Custom Testcase Field",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"field_name\": \"Estimate\",\r\n  \"description\": \"A human-readable description of the field.\",\r\n  \"system_name\": \"unsafe\",\r\n  \"field_type\": \"Integer\",\r\n  \"enabled\": false,\r\n  \"is_required\": true,\r\n  \"default_value\": \"123\",\r\n  \"applies_to_all_projects\": true\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields/4",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcase_custom_fields",
+                    "4"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Custom Testcase Field",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields/2",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcase_custom_fields",
+                    "2"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "System",
+          "item": [
+            {
+              "name": "Status",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/system/health",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "system",
+                    "health"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Identity Service",
       "item": [
         {
@@ -457,19 +801,13 @@
                       }
                     },
                     "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/testcase_custom_fields?project_id=10000",
+                      "raw": "{{GATEWAY_SVC_URL}}/web/testcase_custom_fields",
                       "host": [
                         "{{GATEWAY_SVC_URL}}"
                       ],
                       "path": [
                         "web",
                         "testcase_custom_fields"
-                      ],
-                      "query": [
-                        {
-                          "key": "project_id",
-                          "value": "10000"
-                        }
                       ]
                     }
                   },
@@ -482,7 +820,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\r\n  \"field_name\": \"Estimate\",\r\n  \"description\": \"A human-readable description of the field.\",\r\n  \"system_name\": \"unsafe\",\r\n  \"field_type\": \"Integer\",\r\n  \"enabled\": false,\r\n  \"is_required\": true,\r\n  \"default_value\": \"123\",\r\n  \"applies_to_all_projects\": true\r\n}",
+                      "raw": "{\r\n  \"field_name\": \"Dry Wall\",\r\n  \"description\": \"A human-readable description of the field.\",\r\n  \"system_name\": \"unsafe\",\r\n  \"field_type\": \"Integer\",\r\n  \"enabled\": false,\r\n  \"is_required\": true,\r\n  \"default_value\": \"123\",\r\n  \"applies_to_all_projects\": true\r\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -490,364 +828,67 @@
                       }
                     },
                     "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/testcase_custom_fields/400",
+                      "raw": "{{GATEWAY_SVC_URL}}/web/testcase_custom_fields/4",
                       "host": [
                         "{{GATEWAY_SVC_URL}}"
                       ],
                       "path": [
                         "web",
                         "testcase_custom_fields",
-                        "400"
+                        "4"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Move Custom Testcase field",
+                  "request": {
+                    "method": "PATCH",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"direction\": \"up\"\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/testcase_custom_fields/1",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "testcase_custom_fields",
+                        "1"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Delete Custom Testcase Field Copy",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/testcase_custom_fields/2",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "testcase_custom_fields",
+                        "2"
                       ]
                     }
                   },
                   "response": []
                 }
               ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "CMS",
-      "item": [
-        {
-          "name": "project",
-          "item": [
-            {
-              "name": "List Projects",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{CMS_SVC_URL}}/projects?count_fields=no_of_test_runs",
-                  "host": [
-                    "{{CMS_SVC_URL}}"
-                  ],
-                  "path": [
-                    "projects"
-                  ],
-                  "query": [
-                    {
-                      "key": "count_fields",
-                      "value": "no_of_test_runs"
-                    }
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Create New Project",
-              "request": {
-                "method": "POST",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"name\": \"Project Beta_2\",\n    \"announcement\": \"This is a beta project\",\n    \"announcement_on_overview\": false\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{CMS_SVC_URL}}/projects",
-                  "host": [
-                    "{{CMS_SVC_URL}}"
-                  ],
-                  "path": [
-                    "projects"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Modify Project",
-              "request": {
-                "method": "PATCH",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"name\": \"Zeta Project\",\n    \"announcement\": \"This is a test for Zeta\",\n    \"announcement_on_overview\": true\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{CMS_SVC_URL}}/projects/1",
-                  "host": [
-                    "{{CMS_SVC_URL}}"
-                  ],
-                  "path": [
-                    "projects",
-                    "1"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Delete Project",
-              "request": {
-                "method": "DELETE",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"name\": \"Beta Project\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{CMS_SVC_URL}}/projects/3?hard_delete=true",
-                  "host": [
-                    "{{CMS_SVC_URL}}"
-                  ],
-                  "path": [
-                    "projects",
-                    "3"
-                  ],
-                  "query": [
-                    {
-                      "key": "hard_delete",
-                      "value": "true"
-                    }
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Get Project",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{CMS_SVC_URL}}/projects/1",
-                  "host": [
-                    "{{CMS_SVC_URL}}"
-                  ],
-                  "path": [
-                    "projects",
-                    "1"
-                  ]
-                }
-              },
-              "response": []
-            }
-          ]
-        },
-        {
-          "name": "Testcases",
-          "item": [
-            {
-              "name": "Test Cases For Project",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{CMS_SVC_URL}}/testcases?project_id=10000",
-                  "host": [
-                    "{{CMS_SVC_URL}}"
-                  ],
-                  "path": [
-                    "testcases"
-                  ],
-                  "query": [
-                    {
-                      "key": "project_id",
-                      "value": "10000"
-                    }
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Test Case Details",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{CMS_SVC_URL}}/testcases/1",
-                  "host": [
-                    "{{CMS_SVC_URL}}"
-                  ],
-                  "path": [
-                    "testcases",
-                    "1"
-                  ]
-                }
-              },
-              "response": []
-            }
-          ]
-        },
-        {
-          "name": "Test Case Custom Fields",
-          "item": [
-            {
-              "name": "Add Custom Testcase Field",
-              "request": {
-                "method": "POST",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": " {\n    \"field_name\": \"new type string Trial 124\",\n    \"description\": \"default\",\n    \"system_name\": \"new_system_name_trial_124\",\n    \"field_type\": \"String\",\n    \"enabled\": true,\n    \"is_required\": false,\n    \"default_value\": \"\",\n    \"applies_to_all_projects\": false,\n    \"projects\": [\n          \"Project Delta_1\",\n          \"Project Beta_2\"\n    ]\n}\n",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields",
-                  "host": [
-                    "{{CMS_SVC_URL}}"
-                  ],
-                  "path": [
-                    "testcase_custom_fields"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Get All Custom Testcase Fields",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields",
-                  "host": [
-                    "{{CMS_SVC_URL}}"
-                  ],
-                  "path": [
-                    "testcase_custom_fields"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Get Custom Testcase Field",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields/2",
-                  "host": [
-                    "{{CMS_SVC_URL}}"
-                  ],
-                  "path": [
-                    "testcase_custom_fields",
-                    "2"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Move Custom Testcase field",
-              "request": {
-                "method": "PATCH",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n    \"direction\": \"up\"\r\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields/1",
-                  "host": [
-                    "{{CMS_SVC_URL}}"
-                  ],
-                  "path": [
-                    "testcase_custom_fields",
-                    "1"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Update Custom Testcase Field",
-              "request": {
-                "method": "PUT",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n  \"field_name\": \"Estimate\",\r\n  \"description\": \"A human-readable description of the field.\",\r\n  \"system_name\": \"unsafe\",\r\n  \"field_type\": \"Integer\",\r\n  \"enabled\": false,\r\n  \"is_required\": true,\r\n  \"default_value\": \"123\",\r\n  \"applies_to_all_projects\": true\r\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields/4",
-                  "host": [
-                    "{{CMS_SVC_URL}}"
-                  ],
-                  "path": [
-                    "testcase_custom_fields",
-                    "4"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Delete Custom Testcase Field",
-              "request": {
-                "method": "DELETE",
-                "header": [],
-                "url": {
-                  "raw": "{{CMS_SVC_URL}}/testcase_custom_fields/2",
-                  "host": [
-                    "{{CMS_SVC_URL}}"
-                  ],
-                  "path": [
-                    "testcase_custom_fields",
-                    "2"
-                  ]
-                }
-              },
-              "response": []
-            }
-          ]
-        },
-        {
-          "name": "System",
-          "item": [
-            {
-              "name": "Status",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{CMS_SVC_URL}}/system/health",
-                  "host": [
-                    "{{CMS_SVC_URL}}"
-                  ],
-                  "path": [
-                    "system",
-                    "health"
-                  ]
-                }
-              },
-              "response": []
             }
           ]
         }
