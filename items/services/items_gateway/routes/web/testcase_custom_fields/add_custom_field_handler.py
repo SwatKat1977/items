@@ -24,7 +24,6 @@ from weaver_framework.microservice.microservice_decorators import validate_json
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
 
-SCHEMA_ADD_TEST_CASE_CUSTOM_FIELD_REQUEST: dict = {
 """JSON Schema for validating add-testcase-custom-field requests.
 
 This schema defines the structure of the JSON payload accepted when creating
@@ -44,6 +43,7 @@ The schema enforces that:
   must also be supplied.
 * Additional properties outside the schema are rejected.
 """
+SCHEMA_ADD_TEST_CASE_CUSTOM_FIELD_REQUEST: dict = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Custom Field Definition",
     "type": "object",
