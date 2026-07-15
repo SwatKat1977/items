@@ -13,23 +13,3 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import logging
-from quart import Blueprint
-from .testcase_custom_fields_api_view import TestcaseCustomFieldsApiView
-
-
-def create_blueprint(logger: logging.Logger) -> Blueprint:
-    view = TestcaseCustomFieldsApiView(logger)
-
-    blueprint = Blueprint('admin_tc_custom_fields_api', __name__)
-
-    logger.debug("------- Registering Web Admin TC Custom Fields routes -----")
-
-    logger.debug(f"=> {'Modify a TC custom field'.ljust(30)}"
-                 "PATCH /web/admin/testcase_custom_fields")
-
-    @blueprint.route('/testcase_custom_fields/<int:field_id>', methods=['PATCH'])
-    async def modify_custom_field_request(field_id: int):
-        return await view.modify_custom_field(field_id)
-
-    return blueprint

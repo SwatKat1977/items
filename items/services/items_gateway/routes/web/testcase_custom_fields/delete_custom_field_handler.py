@@ -20,67 +20,52 @@ import logging
 from quart import Response
 from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.base_api_route import BaseApiRoute
-from weaver_framework.microservice.microservice_decorators import validate_json
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
 
 
-SCHEMA_MOVE_CUSTOM_FIELD_REQUEST: dict = {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "title": "Move Custom Field",
-    "type": "object",
-    "properties": {
-        "direction": {
-            "type": "string",
-            "enum": ["up", "down"],
-            "description": "Direction to move the custom field in the ordered list."
-        }
-    },
-    "required": ["direction"],
-    "additionalProperties": False
-}
+class DeleteCustomFieldHandler(BaseApiRoute):
+    """Handle requests for deleting testcase custom fields.
 
-
-class MoveCustomFieldHandler(BaseApiRoute):
-    """Handle requests for repositioning testcase custom fields.
-
-    This handler validates requests to move a custom field within the ordered
-    list of testcase custom fields, forwards the request to the CMS service,
-    and translates the resulting status into an appropriate HTTP response for
-    the client.
+    This handler forwards delete requests to the CMS service and translates the
+    resulting status into an appropriate HTTP response for the client.
     """
 
     def __init__(self,
                  logger: logging.Logger,
                  configuration: GatewayConfiguration,
                  rest_client: RestClient) -> None:
+        """Initialise the handler.
+
+        Args:
+            logger: Application logger used for diagnostic and error logging.
+            configuration: Gateway configuration containing service endpoint
+                information.
+            rest_client: REST client used to communicate with the CMS service.
+        """
         self._logger = logger.getChild(type(self).__name__)
         self._configuration = configuration
         self._rest_client = rest_client
 
-    @validate_json(SCHEMA_MOVE_CUSTOM_FIELD_REQUEST)
-    async def move_custom_field(self, request_msg: ApiResponse,
-                                field_id: int):
-        """Move a testcase custom field up or down in the ordered list.
+    async def delete_custom_field(self, field_id: int):
+        """Delete an existing testcase custom field.
 
-        Validates the request payload, forwards the reposition request to the
-        CMS service, and returns the result to the caller.
+        Forwards the delete request to the CMS service and returns the result
+        to the caller.
 
         Args:
-            request_msg: The validated API request containing the move
-                ``direction`` ("up" or "down").
-            field_id: The unique identifier of the custom field to move.
+            field_id: The unique identifier of the custom field to delete.
 
         Returns:
             Response: A Quart JSON response indicating whether the operation
-            succeeded. A CMS connection failure yields 500; any non-OK CMS
-            status is propagated back to the caller.
+            succeeded. A CMS connection failure yields 500; a missing field
+            yields 404; any other non-OK CMS status is propagated back to the
+            caller.
         """
         url: str = (f"{self._configuration.apis_cms_svc}testcase_custom_fields"
                     f"/{field_id}")
 
-        response: ApiResponse = await self._rest_client.patch(
-            url, json_data=request_msg.body)
+        response: ApiResponse = await self._rest_client.delete(url)
 
         # 1) CMS unreachable / transport-level failure.
         if response.exception_msg is not None:
@@ -91,7 +76,16 @@ class MoveCustomFieldHandler(BaseApiRoute):
                 status=HTTPStatus.INTERNAL_SERVER_ERROR,
                 content_type="application/json")
 
-        # 2) CMS reached but reported a non-OK status - propagate it.
+        # 2) The custom field does not exist.
+        if response.status_code == HTTPStatus.NOT_FOUND:
+            self._logger.warning("Custom field %s not found", field_id)
+            return Response(
+                json.dumps({"status": 0,
+                            "error": f"Custom field {field_id} does not exist"}),
+                status=HTTPStatus.NOT_FOUND,
+                content_type="application/json")
+
+        # 3) CMS reached but reported another non-OK status - propagate it.
         if response.status_code != HTTPStatus.OK:
             error_msg: str = "Unknown error"
             if isinstance(response.body, dict):
@@ -103,7 +97,7 @@ class MoveCustomFieldHandler(BaseApiRoute):
                 status=response.status_code,
                 content_type="application/json")
 
-        # 3) Success.
+        # 4) Success.
         return Response(
             json.dumps({"status": 1}),
             status=HTTPStatus.OK,

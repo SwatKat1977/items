@@ -17,9 +17,15 @@ limitations under the License.
 from quart import Blueprint
 from items.services.items_gateway.route_injections import RouteInjections
 from items.services.items_gateway.routes.web.testcase_custom_fields.\
+    add_custom_field_handler import AddCustomFieldHandler
+from items.services.items_gateway.routes.web.testcase_custom_fields.\
+    delete_custom_field_handler import DeleteCustomFieldHandler
+from items.services.items_gateway.routes.web.testcase_custom_fields.\
     get_all_custom_fields_handler import GetAllCustomFieldsHandler
 from items.services.items_gateway.routes.web.testcase_custom_fields.\
     modify_custom_field_handler import ModifyCustomFieldHandler
+from items.services.items_gateway.routes.web.testcase_custom_fields.\
+    testcase_custom_fields_api_view import MoveCustomFieldHandler
 
 
 def create_testcase_custom_fields_routes(injections: RouteInjections) \
@@ -46,6 +52,15 @@ def create_testcase_custom_fields_routes(injections: RouteInjections) \
     """
     routes = Blueprint('testcase_custom_fields_routes', __name__)
 
+
+    handler_add_custom_field: AddCustomFieldHandler = AddCustomFieldHandler(
+                                  injections.logger,
+                                  injections.configuration,
+                                  injections.rest_client)
+    handler_delete_custom_field: DeleteCustomFieldHandler = DeleteCustomFieldHandler(
+                                  injections.logger,
+                                  injections.configuration,
+                                  injections.rest_client)
     handler_get_all_fields: GetAllCustomFieldsHandler = \
         GetAllCustomFieldsHandler(injections.logger,
                                   injections.configuration,
@@ -54,6 +69,10 @@ def create_testcase_custom_fields_routes(injections: RouteInjections) \
         ModifyCustomFieldHandler(injections.logger,
                                  injections.configuration,
                                  injections.rest_client)
+    handler_move_custom_field: MoveCustomFieldHandler = MoveCustomFieldHandler(
+        injections.logger,
+        injections.configuration,
+        injections.rest_client)
 
     injections.logger.debug(" Testcase Custom Fields WEB routes:")
 
@@ -71,5 +90,27 @@ def create_testcase_custom_fields_routes(injections: RouteInjections) \
     async def modify_custom_field_request(field_id: int):
         # pylint: disable=no-value-for-parameter
         return await handler_modify_custom_field.modify_custom_field(field_id)
+
+    injections.logger.debug(
+        "=> %s PATCH /web/testcase_custom_fields/<int:field_id>",
+        "Move Testcase Custom Fields Position".ljust(40))
+
+    @routes.route('/testcase_custom_fields/<int:field_id>', methods=['PATCH'])
+    async def move_custom_field_request(field_id: int):
+        # pylint: disable=no-value-for-parameter
+        return await handler_move_custom_field.move_custom_field(field_id)
+
+    injections.logger.debug("=> %s POST /web/testcase_custom_fields",
+                            "Add Testcase Custom Field".ljust(40))
+
+    @routes.route('/testcase_custom_fields/', methods=['POST'])
+    async def add_custom_field_request():
+        # pylint: disable=no-value-for-parameter
+        return await handler_add_custom_field.add_custom_field()
+
+    @routes.route('/testcase_custom_fields/<int:field_id>', methods=['DELETE'])
+    async def delete_custom_field_request(field_id: int):
+        # pylint: disable=no-value-for-parameter
+        return await handler_delete_custom_field.delete_custom_field(field_id)
 
     return routes
