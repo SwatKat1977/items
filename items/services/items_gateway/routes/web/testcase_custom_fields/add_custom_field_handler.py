@@ -24,26 +24,8 @@ from weaver_framework.microservice.microservice_decorators import validate_json
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
 
+
 SCHEMA_ADD_TEST_CASE_CUSTOM_FIELD_REQUEST: dict = {
-"""JSON Schema for validating add-testcase-custom-field requests.
-
-This schema defines the structure of the JSON payload accepted when creating
-a new testcase custom field. It validates the field metadata, supported data
-types, required properties, and conditional requirements for project-specific
-custom fields.
-
-The schema enforces that:
-
-* ``field_name`` is a non-empty display name.
-* ``system_name`` is a valid internal identifier consisting of lowercase
-  letters, digits, and underscores, beginning with a letter.
-* ``field_type`` is one of the supported testcase custom field types.
-* Required metadata such as the description, enabled state, default value,
-  and required flag are present.
-* When ``applies_to_all_projects`` is ``False``, the ``projects`` property
-  must also be supplied.
-* Additional properties outside the schema are rejected.
-"""
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Custom Field Definition",
     "type": "object",
