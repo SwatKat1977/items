@@ -27,7 +27,7 @@ class ConfigurationConstants:
     # pylint: disable=too-few-public-methods
 
     SECTION_LOGGING: str = 'logging'
-    SECTION_APIS: str = 'routes'
+    SECTION_APIS: str = 'apis'
     SECTION_GENERAL: str = 'general'
 
     LOGGING_LOG_LEVEL: str = 'log_level'

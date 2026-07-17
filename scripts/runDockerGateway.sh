@@ -40,4 +40,5 @@ docker run \
     -e GENERAL_API_SIGNING_SECRET="{API_SECRET}" \
     -v "${CONFIG_FILE}:/usr/local/items/gateway.cfg:ro" \
     -v "${METADATA_FILE}:/usr/local/items/metadata.config" \
+    -d \
     "items_gateway:${IMAGE_TAG}"

@@ -81,8 +81,15 @@ class LoginPostPageHandler(PortalPageHandler):
         }
         base_url: str = self._config.apis_gateway_svc
         url = f"{base_url}web/sessions"
+        print("URL: ", url)
+        print("Body: ", auth_body)
 
-        response: ApiResponse = await self._rest_client.post(url, auth_body)
+        response: ApiResponse = await self._rest_client.post(
+            url,
+            json_data=auth_body)
+        print("Response body        : ", response.body)
+        print("Response status code : ", response.status_code)
+        print("Response exception   : ", response.exception_msg)
 
         if response.status_code == HTTPStatus.UNAUTHORIZED:
             error_msg = "Invalid username/password"
