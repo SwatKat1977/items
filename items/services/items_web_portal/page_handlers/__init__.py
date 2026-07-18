@@ -17,6 +17,7 @@ limitations under the License.
 import quart
 from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
+from .admin import create_admin_page_handlers
 from .auth import create_auth_page_handlers
 from .projects import create_projects_page_handlers
 from .testcases import create_testcases_page_handlers
@@ -39,6 +40,10 @@ def create_page_handlers(injections: PageHandlerInjections) -> quart.Blueprint:
         handler routes.
     """
     routes = quart.Blueprint("page_handler_routes", __name__)
+
+    # Admin pages
+    routes.register_blueprint(create_admin_page_handlers(injections),
+                              url_prefix="/admin")
 
     # Register authentication pages
     routes.register_blueprint(create_auth_page_handlers(injections))

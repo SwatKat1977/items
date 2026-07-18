@@ -48,7 +48,7 @@ def create_admin_page_handlers(injections: PageHandlerInjections) -> Blueprint:
                             "Admin Projects page (post)".ljust(40))
 
     @routes.route('/admin/projects', methods=['POST'])
-    async def admin_page_projects_read_request():
+    async def admin_page_projects_post_request():
         return None
         return await view.admin_projects()
 
