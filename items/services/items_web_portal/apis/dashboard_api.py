@@ -40,19 +40,8 @@ def create_blueprint(logger: logging.Logger,
 
     logger.debug("----------- Registering Admin Dashboard routes ------------")
 
-    logger.debug("=> /admin/overview [GET]                          : Admin "
-                 "overview (web page)")
 
-    @blueprint.route('/admin/overview', methods=['GET'])
-    async def admin_overview_request():
-        return await view.admin_overview()
 
-    logger.debug("=> /admin/projects [GET, POST]                    : Manage "
-                 "projects (web page)")
-
-    @blueprint.route('/admin/projects', methods=['GET', 'POST'])
-    async def admin_projects_request():
-        return await view.admin_projects()
 
     logger.debug("=> /admin/users_roles [GET]                       : Manage "
                  "user roles (web page)")

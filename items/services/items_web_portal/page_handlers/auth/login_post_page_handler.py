@@ -80,9 +80,6 @@ class LoginPostPageHandler(PortalPageHandler):
                 "password": password
         }
         base_url: str = self._config.apis_gateway_svc
-        url = f"{base_url}web/sessions"
-        print("URL: ", url)
-        print("Body: ", auth_body)
 
         response: ApiResponse = await self._rest_client.post(
             url,
