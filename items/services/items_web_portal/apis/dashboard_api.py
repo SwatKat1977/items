@@ -22,61 +22,8 @@ from metadata_settings import MetadataSettings
 
 def create_blueprint(logger: logging.Logger,
                      metadata: MetadataSettings) -> Blueprint:
-    """
-    Creates and registers a Quart Blueprint for handling dashboard API routes.
-
-    Args:
-        logger (logging.Logger): A logger instance for logging messages.
-        metadata (MetadataSettings): A metadata settings instance.
-
-    Returns:
-        Blueprint: A Quart `Blueprint` object containing the registered route.
-    """
-    view = DashboardApiView(logger, metadata)
-
-    ### logger.debug("=> / [GET]              : Home page (web page)")
 
     blueprint = Blueprint('dashboard_api', __name__)
 
-    logger.debug("----------- Registering Admin Dashboard routes ------------")
-
-
-
-
-    logger.debug("=> /admin/users_roles [GET]                       : Manage "
-                 "user roles (web page)")
-
-    @blueprint.route('/admin/users_roles', methods=['GET'])
-    async def admin_admin_users_and_roles_request():
-        return await view.admin_users_and_roles()
-
-    logger.debug("=> /admin/manage_data [GET]                       : Manage "
-                 "data (web page)")
-
-    @blueprint.route('/admin/manage_data', methods=['GET'])
-    async def admin_admin_manage_data_request():
-        return await view.admin_manage_data()
-
-    logger.debug("=> /admin/site_settings [GET]                     : Site "
-                 "Settings (web page)")
-
-    @blueprint.route('/admin/site_settings', methods=['GET'])
-    async def admin_site_settings_request():
-        return await view.admin_site_settings()
-
-    logger.debug("=> /admin/add_project [GET, POST]                 : Add "
-                 "project (web page)")
-
-    @blueprint.route('/admin/add_project', methods=['GET', 'POST'])
-    async def admin_add_project_request():
-        return await view.admin_add_project()
-
-    logger.debug("=> /admin/<project_id>/modify_project [GET, POST] : Modify "
-                 "project (web page)")
-
-    @blueprint.route('/admin/<project_id>/modify_project',
-                     methods=['GET', 'POST'])
-    async def admin_modify_project_request(project_id: int):
-        return await view.admin_modify_project(project_id)
 
     return blueprint

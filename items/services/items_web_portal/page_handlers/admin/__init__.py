@@ -38,7 +38,7 @@ def create_admin_page_handlers(injections: PageHandlerInjections) -> Blueprint:
     injections.logger.debug("=> %s GET /admin/projects",
                             "Admin Projects page (read)".ljust(40))
 
-    @routes.route('/admin/projects', methods=['GET'])
+    @routes.route('/projects', methods=['GET'])
     async def admin_page_projects_read_request():
         return None
         return await view.admin_projects()
@@ -51,5 +51,59 @@ def create_admin_page_handlers(injections: PageHandlerInjections) -> Blueprint:
     async def admin_page_projects_post_request():
         return None
         return await view.admin_projects()
+
+    # Admin page | Users Roles (read): '/admin/users_roles'
+    injections.logger.debug("=> %s GET /admin/users_roles",
+                            "Admin Users Roles page (read)".ljust(40))
+
+    @routes.route('/admin/users_roles', methods=['GET'])
+    async def admin_admin_users_and_roles_request():
+        return None
+        return await view.admin_users_and_roles()
+
+    # Admin page | Manage Data (read): '/admin/users_roles'
+    injections.logger.debug("=> %s GET /admin/manage_data",
+                            "Admin manage data  page (read)".ljust(40))
+
+    @routes.route('/admin/manage_data', methods=['GET'])
+    async def admin_admin_manage_data_request():
+        return None
+        return await view.admin_manage_data()
+
+    # Admin page | Site Settings (read): '/admin/site_settings'
+    injections.logger.debug("=> %s GET /admin/site_settings",
+                            "Admin site settings page (read)".ljust(40))
+
+    @routes.route('/admin/site_settings', methods=['GET'])
+    async def admin_site_settings_request():
+        return None
+        return await view.admin_site_settings()
+
+    # Admin page | Add Project (read): '/admin/add_project'
+    injections.logger.debug("=> %s GET /admin/add_project",
+                            "Admin add project page (read)".ljust(40))
+
+    @routes.route('/add_project', methods=['GET'])
+    async def admin_add_project_read_request():
+        return None
+        return await view.admin_add_project()
+
+    # Admin page | Modify Project (read): '/admin/modify_project'
+    injections.logger.debug("=> %s GET /admin/modify_project",
+                            "Admin Modify project page (read)".ljust(40))
+
+    @routes.route('/admin/<project_id>/modify_project', methods=['GET'])
+    async def admin_add_project_post_request(project_id: int):
+        return None
+        return await view.admin_modify_project(project_id)
+
+    # Admin page | Add Project (post): '/admin/add_project'
+    injections.logger.debug("=> %s POST /admin/add_project",
+                            "Admin add project page (post)".ljust(40))
+
+    @routes.route('/add_project', methods=['POST'])
+    async def admin_add_project_request():
+        return None
+        return await view.admin_add_project()
 
     return routes
