@@ -17,40 +17,25 @@ limitations under the License.
 from quart import Blueprint
 from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
+from items.services.items_web_portal.page_handlers.admin.projects import \
+    create_admin_projects_page_handlers
 
 
-def create_admin_page_handlers(injections: PageHandlerInjections) -> Blueprint:
-
+def create_admin_page_handlers(injections: PageHandlerInjections,
+                               prefix: str) -> Blueprint:
     routes = Blueprint('admin_pages_routes', __name__)
 
     injections.logger.debug(" Admin Pages Handlers:")
 
     # Admin page | Overview: '/overview'
-    injections.logger.debug("=> %s GET /admin/overview",
-                            "Admin overview page".ljust(40))
+    injections.logger.debug("=> %s GET %s/overview",
+                            "Admin overview page".ljust(40),
+                            prefix)
 
     @routes.route('/overview', methods=['GET'])
     async def admin_page_overview_request():
         return None
         return await handler_logout.logout()
-
-    # Admin page | Projects (read): '/admin/projects'
-    injections.logger.debug("=> %s GET /admin/projects",
-                            "Admin Projects page (read)".ljust(40))
-
-    @routes.route('/projects', methods=['GET'])
-    async def admin_page_projects_read_request():
-        return None
-        return await view.admin_projects()
-
-    # Admin page | Projects (update): '/admin/projects'
-    injections.logger.debug("=> %s POST /admin/projects",
-                            "Admin Projects page (post)".ljust(40))
-
-    @routes.route('/admin/projects', methods=['POST'])
-    async def admin_page_projects_post_request():
-        return None
-        return await view.admin_projects()
 
     # Admin page | Users Roles (read): '/admin/users_roles'
     injections.logger.debug("=> %s GET /admin/users_roles",
@@ -79,31 +64,7 @@ def create_admin_page_handlers(injections: PageHandlerInjections) -> Blueprint:
         return None
         return await view.admin_site_settings()
 
-    # Admin page | Add Project (read): '/admin/add_project'
-    injections.logger.debug("=> %s GET /admin/add_project",
-                            "Admin add project page (read)".ljust(40))
-
-    @routes.route('/add_project', methods=['GET'])
-    async def admin_add_project_read_request():
-        return None
-        return await view.admin_add_project()
-
-    # Admin page | Modify Project (read): '/admin/modify_project'
-    injections.logger.debug("=> %s GET /admin/modify_project",
-                            "Admin Modify project page (read)".ljust(40))
-
-    @routes.route('/admin/<project_id>/modify_project', methods=['GET'])
-    async def admin_add_project_post_request(project_id: int):
-        return None
-        return await view.admin_modify_project(project_id)
-
-    # Admin page | Add Project (post): '/admin/add_project'
-    injections.logger.debug("=> %s POST /admin/add_project",
-                            "Admin add project page (post)".ljust(40))
-
-    @routes.route('/add_project', methods=['POST'])
-    async def admin_add_project_request():
-        return None
-        return await view.admin_add_project()
+    # Register testcases pages
+    routes.register_blueprint(create_admin_projects_page_handlers(injections))
 
     return routes
