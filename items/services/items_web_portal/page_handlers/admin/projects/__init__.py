@@ -17,6 +17,8 @@ limitations under the License.
 from quart import Blueprint
 from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
+from items.services.items_web_portal.page_handlers.admin.projects.\
+    admin_projects_read_page_handler import AdminProjectsReadPageHandler
 
 
 def create_admin_projects_page_handlers(injections: PageHandlerInjections) -> Blueprint:
@@ -25,14 +27,19 @@ def create_admin_projects_page_handlers(injections: PageHandlerInjections) -> Bl
 
     injections.logger.debug(" Admin Pages | Projects Handlers:")
 
+    handler_projects_read: AdminProjectsReadPageHandler = \
+        AdminProjectsReadPageHandler(injections.logger,
+                                     injections.config,
+                                     injections.rest_client,
+                                     injections.metadata)
+
     # Admin page | Projects (read): '/admin/projects'
     injections.logger.debug("=> %s GET /admin/projects",
                             "Admin Projects page (read)".ljust(40))
 
     @routes.route('/projects', methods=['GET'])
     async def admin_page_projects_read_request():
-        return None
-        return await view.admin_projects()
+        return await handler_projects_read.projects_read()
 
     # Admin page | Projects (update): '/admin/projects'
     injections.logger.debug("=> %s POST /admin/projects",
