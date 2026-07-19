@@ -42,7 +42,8 @@ def create_page_handlers(injections: PageHandlerInjections) -> quart.Blueprint:
     routes = quart.Blueprint("page_handler_routes", __name__)
 
     # Admin pages
-    routes.register_blueprint(create_admin_page_handlers(injections),
+    routes.register_blueprint(create_admin_page_handlers(injections,
+                                                         "/admin"),
                               url_prefix="/admin")
 
     # Register authentication pages
