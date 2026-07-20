@@ -50,7 +50,6 @@ class AdminProjectsPageHandlers(PortalPageHandler):
         if response.status_code != HTTPStatus.OK:
             self._logger.critical("Gateway svc request invalid - Reason: %s",
                                   response.exception_msg)
-            print(response.body, response.status_code)
             return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
         return await self.projects_read()
@@ -58,7 +57,7 @@ class AdminProjectsPageHandlers(PortalPageHandler):
     @require_session
     async def projects_read(self):
         base_url: str = self._config.apis_gateway_svc
-        url = f"{base_url}/web/projects?value_fields=name"
+        url = f"{base_url}web/projects?value_fields=name"
         response: ApiResponse = await self._rest_client.get(url)
 
         if response.status_code != HTTPStatus.OK:
