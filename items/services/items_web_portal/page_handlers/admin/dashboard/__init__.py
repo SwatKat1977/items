@@ -17,12 +17,30 @@ limitations under the License.
 from quart import Blueprint
 from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
-from items.services.items_web_portal.page_handlers.admin.dashboard.admin_overview_page_handler import \
-    AdminOverviewPageHandler
+from items.services.items_web_portal.page_handlers.admin.dashboard.\
+    admin_overview_page_handler import AdminOverviewPageHandler
 
 
 def create_admin_dashboard_page_handler(injections: PageHandlerInjections,
                                         prefix: str) -> Blueprint:
+    """Create the administration dashboard page handlers.
+
+    This function creates and configures the blueprint containing the
+    administration dashboard routes. The blueprint currently provides the
+    overview page and is intended to be registered beneath the
+    administration URL prefix.
+
+    Args:
+        injections: Dependency injection container providing the logger,
+            configuration, REST client, metadata, and other services
+            required by the page handlers.
+        prefix: URL prefix used when registering the blueprint and for
+            logging the route paths.
+
+    Returns:
+        Blueprint: A configured Quart blueprint containing the
+        administration dashboard page routes.
+    """
     routes = Blueprint('admin_dashboard_pages_routes', __name__)
 
     injections.logger.debug(" Admin Pages | Dashboard Page Handler:")

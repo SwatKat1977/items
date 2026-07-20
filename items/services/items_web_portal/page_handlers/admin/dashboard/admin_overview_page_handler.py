@@ -24,16 +24,35 @@ from items.services.items_web_portal.portal_page_handler import (
 
 
 class AdminOverviewPageHandler(PortalPageHandler):
+    """Handles requests for the administration overview page.
+
+    This handler renders the main administration landing page, providing
+    template context such as the configured instance name and the active
+    navigation state.
+    """
 
     def __init__(self,
                  logger: logging.Logger,
                  config: Configuration,
                  rest_client: RestClient,
                  metadata: MetadataSettings):
+        """Initialize the administration overview page handler.
+
+        Args:
+            logger: Logger used to record diagnostic and operational messages.
+            config: Application configuration settings.
+            rest_client: REST client used to communicate with backend services.
+            metadata: Instance metadata used to populate page content.
+        """
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
     async def overview(self):
+        """Render the administration overview page.
+
+        Returns:
+            Response: The rendered administration overview page response.
+        """
         return await self._render_page(
             pages.PAGE_INSTANCE_ADMIN_OVERVIEW,
             instance_name=self._metadata_settings.instance_name,

@@ -52,6 +52,10 @@ def require_session(func):
 
     @wraps(func)
     async def wrapper(self, *args, **kwargs):
+        # pylint: disable=protected-access
+        # This decorator only ever wraps methods on SessionAuthMixin /
+        # PortalPageHandler subclasses, so `self` here is always one of
+        # those - the protected-member access below is intentional.
         try:
             if not await self._has_auth_cookies() \
                     or not await self._validate_cookies():

@@ -25,6 +25,26 @@ from items.services.items_web_portal.page_handlers.admin.projects import \
 
 def create_admin_page_handlers(injections: PageHandlerInjections,
                                prefix: str) -> Blueprint:
+    """Create the admin page route handlers.
+
+    This function creates and configures the blueprint containing the
+    administrative page routes for the web application. It registers the
+    admin dashboard routes, project management routes, and page handlers
+    for user and role management, data management, and site settings.
+
+    The returned blueprint can be registered with the main application to
+    expose the administrative interface.
+
+    Args:
+        injections: Dependency injection container providing the page
+            handlers, logger, and supporting services required by the
+            administrative pages.
+        prefix: URL prefix applied when creating nested admin blueprints.
+
+    Returns:
+        Blueprint: A configured Quart blueprint containing all
+        administrative page routes.
+    """
     routes = Blueprint('admin_pages_routes', __name__)
 
     injections.logger.debug(" Admin Pages Handlers:")
@@ -39,8 +59,7 @@ def create_admin_page_handlers(injections: PageHandlerInjections,
 
     @routes.route('/admin/users_roles', methods=['GET'])
     async def admin_admin_users_and_roles_request():
-        return None
-        return await view.admin_users_and_roles()
+        return await injections.admin_users_and_roles()
 
     # Admin page | Manage Data (read): '/admin/users_roles'
     injections.logger.debug("=> %s GET /admin/manage_data",
@@ -48,8 +67,7 @@ def create_admin_page_handlers(injections: PageHandlerInjections,
 
     @routes.route('/admin/manage_data', methods=['GET'])
     async def admin_admin_manage_data_request():
-        return None
-        return await view.admin_manage_data()
+        return await injections.admin_manage_data()
 
     # Admin page | Site Settings (read): '/admin/site_settings'
     injections.logger.debug("=> %s GET /admin/site_settings",
@@ -57,8 +75,7 @@ def create_admin_page_handlers(injections: PageHandlerInjections,
 
     @routes.route('/admin/site_settings', methods=['GET'])
     async def admin_site_settings_request():
-        return None
-        return await view.admin_site_settings()
+        return await injections.admin_site_settings()
 
     # Register testcases pages
     routes.register_blueprint(create_admin_projects_page_handlers(injections))
