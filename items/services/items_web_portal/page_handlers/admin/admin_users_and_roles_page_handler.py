@@ -23,7 +23,7 @@ from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
 
 
-class AdminManageUsersAndRolesPageHandler(PortalPageHandler):
+class AdminUsersAndRolesPageHandler(PortalPageHandler):
     """Handles requests for the administration users and roles page.
 
     This handler renders the administration page used to manage user
@@ -46,7 +46,7 @@ class AdminManageUsersAndRolesPageHandler(PortalPageHandler):
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
-    async def admin_users_and_roles(self):
+    async def users_and_roles(self):
         """Render the administration users and roles page.
 
         Returns:

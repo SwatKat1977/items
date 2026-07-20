@@ -46,7 +46,7 @@ class AdminSiteSettingsPageHandler(PortalPageHandler):
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
-    async def admin_site_settings(self):
+    async def site_settings(self):
         """Render the administration site settings page.
 
         Returns:
