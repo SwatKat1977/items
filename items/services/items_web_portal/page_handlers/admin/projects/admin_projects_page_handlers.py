@@ -24,6 +24,7 @@ from items.services.items_web_portal.metadata_settings import MetadataSettings
 import items.services.items_web_portal.page_locations as pages
 from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
+from items.services.items_web_portal.decorators import require_session
 
 
 class AdminProjectsPageHandlers(PortalPageHandler):
@@ -36,21 +37,25 @@ class AdminProjectsPageHandlers(PortalPageHandler):
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
+    @require_session
     async def projects_post(self):
         form = await request.form
         project_id = form.get('projectId')
 
         base_url: str = self._config.apis_gateway_svc
-        url = f"{base_url}web/admin/projects/{project_id}"
-        response: ApiResponse = await self._call_api_delete(url)
+        url = f"{base_url}web/projects/{project_id}"
+
+        response: ApiResponse = await self._rest_client.delete(url)
 
         if response.status_code != HTTPStatus.OK:
             self._logger.critical("Gateway svc request invalid - Reason: %s",
                                   response.exception_msg)
+            print(response.body, response.status_code)
             return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
-        await self.projects_read()
+        return await self.projects_read()
 
+    @require_session
     async def projects_read(self):
         base_url: str = self._config.apis_gateway_svc
         url = f"{base_url}/web/projects?value_fields=name"

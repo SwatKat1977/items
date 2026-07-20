@@ -24,6 +24,7 @@ from items.services.items_web_portal.metadata_settings import MetadataSettings
 import items.services.items_web_portal.page_locations as pages
 from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
+from items.services.items_web_portal.decorators import require_session
 
 
 class AdminAddProjectPageHandlers(PortalPageHandler):
@@ -37,10 +38,12 @@ class AdminAddProjectPageHandlers(PortalPageHandler):
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
+    @require_session
     async def add_project_get(self):
         """Render a blank add-project form."""
         return await self._render(form_data={})
 
+    @require_session
     async def add_project_post(self):
         form = await request.form
         form_data = form.to_dict()
@@ -60,7 +63,7 @@ class AdminAddProjectPageHandlers(PortalPageHandler):
             "announcement_on_overview": show_announcement
         }
         base_url: str = self._config.apis_gateway_svc
-        url = f"{base_url}/web/admin/projects"
+        url = f"{base_url}web/projects"
 
         response: ApiResponse = await self._rest_client.post(url, gateway_request_body)
 

@@ -14,98 +14,43 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import http
+from http import HTTPStatus
 import logging
-import quart
-from base_view import ApiResponse
-from base_web_view import PortalPageHandler
-from metadata_settings import MetadataSettings
-import page_locations as pages
-from threadsafe_configuration import ThreadSafeConfiguration
+from quart import make_response, request
+#from base_view import ApiResponse
+#from base_web_view import PortalPageHandler
+#from metadata_settings import MetadataSettings
+#import page_locations as pages
+#from threadsafe_configuration import ThreadSafeConfiguration
+from weaver_framework.microservice.api_response import ApiResponse
+from weaver_framework.microservice.rest_client import RestClient
+from items.services.items_web_portal.configuration import Configuration
+from items.services.items_web_portal.metadata_settings import MetadataSettings
+import items.services.items_web_portal.page_locations as pages
+from items.services.items_web_portal.portal_page_handler import (
+    PortalPageHandler)
 
 
-class DashboardApiView(PortalPageHandler):
-    """
-    Dashboard view handler for administrative pages.
-
-    This class provides asynchronous route handlers for the
-    administration dashboard, managing projects, users, roles,
-    data management, and site settings. It relies on the gateway
-    service for backend operations and uses PortalPageHandler helpers
-    for template rendering and API calls.
-    """
+class AdminModifyProjectPageHandlers(PortalPageHandler):
 
     def __init__(self,
                  logger: logging.Logger,
+                 config: Configuration,
+                 rest_client: RestClient,
                  metadata: MetadataSettings):
-        """
-        Initialize the DashboardApiView.
-
-        Args:
-            logger (logging.Logger): Logger instance for diagnostic output.
-            metadata (MetadataSettings): Metadata object containing instance
-                                         configuration.
-        """
-        super().__init__(logger)
+        super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
-    async def admin_modify_project(self, project_id):
-        """
-        Modify an existing project.
+    async def modify_project_get(self, project_id):
+        url = f"{self._config.apis_gateway_svc}web/projects/{project_id}"
+        api_response = await self._rest_client.get(url)
 
-        Retrieves project details with GET on initial load,
-        or applies changes via PATCH if called with POST.
-
-        Args:
-            project_id (str): ID of the project to modify.
-
-        Returns:
-            Rendered modify-project page or redirect response.
-        """
-        base_url: str = ThreadSafeConfiguration().apis_gateway_svc
-
-        if quart.request.method == 'POST':
-            url = f"{base_url}web/admin/projects/{project_id}"
-            form = await quart.request.form
-            request_data: dict = {
-                "name": form.get('project_name'),
-                "announcement": form.get('announcement'),
-                "announcement_on_overview": form.get('show_announcement') == 'on'
-            }
-            response: ApiResponse = await self._call_api_patch(url,
-                                                               request_data)
-            if response.status_code != http.HTTPStatus.OK:
-                request_data: dict = {
-                    "project_name": form.get('project_name'),
-                    "announcement": form.get('announcement'),
-                    "show_announcement": form.get('show_announcement') == 'on'
-                }
-                reason: str = f" - reason: {response.body['error']}" \
-                    if 'error' in response.body else ''
-                self._logger.warning("Unable to modify project %s%s",
-                                     project_id, reason)
-
-                return await self._render_page(
-                    pages.PAGE_INSTANCE_ADMIN_MODIFY_PROJECT,
-                    instance_name=self._metadata_settings.instance_name,
-                    active_page="administration",
-                    active_admin_page="admin_page_site_settings",
-                    form_data=request_data,
-                    error_msg_str="Internal error modifying project")
-
-            redirect = self._generate_redirect('admin/projects')
-            return await quart.make_response(redirect)
-
-        url = f"{base_url}/web/projects/{project_id}"
-
-        api_response = await self._call_api_get(url)
-
-        if api_response.status_code != http.HTTPStatus.OK:
+        if api_response.status_code != HTTPStatus.OK:
             self._logger.critical(
                 "(admin_modify_project) Cannot get details for project %s"
                 " - Reason: %s",project_id, api_response.exception_msg)
             redirect = self._generate_redirect('admin/projects')
-            return await quart.make_response(redirect)
+            return await make_response(redirect)
 
         form_data: dict = {
             "id": project_id,
@@ -119,3 +64,34 @@ class DashboardApiView(PortalPageHandler):
             active_page="administration",
             active_admin_page="admin_page_site_settings",
             form_data=form_data)
+
+    async def modify_project_post(self, project_id):
+        url = f"{self._config.apis_gateway_svc}web/projects/{project_id}"
+        form = await request.form
+        request_data: dict = {
+            "name": form.get('project_name'),
+            "announcement": form.get('announcement'),
+            "announcement_on_overview": form.get('show_announcement') == 'on'
+        }
+        response: ApiResponse = await self._rest_client.patch(url, request_data)
+        if response.status_code != HTTPStatus.OK:
+            request_data: dict = {
+                "project_name": form.get('project_name'),
+                "announcement": form.get('announcement'),
+                "show_announcement": form.get('show_announcement') == 'on'
+            }
+            reason: str = f" - reason: {response.body['error']}" \
+                if 'error' in response.body else ''
+            self._logger.warning("Unable to modify project %s%s",
+                                 project_id, reason)
+
+            return await self._render_page(
+                pages.PAGE_INSTANCE_ADMIN_MODIFY_PROJECT,
+                instance_name=self._metadata_settings.instance_name,
+                active_page="administration",
+                active_admin_page="admin_page_site_settings",
+                form_data=request_data,
+                error_msg_str="Internal error modifying project")
+
+        redirect = self._generate_redirect('admin/projects')
+        return await make_response(redirect)

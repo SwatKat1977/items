@@ -19,6 +19,8 @@ from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
 from items.services.items_web_portal.page_handlers.admin.projects.\
     admin_add_project_page_handlers import AdminAddProjectPageHandlers
+from items.services.items_web_portal.page_handlers.admin.projects.admin_modify_project_page_handlers import \
+    AdminModifyProjectPageHandlers
 from items.services.items_web_portal.page_handlers.admin.projects.\
     admin_projects_page_handlers import AdminProjectsPageHandlers
 
@@ -40,6 +42,11 @@ def create_admin_projects_page_handlers(injections: PageHandlerInjections) -> Bl
             injections.config,
             injections.rest_client,
             injections.metadata)
+    handlers_modify_project: AdminModifyProjectPageHandlers = AdminModifyProjectPageHandlers(
+            injections.logger,
+            injections.config,
+            injections.rest_client,
+            injections.metadata)
 
     # Admin page | Projects (read): '/admin/projects'
     injections.logger.debug("=> %s GET /admin/projects",
@@ -53,7 +60,7 @@ def create_admin_projects_page_handlers(injections: PageHandlerInjections) -> Bl
     injections.logger.debug("=> %s POST /admin/projects",
                             "Admin Projects page (post)".ljust(40))
 
-    @routes.route('/admin/projects', methods=['POST'])
+    @routes.route('/projects', methods=['POST'])
     async def admin_page_projects_post_request():
         return await handlers_projects.projects_post()
 
@@ -77,9 +84,16 @@ def create_admin_projects_page_handlers(injections: PageHandlerInjections) -> Bl
     injections.logger.debug("=> %s GET /admin/modify_project",
                             "Admin Modify project page (read)".ljust(40))
 
-    @routes.route('/admin/<project_id>/modify_project', methods=['GET'])
-    async def admin_add_project_post_request(project_id: int):
-        return None
-        return await view.admin_modify_project(project_id)
+    @routes.route('/<project_id>/modify_project', methods=['GET'])
+    async def admin_modify_project_get_request(project_id: int):
+        return await handlers_modify_project.modify_project_get(project_id)
+
+    # Admin page | Modify Project (post): '/admin/modify_project'
+    injections.logger.debug("=> %s POST /admin/modify_project",
+                            "Admin Modify project page (post)".ljust(40))
+
+    @routes.route('/<project_id>/modify_project', methods=['POST'])
+    async def admin_modify_project_post_request(project_id: int):
+        return await handlers_modify_project.modify_project_post(project_id)
 
     return routes
