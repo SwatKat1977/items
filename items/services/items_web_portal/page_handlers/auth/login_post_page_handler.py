@@ -80,9 +80,11 @@ class LoginPostPageHandler(PortalPageHandler):
                 "password": password
         }
         base_url: str = self._config.apis_gateway_svc
-        url = f"{base_url}web/sessions"
+        url: str = f"{base_url}web/sessions"
 
-        response: ApiResponse = await self._rest_client.post(url, auth_body)
+        response: ApiResponse = await self._rest_client.post(
+            url,
+            json_data=auth_body)
 
         if response.status_code == HTTPStatus.UNAUTHORIZED:
             error_msg = "Invalid username/password"
@@ -102,7 +104,7 @@ class LoginPostPageHandler(PortalPageHandler):
                                            error_msg=error_msg)
 
         if response.body.get("status") == 1:
-            redirect = await self._generate_redirect('')
+            redirect = self._generate_redirect('')
             login_response: Response = await make_response(redirect)
             login_response.set_cookie(self.COOKIE_USER, user_email)
             login_response.set_cookie(self.COOKIE_TOKEN,

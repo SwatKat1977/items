@@ -1,5 +1,6 @@
 """
 Copyright 2025-2026 Integrated Test Management Suite Development Team
+Copyright 2017-2025 INTMAC Development Team [Defunct]
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import argparse
+import asyncio
 import logging
 import os.path
 import secrets
@@ -21,7 +23,9 @@ import string
 from argon2 import PasswordHasher
 import identity_sql
 import sql_values
-from base_sqlite_interface import BaseSqliteInterface, SqliteInterfaceException
+from weaver_framework.database.sqlite_interface import (
+    SqliteInterface,
+    SqliteInterfaceException)
 
 LOGGING_DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
 LOGGING_DEFAULT_LOG_LEVEL = logging.DEBUG
@@ -33,6 +37,18 @@ DEFAULT_ADMIN_PASSWORD_LEN: int = 10
 
 
 def generate_secure_password(length: int = DEFAULT_ADMIN_PASSWORD_LEN) -> str:
+    """Generate a cryptographically secure random password.
+
+    Args:
+        length: Desired password length. Must be at least
+            ``DEFAULT_ADMIN_PASSWORD_LEN`` characters.
+
+    Returns:
+        A randomly generated password string.
+
+    Raises:
+        ValueError: If the requested length is below the minimum.
+    """
     if length < DEFAULT_ADMIN_PASSWORD_LEN:
         raise ValueError(f"Password length should be at least "
                          f"{DEFAULT_ADMIN_PASSWORD_LEN} characters.")
@@ -40,25 +56,48 @@ def generate_secure_password(length: int = DEFAULT_ADMIN_PASSWORD_LEN) -> str:
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
-def open_db(logger: logging.Logger, filename: str) -> BaseSqliteInterface:
+def open_db(logger: logging.Logger, filename: str) -> SqliteInterface | None:
+    """Create a SqliteInterface for a new database file.
+
+    Args:
+        logger:   Logger instance for logging messages.
+        filename: Path to the database file to be created.
+
+    Returns:
+        A SqliteInterface instance, or None if the file already exists.
+    """
     logger.info("Opening database...")
+
     if os.path.exists(filename):
         logger.critical("Database '%s' already exists!", filename)
         return None
-    db = BaseSqliteInterface(filename)
+
+    db = SqliteInterface(logger, filename)
     logger.info("Database '%s' opened successfully", filename)
     return db
 
 
-def build_database(logger: logging.Logger,
-                   database: BaseSqliteInterface,
-                   admin_password: str) -> bool:
+async def build_database(logger: logging.Logger,
+                         database: SqliteInterface,
+                         admin_password: str) -> bool:
+    """Create the identity tables and seed the default admin user.
+
+    Args:
+        logger:         Logger instance.
+        database:       SqliteInterface connected to the target database.
+        admin_password: Plaintext password to assign to the admin user.
+
+    Returns:
+        True if the database was built successfully, False otherwise.
+    """
     try:
         logger.info("-> Creating user_profile table")
-        database.create_table(sql_values.SQL_CREATE_USER_PROFILE_TABLE, "user_profile")
+        await database.create_table(
+            sql_values.SQL_CREATE_USER_PROFILE_TABLE, "user_profile")
 
         logger.info("-> Creating user_auth_details table")
-        database.create_table(sql_values.SQL_CREATE_USER_AUTH_DETAILS_TABLE, "user_auth_details")
+        await database.create_table(
+            sql_values.SQL_CREATE_USER_AUTH_DETAILS_TABLE, "user_auth_details")
 
         logger.info("-> Creating admin with password '%s'", admin_password)
         admin_profile_params: tuple = (
@@ -68,12 +107,12 @@ def build_database(logger: logging.Logger,
             sql_values.DEFAULT_ADMIN_USER.get('account_status'),
             sql_values.DEFAULT_ADMIN_USER.get('logon_type')
         )
-        admin_user_id: int = database.insert_query(identity_sql.SQL_ADD_USER_PROFILE,
-                                                   admin_profile_params)
+        admin_user_id: int = await database.insert_query(
+            identity_sql.SQL_ADD_USER_PROFILE, admin_profile_params)
 
         password_hash = PasswordHasher().hash(admin_password)
-        database.insert_query(identity_sql.SQL_ADD_USER_AUTH_DETAILS,
-                              (password_hash, admin_user_id))
+        await database.insert_query(identity_sql.SQL_ADD_USER_AUTH_DETAILS,
+                                    (password_hash, admin_user_id))
 
         logger.info("Database build successful")
 
@@ -84,9 +123,22 @@ def build_database(logger: logging.Logger,
     return True
 
 
-def main():
+async def async_main() -> None:
+    """Async entry point for initializing and populating the identity database.
+
+    Sets up logging, parses command-line arguments, and creates a new database
+    file (if it does not already exist). Builds the schema and seeds the
+    default admin user.
+
+    Command-line Args:
+        -d, --dbFile (str): Optional path to the database file. Defaults to
+            ``items_identity.db`` in the current directory.
+        -a, --adminPassword (str): Manual admin password.
+        -r, --randomAdminPassword: Generate a random admin password.
+    """
     logger: logging.Logger = logging.getLogger(__name__)
-    log_format = logging.Formatter(LOGGING_LOG_FORMAT_STRING, LOGGING_DATETIME_FORMAT_STRING)
+    log_format = logging.Formatter(LOGGING_LOG_FORMAT_STRING,
+                                   LOGGING_DATETIME_FORMAT_STRING)
     console_stream = logging.StreamHandler()
     console_stream.setFormatter(log_format)
     logger.setLevel(LOGGING_DEFAULT_LOG_LEVEL)
@@ -94,7 +146,8 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dbFile", type=str, help="Database filename")
-    parser.add_argument("-a", "--adminPassword", type=str, help="Manual admin password")
+    parser.add_argument("-a", "--adminPassword", type=str,
+                        help="Manual admin password")
     parser.add_argument("-r", "--randomAdminPassword", action="store_true",
                         help="Random password")
     args = parser.parse_args()
@@ -116,8 +169,8 @@ def main():
     if not db:
         return
 
-    build_database(logger, db, admin_password)
+    await build_database(logger, db, admin_password)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(async_main())

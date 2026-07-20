@@ -65,7 +65,7 @@ class SessionAuthMixin:
         self._config: Configuration = config
         self._rest_client: RestClient = rest_client
 
-    async def _generate_redirect(self, redirect_url: str) -> str:
+    def _generate_redirect(self, redirect_url: str) -> str:
         """Generates an HTML redirect response.
 
         Args:
