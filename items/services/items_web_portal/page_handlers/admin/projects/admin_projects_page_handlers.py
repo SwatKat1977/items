@@ -26,7 +26,7 @@ from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
 
 
-class AdminProjectsPostPageHandler(PortalPageHandler):
+class AdminProjectsPageHandlers(PortalPageHandler):
 
     def __init__(self,
                  logger: logging.Logger,
