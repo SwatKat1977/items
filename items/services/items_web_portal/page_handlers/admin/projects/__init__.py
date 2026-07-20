@@ -18,7 +18,7 @@ from quart import Blueprint
 from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
 from items.services.items_web_portal.page_handlers.admin.projects.\
-    admin_projects_read_page_handler import AdminProjectsReadPageHandler
+    admin_projects_page_handlers import AdminProjectsPageHandlers
 
 
 def create_admin_projects_page_handlers(injections: PageHandlerInjections) -> Blueprint:
@@ -27,11 +27,11 @@ def create_admin_projects_page_handlers(injections: PageHandlerInjections) -> Bl
 
     injections.logger.debug(" Admin Pages | Projects Handlers:")
 
-    handler_projects_read: AdminProjectsReadPageHandler = \
-        AdminProjectsReadPageHandler(injections.logger,
-                                     injections.config,
-                                     injections.rest_client,
-                                     injections.metadata)
+    handler_projects: AdminProjectsPageHandlers = AdminProjectsPageHandlers(
+        injections.logger,
+        injections.config,
+        injections.rest_client,
+        injections.metadata)
 
     # Admin page | Projects (read): '/admin/projects'
     injections.logger.debug("=> %s GET /admin/projects",
@@ -39,7 +39,7 @@ def create_admin_projects_page_handlers(injections: PageHandlerInjections) -> Bl
 
     @routes.route('/projects', methods=['GET'])
     async def admin_page_projects_read_request():
-        return await handler_projects_read.projects_read()
+        return await handler_projects.projects_read()
 
     # Admin page | Projects (update): '/admin/projects'
     injections.logger.debug("=> %s POST /admin/projects",
@@ -47,8 +47,7 @@ def create_admin_projects_page_handlers(injections: PageHandlerInjections) -> Bl
 
     @routes.route('/admin/projects', methods=['POST'])
     async def admin_page_projects_post_request():
-        return None
-        return await view.admin_projects()
+        return await handler_projects.projects_post()
 
     # Admin page | Add Project (read): '/admin/add_project'
     injections.logger.debug("=> %s GET /admin/add_project",

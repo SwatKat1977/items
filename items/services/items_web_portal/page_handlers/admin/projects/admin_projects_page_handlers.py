@@ -36,26 +36,22 @@ class AdminProjectsPageHandlers(PortalPageHandler):
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
-    async def admin_projects_post(self):
+    async def projects_post(self):
+        form = await request.form
+        project_id = form.get('projectId')
 
-        # POST method
-        if quart.request.method == 'POST':
+        base_url: str = self._config.apis_gateway_svc
+        url = f"{base_url}web/admin/projects/{project_id}"
+        response: ApiResponse = await self._call_api_delete(url)
 
-            form = await quart.request.form
-            project_id = form.get('projectId')
+        if response.status_code != HTTPStatus.OK:
+            self._logger.critical("Gateway svc request invalid - Reason: %s",
+                                  response.exception_msg)
+            return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
-            base_url: str = ThreadSafeConfiguration().apis_gateway_svc
-            url = f"{base_url}web/admin/projects/{project_id}"
-            response: ApiResponse = await self._call_api_delete(url)
+        await self.projects_read()
 
-            if response.status_code != http.HTTPStatus.OK:
-                self._logger.critical("Gateway svc request invalid - Reason: %s",
-                                      response.exception_msg)
-                return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
-
-        await self.admin_projects_read()
-
-    async def admin_projects_read(self):
+    async def projects_read(self):
         base_url: str = self._config.apis_gateway_svc
         url = f"{base_url}/web/projects?value_fields=name"
         response: ApiResponse = await self._rest_client.get(url)
