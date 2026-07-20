@@ -26,7 +26,22 @@ from items.services.items_web_portal.page_handlers.admin.projects.\
 
 
 def create_admin_projects_page_handlers(injections: PageHandlerInjections) -> Blueprint:
+    """Create the administration projects page handlers.
 
+    This function creates and configures the blueprint containing the
+    administration project management routes. The blueprint includes
+    handlers for listing projects, deleting projects, creating new
+    projects, and modifying existing projects.
+
+    Args:
+        injections: Dependency injection container providing the logger,
+            configuration, REST client, metadata, and other services
+            required by the page handlers.
+
+    Returns:
+        Blueprint: A configured Quart blueprint containing the
+        administration projects page routes.
+    """
     routes = Blueprint('admin_projects_pages_routes', __name__)
 
     injections.logger.debug(" Admin Pages | Projects Handlers:")

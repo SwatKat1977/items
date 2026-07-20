@@ -14,12 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-'''
-import logging
-
-from apis.projects_api_view import ProjectsApiView
-from metadata_settings import MetadataSettings
-'''
 from quart import Blueprint
 from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
@@ -27,6 +21,21 @@ from .get_project_overview_page_handler import GetProjectOverviewPageHandler
 
 
 def create_projects_page_handlers(injections: PageHandlerInjections) -> Blueprint:
+    """Create the project page handlers.
+
+    This function creates and configures the blueprint containing the
+    public project page routes. The blueprint currently provides the
+    project overview page for individual projects.
+
+    Args:
+        injections: Dependency injection container providing the logger,
+            configuration, REST client, and other services required by
+            the page handlers.
+
+    Returns:
+        Blueprint: A configured Quart blueprint containing the project
+        page routes.
+    """
     routes = Blueprint('projects_routes', __name__)
 
     handler_project_overview: GetProjectOverviewPageHandler = \
@@ -40,7 +49,7 @@ def create_projects_page_handlers(injections: PageHandlerInjections) -> Blueprin
     injections.logger.debug("=> %s GET /<int:project_id>",
                             "Project overview page".ljust(40))
 
-    @routes.route('/<project_id>',
+    @routes.route('/<int:project_id>',
                   methods=['GET'])
     async def project_overview_request(project_id: int):
         return await handler_project_overview.project_overview(project_id)
