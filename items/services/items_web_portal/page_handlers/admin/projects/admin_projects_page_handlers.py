@@ -28,17 +28,40 @@ from items.services.items_web_portal.decorators import require_session
 
 
 class AdminProjectsPageHandlers(PortalPageHandler):
+    """Handles requests for the administration projects page.
+
+    This handler provides operations for displaying the list of projects
+    and deleting existing projects through the backend projects API.
+    """
 
     def __init__(self,
                  logger: logging.Logger,
                  config: Configuration,
                  rest_client: RestClient,
                  metadata: MetadataSettings):
+        """Initialize the administration projects page handlers.
+
+        Args:
+            logger: Logger used to record diagnostic and operational messages.
+            config: Application configuration settings.
+            rest_client: REST client used to communicate with backend services.
+            metadata: Instance metadata used to populate page content.
+        """
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
     @require_session
     async def projects_post(self):
+        """Delete a project.
+
+        Retrieves the selected project identifier from the submitted form
+        and requests its deletion through the backend API. After a
+        successful deletion, the updated projects page is rendered.
+
+        Returns:
+            The rendered projects page response after deletion, or the
+            internal error page if the deletion request fails.
+        """
         form = await request.form
         project_id = form.get('projectId')
 
@@ -56,6 +79,15 @@ class AdminProjectsPageHandlers(PortalPageHandler):
 
     @require_session
     async def projects_read(self):
+        """Render the administration projects page.
+
+        Retrieves the list of projects from the backend API and renders the
+        administration projects page.
+
+        Returns:
+            The rendered administration projects page response, or the
+            internal error page if the projects cannot be retrieved.
+        """
         base_url: str = self._config.apis_gateway_svc
         url = f"{base_url}web/projects?value_fields=name"
         response: ApiResponse = await self._rest_client.get(url)

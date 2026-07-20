@@ -28,21 +28,51 @@ from items.services.items_web_portal.decorators import require_session
 
 
 class AdminAddProjectPageHandlers(PortalPageHandler):
+    """Handles requests for creating new projects.
+
+    This handler renders the project creation form and processes submitted
+    project details by forwarding them to the backend projects API.
+    """
+
     def __init__(self,
                  logger: logging.Logger,
                  config: Configuration,
                  rest_client: RestClient,
                  metadata: MetadataSettings):
+        """Initialize the project creation page handler.
+
+        Args:
+            logger: Logger used to record diagnostic and operational messages.
+            config: Application configuration settings.
+            rest_client: REST client used to communicate with backend services.
+            metadata: Instance metadata used to populate page content.
+        """
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
     @require_session
     async def add_project_get(self):
-        """Render a blank add-project form."""
+        """Render the project creation page.
+
+        Returns:
+            The rendered project creation page response.
+        """
         return await self._render(form_data={})
 
     @require_session
     async def add_project_post(self):
+        """Process a project creation request.
+
+        Validates the submitted form data and sends a request to the backend
+        API to create a new project. If validation or project creation
+        fails, the form is rendered again with the submitted values and an
+        appropriate error message.
+
+        Returns:
+            A redirect response to the projects administration page when the
+            project is successfully created, or the rendered project
+            creation page containing validation or API error messages.
+        """
         form = await request.form
         form_data = form.to_dict()
 
@@ -86,6 +116,15 @@ class AdminAddProjectPageHandlers(PortalPageHandler):
         return await make_response(redirect)
 
     async def _render(self, form_data: dict, error_msg_str: str | None = None):
+        """Render the project creation page.
+
+        Args:
+            form_data: Values used to populate the project creation form.
+            error_msg_str: Optional error message displayed on the page.
+
+        Returns:
+            The rendered project creation page response.
+        """
         return await self._render_page(
             pages.PAGE_INSTANCE_ADMIN_ADD_PROJECT,
             instance_name=self._metadata_settings.instance_name,

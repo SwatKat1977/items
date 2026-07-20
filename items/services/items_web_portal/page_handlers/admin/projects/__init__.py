@@ -19,8 +19,8 @@ from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
 from items.services.items_web_portal.page_handlers.admin.projects.\
     admin_add_project_page_handlers import AdminAddProjectPageHandlers
-from items.services.items_web_portal.page_handlers.admin.projects.admin_modify_project_page_handlers import \
-    AdminModifyProjectPageHandlers
+from items.services.items_web_portal.page_handlers.admin.projects.\
+    admin_modify_project_page_handlers import AdminModifyProjectPageHandlers
 from items.services.items_web_portal.page_handlers.admin.projects.\
     admin_projects_page_handlers import AdminProjectsPageHandlers
 

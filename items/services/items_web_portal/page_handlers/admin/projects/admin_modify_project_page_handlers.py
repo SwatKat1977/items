@@ -32,16 +32,43 @@ from items.services.items_web_portal.portal_page_handler import (
 
 
 class AdminModifyProjectPageHandlers(PortalPageHandler):
+    """Handles requests for modifying existing projects.
+
+    This handler retrieves project information for display in the
+    modification form and processes updates submitted by administrators.
+    """
 
     def __init__(self,
                  logger: logging.Logger,
                  config: Configuration,
                  rest_client: RestClient,
                  metadata: MetadataSettings):
+        """Initialize the project modification page handler.
+
+        Args:
+            logger: Logger used to record diagnostic and operational messages.
+            config: Application configuration settings.
+            rest_client: REST client used to communicate with backend services.
+            metadata: Instance metadata used to populate page content.
+        """
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
     async def modify_project_get(self, project_id):
+        """Render the project modification page.
+
+        Retrieves the project's current details from the backend API and
+        populates the modification form. If the project cannot be
+        retrieved, the user is redirected to the projects administration
+        page.
+
+        Args:
+            project_id: Identifier of the project to modify.
+
+        Returns:
+            The rendered project modification page response, or a redirect
+            response if the project details cannot be retrieved.
+        """
         url = f"{self._config.apis_gateway_svc}web/projects/{project_id}"
         api_response = await self._rest_client.get(url)
 
@@ -66,6 +93,21 @@ class AdminModifyProjectPageHandlers(PortalPageHandler):
             form_data=form_data)
 
     async def modify_project_post(self, project_id):
+        """Process a project modification request.
+
+        Validates the submitted form data by forwarding it to the backend
+        API. If the update succeeds, the user is redirected to the projects
+        administration page. Otherwise, the modification page is rendered
+        again with the submitted values and an error message.
+
+        Args:
+            project_id: Identifier of the project to modify.
+
+        Returns:
+            A redirect response when the project is successfully updated, or
+            the rendered project modification page containing the submitted
+            values and an error message if the update fails.
+        """
         url = f"{self._config.apis_gateway_svc}web/projects/{project_id}"
         form = await request.form
         request_data: dict = {
