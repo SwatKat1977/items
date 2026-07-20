@@ -14,16 +14,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-'''
-import http
+from http import HTTPStatus
 import logging
-import quart
-from base_view import ApiResponse
-from base_web_view import PortalPageHandler
-from metadata_settings import MetadataSettings
-import page_locations as pages
-from threadsafe_configuration import ThreadSafeConfiguration
-'''
+from quart import request
+from weaver_framework.microservice.api_response import ApiResponse
+from weaver_framework.microservice.rest_client import RestClient
+from items.services.items_web_portal.configuration import Configuration
+from items.services.items_web_portal.metadata_settings import MetadataSettings
+import items.services.items_web_portal.page_locations as pages
+from items.services.items_web_portal.portal_page_handler import (
+    PortalPageHandler)
 
 
 class AdminProjectsPostPageHandler(PortalPageHandler):
@@ -36,40 +36,16 @@ class AdminProjectsPostPageHandler(PortalPageHandler):
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
-
-
     async def admin_projects(self):
+        form = await request.form
+        project_id = form.get('projectId')
 
-        # POST method
-        if quart.request.method == 'POST':
+        base_url: str = self._config.apis_gateway_svc
+        url = f"{base_url}web/admin/projects/{project_id}"
 
-            form = await quart.request.form
-            project_id = form.get('projectId')
+        response: ApiResponse = await self._rest_client.delete(url)
 
-            base_url: str = ThreadSafeConfiguration().apis_gateway_svc
-            url = f"{base_url}web/admin/projects/{project_id}"
-            response: ApiResponse = await self._call_api_delete(url)
-
-            if response.status_code != http.HTTPStatus.OK:
-                self._logger.critical("Gateway svc request invalid - Reason: %s",
-                                      response.exception_msg)
-                return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
-
-        base_url: str = ThreadSafeConfiguration().apis_gateway_svc
-        url = f"{base_url}/web/projects?value_fields=name"
-        response: ApiResponse = await self._call_api_get(url)
-
-        if response.status_code != http.HTTPStatus.OK:
-            self._logger.critical(
-                "Gateway svc request invalid - Reason: %s",
-                response.exception_msg)
+        if response.status_code != HTTPStatus.OK:
+            self._logger.critical("Gateway svc request invalid - Reason: %s",
+                                  response.exception_msg)
             return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
-
-        projects = response.body["projects"]
-
-        return await self._render_page(
-            pages.PAGE_INSTANCE_ADMIN_PROJECTS,
-            instance_name=self._metadata_settings.instance_name,
-            active_page="administration",
-            active_admin_page="admin_page_projects",
-            projects=projects)
