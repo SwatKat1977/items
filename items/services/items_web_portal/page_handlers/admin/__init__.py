@@ -17,6 +17,8 @@ limitations under the License.
 from quart import Blueprint
 from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
+from items.services.items_web_portal.page_handlers.admin.dashboard import \
+    create_admin_dashboard_page_handler
 from items.services.items_web_portal.page_handlers.admin.projects import \
     create_admin_projects_page_handlers
 
@@ -27,15 +29,9 @@ def create_admin_page_handlers(injections: PageHandlerInjections,
 
     injections.logger.debug(" Admin Pages Handlers:")
 
-    # Admin page | Overview: '/overview'
-    injections.logger.debug("=> %s GET %s/overview",
-                            "Admin overview page".ljust(40),
-                            prefix)
-
-    @routes.route('/overview', methods=['GET'])
-    async def admin_page_overview_request():
-        return None
-        return await handler_logout.logout()
+    # Register admin dashboard pages
+    routes.register_blueprint(create_admin_dashboard_page_handler(injections,
+                                                                  prefix))
 
     # Admin page | Users Roles (read): '/admin/users_roles'
     injections.logger.debug("=> %s GET /admin/users_roles",

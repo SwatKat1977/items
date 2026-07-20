@@ -70,7 +70,7 @@ class IndexPageHandler(PortalPageHandler):
         """
         try:
             if not await self._has_auth_cookies() or not await self._validate_cookies():
-                redirect = await self._generate_redirect('login')
+                redirect = self._generate_redirect('login')
                 return await make_response(redirect)
 
         except BaseItemsException as ex:

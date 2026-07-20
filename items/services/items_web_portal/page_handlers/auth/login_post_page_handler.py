@@ -85,9 +85,6 @@ class LoginPostPageHandler(PortalPageHandler):
         response: ApiResponse = await self._rest_client.post(
             url,
             json_data=auth_body)
-        print("Response body        : ", response.body)
-        print("Response status code : ", response.status_code)
-        print("Response exception   : ", response.exception_msg)
 
         if response.status_code == HTTPStatus.UNAUTHORIZED:
             error_msg = "Invalid username/password"
@@ -107,7 +104,7 @@ class LoginPostPageHandler(PortalPageHandler):
                                            error_msg=error_msg)
 
         if response.body.get("status") == 1:
-            redirect = await self._generate_redirect('')
+            redirect = self._generate_redirect('')
             login_response: Response = await make_response(redirect)
             login_response.set_cookie(self.COOKIE_USER, user_email)
             login_response.set_cookie(self.COOKIE_TOKEN,
