@@ -36,16 +36,41 @@ class AdminProjectsPageHandlers(PortalPageHandler):
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
-    async def admin_projects(self):
-        form = await request.form
-        project_id = form.get('projectId')
+    async def admin_projects_post(self):
 
+        # POST method
+        if quart.request.method == 'POST':
+
+            form = await quart.request.form
+            project_id = form.get('projectId')
+
+            base_url: str = ThreadSafeConfiguration().apis_gateway_svc
+            url = f"{base_url}web/admin/projects/{project_id}"
+            response: ApiResponse = await self._call_api_delete(url)
+
+            if response.status_code != http.HTTPStatus.OK:
+                self._logger.critical("Gateway svc request invalid - Reason: %s",
+                                      response.exception_msg)
+                return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
+
+        await self.admin_projects_read()
+
+    async def admin_projects_read(self):
         base_url: str = self._config.apis_gateway_svc
-        url = f"{base_url}web/admin/projects/{project_id}"
-
-        response: ApiResponse = await self._rest_client.delete(url)
+        url = f"{base_url}/web/projects?value_fields=name"
+        response: ApiResponse = await self._rest_client.get(url)
 
         if response.status_code != HTTPStatus.OK:
-            self._logger.critical("Gateway svc request invalid - Reason: %s",
-                                  response.exception_msg)
+            self._logger.critical(
+                "Gateway svc request invalid - Reason: %s",
+                response.exception_msg)
             return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
+
+        projects = response.body["projects"]
+
+        return await self._render_page(
+            pages.PAGE_INSTANCE_ADMIN_PROJECTS,
+            instance_name=self._metadata_settings.instance_name,
+            active_page="administration",
+            active_admin_page="admin_page_projects",
+            projects=projects)
