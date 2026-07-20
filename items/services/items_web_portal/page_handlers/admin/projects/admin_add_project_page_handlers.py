@@ -35,8 +35,6 @@ class AdminAddProjectPageHandlers(PortalPageHandler):
                  metadata: MetadataSettings):
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
-        super().__init__(logger, config, rest_client)
-        self._metadata_settings = metadata
 
     @require_session
     async def add_project_get(self):
