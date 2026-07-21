@@ -14,29 +14,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import http
+from http import HTTPStatus
 import json
+from quart import Response
 import logging
-import quart
-from base_web_view import PortalPageHandler
-import page_locations as pages
-from threadsafe_configuration import ThreadSafeConfiguration
-from metadata_settings import MetadataSettings
+from items.services.items_web_portal.metadata_settings import MetadataSettings
+import items.services.items_web_portal.page_locations as pages
+from items.services.items_web_portal.portal_page_handler import (
+    PortalPageHandler)
 
 
-class ProjectsApiView(PortalPageHandler):
-    """
-    Provides API endpoints for project-related web views, including retrieval
-    and transformation of test case details for display in HTML templates.
-
-    This view communicates with the Gateway service to fetch project test case
-    metadata, transforms the data into a hierarchical folder structure, and
-    renders the appropriate Quart template.
-
-    Attributes:
-        _metadata_settings (MetadataSettings):
-            Metadata configuration object containing instance-level details.
-    """
+class GetProjectOverviewPageHandler(PortalPageHandler):
 
     def __init__(self,
                  logger: logging.Logger,
@@ -73,22 +61,22 @@ class ProjectsApiView(PortalPageHandler):
                 - Rendered HTML page with structured test case data if successful.
                 - JSON error response if the gateway request fails.
         """
-        gateway_svc: str = ThreadSafeConfiguration().apis_gateway_svc
+        gateway_svc: str = self._config.apis_gateway_svc
 
         url: str = f"{gateway_svc}web/{project_id}/testcase/testcases_details"
 
-        response = await self._call_api_post(url)
+        response = await self._rest_client.post(url)
 
-        if response.status_code != http.HTTPStatus.OK:
+        if response.status_code != HTTPStatus.OK:
             self._logger.critical("Gateway svc request invalid - Reason: %s",
                                   response.exception_msg)
             response_json = {
                 "status": 0,
                 'error': 'Internal error!'
             }
-            return quart.Response(json.dumps(response_json),
-                                  status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
-                                  content_type="application/json")
+            return Response(json.dumps(response_json),
+                            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                            content_type="application/json")
 
         details = self._transform_tests_details_data(response.body)
 
