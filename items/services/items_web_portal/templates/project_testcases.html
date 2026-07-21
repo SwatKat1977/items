@@ -43,8 +43,9 @@
 
       <div id="content">
         <div class="row">
-          <h1 class="mb-4 ps-3">Test Cases</h1>
-          <hr>
+          <div id="testcases-title-bar">
+            <h5 class="mb-0">Test Cases</h5>
+          </div>
         </div>
         <div class="row m-2">{% if has_testcases == True %}
             <div id="folder-structure">
@@ -56,16 +57,17 @@
             <div class="container mt-1 mx-0" id="no_data_msg_container">
               <div class="row w-100">
                 <div class="col-1 text-center d-flex justify-content-center align-items-center">
-                  <i class='lead bx bx-message-error'></i>
+                  <i class='lead bx bx-info-circle text-primary'></i>
                 </div>
                 <div class="col">
-                  <p>There aren't any filters or test cases. Use the following buttons to create a test case or filter.</p>
+                  <p class="fw-bold mb-1">There aren't any test cases, yet.</p>
+                  <p class="mb-2">There aren't any sections or test cases. Use the following buttons to create the first test case and section.</p>
                   <p>
-                    <button type="button" class="btn-sm btn-default" data-bs-toggle="modal"
-                            data-bs-target="#addFilterModal">
-                      <strong>+</strong> Add Filter
+                    <button type="button" class="btn btn-sm btn-header me-1" data-bs-toggle="modal"
+                            data-bs-target="#addSectionModal">
+                      <strong>+</strong> Add Section
                     </button>
-                    <button type="button" class="btn-sm btn-default" data-bs-toggle="modal"
+                    <button type="button" class="btn btn-sm btn-header" data-bs-toggle="modal"
                             data-bs-target="#addTestCaseModal">
                       <strong>+</strong> Add Test Case
                     </button>

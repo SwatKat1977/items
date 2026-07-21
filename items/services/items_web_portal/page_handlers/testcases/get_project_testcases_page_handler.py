@@ -61,7 +61,7 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
         return await self._render_page(
             pages.TEMPLATE_TEST_DEFINITIONS_PAGE,
             data=details, active_page=page,
-            has_testcases=True,
+            has_testcases=len(details) > 0,
             instance_name=self._metadata_settings.instance_name)
 
     def _transform_tests_details_data(self, data):
