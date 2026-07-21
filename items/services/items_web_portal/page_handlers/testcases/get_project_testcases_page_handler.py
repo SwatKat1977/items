@@ -16,8 +16,8 @@ limitations under the License.
 """
 from http import HTTPStatus
 import json
-from quart import Response
 import logging
+from quart import Response
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_web_portal.configuration import Configuration
 from items.services.items_web_portal.metadata_settings import MetadataSettings
@@ -27,20 +27,59 @@ from items.services.items_web_portal.portal_page_handler import (
 
 
 class GetProjectTestcasesPageHandler(PortalPageHandler):
+    """Handles requests for the project test cases page.
+
+    This handler retrieves the project's test case hierarchy from the gateway
+    service, transforms the returned folder and test case data into a nested
+    tree structure, and renders the test cases page.
+
+    Attributes:
+        _metadata_settings (MetadataSettings):
+            Metadata configuration used when rendering the page.
+    """
 
     def __init__(self,
                  logger: logging.Logger,
                  config: Configuration,
                  rest_client: RestClient,
                  metadata: MetadataSettings):
+        """Initializes the project test cases page handler.
+
+        Args:
+            logger (logging.Logger):
+                Logger used for diagnostic and error messages.
+            config (Configuration):
+                Application configuration containing service endpoints.
+            rest_client (RestClient):
+                REST client used to communicate with backend services.
+            metadata (MetadataSettings):
+                Metadata settings used when rendering portal pages.
+        """
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
     async def test_cases(self, project_id: int):
+        """Renders the test cases page for a project.
+
+        Retrieves the project's folder and test case information from the
+        gateway service, transforms the flat API response into a hierarchical
+        structure suitable for display, and renders the test cases page.
+
+        If the gateway service request fails, an HTTP 500 response containing
+        an error payload is returned.
+
+        Args:
+            project_id (int):
+                Unique identifier of the project.
+
+        Returns:
+            Response:
+                A rendered HTML page on success, or a JSON error response with
+                HTTP 500 status if the gateway request fails.
+        """
         gateway_svc: str = self._config.apis_gateway_svc
 
         url: str = f"{gateway_svc}web/{project_id}/testcases"
-        print("earl:", url)
 
         response = await self._rest_client.get(url)
 
@@ -65,26 +104,30 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
             instance_name=self._metadata_settings.instance_name)
 
     def _transform_tests_details_data(self, data):
-        """
-        Convert raw folder and test case data into a hierarchical tree structure.
+        """Converts flat folder and test case data into a hierarchical tree.
 
-        The incoming data is expected to contain:
-        - `folders`: a flat list of folder objects with `id` and `parent_id`
-        - `test_cases`: a flat list of test case objects referencing `folder_id`
+        The incoming data is expected to contain two collections:
 
-        This method:
-        - Builds a folder map keyed by folder ID.
-        - Constructs a nested folder tree based on parent relationships.
-        - Assigns test cases to their respective folders.
+        - ``folders``: A flat list of folder objects containing ``id`` and
+          ``parent_id`` fields.
+        - ``test_cases``: A flat list of test case objects containing a
+          ``folder_id`` reference.
+
+        This method builds a nested folder hierarchy by linking each folder
+        to its parent, then assigns each test case to its corresponding
+        folder.
 
         Args:
             data (dict):
-                Raw data from the API containing folder and test case lists.
+                API response containing ``folders`` and ``test_cases``
+                collections.
 
         Returns:
             list[dict]:
-                A list of root-level folder objects, each with nested
-                `subfolders` and associated `test_cases`.
+                A list of root-level folders. Each folder contains:
+
+                - ``subfolders``: Child folder objects.
+                - ``test_cases``: Test cases belonging directly to the folder.
         """
         folder_map = {folder['id']: {**folder, 'subfolders': [],
                                      'test_cases': []}

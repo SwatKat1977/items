@@ -17,21 +17,38 @@ limitations under the License.
 from quart import Blueprint
 from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
-from items.services.items_web_portal.page_handlers.testcases.get_project_testcases_page_handler import \
-    GetProjectTestcasesPageHandler
+from items.services.items_web_portal.page_handlers.testcases.\
+    get_project_testcases_page_handler import GetProjectTestcasesPageHandler
 
 
 def create_testcases_page_handlers(injections: PageHandlerInjections) \
         -> Blueprint:
+    """Creates the blueprint containing project test case page routes.
+
+    Registers all HTTP routes responsible for displaying and interacting
+    with the test cases page for a project. The handlers are constructed
+    using the supplied dependency injection container.
+
+    Args:
+        injections (PageHandlerInjections):
+            Container providing the shared dependencies required by the
+            page handlers, including the logger, configuration, REST
+            client, and metadata settings.
+
+    Returns:
+        Blueprint:
+            The configured Quart blueprint containing the test case page
+            routes.
+    """
     routes = Blueprint('testcases_routes', __name__)
 
     injections.logger.debug(" Testcases Page Handlers:")
 
-    handler_get_testcase: GetProjectTestcasesPageHandler = \
-        GetProjectTestcasesPageHandler(injections.logger,
-                                       injections.config,
-                                       injections.rest_client,
-                                       injections.metadata)
+    handler_get_testcase = GetProjectTestcasesPageHandler(
+        injections.logger,
+        injections.config,
+        injections.rest_client,
+        injections.metadata)
 
     injections.logger.debug("=> %s GET /<project_id>/testcases",
                             "Get testcases for a project".ljust(40))
