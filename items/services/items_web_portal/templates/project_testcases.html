@@ -4,14 +4,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/project_testcases.css') }}">
 {% endblock %}
 
-{% block body_params %}id="body-pd"{% endblock %}
-{% block page_body %}
-{{ super() }}
-
 {% macro render_folder(folders, level=0) %}
     {% for folder in folders %}
         <div class="folder" style="margin-left: {{ level * 20 }}px;">
-            {{ folder.name }}  <!-- Folder name -->
+            {{ folder.name }}
         </div>
 
         {% if folder.test_cases %}
@@ -33,49 +29,48 @@
             </table>
         {% endif %}
 
-        {% if folder.subfolders %}  {# Check if this folder has subfolders #}
-            {{ render_folder(folder.subfolders, level + 1) }}  {# Recursive call #}
+        {% if folder.subfolders %}
+            {{ render_folder(folder.subfolders, level + 1) }}
         {% endif %}
     {% endfor %}
 {% endmacro %}
 
-    <div class="wrapper mx-2 height-100">
+{% block project_content %}
+<div id="content">
+    <div id="testcases-title-bar">
+        <h5 class="mb-0">Test Cases</h5>
+    </div>
 
-      <div id="content">
-        <div class="row">
-          <div id="testcases-title-bar">
-            <h5 class="mb-0">Test Cases</h5>
-          </div>
-        </div>
-        <div class="row m-2">{% if has_testcases == True %}
+    <div class="p-3">
+        {% if has_testcases == True %}
             <div id="folder-structure">
                 {{ render_folder(data) }}
             </div>
-
-          {% else %}
-          <div id="no_data_msg_jumbo" class="jumbotron text-black border border-dark w-100">
-            <div class="container mt-1 mx-0" id="no_data_msg_container">
-              <div class="row w-100">
-                <div class="col-1 text-center d-flex justify-content-center align-items-center">
-                  <i class='lead bx bx-info-circle text-primary'></i>
+        {% else %}
+            <div id="no_data_msg_jumbo" class="jumbotron text-black border border-dark w-100">
+                <div class="container mt-1 mx-0" id="no_data_msg_container">
+                    <div class="row w-100">
+                        <div class="col-1 text-center d-flex justify-content-center align-items-center">
+                            <i class='lead bx bx-info-circle text-primary'></i>
+                        </div>
+                        <div class="col">
+                            <p class="fw-bold mb-1">There aren't any test cases, yet.</p>
+                            <p class="mb-2">There aren't any sections or test cases. Use the following buttons to create the first test case and section.</p>
+                            <p>
+                                <button type="button" class="btn btn-sm btn-header me-1" data-bs-toggle="modal"
+                                        data-bs-target="#addSectionModal">
+                                    <strong>+</strong> Add Section
+                                </button>
+                                <button type="button" class="btn btn-sm btn-header" data-bs-toggle="modal"
+                                        data-bs-target="#addTestCaseModal">
+                                    <strong>+</strong> Add Test Case
+                                </button>
+                            </p>
+                        </div>
+                    </div>
                 </div>
-                <div class="col">
-                  <p class="fw-bold mb-1">There aren't any test cases, yet.</p>
-                  <p class="mb-2">There aren't any sections or test cases. Use the following buttons to create the first test case and section.</p>
-                  <p>
-                    <button type="button" class="btn btn-sm btn-header me-1" data-bs-toggle="modal"
-                            data-bs-target="#addSectionModal">
-                      <strong>+</strong> Add Section
-                    </button>
-                    <button type="button" class="btn btn-sm btn-header" data-bs-toggle="modal"
-                            data-bs-target="#addTestCaseModal">
-                      <strong>+</strong> Add Test Case
-                    </button>
-                  </p>
-                </div>
-              </div>
             </div>
-          </div>{% endif %}
-        </div>
-      </div>
-    </div>{% endblock %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
