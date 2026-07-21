@@ -17,6 +17,12 @@ limitations under the License.
 from quart import Blueprint
 from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
+from items.services.items_web_portal.page_handlers.admin.admin_manage_data_page_handler import \
+    AdminManageDataPageHandler
+from items.services.items_web_portal.page_handlers.admin.admin_site_settings_page_handler import \
+    AdminSiteSettingsPageHandler
+from items.services.items_web_portal.page_handlers.admin.admin_users_and_roles_page_handler import \
+    AdminUsersAndRolesPageHandler
 from items.services.items_web_portal.page_handlers.admin.dashboard import \
     create_admin_dashboard_page_handler
 from items.services.items_web_portal.page_handlers.admin.projects import \
@@ -49,6 +55,23 @@ def create_admin_page_handlers(injections: PageHandlerInjections,
 
     injections.logger.debug(" Admin Pages Handlers:")
 
+
+    handler_manage_data: AdminManageDataPageHandler = \
+        AdminManageDataPageHandler(injections.logger,
+                                   injections.config,
+                                   injections.rest_client,
+                                   injections.metadata)
+    handler_site_settings: AdminSiteSettingsPageHandler = \
+        AdminSiteSettingsPageHandler(injections.logger,
+                                     injections.config,
+                                     injections.rest_client,
+                                     injections.metadata)
+    handler_users_and_roles: AdminUsersAndRolesPageHandler = \
+        AdminUsersAndRolesPageHandler(injections.logger,
+                                      injections.config,
+                                      injections.rest_client,
+                                      injections.metadata)
+
     # Register admin dashboard pages
     routes.register_blueprint(create_admin_dashboard_page_handler(injections,
                                                                   prefix))
@@ -57,25 +80,25 @@ def create_admin_page_handlers(injections: PageHandlerInjections,
     injections.logger.debug("=> %s GET /admin/users_roles",
                             "Admin Users Roles page (read)".ljust(40))
 
-    @routes.route('/admin/users_roles', methods=['GET'])
+    @routes.route('/users_roles', methods=['GET'])
     async def admin_admin_users_and_roles_request():
-        return await injections.admin_users_and_roles()
+        return await handler_users_and_roles.users_and_roles()
 
     # Admin page | Manage Data (read): '/admin/users_roles'
     injections.logger.debug("=> %s GET /admin/manage_data",
-                            "Admin manage data  page (read)".ljust(40))
+                            "Admin manage data page (read)".ljust(40))
 
-    @routes.route('/admin/manage_data', methods=['GET'])
+    @routes.route('/manage_data', methods=['GET'])
     async def admin_admin_manage_data_request():
-        return await injections.admin_manage_data()
+        return await handler_manage_data.manage_data()
 
     # Admin page | Site Settings (read): '/admin/site_settings'
     injections.logger.debug("=> %s GET /admin/site_settings",
                             "Admin site settings page (read)".ljust(40))
 
-    @routes.route('/admin/site_settings', methods=['GET'])
+    @routes.route('/site_settings', methods=['GET'])
     async def admin_site_settings_request():
-        return await injections.admin_site_settings()
+        return await handler_site_settings.site_settings()
 
     # Register testcases pages
     routes.register_blueprint(create_admin_projects_page_handlers(injections))

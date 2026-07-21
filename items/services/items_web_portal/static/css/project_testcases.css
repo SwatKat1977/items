@@ -1,3 +1,32 @@
+#body-pd, #body-pd .wrapper, #body-pd #content {
+    background-color: #cce8ff !important;
+    min-height: 100vh;
+}
+
+#testcases-title-bar {
+    background-color: #cce8ff;
+    padding: 8px 12px;
+    border-bottom: 1px solid #a8d0f0;
+}
+
+#testcases-title-bar h5 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: #222;
+}
+
+.btn-header {
+    background-color: #294665 !important;
+    color: #fff !important;
+    border-color: #294665 !important;
+}
+
+.btn-header:hover {
+    background-color: #1e3550 !important;
+    border-color: #1e3550 !important;
+    color: #fff !important;
+}
+
 .folder {
     margin-left: 20px; /* Indentation for folders */
     font-weight: bold;

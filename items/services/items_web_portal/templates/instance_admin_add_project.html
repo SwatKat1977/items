@@ -31,8 +31,7 @@
 
               <div class="form-group">
                 <label for="announcement">Announcement</label>
-                <textarea class="form-control" id="announcement" name="announcement">{{ form_data.get('announcement', '') }}
-                </textarea>
+                <textarea class="form-control" id="announcement" name="announcement">{{ form_data.get('announcement', '') |trim }}</textarea>
               </div>
 
               <label>

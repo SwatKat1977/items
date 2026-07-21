@@ -30,7 +30,7 @@ class GetProjectOverviewPageHandler(PortalPageHandler):
         """Render the overview page for a project.
 
         Args:
-            project_id: Identifier of the project to display.
+            _project_id: Identifier of the project to display.
 
         Returns:
             The rendered project overview page response.
