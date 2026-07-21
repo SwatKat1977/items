@@ -24,7 +24,7 @@ from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
 
 
-class GetProjectOverviewPageHandler(PortalPageHandler):
+class GetProjectTestcasesPageHandler(PortalPageHandler):
 
     def __init__(self,
                  logger: logging.Logger,
@@ -86,10 +86,6 @@ class GetProjectOverviewPageHandler(PortalPageHandler):
             data=details, active_page=page,
             has_testcases=True,
             instance_name=self._metadata_settings.instance_name)
-
-    async def project_overview(self, _project_id: int):
-        """ PLACEHOLDER """
-        return None
 
     def _transform_tests_details_data(self, data):
         """
