@@ -37,7 +37,7 @@ docker run \
     -p 7050:7050 \
     --name items-gateway \
     --network "${NETWORK_NAME}" \
-    -e GENERAL_API_SIGNING_SECRET="{API_SECRET}" \
+    -e GENERAL_API_SIGNING_SECRET="${API_SECRET}" \
     -v "${CONFIG_FILE}:/usr/local/items/gateway.cfg:ro" \
     -v "${METADATA_FILE}:/usr/local/items/metadata.config" \
     -d \

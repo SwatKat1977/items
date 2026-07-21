@@ -1,0 +1,80 @@
+/* Administration overview cards */
+
+.admin-overview-intro {
+    background-color: #ffffff;
+    border: 1px solid #cddceb;
+    border-radius: 6px;
+    padding: 20px 24px;
+}
+
+.admin-overview-intro .intro-icon {
+    color: #4a90c2;
+    font-size: 1.6rem;
+}
+
+.admin-overview-section-title {
+    font-weight: 700;
+    color: #1f2d3d;
+    border-bottom: 2px solid #cddceb;
+    padding-bottom: 6px;
+    display: inline-block;
+}
+
+.admin-card {
+    background-color: #ffffff;
+    border: 1px solid #cddceb;
+    border-radius: 6px;
+    padding: 20px 24px;
+    height: 100%;
+    transition: box-shadow 0.2s ease;
+}
+
+.admin-card:hover {
+    box-shadow: 0 2px 8px rgba(31, 45, 61, 0.12);
+}
+
+.admin-card .admin-card-icon {
+    color: #4a90c2;
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.admin-card .admin-card-title {
+    color: #2a72b5;
+    font-weight: 600;
+    font-size: 1.15rem;
+    margin: 0;
+}
+
+.admin-card .admin-card-title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.admin-card .admin-card-title a:hover {
+    text-decoration: underline;
+}
+
+.admin-card .admin-card-description {
+    color: #45525f;
+    margin: 8px 0 12px 0;
+}
+
+.admin-card .admin-card-links {
+    list-style: disc;
+    padding-left: 20px;
+    margin: 0;
+}
+
+.admin-card .admin-card-links li {
+    margin-bottom: 4px;
+}
+
+.admin-card .admin-card-links a {
+    color: #6fa3d1;
+    text-decoration: none;
+}
+
+.admin-card .admin-card-links a:hover {
+    text-decoration: underline;
+}

@@ -18,6 +18,8 @@ from http import HTTPStatus
 import json
 from quart import Response
 import logging
+from weaver_framework.microservice.rest_client import RestClient
+from items.services.items_web_portal.configuration import Configuration
 from items.services.items_web_portal.metadata_settings import MetadataSettings
 import items.services.items_web_portal.page_locations as pages
 from items.services.items_web_portal.portal_page_handler import (
@@ -28,44 +30,19 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
 
     def __init__(self,
                  logger: logging.Logger,
+                 config: Configuration,
+                 rest_client: RestClient,
                  metadata: MetadataSettings):
-        """
-        Initialize the ProjectsApiView.
-
-        Args:
-            logger (logging.Logger):
-                Logger instance used for recording application events.
-            metadata (MetadataSettings):
-                Application metadata configuration used in UI rendering.
-        """
-        super().__init__(logger)
+        super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
     async def test_cases(self, project_id: int):
-        """
-        Fetch and display structured test case information for a project.
-
-        This method:
-        - Constructs the API URL for the gateway service.
-        - Sends an HTTP POST request.
-        - Validates the response.
-        - Transforms the returned folder/test case data into a tree structure.
-        - Renders the test case definitions page.
-
-        Args:
-            project_id (int):
-                ID of the project whose test case information is requested.
-
-        Returns:
-            quart.Response:
-                - Rendered HTML page with structured test case data if successful.
-                - JSON error response if the gateway request fails.
-        """
         gateway_svc: str = self._config.apis_gateway_svc
 
-        url: str = f"{gateway_svc}web/{project_id}/testcase/testcases_details"
+        url: str = f"{gateway_svc}web/{project_id}/testcases"
+        print("earl:", url)
 
-        response = await self._rest_client.post(url)
+        response = await self._rest_client.get(url)
 
         if response.status_code != HTTPStatus.OK:
             self._logger.critical("Gateway svc request invalid - Reason: %s",

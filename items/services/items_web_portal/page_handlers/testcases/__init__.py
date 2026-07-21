@@ -17,6 +17,8 @@ limitations under the License.
 from quart import Blueprint
 from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
+from items.services.items_web_portal.page_handlers.testcases.get_project_testcases_page_handler import \
+    GetProjectTestcasesPageHandler
 
 
 def create_testcases_page_handlers(injections: PageHandlerInjections) \
@@ -25,14 +27,17 @@ def create_testcases_page_handlers(injections: PageHandlerInjections) \
 
     injections.logger.debug(" Testcases Page Handlers:")
 
-    # Get testcases for a project
+    handler_get_testcase: GetProjectTestcasesPageHandler = \
+        GetProjectTestcasesPageHandler(injections.logger,
+                                       injections.config,
+                                       injections.rest_client,
+                                       injections.metadata)
 
     injections.logger.debug("=> %s GET /<project_id>/testcases",
                             "Get testcases for a project".ljust(40))
 
-    @routes.route('/<project_id>/test_cases', methods=['GET'])
+    @routes.route('/<project_id>/testcases', methods=['GET'])
     async def test_definitions_page_request(project_id: int):
-        return None
-        # return await view.test_cases(project_id)
+        return await handler_get_testcase.test_cases(project_id)
 
     return routes

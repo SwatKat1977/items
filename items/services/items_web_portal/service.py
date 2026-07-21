@@ -44,6 +44,9 @@ class Service(BaseMicroservice):
 
     GET_METADATA_INFINITE_RETRIES: int = -1
 
+    # Delay (in seconds) between failed metadata retrieval attempts.
+    METADATA_RETRY_DELAY: int = 3
+
     def __init__(self, quart_instance: Quart):
         super().__init__()
         self._quart_instance = quart_instance
@@ -74,9 +77,21 @@ class Service(BaseMicroservice):
             self._metadata_settings,
             self._rest_client)
 
-        # TEMPORARY DISABLE
-        # if not await self._get_metadata(self.GET_METADATA_INFINITE_RETRIES):
-        #     return False
+        try:
+            metadata_retrieved: bool = await self._get_metadata(
+                self.GET_METADATA_INFINITE_RETRIES)
+
+        except (asyncio.CancelledError, KeyboardInterrupt):
+            # Interrupted (e.g. CTRL+C) while waiting for the gateway to
+            # become available. Close the HTTP session so aiohttp does not
+            # emit an 'Unclosed client session' warning, then re-raise so the
+            # interrupt continues to propagate as normal.
+            await self._close_http_session()
+            raise
+
+        if not metadata_retrieved:
+            await self._close_http_session()
+            return False
 
         self._quart_instance.register_blueprint(create_page_handlers(
             injections))
@@ -89,8 +104,19 @@ class Service(BaseMicroservice):
 
     async def _shutdown(self):
         """ Abstract method for application shutdown. """
-        if self._http_session:
+        await self._close_http_session()
+
+    async def _close_http_session(self) -> None:
+        """Close the HTTP client session if it is open.
+
+        Safe to call multiple times: the session reference is cleared once
+        closed so it is never closed twice, whether cleanup happens here on an
+        interrupted start-up or later via the normal shutdown path.
+        """
+        if self._http_session and not self._http_session.closed:
             await self._http_session.close()
+
+        self._http_session = None
 
     def _manage_configuration(self) -> bool:
         """
@@ -176,7 +202,7 @@ class Service(BaseMicroservice):
         # Generate number used once (NONCE)
         nonce = str(uuid.uuid4())
 
-        string_to_sign: str = f"/web/webhook/get_metadata:{nonce}"
+        string_to_sign: str = f"/web/webhook/metadata:{nonce}"
         secret: bytes = self._config.general_api_signing_secret.encode()
         signature: str = generate_api_signature(secret, string_to_sign)
         headers = {
@@ -185,7 +211,7 @@ class Service(BaseMicroservice):
         }
 
         base_path: str = self._config.apis_gateway_svc
-        url: str = f"{base_path}web/webhook/get_metadata?nonce={nonce}"
+        url: str = f"{base_path}web/webhook/metadata?nonce={nonce}"
 
         while perform_update != 0:
             response: ApiResponse = await self._rest_client.get(url,
@@ -210,13 +236,29 @@ class Service(BaseMicroservice):
                                   "metadata configuration items")
                 return True
 
+            print("URL         :", url)
+            print("Body        :", response.body)
+            print("Status code :", response.status_code)
             self._logger.warning("Unable to update Web Portal with metadata "
                                  "configuration items")
 
             if retries != self.GET_METADATA_INFINITE_RETRIES:
                 perform_update -= 1
 
-            await asyncio.sleep(3)
+            # Wait before retrying, but wake immediately if a shutdown has been
+            # requested so we exit the retry loop cleanly rather than blocking
+            # for the full delay.
+            try:
+                await asyncio.wait_for(self.shutdown_event.wait(),
+                                       timeout=self.METADATA_RETRY_DELAY)
+
+            except TimeoutError:
+                # No shutdown requested within the delay - retry.
+                continue
+
+            self._logger.info("Shutdown requested; aborting metadata "
+                              "retrieval")
+            return False
 
         self._logger.critical("Failed to update Web Portal with metadata "
                               "configuration items")
