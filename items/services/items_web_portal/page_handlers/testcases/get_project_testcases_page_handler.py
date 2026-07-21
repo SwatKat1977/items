@@ -79,8 +79,15 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
         """
         gateway_svc: str = self._config.apis_gateway_svc
 
-        url: str = f"{gateway_svc}web/{project_id}/testcases"
+        # Fetch project details to get the project name for the sidebar.
+        project_url: str = f"{gateway_svc}web/projects/{project_id}"
+        project_response = await self._rest_client.get(project_url)
 
+        project_name: str = "Unknown Project"
+        if project_response.status_code == HTTPStatus.OK:
+            project_name = project_response.body.get("name", project_name)
+
+        url: str = f"{gateway_svc}web/{project_id}/testcases"
         response = await self._rest_client.get(url)
 
         if response.status_code != HTTPStatus.OK:
@@ -96,11 +103,13 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
 
         details = self._transform_tests_details_data(response.body)
 
-        page = "test-cases"  # Default to 'Overview'
         return await self._render_page(
             pages.TEMPLATE_TEST_DEFINITIONS_PAGE,
-            data=details, active_page=page,
+            data=details,
+            active_page="test-cases",
             has_testcases=len(details) > 0,
+            project_id=project_id,
+            project_name=project_name,
             instance_name=self._metadata_settings.instance_name)
 
     def _transform_tests_details_data(self, data):
