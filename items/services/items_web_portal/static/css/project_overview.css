@@ -1,0 +1,101 @@
+.project-content,
+#overview-content {
+    background-color: #cce8ff;
+    min-height: 100%;
+}
+
+#overview-title-bar {
+    background-color: #cce8ff;
+    padding: 8px 12px;
+    border-bottom: 1px solid #a8d0f0;
+}
+
+#overview-title-bar h5 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: #222;
+}
+
+.overview-body {
+    padding: 16px;
+}
+
+/* ── Announcement banner ── */
+.overview-announcement {
+    background-color: #fff8e1;
+    border: 1px solid #ffe082;
+    border-left: 4px solid #f9a825;
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+    color: #5a4000;
+}
+
+/* ── Stats row ── */
+.overview-stats-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.stat-box {
+    flex: 1;
+    background-color: #fff;
+    border: 1px solid #b8d4ee;
+    border-radius: 6px;
+    padding: 14px 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.stat-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.stat-passed  { color: #28a745; }
+.stat-failed  { color: #dc3545; }
+.stat-blocked { color: #6c757d; }
+.stat-retest  { color: #fd7e14; }
+.stat-skipped { color: #adb5bd; }
+
+/* ── Milestones / Test Runs sections ── */
+.overview-sections {
+    display: flex;
+    gap: 16px;
+}
+
+.overview-section {
+    flex: 1;
+    background-color: #fff;
+    border: 1px solid #b8d4ee;
+    border-radius: 6px;
+    padding: 14px 16px;
+}
+
+.overview-section-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #294665;
+    margin-bottom: 4px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #294665;
+}
+
+.overview-empty-state {
+    padding: 12px 0 4px;
+    color: #6c757d;
+    font-size: 0.875rem;
+}
