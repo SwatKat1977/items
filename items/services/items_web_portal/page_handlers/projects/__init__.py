@@ -41,15 +41,16 @@ def create_projects_page_handlers(injections: PageHandlerInjections) -> Blueprin
     handler_project_overview: GetProjectOverviewPageHandler = \
         GetProjectOverviewPageHandler(injections.logger,
                                       injections.config,
-                                      injections.rest_client)
+                                      injections.rest_client,
+                                      injections.metadata)
 
     injections.logger.debug(" Projects Page Handlers:")
 
     # Index page: '/'
-    injections.logger.debug("=> %s GET /<int:project_id>",
+    injections.logger.debug("=> %s GET /<int:project_id>/overview",
                             "Project overview page".ljust(40))
 
-    @routes.route('/<int:project_id>',
+    @routes.route('/<int:project_id>/overview',
                   methods=['GET'])
     async def project_overview_request(project_id: int):
         return await handler_project_overview.project_overview(project_id)

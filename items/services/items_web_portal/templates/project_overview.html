@@ -1,0 +1,71 @@
+{% extends "project_page_template.html" %}
+{% block title %}Integrated Test Management Suite | Project Overview{% endblock %}
+{% block head %}{{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/project_overview.css') }}">
+{% endblock %}
+
+{% block project_content %}
+<div id="overview-content">
+
+    <!-- Title bar -->
+    <div id="overview-title-bar">
+        <h5 class="mb-0">Overview</h5>
+    </div>
+
+    <div class="overview-body">
+
+        <!-- Announcement banner -->
+        {% if show_announcement and announcement %}
+        <div class="overview-announcement">
+            <i class="bi bi-megaphone me-2"></i>{{ announcement }}
+        </div>
+        {% endif %}
+
+        <!-- Stats row (stubbed) -->
+        <div class="overview-stats-row">
+            <div class="stat-box">
+                <span class="stat-value stat-passed">0</span>
+                <span class="stat-label">Passed</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-value stat-failed">0</span>
+                <span class="stat-label">Failed</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-value stat-blocked">0</span>
+                <span class="stat-label">Blocked</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-value stat-retest">0</span>
+                <span class="stat-label">Retest</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-value stat-skipped">0</span>
+                <span class="stat-label">Skipped</span>
+            </div>
+        </div>
+
+        <!-- Milestones + Test Runs -->
+        <div class="overview-sections">
+
+            <!-- Milestones -->
+            <div class="overview-section">
+                <h6 class="overview-section-title">Milestones</h6>
+                <div class="overview-empty-state">
+                    <p>This project doesn't have any active milestones.</p>
+                </div>
+            </div>
+
+            <!-- Test Runs -->
+            <div class="overview-section">
+                <h6 class="overview-section-title">Test Runs</h6>
+                <div class="overview-empty-state">
+                    <p>This project doesn't have any active test runs.</p>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}
