@@ -20,6 +20,7 @@ import logging
 from quart import Response
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_web_portal.configuration import Configuration
+from items.services.items_web_portal.decorators import require_session
 from items.services.items_web_portal.metadata_settings import MetadataSettings
 from items.services.items_web_portal.portal_page_handler import PortalPageHandler
 import items.services.items_web_portal.page_locations as pages
@@ -49,6 +50,7 @@ class GetProjectOverviewPageHandler(PortalPageHandler):
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
+    @require_session
     async def project_overview(self, project_id: int):
         """Render the overview page for a project.
 

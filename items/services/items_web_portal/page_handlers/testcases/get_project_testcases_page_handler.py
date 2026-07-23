@@ -20,6 +20,7 @@ import logging
 from quart import Response
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_web_portal.configuration import Configuration
+from items.services.items_web_portal.decorators import require_session
 from items.services.items_web_portal.metadata_settings import MetadataSettings
 import items.services.items_web_portal.page_locations as pages
 from items.services.items_web_portal.portal_page_handler import (
@@ -58,6 +59,7 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
+    @require_session
     async def test_cases(self, project_id: int):
         """Renders the test cases page for a project.
 
