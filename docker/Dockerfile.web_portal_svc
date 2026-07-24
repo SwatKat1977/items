@@ -1,44 +1,38 @@
-
-FROM python:3.13.2-alpine
+FROM python:3.14.6-alpine
 
 # Add a user and group for ITEMS and then setup file paths.
 RUN addgroup -S items && \
     adduser -S items -G items && \
     mkdir /usr/local/items &&  \
+    mkdir /usr/local/items/services &&  \
     chown items:items /usr/local/items
 
-RUN apk add --no-cache
-
-# Switch to the non-root user
-USER items
-
-ENV PATH=$PATH:/home/items/.local/bin
-
-# Ensure latest pip is installed
-RUN pip install --upgrade pip
-
-# Web Portal dependencies
-COPY docker/requirements-web_portal_svc.txt .
-RUN pip install --no-cache-dir -r requirements-web_portal_svc.txt
-
-USER items
-
-# Copy base files into Docker image.
-COPY --chown=items:items items/web_portal_svc /usr/local/items/web_portal_svc
-COPY --chown=items:items items/shared /usr/local/items/shared
-
-# Configure the environment
 WORKDIR /usr/local/items
-ENV PYTHONPATH=/usr/local/items/web_portal_svc:/usr/local/items/shared
-ENV ITEMS_WEB_PORTAL_SVC_CONFIG_FILE=/usr/local/items/web_portal_svc.config
-ENV ITEMS_WEB_PORTAL_SVC_CONFIG_FILE_REQUIRED=1
-ENV QUART_APP=web_portal_svc
 
-EXPOSE 8080
+# Install Python dependencies
+COPY requirements/requirements_web_portal.txt .
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements_web_portal.txt
 
-# Default command (can be overridden)
-CMD ["sh", "-c", "if [ \"$ITEMS_ENVIRONMENT\" = \"production\" ]; then \
-    exec uvicorn main:app --host 0.0.0.0 --port 5000; \
-else \
-    exec python -m quart run -p 8080 -h 0.0.0.0 --reload; \
-fi"]
+# Copy application
+COPY --chown=items:items items ./items
+
+# Runtime configuration
+ENV PYTHONPATH=/usr/local/items
+
+# These should match the names your application actually uses
+ENV ITEMS_WEB_PORTAL_CONFIG_FILE_REQUIRED=1
+ENV ITEMS_WEB_PORTAL_CONFIG_FILE=/usr/local/items/web_portal.cfg
+
+# Listen on all interfaces inside the container
+ENV ITEMS_WEB_PORTAL_HOST=0.0.0.0
+ENV ITEMS_WEB_PORTAL_PORT=8000
+
+# Optional logging
+ENV LOGGING_LOG_LEVEL=DEBUG
+
+EXPOSE 8000
+
+USER items
+
+CMD ["python", "-m", "items.services.items_web_portal.run"]
