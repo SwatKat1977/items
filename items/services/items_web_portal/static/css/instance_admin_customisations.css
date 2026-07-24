@@ -1,0 +1,65 @@
+/* Administration customisations - tabbed layout */
+
+.customisations-tabs {
+    border-bottom: 1px solid #cddceb;
+    overflow: hidden;
+    flex-wrap: nowrap;
+}
+
+.customisations-tabs .nav-link {
+    color: #45525f;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    padding: 10px 16px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.customisations-tabs .nav-link:hover {
+    color: #2a72b5;
+    border-bottom-color: #cddceb;
+}
+
+.customisations-tabs .nav-link.active {
+    color: #2a72b5;
+    font-weight: 600;
+    background-color: transparent;
+    border-bottom-color: #2a72b5;
+}
+
+.customisations-tabs .nav-link i {
+    font-size: 1.05rem;
+    line-height: 1;
+}
+
+.customisations-tab-content {
+    background-color: #ffffff;
+    border: 1px solid #cddceb;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    padding: 24px;
+    min-height: 240px;
+}
+
+.customisations-placeholder {
+    color: #7a8794;
+    margin: 0;
+}
+
+/*
+ * Collapse the tab labels to icons only once the full-label tab bar can no
+ * longer fit its container. The `icons-only` class is toggled by
+ * instance_admin_customisations.js based on actual overflow, so the switch
+ * happens exactly when a scroll bar would otherwise appear. The icon and the
+ * button's title attribute keep each tab identifiable when the label is hidden.
+ */
+.customisations-tabs.icons-only .nav-link .tab-label {
+    display: none;
+}
+
+.customisations-tabs.icons-only .nav-link {
+    padding: 10px 14px;
+}
