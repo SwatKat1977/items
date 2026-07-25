@@ -21,6 +21,9 @@ from test_folder_repository import TestFolderRepository
 from test_testcase_handlers import (
     TestGetTestcaseHandler,
     TestListTestcasesHandler,
+    TestAddTestcaseHandler,
+    TestModifyTestcaseHandler,
+    TestDeleteTestcaseHandler,
 )
 from test_testcase_custom_field_handlers import (
     TestGetCustomFieldHandler,

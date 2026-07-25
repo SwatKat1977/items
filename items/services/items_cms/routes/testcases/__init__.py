@@ -21,6 +21,9 @@ from items.services.items_cms.repositories.testcase_repository import TestcaseRe
 from items.services.items_cms.services.testcase_service import TestcaseService
 from .list_testcases_handler import ListTestcasesHandler
 from .get_testcase_handler import GetTestcaseHandler
+from .add_testcase_handler import AddTestcaseHandler
+from .modify_testcase_handler import ModifyTestcaseHandler
+from .delete_testcase_handler import DeleteTestcaseHandler
 
 
 def create_testcases_routes(logger: logging.Logger,
@@ -41,6 +44,8 @@ def create_testcases_routes(logger: logging.Logger,
     Returns:
         A configured Blueprint with all testcase routes registered.
     """
+    # pylint: disable=too-many-locals
+
     testcases_routes = Blueprint("testcases_routes", __name__)
 
     repository = TestcaseRepository(logger, config)
@@ -48,6 +53,9 @@ def create_testcases_routes(logger: logging.Logger,
 
     list_handler = ListTestcasesHandler(logger, service)
     get_handler = GetTestcaseHandler(logger, service)
+    add_handler = AddTestcaseHandler(logger, service)
+    modify_handler = ModifyTestcaseHandler(logger, service)
+    delete_handler = DeleteTestcaseHandler(logger, service)
 
     logger.debug("--- Registering Testcases API routes ---")
 
@@ -66,5 +74,31 @@ def create_testcases_routes(logger: logging.Logger,
     @testcases_routes.route('/testcases/<int:case_id>', methods=['GET'])
     async def get_testcase(case_id: int):
         return await get_handler.get_testcase(case_id)
+
+    # Create a test case.
+    logger.debug("=> %s POST /testcases",
+                 "Create new testcase".ljust(40))
+
+    @testcases_routes.route('/testcases', methods=['POST'])
+    async def add_testcase():
+        # pylint: disable=no-value-for-parameter
+        return await add_handler.add_testcase()
+
+    # Rename/update the description of a test case.
+    logger.debug("=> %s PATCH /testcases/<int:case_id>",
+                 "Modify testcase".ljust(40))
+
+    @testcases_routes.route('/testcases/<int:case_id>', methods=['PATCH'])
+    async def modify_testcase(case_id: int):
+        # pylint: disable=no-value-for-parameter
+        return await modify_handler.modify_testcase(case_id)
+
+    # Delete a test case.
+    logger.debug("=> %s DELETE /testcases/<int:case_id>",
+                 "Delete a testcase".ljust(40))
+
+    @testcases_routes.route('/testcases/<int:case_id>', methods=['DELETE'])
+    async def delete_testcase(case_id: int):
+        return await delete_handler.delete_testcase(case_id)
 
     return testcases_routes

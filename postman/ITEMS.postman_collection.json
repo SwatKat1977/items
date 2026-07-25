@@ -301,6 +301,77 @@
                 }
               },
               "response": []
+            },
+            {
+              "name": "Create Test Case",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"project_id\": 1,\n    \"folder_id\": null,\n    \"name\": \"Login with valid credentials\",\n    \"description\": \"Verify a user can log in with valid credentials\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcases",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcases"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Modify Test Case",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Login with valid credentials (renamed)\",\n    \"description\": \"Updated description\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcases/1",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcases",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Test Case",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcases/1",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcases",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         },

@@ -181,6 +181,114 @@ class TestTestcaseRepository(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["description"], "Verify login")
         self.assertIsNone(result["folder_id"])
 
+    # ------------------------------------------------------------------
+    # get_folder_project_id
+    # ------------------------------------------------------------------
+
+    async def test_get_folder_project_id_returns_none_when_not_found(self):
+        result = await self.repo.get_folder_project_id(999)
+        self.assertIsNone(result)
+
+    async def test_get_folder_project_id_returns_project_id_when_found(self):
+        pid = self._insert_project("Alpha")
+        fid = self._insert_folder(pid, "Suite A")
+        result = await self.repo.get_folder_project_id(fid)
+        self.assertEqual(result, pid)
+
+    # ------------------------------------------------------------------
+    # testcase_name_exists
+    # ------------------------------------------------------------------
+
+    async def test_name_exists_returns_false_when_empty(self):
+        pid = self._insert_project("Alpha")
+        result = await self.repo.testcase_name_exists(pid, None, "Login Test")
+        self.assertFalse(result)
+
+    async def test_name_exists_returns_true_for_root_level_match(self):
+        pid = self._insert_project("Alpha")
+        self._insert_testcase(pid, "Login Test")
+        result = await self.repo.testcase_name_exists(pid, None, "Login Test")
+        self.assertTrue(result)
+
+    async def test_name_exists_returns_true_for_folder_match(self):
+        pid = self._insert_project("Alpha")
+        fid = self._insert_folder(pid, "Suite A")
+        self._insert_testcase(pid, "Login Test", folder_id=fid)
+        result = await self.repo.testcase_name_exists(pid, fid, "Login Test")
+        self.assertTrue(result)
+
+    async def test_name_exists_does_not_match_different_folder(self):
+        pid = self._insert_project("Alpha")
+        fid_a = self._insert_folder(pid, "Suite A")
+        fid_b = self._insert_folder(pid, "Suite B")
+        self._insert_testcase(pid, "Login Test", folder_id=fid_a)
+        result = await self.repo.testcase_name_exists(pid, fid_b, "Login Test")
+        self.assertFalse(result)
+
+    async def test_name_exists_returns_false_with_own_exclude_id(self):
+        pid = self._insert_project("Alpha")
+        tc_id = self._insert_testcase(pid, "Login Test")
+        result = await self.repo.testcase_name_exists(
+            pid, None, "Login Test", exclude_id=tc_id)
+        self.assertFalse(result)
+
+    # ------------------------------------------------------------------
+    # add_testcase
+    # ------------------------------------------------------------------
+
+    async def test_add_testcase_returns_new_id(self):
+        pid = self._insert_project("Alpha")
+        result = await self.repo.add_testcase(
+            pid, None, "Login Test", "Verify login")
+        self.assertIsInstance(result, int)
+        conn = sqlite3.connect(self.db_path)
+        row = conn.execute(
+            "SELECT name, description, folder_id FROM tc_test_cases "
+            "WHERE id = ?", (result,)).fetchone()
+        conn.close()
+        self.assertEqual(row, ("Login Test", "Verify login", None))
+
+    async def test_add_testcase_with_folder(self):
+        pid = self._insert_project("Alpha")
+        fid = self._insert_folder(pid, "Suite A")
+        result = await self.repo.add_testcase(
+            pid, fid, "Login Test", "")
+        conn = sqlite3.connect(self.db_path)
+        row = conn.execute(
+            "SELECT folder_id FROM tc_test_cases WHERE id = ?",
+            (result,)).fetchone()
+        conn.close()
+        self.assertEqual(row[0], fid)
+
+    # ------------------------------------------------------------------
+    # update_testcase
+    # ------------------------------------------------------------------
+
+    async def test_update_testcase_renames_and_updates_description(self):
+        pid = self._insert_project("Alpha")
+        tc_id = self._insert_testcase(pid, "Old", description="Old desc")
+        await self.repo.update_testcase(tc_id, "New", "New desc")
+        conn = sqlite3.connect(self.db_path)
+        row = conn.execute(
+            "SELECT name, description FROM tc_test_cases WHERE id = ?",
+            (tc_id,)).fetchone()
+        conn.close()
+        self.assertEqual(row, ("New", "New desc"))
+
+    # ------------------------------------------------------------------
+    # delete_testcase
+    # ------------------------------------------------------------------
+
+    async def test_delete_testcase_removes_row(self):
+        pid = self._insert_project("Alpha")
+        tc_id = self._insert_testcase(pid, "Login Test")
+        await self.repo.delete_testcase(tc_id)
+        conn = sqlite3.connect(self.db_path)
+        rows = conn.execute(
+            "SELECT id FROM tc_test_cases WHERE id = ?", (tc_id,)).fetchall()
+        conn.close()
+        self.assertEqual(rows, [])
+
 
 if __name__ == "__main__":
     unittest.main()
