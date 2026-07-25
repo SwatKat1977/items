@@ -9,6 +9,15 @@ from test_project_handlers import (
     TestDeleteProjectHandler,
 )
 from test_project_service import TestProjectService
+from test_folder_handlers import (
+    TestGetFolderHandler,
+    TestListFoldersHandler,
+    TestAddFolderHandler,
+    TestModifyFolderHandler,
+    TestDeleteFolderHandler,
+)
+from test_folder_service import TestFolderService
+from test_folder_repository import TestFolderRepository
 from test_testcase_handlers import (
     TestGetTestcaseHandler,
     TestListTestcasesHandler,

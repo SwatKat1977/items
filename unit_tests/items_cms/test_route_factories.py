@@ -119,6 +119,12 @@ _VALID_PROJECT_BODY = {
     "announcement_on_overview": False,
 }
 
+_VALID_FOLDER_BODY = {
+    "project_id": 1,
+    "parent_id": None,
+    "name": "WiringFolder",
+}
+
 _VALID_FIELD_BODY = {
     "field_name": "Wiring Field",
     "description": "",
@@ -205,6 +211,35 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
     async def test_delete_project_route_is_reachable(self):
         async with self.client as c:
             response = await c.delete("/projects/999")
+        self.assertNotEqual(response.status_code, 405)
+
+    # ------------------------------------------------------------------
+    # Folder routes  (routes/folders/__init__.py)
+    # ------------------------------------------------------------------
+
+    async def test_list_folders_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/folders?project_id=1")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_get_folder_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/folders/999")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_add_folder_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/folders", json=_VALID_FOLDER_BODY)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_modify_folder_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.patch("/folders/999", json={"name": "New"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_delete_folder_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.delete("/folders/999")
         self.assertNotEqual(response.status_code, 405)
 
     # ------------------------------------------------------------------
