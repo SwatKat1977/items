@@ -236,11 +236,10 @@ class Service(BaseMicroservice):
                                   "metadata configuration items")
                 return True
 
-            print("URL         :", url)
-            print("Body        :", response.body)
-            print("Status code :", response.status_code)
-            self._logger.warning("Unable to update Web Portal with metadata "
-                                 "configuration items")
+            self._logger.warning(
+                "Unable to update Web Portal with metadata configuration "
+                "items - URL: %s, Status: %s, Body: %s",
+                url, response.status_code, response.body)
 
             if retries != self.GET_METADATA_INFINITE_RETRIES:
                 perform_update -= 1
