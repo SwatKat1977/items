@@ -24,11 +24,11 @@ from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
 
 
-class AdminManageDataPageHandler(PortalPageHandler):
-    """Handles requests for the administration manage data page.
+class AdminIntegrationsPageHandler(PortalPageHandler):
+    """Handles requests for the administration integrations page.
 
-    This handler renders the administration page used for managing
-    application data.
+    This handler renders the administration page used to view and manage
+    third-party integrations.
     """
 
     def __init__(self,
@@ -36,7 +36,7 @@ class AdminManageDataPageHandler(PortalPageHandler):
                  config: Configuration,
                  rest_client: RestClient,
                  metadata: MetadataSettings):
-        """Initialize the administration manage data page handler.
+        """Initialize the administration integrations page handler.
 
         Args:
             logger: Logger used to record diagnostic and operational messages.
@@ -48,14 +48,14 @@ class AdminManageDataPageHandler(PortalPageHandler):
         self._metadata_settings = metadata
 
     @require_session
-    async def manage_data(self):
-        """Render the administration manage data page.
+    async def integrations(self):
+        """Render the administration integrations page.
 
         Returns:
-            The rendered administration manage data page response.
+            The rendered administration integrations page response.
         """
         return await self._render_page(
-            pages.PAGE_INSTANCE_ADMIN_MANAGE_DATA,
+            pages.PAGE_INSTANCE_ADMIN_INTEGRATIONS,
             instance_name=self._metadata_settings.instance_name,
             active_page="administration",
-            active_admin_page="admin_page_manage_data")
+            active_admin_page="admin_page_integrations")

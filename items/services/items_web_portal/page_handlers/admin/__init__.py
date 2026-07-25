@@ -17,6 +17,10 @@ limitations under the License.
 from quart import Blueprint
 from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
+from items.services.items_web_portal.page_handlers.admin.admin_customisations_page_handler import \
+    AdminCustomisationsPageHandler
+from items.services.items_web_portal.page_handlers.admin.admin_integrations_page_handler import \
+    AdminIntegrationsPageHandler
 from items.services.items_web_portal.page_handlers.admin.admin_manage_data_page_handler import \
     AdminManageDataPageHandler
 from items.services.items_web_portal.page_handlers.admin.admin_site_settings_page_handler import \
@@ -71,6 +75,16 @@ def create_admin_page_handlers(injections: PageHandlerInjections,
                                       injections.config,
                                       injections.rest_client,
                                       injections.metadata)
+    handler_customisations: AdminCustomisationsPageHandler = \
+        AdminCustomisationsPageHandler(injections.logger,
+                                       injections.config,
+                                       injections.rest_client,
+                                       injections.metadata)
+    handler_integrations: AdminIntegrationsPageHandler = \
+        AdminIntegrationsPageHandler(injections.logger,
+                                     injections.config,
+                                     injections.rest_client,
+                                     injections.metadata)
 
     # Register admin dashboard pages
     routes.register_blueprint(create_admin_dashboard_page_handler(injections,
@@ -91,6 +105,22 @@ def create_admin_page_handlers(injections: PageHandlerInjections,
     @routes.route('/manage_data', methods=['GET'])
     async def admin_admin_manage_data_request():
         return await handler_manage_data.manage_data()
+
+    # Admin page | Customisations (read): '/admin/customisations'
+    injections.logger.debug("=> %s GET /admin/customisations",
+                            "Admin customisations page (read)".ljust(40))
+
+    @routes.route('/customisations', methods=['GET'])
+    async def admin_customisations_request():
+        return await handler_customisations.customisations()
+
+    # Admin page | Integrations (read): '/admin/integrations'
+    injections.logger.debug("=> %s GET /admin/integrations",
+                            "Admin integrations page (read)".ljust(40))
+
+    @routes.route('/integrations', methods=['GET'])
+    async def admin_integrations_request():
+        return await handler_integrations.integrations()
 
     # Admin page | Site Settings (read): '/admin/site_settings'
     injections.logger.debug("=> %s GET /admin/site_settings",

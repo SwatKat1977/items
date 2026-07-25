@@ -1,5 +1,5 @@
 services:
-  accounts_svc:
+  identity_svc:
     image: swatkat1977/a:latest
     restart: always  # Ensures auto-restart in production
 

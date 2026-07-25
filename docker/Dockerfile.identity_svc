@@ -1,27 +1,3 @@
-FROM python:3.13.2-alpine
-
-# Add a user and group for ITEMS and then setup file paths.
-RUN addgroup -S items && \
-    adduser -S items -G items && \
-    mkdir /usr/local/items &&  \
-    chown items:items /usr/local/items
-
-RUN apk add --no-cache
-
-# Switch to the non-root user
-USER items
-
-
-
-
-
-
-
-
-
-
-
-
 FROM python:3.14.6-alpine
 
 # Add a user and group for ITEMS and then setup file paths.

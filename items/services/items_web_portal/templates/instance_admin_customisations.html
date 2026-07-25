@@ -1,0 +1,100 @@
+{% extends "instance_admin_template.html" %}
+{% block title %}Integrated Test Management Suite | Customisations{% endblock %}
+{% block head %}{{ super() }}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/instance_admin_customisations.css') }}">
+{% endblock %}
+
+{% block body_params %}id="body-pd"{% endblock %}
+
+{% block instance_admin_body %}
+    <div class="flex-grow-1">
+      <h4 class="mb-3">Customisations</h4>
+
+      <!-- Tab navigation -->
+      <ul class="nav nav-tabs customisations-tabs flex-nowrap" id="customisationsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="case-fields-tab" data-bs-toggle="tab"
+                  data-bs-target="#case-fields" type="button" role="tab"
+                  aria-controls="case-fields" aria-selected="true" title="Case Fields">
+            <i class="bi bi-input-cursor-text"></i>
+            <span class="tab-label">Case Fields</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="result-fields-tab" data-bs-toggle="tab"
+                  data-bs-target="#result-fields" type="button" role="tab"
+                  aria-controls="result-fields" aria-selected="false" title="Result Fields">
+            <i class="bi bi-clipboard-data"></i>
+            <span class="tab-label">Result Fields</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="case-types-tab" data-bs-toggle="tab"
+                  data-bs-target="#case-types" type="button" role="tab"
+                  aria-controls="case-types" aria-selected="false" title="Case Types">
+            <i class="bi bi-tags"></i>
+            <span class="tab-label">Case Types</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="priorities-tab" data-bs-toggle="tab"
+                  data-bs-target="#priorities" type="button" role="tab"
+                  aria-controls="priorities" aria-selected="false" title="Priorities">
+            <i class="bi bi-flag"></i>
+            <span class="tab-label">Priorities</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="result-statuses-tab" data-bs-toggle="tab"
+                  data-bs-target="#result-statuses" type="button" role="tab"
+                  aria-controls="result-statuses" aria-selected="false" title="Result Statuses">
+            <i class="bi bi-check2-circle"></i>
+            <span class="tab-label">Result Statuses</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="case-statuses-tab" data-bs-toggle="tab"
+                  data-bs-target="#case-statuses" type="button" role="tab"
+                  aria-controls="case-statuses" aria-selected="false" title="Case Statuses">
+            <i class="bi bi-list-check"></i>
+            <span class="tab-label">Case Statuses</span>
+          </button>
+        </li>
+      </ul>
+
+      <!-- Tab content -->
+      <div class="tab-content customisations-tab-content" id="customisationsTabsContent">
+        <div class="tab-pane fade show active" id="case-fields" role="tabpanel"
+             aria-labelledby="case-fields-tab">
+          <p class="customisations-placeholder">Case Fields contents go here ...</p>
+        </div>
+        <div class="tab-pane fade" id="result-fields" role="tabpanel"
+             aria-labelledby="result-fields-tab">
+          <p class="customisations-placeholder">Result Fields contents go here ...</p>
+        </div>
+        <div class="tab-pane fade" id="case-types" role="tabpanel"
+             aria-labelledby="case-types-tab">
+          <p class="customisations-placeholder">Case Types contents go here ...</p>
+        </div>
+        <div class="tab-pane fade" id="priorities" role="tabpanel"
+             aria-labelledby="priorities-tab">
+          <p class="customisations-placeholder">Priorities contents go here ...</p>
+        </div>
+        <div class="tab-pane fade" id="result-statuses" role="tabpanel"
+             aria-labelledby="result-statuses-tab">
+          <p class="customisations-placeholder">Result Statuses contents go here ...</p>
+        </div>
+        <div class="tab-pane fade" id="case-statuses" role="tabpanel"
+             aria-labelledby="case-statuses-tab">
+          <p class="customisations-placeholder">Case Statuses contents go here ...</p>
+        </div>
+      </div>
+    </div>
+{% endblock %}
+
+{% block postBody %}{{ super() }}
+<script type="text/javascript"
+        src="{{ url_for('static', filename='scripts/instance_admin_customisations.js') }}">
+</script>
+{% endblock %}
