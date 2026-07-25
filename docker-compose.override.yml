@@ -1,11 +1,11 @@
 services:
-  accounts_svc:
+  identity_svc:
     build:
       context: .
-      dockerfile: ./docker/Dockerfile.accounts_svc
-    image: swatkat1977/items_accounts_svc:latest
+      dockerfile: ./docker/Dockerfile.identity_svc
+    image: swatkat1977/items_identity_svc:latest
     ports:
-      - 4000:4000
+      - 5050:5050
 
   cms_svc:
     build:
@@ -13,7 +13,7 @@ services:
       dockerfile: ./docker/Dockerfile.cms_svc
     image: swatkat1977/items_cms_svc:latest
     ports:
-      - 5050:5050
+      - 6050:6050
 
   gateway_svc:
     build:
@@ -21,7 +21,7 @@ services:
       dockerfile: ./docker/Dockerfile.gateway_svc
     image: swatkat1977/items_gateway_svc:latest
     ports:
-      - 3000:3000
+      - 7050:7050
 
   web_portal_svc:
     build:
