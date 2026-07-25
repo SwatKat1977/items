@@ -44,7 +44,7 @@ CREATE TABLE {cms_db_tables.TC_FOLDERS} (
     project_id INTEGER NOT NULL,
     parent_id INTEGER NULL,
     name TEXT NOT NULL,
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (project_id) REFERENCES {cms_db_tables.PRJ_PROJECTS}(id) ON DELETE CASCADE,
     FOREIGN KEY (parent_id) REFERENCES {cms_db_tables.TC_FOLDERS}(id) ON DELETE CASCADE,
     UNIQUE (project_id, parent_id, name)
 );
@@ -57,7 +57,7 @@ CREATE TABLE {cms_db_tables.TC_TEST_CASES} (
     folder_id INTEGER NULL,
     name TEXT NOT NULL,
     description TEXT,
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (project_id) REFERENCES {cms_db_tables.PRJ_PROJECTS}(id) ON DELETE CASCADE,
     FOREIGN KEY (folder_id) REFERENCES {cms_db_tables.TC_FOLDERS}(id) ON DELETE CASCADE,
     UNIQUE (project_id, folder_id, name)
 );
