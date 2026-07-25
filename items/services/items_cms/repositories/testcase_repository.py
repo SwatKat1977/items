@@ -135,3 +135,128 @@ class TestcaseRepository:
             'name': name,
             'description': description
         }
+
+    async def get_folder_project_id(self, folder_id: int) -> Optional[int]:
+        """Return the project ID owning a folder, if the folder exists.
+
+        Args:
+            folder_id: ID of the folder to check.
+
+        Returns:
+            The folder's project_id if it exists, or None if no folder
+            matches.
+
+        Raises:
+            SqliteInterfaceException: If the database query fails.
+        """
+        query = (
+            f"SELECT project_id FROM {cms_tables.TC_FOLDERS} WHERE id = ?"
+        )
+        row = await self._db.run_query(query, (folder_id,), fetch_one=True)
+        return row[0] if row else None
+
+    async def testcase_name_exists(self,
+                                   project_id: int,
+                                   folder_id: Optional[int],
+                                   name: str,
+                                   exclude_id: Optional[int] = None) -> bool:
+        """Return True if a sibling test case with the given name exists.
+
+        Case-sensitive match against test cases sharing the same project
+        and folder. SQL ``NULL`` never equals ``NULL``, so root-level test
+        cases (``folder_id IS NULL``) are compared with an explicit
+        ``IS NULL`` clause rather than ``= ?``.
+
+        Args:
+            project_id:  Project the test case belongs to.
+            folder_id:   Folder ID, or None for a root-level test case.
+            name:        Test case name to check.
+            exclude_id:  ID of the test case being updated (excluded from
+                         the check), or None when creating a new test case.
+
+        Returns:
+            True if the name is already taken by a sibling test case.
+
+        Raises:
+            SqliteInterfaceException: If the database query fails.
+        """
+        folder_clause = "folder_id IS NULL" if folder_id is None \
+            else "folder_id = ?"
+        params: list = [project_id]
+        if folder_id is not None:
+            params.append(folder_id)
+        params.append(name)
+
+        query = (
+            f"SELECT 1 FROM {cms_tables.TC_TEST_CASES} "
+            f"WHERE project_id = ? AND {folder_clause} AND name = ?"
+        )
+
+        if exclude_id is not None:
+            query += " AND id != ?"
+            params.append(exclude_id)
+
+        query += " LIMIT 1"
+
+        row = await self._db.run_query(query, tuple(params), fetch_one=True)
+        return bool(row)
+
+    async def add_testcase(self,
+                           project_id: int,
+                           folder_id: Optional[int],
+                           name: str,
+                           description: str) -> int:
+        """Insert a new test case and return its ID.
+
+        Args:
+            project_id:  Project the test case belongs to.
+            folder_id:   Folder ID, or None for a root-level test case.
+            name:        Test case name.
+            description: Test case description.
+
+        Returns:
+            The ID of the newly inserted test case row.
+
+        Raises:
+            SqliteInterfaceException: If the database insert fails.
+        """
+        query = (
+            f"INSERT INTO {cms_tables.TC_TEST_CASES} "
+            "(project_id, folder_id, name, description) "
+            "VALUES (?, ?, ?, ?)"
+        )
+        return await self._db.insert_query(
+            query, (project_id, folder_id, name, description))
+
+    async def update_testcase(self,
+                              case_id: int,
+                              name: str,
+                              description: str) -> None:
+        """Rename and/or update the description of an existing test case.
+
+        Args:
+            case_id:     ID of the test case to update.
+            name:        New test case name.
+            description: New test case description.
+
+        Raises:
+            SqliteInterfaceException: If the database update fails.
+        """
+        query = (
+            f"UPDATE {cms_tables.TC_TEST_CASES} "
+            "SET name = ?, description = ? WHERE id = ?"
+        )
+        await self._db.run_query(
+            query, (name, description, case_id), commit=True)
+
+    async def delete_testcase(self, case_id: int) -> None:
+        """Permanently delete a test case from the database.
+
+        Args:
+            case_id: ID of the test case to delete.
+
+        Raises:
+            SqliteInterfaceException: If the database delete fails.
+        """
+        query = f"DELETE FROM {cms_tables.TC_TEST_CASES} WHERE id = ?"
+        await self._db.run_query(query, (case_id,), commit=True)

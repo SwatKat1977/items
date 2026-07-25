@@ -125,6 +125,13 @@ _VALID_FOLDER_BODY = {
     "name": "WiringFolder",
 }
 
+_VALID_TESTCASE_BODY = {
+    "project_id": 1,
+    "folder_id": None,
+    "name": "WiringTestcase",
+    "description": "",
+}
+
 _VALID_FIELD_BODY = {
     "field_name": "Wiring Field",
     "description": "",
@@ -254,6 +261,22 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
     async def test_get_testcase_route_is_reachable(self):
         async with self.client as c:
             response = await c.get("/testcases/999")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_add_testcase_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/testcases", json=_VALID_TESTCASE_BODY)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_modify_testcase_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.patch(
+                "/testcases/999", json={"name": "New", "description": ""})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_delete_testcase_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.delete("/testcases/999")
         self.assertNotEqual(response.status_code, 405)
 
     # ------------------------------------------------------------------
