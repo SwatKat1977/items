@@ -1,11 +1,44 @@
 import unittest
-from test_service import TestService
-from test_base_web_view import TestBaseWebView
-from test_apis_auth_api_view import TestApisAuthApiView
-from test_apis_projects_api_view import TestApisProjectsApiView
-from test_apis_webhook_api_view import TestApisWebhookApiView
-from test_threadsafe_configuration import TestThreadSafeSingleton
-from test_apis_dashboard_api_view import TestApisDashboardApiView
+from test_configuration import TestConfiguration
+from test_metadata_settings import TestMetadataSettings
+from test_page_handler_injections import TestPageHandlerInjections
+from test_decorators import TestRequireSession
+from test_portal_page_handler import (
+    TestSessionAuthMixinGenerateRedirect,
+    TestHasAuthCookies,
+    TestValidateCookies,
+    TestPortalPageHandlerRenderPage,
+)
+from test_service import (
+    TestServiceManageConfiguration,
+    TestServiceInitialise,
+    TestServiceTasksAndShutdown,
+    TestGetMetadata,
+)
+from test_auth_handlers import (
+    TestIndexPageHandler,
+    TestLoginGetPageHandler,
+    TestLoginPostPageHandler,
+    TestLogoutPageHandler,
+)
+from test_route_factories import TestRouteWiring
+from test_admin_stub_handlers import (
+    TestAdminOverviewPageHandler,
+    TestAdminCustomisationsPageHandler,
+    TestAdminIntegrationsPageHandler,
+    TestAdminManageDataPageHandler,
+    TestAdminSiteSettingsPageHandler,
+    TestAdminUsersAndRolesPageHandler,
+)
+from test_admin_projects_handlers import (
+    TestAdminProjectsPageHandlers,
+    TestAdminAddProjectPageHandlers,
+    TestAdminModifyProjectPageHandlers,
+)
+from test_projects_testcases_handlers import (
+    TestGetProjectOverviewPageHandler,
+    TestGetProjectTestcasesPageHandler,
+)
 
 if __name__ == "__main__":
     unittest.main()

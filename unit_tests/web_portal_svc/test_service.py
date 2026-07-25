@@ -1,250 +1,275 @@
-import http
-import os
-import unittest
-from unittest.mock import MagicMock, patch
+"""
+Copyright 2025-2026 Integrated Test Management Suite Development Team
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 import asyncio
-import requests
-from service import Service, GET_METADATA_INFINITE_RETRIES
-from configuration_layout import CONFIGURATION_LAYOUT
-from configuration.configuration_manager import ConfigurationManager
+import unittest
+from http import HTTPStatus
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
+from weaver_framework.configuration_system.configuration_manager import (
+    ConfigurationError)
+from weaver_framework.microservice.base_microservice import BaseMicroservice
+from weaver_framework.microservice.api_response import ApiResponse
+from items.services.items_web_portal.service import Service
+from items.services.items_web_portal.configuration import Configuration
 
 
-class TestService(unittest.IsolatedAsyncioTestCase):
+def _make_service():
+    """Create a Service instance with only Configuration.__init__ patched.
+
+    BaseMicroservice.__init__ runs for real (it already executes at import
+    time via items/services/items_web_portal/__init__.py), so shutdown_event,
+    _logger and the logger property are all properly initialised without any
+    manual setup.
+    """
+    with patch.object(Configuration, "__init__", return_value=None):
+        svc = Service(MagicMock())
+    svc._config = MagicMock()
+    svc._config.logging_log_level = "DEBUG"
+    svc._config.general_api_signing_secret = "secret"
+    svc._config.apis_gateway_svc = "http://gateway/"
+    return svc
+
+
+class TestServiceManageConfiguration(unittest.TestCase):
+    """Tests for Service._manage_configuration (synchronous method)."""
+
     def setUp(self):
-        """Set up the Application instance and mock dependencies."""
-        self.mock_quart_instance = MagicMock()
-        self.application = Service(self.mock_quart_instance)
+        self.service = _make_service()
+        self.service._logger = MagicMock()
 
-        # Mock the logger
-        self.mock_logger_instance = MagicMock()
-        self.application._logger = self.mock_logger_instance
-        self.application._metadata_settings = MagicMock()
+    def test_returns_false_when_check_for_configuration_reports_error(self):
+        with patch.object(self.service, '_check_for_configuration',
+                          return_value=("Config file not found", None, None)):
+            result = self.service._manage_configuration()
+        self.assertFalse(result)
+        self.service._logger.critical.assert_called_once()
 
-    @patch.object(ConfigurationManager, 'get_entry', return_value="test_value")
-    async def test_initialise_success(self, mock_get_entry):
-        """Test _initialise when configuration management succeeds."""
-        # Mock constants
-        patch("service.RELEASE_VERSION", "1.0.0").start()
-        patch("service.BUILD_VERSION", "123").start()
-        patch("service.BUILD_TAG", "-alpha").start()
+    def test_returns_false_on_configuration_error(self):
+        self.service._config.process_config.side_effect = \
+            ConfigurationError("bad section")
+        with patch.object(self.service, '_check_for_configuration',
+                          return_value=(None, True, "/path/config.ini")):
+            result = self.service._manage_configuration()
+        self.assertFalse(result)
 
-        self.application._manage_configuration = MagicMock(return_value=True)
+    def test_returns_false_on_value_error(self):
+        self.service._config.process_config.side_effect = \
+            ValueError("invalid value")
+        with patch.object(self.service, '_check_for_configuration',
+                          return_value=(None, True, "/path/config.ini")):
+            result = self.service._manage_configuration()
+        self.assertFalse(result)
 
-        with patch.object(self.application, "get_metadata", return_value=True) as mock_get_metadata:
-            result = await self.application._initialise()
-            self.assertTrue(result, "Initialization should succeed")
-
-    async def test_main_loop_execution(self):
-        """Test that _main_loop executes properly with asyncio.sleep."""
-        # We'll use an event loop to run the async method and check if it completes
-        loop = asyncio.get_event_loop()
-        try:
-            await asyncio.wait_for(self.application._main_loop(), timeout=1.0)
-        except asyncio.TimeoutError:
-            self.fail("_main_loop did not complete within the expected time frame.")
-
-    async def test_initialise_configuration_failure(self):
-        """Test _initialise when configuration management fails."""
-        # Mock configuration management failure
-        self.application._manage_configuration = MagicMock(return_value=False)
-
-        # Call _initialise
-        result = await self.application._initialise()
-
-        # Assertions
-        self.assertFalse(result, "Initialization should fail")
-        self.application._manage_configuration.assert_called_once()
-        self.mock_logger_instance.info.assert_called()  # Logger should still log build info
-
-    @patch.object(ConfigurationManager, 'get_entry', return_value="test_value")
-    async def test_initialise_get_metadata_failure(self, mock_get_entry):
-        """Test _initialise when configuration management succeeds."""
-        # Mock constants
-        patch("service.RELEASE_VERSION", "1.0.0").start()
-        patch("service.BUILD_VERSION", "123").start()
-        patch("service.BUILD_TAG", "-alpha").start()
-
-        self.application._manage_configuration = MagicMock(return_value=True)
-        self.application.get_metadata = MagicMock(return_value=False)
-
-        # Call _initialise
-        result = await self.application._initialise()
-
-        # Assertions
-        self.assertFalse(result, "Initialization should fail")
-        self.mock_logger_instance.info.assert_any_call(
-            'ITEMS Web Portal Microservice %s', "V1.0.0-123-alpha"
-        )
-
-    @patch.dict(os.environ, {"ITEMS_WEB_PORTAL_SVC_CONFIG_FILE_REQUIRED": "1"})
-    def test_manage_configuration_missing_config_file_required(self):
-        """Test _manage_configuration when config file is required but missing."""
-        # Make sure to simulate a missing config file correctly
-
-        # Call the method being tested
-        result = self.application._manage_configuration()
-
-        # Check that the method returns False due to the missing config file
-        self.assertFalse(result, "Configuration should fail if the required config file is missing")
-
-        # Ensure that the error log is called
-        self.mock_logger_instance.critical.assert_called_with("Configuration file missing!")
-
-    @patch.dict(os.environ, {"ITEMS_WEB_PORTAL_SVC_CONFIG_FILE": "config_file_path"})
-    @patch.dict(os.environ, {"ITEMS_WEB_PORTAL_SVC_CONFIG_FILE_REQUIRED": "1"})
-    @patch("service.Configuration")  # Correctly patch Configuration where it's used
-    def test_manage_configuration_success(self, mock_configuration):
-        """Test _manage_configuration when configuration is successful."""
-
-        # Setup Configuration mock
-        mock_config_instance = mock_configuration.return_value
-        mock_config_instance.configure = MagicMock()
-        mock_config_instance.process_config = MagicMock()
-        mock_config_instance.logging_log_level = "DEBUG"
-        mock_config_instance.apis_gateway_svc = "http://localhost:3000/"
-
-        result = self.application._manage_configuration()
-
-        # Assertions
-        self.assertTrue(result, "Configuration should succeed when the config file exists and is processed")
-        mock_config_instance.configure.assert_called_once_with(CONFIGURATION_LAYOUT,
-                                                               "config_file_path", True)
-        mock_config_instance.process_config.assert_called_once()
-
-        # Check logger calls
-        expected_logs = [
-            ("[logging]",),
-            ("=> Logging log level : %s", "DEBUG"),
-            ("[routes]",),
-            ("=> Gateway Service API : %s", "http://localhost:3000/")
-        ]
-
-        # Assert that each expected log message was called
-        for log_args in expected_logs:
-            self.mock_logger_instance.info.assert_any_call(*log_args)
-
-    @patch.dict(os.environ, {"ITEMS_WEB_PORTAL_SVC_CONFIG_FILE": "config_file_path"})
-    @patch.dict(os.environ, {"ITEMS_WEB_PORTAL_SVC_CONFIG_FILE_REQUIRED": "1"})
-    def test_manage_configuration_process_config_exception(self):
-        # Mock Configuration
-        mock_config_instance = MagicMock()
-        patch("service.Configuration", return_value=mock_config_instance).start()
-        self.addCleanup(patch.stopall)
-
-        """Test _manage_configuration when Configuration.process_config throws ValueError."""
-        mock_config_instance.configure = MagicMock()
-        mock_config_instance.process_config = MagicMock(side_effect=ValueError("Test config error"))
-
-        result = self.application._manage_configuration()
-
-        self.assertFalse(result, "Configuration should fail if process_config raises an exception")
-        mock_config_instance.configure.assert_called_once_with(CONFIGURATION_LAYOUT, "config_file_path", True)
-        mock_config_instance.process_config.assert_called_once()
-        self.mock_logger_instance.critical.assert_called_with("Configuration error : %s", "Test config error")
-
-    @patch("requests.get")
-    @patch("service.Configuration")
-    @patch("base_view.BaseView.generate_api_signature")
-    @patch("uuid.uuid4")
-    @patch("time.sleep")
-    def test_get_metadata_success(self,
-                                  mock_sleep,
-                                  mock_uuid,
-                                  mock_generate_api_signature,
-                                  mock_config,
-                                  mock_requests_get):
-        mock_uuid.return_value = "test-nonce"
-        mock_generate_api_signature.return_value = "test-signature"
-        mock_config().general_api_signing_secret = "test-secret"
-        mock_config().apis_gateway_svc = "http://test-url/"
-
-        mock_response = MagicMock()
-        mock_response.status_code = http.HTTPStatus.OK
-        mock_response.json.return_value = {
-            "default_time_zone": "UTC",
-            "using_server_default_time_zone": True,
-            "instance_name": "Test Instance"
-        }
-        mock_requests_get.return_value = mock_response
-
-        result = self.application.get_metadata()
-
+    def test_returns_true_on_success(self):
+        with patch.object(self.service, '_check_for_configuration',
+                          return_value=(None, True, "/path/config.ini")):
+            result = self.service._manage_configuration()
         self.assertTrue(result)
-        self.application._metadata_settings.default_time_zone = "UTC"
-        self.application._metadata_settings.using_server_default_time_zone = True
-        self.application._metadata_settings.instance_name = "Test Instance"
-        self.application._logger.info.assert_called()
+        self.service._config.configure.assert_called_once()
+        self.service._config.process_config.assert_called_once()
 
-    @patch("requests.get", side_effect=requests.exceptions.ConnectionError("Test error"))
-    @patch("time.sleep")
-    @patch("service.Configuration")
-    def test_get_metadata_connection_error(self,
-                                           mock_configuration,
-                                           mock_sleep,
-                                           mock_requests_get):
-        mock_config_instance = mock_configuration.return_value
-        mock_config_instance.general_api_signing_secret = "UnitTest"
 
-        result = self.application.get_metadata(retries=1)
+class TestServiceInitialise(unittest.IsolatedAsyncioTestCase):
+    """Tests for Service._initialise (async method)."""
 
+    async def asyncSetUp(self):
+        self.service = _make_service()
+        self.mock_bm_logger = MagicMock()
+        self._logger_patcher = patch.object(
+            BaseMicroservice, 'logger',
+            new_callable=PropertyMock,
+            return_value=self.mock_bm_logger)
+        self._logger_patcher.start()
+
+        self._session_patcher = patch(
+            "items.services.items_web_portal.service.aiohttp.ClientSession",
+            return_value=AsyncMock())
+        self._session_patcher.start()
+
+        self._rest_client_patcher = patch(
+            "items.services.items_web_portal.service.RestClient")
+        self._rest_client_patcher.start()
+
+        self._create_page_handlers_patcher = patch(
+            "items.services.items_web_portal.service.create_page_handlers",
+            return_value=MagicMock())
+        self._create_page_handlers_patcher.start()
+
+    async def asyncTearDown(self):
+        patch.stopall()
+
+    async def test_initialise_returns_false_when_manage_configuration_fails(self):
+        with patch.object(self.service, '_manage_configuration',
+                          return_value=False):
+            result = await self.service._initialise()
         self.assertFalse(result)
-        self.application._logger.error.assert_called()
-        self.application._logger.critical.assert_called()
 
-    @patch("requests.get")
-    @patch("time.sleep")
-    @patch("service.Configuration")
-    def test_get_metadata_non_200_response(self,
-                                           mock_configuration,
-                                           mock_sleep,
-                                           mock_requests_get):
-        mock_config_instance = mock_configuration.return_value
-        mock_config_instance.general_api_signing_secret = "UnitTest"
+    async def test_initialise_reraises_and_closes_session_on_cancelled_error(self):
+        with patch.object(self.service, '_manage_configuration',
+                          return_value=True), \
+             patch.object(self.service, '_get_metadata',
+                          new=AsyncMock(side_effect=asyncio.CancelledError)):
+            with self.assertRaises(asyncio.CancelledError):
+                await self.service._initialise()
+        self.assertIsNone(self.service._http_session)
 
-        mock_response = MagicMock()
-        mock_response.status_code = http.HTTPStatus.BAD_REQUEST
-        mock_requests_get.return_value = mock_response
+    async def test_initialise_reraises_and_closes_session_on_keyboard_interrupt(self):
+        with patch.object(self.service, '_manage_configuration',
+                          return_value=True), \
+             patch.object(self.service, '_get_metadata',
+                          new=AsyncMock(side_effect=KeyboardInterrupt)):
+            with self.assertRaises(KeyboardInterrupt):
+                await self.service._initialise()
+        self.assertIsNone(self.service._http_session)
 
-        result = self.application.get_metadata(retries=1)
-
+    async def test_initialise_returns_false_when_metadata_retrieval_fails(self):
+        with patch.object(self.service, '_manage_configuration',
+                          return_value=True), \
+             patch.object(self.service, '_get_metadata',
+                          new=AsyncMock(return_value=False)):
+            result = await self.service._initialise()
         self.assertFalse(result)
-        self.application._logger.warning.assert_called()
-        self.application._logger.critical.assert_called()
+        self.assertIsNone(self.service._http_session)
 
-    @patch("requests.get", side_effect=requests.exceptions.ConnectionError("Test error"))
-    @patch("time.sleep")
-    @patch("service.Configuration")
-    def test_get_metadata_infinite_retries(self, mock_configuration, mock_sleep, mock_requests_get):
-        mock_config_instance = mock_configuration.return_value
-        mock_config_instance.general_api_signing_secret = "UnitTest"
+    async def test_initialise_returns_true_on_success(self):
+        with patch.object(self.service, '_manage_configuration',
+                          return_value=True), \
+             patch.object(self.service, '_get_metadata',
+                          new=AsyncMock(return_value=True)):
+            result = await self.service._initialise()
+        self.assertTrue(result)
+        self.service._quart_instance.register_blueprint.assert_called_once()
 
-        mock_response = MagicMock()
-        mock_response.status_code = http.HTTPStatus.OK
-        mock_requests_get.return_value = mock_response
 
-        with patch("time.sleep", side_effect=StopIteration()):
-            with self.assertRaises(StopIteration):
-                self.application.get_metadata(retries=GET_METADATA_INFINITE_RETRIES)
+class TestServiceTasksAndShutdown(unittest.IsolatedAsyncioTestCase):
+    """Tests for Service._create_tasks, _shutdown_wait_task and _shutdown."""
 
-        self.application._logger.error.assert_called()
-        self.application._logger.critical.assert_not_called()
+    async def asyncSetUp(self):
+        self.service = _make_service()
 
-    @patch("requests.get")
-    @patch("time.sleep")
-    @patch("service.Configuration")
-    def test_get_metadata_retries_exhausted(self,
-                                            mock_configuration,
-                                            mock_sleep,
-                                            mock_requests_get):
-        mock_config_instance = mock_configuration.return_value
-        mock_config_instance.general_api_signing_secret = "UnitTest"
+    async def test_create_tasks_returns_one_task(self):
+        self.service.shutdown_event.set()
+        tasks = await self.service._create_tasks()
+        self.assertEqual(len(tasks), 1)
+        await asyncio.gather(*tasks, return_exceptions=True)
 
-        mock_response = MagicMock()
-        mock_response.status_code = http.HTTPStatus.BAD_REQUEST
-        mock_requests_get.return_value = mock_response
+    async def test_shutdown_wait_task_exits_when_shutdown_event_is_set(self):
+        self.service.shutdown_event.set()
+        await self.service._shutdown_wait_task()
 
-        result = self.application.get_metadata(retries=2)
+    async def test_shutdown_closes_http_session_when_present(self):
+        mock_session = AsyncMock()
+        mock_session.closed = False
+        self.service._http_session = mock_session
+        await self.service._shutdown()
+        mock_session.close.assert_called_once()
+        self.assertIsNone(self.service._http_session)
 
+    async def test_shutdown_noop_when_no_http_session(self):
+        self.service._http_session = None
+        await self.service._shutdown()
+        self.assertIsNone(self.service._http_session)
+
+    async def test_close_http_session_idempotent(self):
+        mock_session = AsyncMock()
+        mock_session.closed = False
+        self.service._http_session = mock_session
+        await self.service._close_http_session()
+        # Second call must not attempt to close again.
+        await self.service._close_http_session()
+        mock_session.close.assert_called_once()
+
+    async def test_close_http_session_skips_already_closed_session(self):
+        mock_session = AsyncMock()
+        mock_session.closed = True
+        self.service._http_session = mock_session
+        await self.service._close_http_session()
+        mock_session.close.assert_not_called()
+        self.assertIsNone(self.service._http_session)
+
+
+class TestGetMetadata(unittest.IsolatedAsyncioTestCase):
+    """Tests for Service._get_metadata."""
+
+    async def asyncSetUp(self):
+        self.service = _make_service()
+        self.service._logger = MagicMock()
+        self.service._rest_client = AsyncMock()
+        self.service.METADATA_RETRY_DELAY = 0.01
+
+    async def test_unauthorized_returns_false_immediately(self):
+        self.service._rest_client.get.return_value = ApiResponse(
+            status_code=HTTPStatus.UNAUTHORIZED)
+        result = await self.service._get_metadata()
         self.assertFalse(result)
-        self.assertEqual(mock_requests_get.call_count, 2)
-        self.application._logger.critical.assert_called()
+        self.service._rest_client.get.assert_called_once()
+
+    async def test_ok_updates_metadata_and_returns_true(self):
+        self.service._rest_client.get.return_value = ApiResponse(
+            status_code=HTTPStatus.OK,
+            body={
+                "default_time_zone": "Europe/London",
+                "using_server_default_time_zone": True,
+                "instance_name": "INSTANCE"
+            })
+        result = await self.service._get_metadata()
+        self.assertTrue(result)
+        self.assertEqual(self.service._metadata_settings.default_time_zone,
+                         "Europe/London")
+        self.assertTrue(
+            self.service._metadata_settings.using_server_default_time_zone)
+        self.assertEqual(self.service._metadata_settings.instance_name,
+                         "INSTANCE")
+
+    async def test_single_attempt_failure_returns_false(self):
+        self.service._rest_client.get.return_value = ApiResponse(
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE)
+        result = await self.service._get_metadata(retries=0)
+        self.assertFalse(result)
+        self.service._rest_client.get.assert_called_once()
+
+    async def test_finite_retries_gives_up_after_count(self):
+        self.service._rest_client.get.return_value = ApiResponse(
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE)
+        result = await self.service._get_metadata(retries=3)
+        self.assertFalse(result)
+        self.assertEqual(self.service._rest_client.get.call_count, 3)
+
+    async def test_infinite_retries_succeeds_eventually(self):
+        self.service._rest_client.get.side_effect = [
+            ApiResponse(status_code=HTTPStatus.SERVICE_UNAVAILABLE),
+            ApiResponse(status_code=HTTPStatus.SERVICE_UNAVAILABLE),
+            ApiResponse(status_code=HTTPStatus.OK,
+                       body={"default_time_zone": "UTC",
+                             "using_server_default_time_zone": False,
+                             "instance_name": "X"}),
+        ]
+        result = await self.service._get_metadata(
+            retries=self.service.GET_METADATA_INFINITE_RETRIES)
+        self.assertTrue(result)
+        self.assertEqual(self.service._rest_client.get.call_count, 3)
+
+    async def test_shutdown_requested_during_wait_aborts(self):
+        self.service._rest_client.get.return_value = ApiResponse(
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE)
+        self.service.shutdown_event.set()
+        result = await self.service._get_metadata(
+            retries=self.service.GET_METADATA_INFINITE_RETRIES)
+        self.assertFalse(result)
+        self.service._rest_client.get.assert_called_once()
+
+
+if __name__ == "__main__":
+    unittest.main()

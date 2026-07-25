@@ -78,7 +78,7 @@ class IndexPageHandler(PortalPageHandler):
             return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
 
         base_url: str = self._config.apis_gateway_svc
-        url = f"{base_url}/web/projects?value_fields=name&" + \
+        url = f"{base_url}web/projects?value_fields=name&" + \
               "count_fields=no_of_test_runs,no_of_milestones"
         response: ApiResponse = await self._rest_client.get(url)
 

@@ -17,11 +17,6 @@ limitations under the License.
 from http import HTTPStatus
 import logging
 from quart import make_response, request
-#from base_view import ApiResponse
-#from base_web_view import PortalPageHandler
-#from metadata_settings import MetadataSettings
-#import page_locations as pages
-#from threadsafe_configuration import ThreadSafeConfiguration
 from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_web_portal.configuration import Configuration
@@ -29,6 +24,7 @@ from items.services.items_web_portal.metadata_settings import MetadataSettings
 import items.services.items_web_portal.page_locations as pages
 from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
+from items.services.items_web_portal.decorators import require_session
 
 
 class AdminModifyProjectPageHandlers(PortalPageHandler):
@@ -54,6 +50,7 @@ class AdminModifyProjectPageHandlers(PortalPageHandler):
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
+    @require_session
     async def modify_project_get(self, project_id):
         """Render the project modification page.
 
@@ -92,6 +89,7 @@ class AdminModifyProjectPageHandlers(PortalPageHandler):
             active_admin_page="admin_page_site_settings",
             form_data=form_data)
 
+    @require_session
     async def modify_project_post(self, project_id):
         """Process a project modification request.
 

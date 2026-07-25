@@ -1,11 +1,8 @@
 [run]
+source = items/services/items_web_portal
 omit =
-    unit_tests/shared/*
+    items/services/items_web_portal/run.py
     unit_tests/web_portal_svc/*
-    services/web_portal_svc/apis/auth_api.py
-    services/web_portal_svc/apis/dashboard_api.py
-    services/web_portal_svc/apis/projects_api.py
-    services/web_portal_svc/apis/webhook_api.py
     items/shared/*
     common/*
     /opt/homebrew/*
