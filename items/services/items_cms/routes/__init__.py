@@ -21,6 +21,7 @@ from .projects import create_projects_routes
 from .folders import create_folders_routes
 from .testcases import create_testcases_routes
 from .testcase_custom_fields import create_testcase_custom_fields_routes
+from .testcase_field_values import create_testcase_field_values_routes
 from .system import create_system_routes
 
 
@@ -52,6 +53,8 @@ def create_routes(logger: logging.Logger,
                                                          state,
                                                          configuration))
     routes_bp.register_blueprint(create_testcase_custom_fields_routes(
+        logger, state, configuration))
+    routes_bp.register_blueprint(create_testcase_field_values_routes(
         logger, state, configuration))
     routes_bp.register_blueprint(create_system_routes(logger, state))
 

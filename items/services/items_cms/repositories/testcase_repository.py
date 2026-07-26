@@ -54,8 +54,10 @@ class TestcaseRepository:
     async def get_testcases(self, project_id: int) -> dict:
         """Retrieve folders and test case stubs for a project.
 
-        Builds the full folder hierarchy via a recursive CTE, then
-        fetches all test case IDs and names for the project.
+        Builds the full folder hierarchy via a recursive CTE, fetches all
+        test case IDs and names for the project, and attaches each test
+        case's custom field values inline so a grid/list view doesn't need
+        a separate call per test case to render its custom field columns.
 
         Args:
             project_id: ID of the project to query.
@@ -64,11 +66,13 @@ class TestcaseRepository:
             A dict with two keys:
               - ``folders``: list of ``{id, name, parent_id}`` dicts ordered
                 by parent then id.
-              - ``test_cases``: list of ``{id, folder_id, name}`` dicts
-                ordered by folder then id.
+              - ``test_cases``: list of ``{id, folder_id, name,
+                custom_fields}`` dicts ordered by folder then id, where
+                ``custom_fields`` is a list of ``{field_id, field_name,
+                field_type, position, value}`` dicts ordered by position.
 
         Raises:
-            SqliteInterfaceException: If either database query fails.
+            SqliteInterfaceException: If any database query fails.
         """
         folders_query = f"""
             WITH RECURSIVE folder_hierarchy AS (
@@ -94,6 +98,7 @@ class TestcaseRepository:
 
         folder_rows = await self._db.run_query(folders_query, (project_id,))
         cases_rows = await self._db.run_query(cases_query, (project_id,))
+        values_by_case = await self._get_custom_field_values(project_id)
 
         return {
             'folders': [
@@ -101,10 +106,72 @@ class TestcaseRepository:
                 for folder_id, parent_id, name in (folder_rows or [])
             ],
             'test_cases': [
-                {'id': test_id, 'folder_id': folder_id, 'name': name}
+                {
+                    'id': test_id,
+                    'folder_id': folder_id,
+                    'name': name,
+                    'custom_fields': values_by_case.get(test_id, []),
+                }
                 for test_id, folder_id, name in (cases_rows or [])
             ]
         }
+
+    async def _get_custom_field_values(
+            self, project_id: int) -> dict[int, list[dict]]:
+        """Retrieve every test case's custom field values for a project.
+
+        A field is included for a test case if it applies to all projects,
+        or is explicitly linked to the test case's project. A test case's
+        value for a field falls back to that field's default value when no
+        value has been stored yet — same fallback used when reading a
+        single test case's values.
+
+        Args:
+            project_id: ID of the project to query.
+
+        Returns:
+            A dict mapping test_case_id to a list of ``{field_id,
+            field_name, field_type, position, value}`` dicts, ordered by
+            position.
+
+        Raises:
+            SqliteInterfaceException: If the database query fails.
+        """
+        query = f"""
+            SELECT
+                tc.id AS test_case_id,
+                cf.id AS field_id,
+                cf.field_name,
+                ft.name AS field_type_name,
+                cf.position,
+                COALESCE(v.value, cf.default_value) AS value
+            FROM {cms_tables.TC_TEST_CASES} AS tc
+            JOIN {cms_tables.TC_CUSTOM_FIELDS} AS cf
+                ON cf.applies_to_all_projects = 1
+                OR EXISTS (
+                    SELECT 1 FROM {cms_tables.TC_CUSTOM_FIELD_PROJECTS} AS cfp
+                    WHERE cfp.field_id = cf.id AND cfp.project_id = tc.project_id
+                )
+            LEFT JOIN {cms_tables.TC_CUSTOM_FIELD_TYPES} AS ft
+                ON cf.field_type_id = ft.id
+            LEFT JOIN {cms_tables.TC_CUSTOM_FIELD_OPTION_VALUES} AS v
+                ON v.test_case_id = tc.id AND v.field_id = cf.id
+            WHERE tc.project_id = ?
+            ORDER BY tc.id, cf.position
+        """
+        rows = await self._db.run_query(query, (project_id,))
+
+        values_by_case: dict[int, list[dict]] = {}
+        for test_case_id, field_id, field_name, field_type, position, value \
+                in (rows or []):
+            values_by_case.setdefault(test_case_id, []).append({
+                'field_id': field_id,
+                'field_name': field_name,
+                'field_type': field_type,
+                'position': position,
+                'value': value,
+            })
+        return values_by_case
 
     async def get_testcase(self, case_id: int) -> Optional[dict]:
         """Retrieve full details for a single test case.

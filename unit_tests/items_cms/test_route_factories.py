@@ -280,6 +280,21 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
         self.assertNotEqual(response.status_code, 405)
 
     # ------------------------------------------------------------------
+    # Testcase field value routes  (routes/testcase_field_values/__init__.py)
+    # ------------------------------------------------------------------
+
+    async def test_get_testcase_field_values_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/testcases/999/custom_fields")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_set_testcase_field_values_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.put(
+                "/testcases/999/custom_fields", json={"values": {"1": "x"}})
+        self.assertNotEqual(response.status_code, 405)
+
+    # ------------------------------------------------------------------
     # Custom-field routes  (routes/testcase_custom_fields/__init__.py)
     # ------------------------------------------------------------------
 

@@ -25,6 +25,15 @@ from test_testcase_handlers import (
     TestModifyTestcaseHandler,
     TestDeleteTestcaseHandler,
 )
+from test_testcase_field_values_handlers import (
+    TestGetTestcaseFieldValuesHandler,
+    TestSetTestcaseFieldValuesHandler,
+)
+from test_testcase_field_values_service import TestTestcaseFieldValuesService
+from test_testcase_field_values_repository import (
+    TestTestcaseFieldValuesRepository,
+)
+from test_testcase_field_value_validation import TestValidateValue
 from test_testcase_custom_field_handlers import (
     TestGetCustomFieldHandler,
     TestGetCustomFieldsHandler,
