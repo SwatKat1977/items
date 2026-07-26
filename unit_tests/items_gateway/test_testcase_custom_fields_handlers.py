@@ -24,6 +24,8 @@ from items.services.items_gateway.routes.web.testcase_custom_fields.\
 from items.services.items_gateway.routes.web.testcase_custom_fields.\
     get_all_custom_fields_handler import GetAllCustomFieldsHandler
 from items.services.items_gateway.routes.web.testcase_custom_fields.\
+    get_custom_field_handler import GetCustomFieldHandler
+from items.services.items_gateway.routes.web.testcase_custom_fields.\
     modify_custom_field_handler import ModifyCustomFieldHandler
 from items.services.items_gateway.routes.web.testcase_custom_fields.\
     move_custom_field_handler import MoveCustomFieldHandler
@@ -108,6 +110,66 @@ class TestGetAllCustomFieldsHandler(unittest.IsolatedAsyncioTestCase):
             status_code=404, body={"error": "Project id is invalid"})
         response = await self._get("?project_id=999")
         self.assertEqual(response.status_code, 404)
+
+
+# ------------------------------------------------------------------
+# GetCustomFieldHandler
+# ------------------------------------------------------------------
+
+class TestGetCustomFieldHandler(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.mock_rest_client = AsyncMock()
+        handler = GetCustomFieldHandler(
+            _LOGGER, _config(), self.mock_rest_client)
+
+        app = Quart(__name__)
+
+        @app.route("/testcase_custom_fields/<int:field_id>", methods=["GET"])
+        async def get_custom_field(field_id):
+            return await handler.get_custom_field(field_id)
+
+        self.client = app.test_client()
+
+    async def _get(self, field_id=1):
+        async with self.client as c:
+            return await c.get(f"/testcase_custom_fields/{field_id}")
+
+    async def test_connection_failure_returns_500(self):
+        self.mock_rest_client.get.return_value = ApiResponse(
+            status_code=None, exception_msg="boom")
+        response = await self._get()
+        self.assertEqual(response.status_code, 500)
+
+    async def test_not_found_returns_404(self):
+        self.mock_rest_client.get.return_value = ApiResponse(status_code=404)
+        response = await self._get(99)
+        self.assertEqual(response.status_code, 404)
+        data = await response.get_json()
+        self.assertIn("99", data["error"])
+
+    async def test_other_error_status_propagated(self):
+        self.mock_rest_client.get.return_value = ApiResponse(
+            status_code=400, body={"error": "bad"})
+        response = await self._get()
+        self.assertEqual(response.status_code, 400)
+
+    async def test_other_error_status_non_dict_body(self):
+        self.mock_rest_client.get.return_value = ApiResponse(
+            status_code=500, body="not a dict")
+        response = await self._get()
+        self.assertEqual(response.status_code, 500)
+        data = await response.get_json()
+        self.assertEqual(data["error"], "Unknown error")
+
+    async def test_success_returns_200(self):
+        field = {"id": 1, "field_name": "Priority"}
+        self.mock_rest_client.get.return_value = ApiResponse(
+            status_code=200, body=field)
+        response = await self._get()
+        self.assertEqual(response.status_code, 200)
+        data = await response.get_json()
+        self.assertEqual(data["field_name"], "Priority")
 
 
 # ------------------------------------------------------------------

@@ -35,6 +35,7 @@ from test_testcases_handlers import (
 )
 from test_testcase_custom_fields_handlers import (
     TestGetAllCustomFieldsHandler,
+    TestGetCustomFieldHandler,
     TestAddCustomFieldHandler,
     TestDeleteCustomFieldHandler,
     TestModifyCustomFieldHandler,
