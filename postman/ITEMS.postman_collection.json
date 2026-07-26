@@ -372,6 +372,53 @@
                 }
               },
               "response": []
+            },
+            {
+              "name": "Get Testcase Custom Field Values",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcases/1/custom_fields",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcases",
+                    "1",
+                    "custom_fields"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Set Testcase Custom Field Values",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"values\": {\n        \"1\": \"High\"\n    }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcases/1/custom_fields",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcases",
+                    "1",
+                    "custom_fields"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         },
