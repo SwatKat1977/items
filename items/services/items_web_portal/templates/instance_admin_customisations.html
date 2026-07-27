@@ -11,6 +11,13 @@
     <div class="flex-grow-1">
       <h4 class="mb-3">Customisations</h4>
 
+      {% if error_message %}
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ error_message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% endif %}
+
       <!-- Tab navigation -->
       <ul class="nav nav-tabs customisations-tabs flex-nowrap" id="customisationsTabs" role="tablist">
         <li class="nav-item" role="presentation">
@@ -67,7 +74,86 @@
       <div class="tab-content customisations-tab-content" id="customisationsTabsContent">
         <div class="tab-pane fade show active" id="case-fields" role="tabpanel"
              aria-labelledby="case-fields-tab">
-          <p class="customisations-placeholder">Case Fields contents go here ...</p>
+          <table class="table case-fields-table align-middle">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Type</th>
+                <th scope="col">System / Custom</th>
+                <th scope="col" class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for field in case_fields %}
+              <tr>
+                <td>
+                  <span class="field-name">{{ field.field_name }}</span>
+                  <span class="field-system-name">({{ field.system_name }})</span>
+                </td>
+                <td>{{ field.field_type }}</td>
+                <td>
+                  {% if field.is_system %}System{% else %}Custom{% endif %}
+                  {% if not field.enabled %}<span class="badge bg-secondary ms-1">Inactive</span>{% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                  {% if not field.is_system %}
+                    {% if not loop.first %}
+                    <form class="d-inline" method="POST"
+                          action="/admin/customisations/case_fields/{{ field.id }}/move">
+                      <input type="hidden" name="direction" value="up">
+                      <button type="submit" class="btn btn-link text-primary p-1"
+                              title="Move up"><i class="bi bi-arrow-up"></i></button>
+                    </form>
+                    {% endif %}
+                    {% if not loop.last %}
+                    <form class="d-inline" method="POST"
+                          action="/admin/customisations/case_fields/{{ field.id }}/move">
+                      <input type="hidden" name="direction" value="down">
+                      <button type="submit" class="btn btn-link text-primary p-1"
+                              title="Move down"><i class="bi bi-arrow-down"></i></button>
+                    </form>
+                    {% endif %}
+                  {% endif %}
+                  <button type="button" class="btn btn-link text-primary p-1 edit-field-btn"
+                          title="Edit"
+                          data-bs-toggle="modal" data-bs-target="#caseFieldModal"
+                          data-id="{{ field.id }}"
+                          data-is-system="{{ '1' if field.is_system else '0' }}"
+                          data-field-name="{{ field.field_name }}"
+                          data-description="{{ field.description }}"
+                          data-system-name="{{ field.system_name }}"
+                          data-field-type="{{ field.field_type }}"
+                          data-enabled="{{ '1' if field.enabled else '0' }}"
+                          data-is-required="{{ '1' if field.is_required else '0' }}"
+                          data-default-value="{{ field.default_value }}"
+                          data-applies-all="{{ '1' if field.applies_to_all_projects else '0' }}"
+                          data-projects="{{ field.linked_projects|join(',') }}">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  {% if not field.is_system %}
+                    <button type="button" class="btn btn-link text-danger p-1 delete-field-btn"
+                            title="Delete"
+                            data-bs-toggle="modal" data-bs-target="#confirmDeleteFieldModal"
+                            data-id="{{ field.id }}"
+                            data-field-name="{{ field.field_name }}">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                  {% endif %}
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="4" class="text-muted">No case fields defined yet.</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+          <div class="mt-3">
+            <button type="button" class="btn btn-primary add-field-btn"
+                    data-bs-toggle="modal" data-bs-target="#caseFieldModal">
+              + Add Field
+            </button>
+          </div>
         </div>
         <div class="tab-pane fade" id="result-fields" role="tabpanel"
              aria-labelledby="result-fields-tab">
@@ -91,6 +177,108 @@
         </div>
       </div>
     </div>
+
+<!-- Add / Edit case field modal -->
+<div class="modal fade" id="caseFieldModal" tabindex="-1"
+     aria-labelledby="caseFieldModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="caseFieldForm" method="POST" action="/admin/customisations/case_fields">
+        <div class="modal-header">
+          <h5 class="modal-title" id="caseFieldModalLabel">Add Case Field</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info py-2" id="cf-system-note" style="display: none;">
+            This is a system field. Only its active state and project
+            assignment can be changed.
+          </div>
+          <div class="mb-3">
+            <label for="cf-field-name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="cf-field-name" name="field_name" required>
+          </div>
+          <div class="mb-3">
+            <label for="cf-system-name" class="form-label">System name</label>
+            <input type="text" class="form-control" id="cf-system-name" name="system_name"
+                   pattern="[a-z][a-z0-9_]*" required>
+            <div class="form-text">Lowercase letters, digits and underscores; must start with a letter.</div>
+          </div>
+          <div class="mb-3">
+            <label for="cf-description" class="form-label">Description</label>
+            <textarea class="form-control" id="cf-description" name="description" rows="2"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="cf-field-type" class="form-label">Type</label>
+            <select class="form-select" id="cf-field-type" name="field_type" required>
+              {% for type_name in case_field_types %}
+              <option value="{{ type_name }}">{{ type_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3" id="cf-default-wrapper">
+            <label for="cf-default-value" class="form-label">Default value</label>
+            <div id="cf-default-control">
+              <input type="text" class="form-control" id="cf-default-value" name="default_value">
+            </div>
+          </div>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="cf-enabled" name="enabled" checked>
+            <label class="form-check-label" for="cf-enabled">Active</label>
+          </div>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="cf-is-required" name="is_required">
+            <label class="form-check-label" for="cf-is-required">Required</label>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="cf-applies-all"
+                   name="applies_to_all_projects" checked>
+            <label class="form-check-label" for="cf-applies-all">Applies to all projects</label>
+          </div>
+          <div class="mb-3" id="cf-projects-wrapper" style="display: none;">
+            <label for="cf-projects" class="form-label">Projects</label>
+            <select class="form-select" id="cf-projects" name="projects" multiple size="5">
+              {% for project_name in projects %}
+              <option value="{{ project_name }}">{{ project_name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Select one or more projects this field applies to.</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div class="modal fade" id="confirmDeleteFieldModal" tabindex="-1"
+     aria-labelledby="confirmDeleteFieldModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmDeleteFieldModalLabel">Confirmation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete the case field
+           "<span id="cf-delete-name"></span>"? This action cannot be undone.</p>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="cfConfirmCheckbox">
+          <label class="form-check-label" for="cfConfirmCheckbox">I confirm I want to delete this item.</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="cfConfirmDeleteButton" disabled>OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form id="cfDeleteForm" method="POST" style="display: none;"></form>
 {% endblock %}
 
 {% block postBody %}{{ super() }}
