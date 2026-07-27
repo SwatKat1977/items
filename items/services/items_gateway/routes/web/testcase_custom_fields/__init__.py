@@ -23,6 +23,8 @@ from items.services.items_gateway.routes.web.testcase_custom_fields.\
 from items.services.items_gateway.routes.web.testcase_custom_fields.\
     get_all_custom_fields_handler import GetAllCustomFieldsHandler
 from items.services.items_gateway.routes.web.testcase_custom_fields.\
+    get_custom_field_handler import GetCustomFieldHandler
+from items.services.items_gateway.routes.web.testcase_custom_fields.\
     modify_custom_field_handler import ModifyCustomFieldHandler
 from items.services.items_gateway.routes.web.testcase_custom_fields.\
     move_custom_field_handler import MoveCustomFieldHandler
@@ -40,6 +42,8 @@ def create_testcase_custom_fields_routes(injections: RouteInjections) \
     Registered routes:
         - GET /testcase_custom_fields/:
             Retrieve all available testcase custom field definitions.
+        - GET /testcase_custom_fields/<field_id>:
+            Retrieve a single testcase custom field definition.
 
     Args:
         injections: Collection of shared application dependencies, including
@@ -65,6 +69,10 @@ def create_testcase_custom_fields_routes(injections: RouteInjections) \
         GetAllCustomFieldsHandler(injections.logger,
                                   injections.configuration,
                                   injections.rest_client)
+    handler_get_custom_field: GetCustomFieldHandler = GetCustomFieldHandler(
+                                  injections.logger,
+                                  injections.configuration,
+                                  injections.rest_client)
     handler_modify_custom_field: ModifyCustomFieldHandler = \
         ModifyCustomFieldHandler(injections.logger,
                                  injections.configuration,
@@ -82,6 +90,14 @@ def create_testcase_custom_fields_routes(injections: RouteInjections) \
     @routes.route('/testcase_custom_fields/', methods=['GET'])
     async def get_all_custom_fields_request():
         return await handler_get_all_fields.get_all_custom_fields()
+
+    injections.logger.debug(
+        "=> %s GET /web/testcase_custom_fields/<int:field_id>",
+        "Get single TC custom field".ljust(40))
+
+    @routes.route('/testcase_custom_fields/<int:field_id>', methods=['GET'])
+    async def get_custom_field_request(field_id: int):
+        return await handler_get_custom_field.get_custom_field(field_id)
 
     injections.logger.debug("=> %s PUT /web/testcase_custom_fields",
                             "Modify Testcase Custom Fields".ljust(40))

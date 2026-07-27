@@ -1049,6 +1049,25 @@
                   "response": []
                 },
                 {
+                  "name": "Get Testcase Field",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/testcase_custom_fields/1",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "testcase_custom_fields",
+                        "1"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
                   "name": "Update Testcase Field",
                   "request": {
                     "method": "PUT",

@@ -37,6 +37,6 @@ docker run \
     --name items-identity \
     --network "${NETWORK_NAME}" \
     -v "${CONFIG_FILE}:/usr/local/items/identity.cfg:ro" \
-    -v "${DB_FILE}:/usr/local/items/identity_svc.db" \
+    -v "${DB_FILE}:/usr/local/items/identity.db" \
     -d \
     "items_identity:${IMAGE_TAG}"

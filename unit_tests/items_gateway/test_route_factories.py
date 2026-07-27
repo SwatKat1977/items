@@ -161,6 +161,11 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
             response = await c.get("/web/testcase_custom_fields/")
         self.assertNotEqual(response.status_code, 405)
 
+    async def test_get_custom_field_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/web/testcase_custom_fields/1")
+        self.assertNotEqual(response.status_code, 405)
+
     async def test_add_custom_field_route_is_reachable(self):
         async with self.client as c:
             response = await c.post("/web/testcase_custom_fields/",
