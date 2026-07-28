@@ -119,6 +119,35 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
             response = await c.get("/admin/customisations")
         self.assertNotEqual(response.status_code, 405)
 
+    async def test_admin_case_field_add_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/admin/customisations/case_fields",
+                form={"field_name": "Wiring Field",
+                     "system_name": "wiring_field", "field_type": "String"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_case_field_modify_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/admin/customisations/case_fields/1/modify",
+                form={"field_name": "Wiring Field",
+                     "system_name": "wiring_field", "field_type": "String"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_case_field_move_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/admin/customisations/case_fields/1/move",
+                form={"direction": "up"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_case_field_delete_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/admin/customisations/case_fields/1/delete")
+        self.assertNotEqual(response.status_code, 405)
+
     async def test_admin_integrations_route_is_reachable(self):
         async with self.client as c:
             response = await c.get("/admin/integrations")

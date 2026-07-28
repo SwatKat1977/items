@@ -24,11 +24,18 @@ from test_auth_handlers import (
 from test_route_factories import TestRouteWiring
 from test_admin_stub_handlers import (
     TestAdminOverviewPageHandler,
-    TestAdminCustomisationsPageHandler,
     TestAdminIntegrationsPageHandler,
     TestAdminManageDataPageHandler,
     TestAdminSiteSettingsPageHandler,
     TestAdminUsersAndRolesPageHandler,
+)
+from test_admin_customisations_page_handler import (
+    TestCustomisationsRead,
+    TestCaseFieldAdd,
+    TestCaseFieldModify,
+    TestCaseFieldDelete,
+    TestCaseFieldMove,
+    TestRowToField,
 )
 from test_admin_projects_handlers import (
     TestAdminProjectsPageHandlers,

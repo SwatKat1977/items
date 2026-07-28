@@ -21,8 +21,6 @@ from _test_utils import make_app
 from items.services.items_web_portal.page_handlers.admin.dashboard.\
     admin_overview_page_handler import AdminOverviewPageHandler
 from items.services.items_web_portal.page_handlers.admin.\
-    admin_customisations_page_handler import AdminCustomisationsPageHandler
-from items.services.items_web_portal.page_handlers.admin.\
     admin_integrations_page_handler import AdminIntegrationsPageHandler
 from items.services.items_web_portal.page_handlers.admin.\
     admin_manage_data_page_handler import AdminManageDataPageHandler
@@ -90,8 +88,6 @@ def _make_stub_test(handler_cls, method_name, route_path):
 
 TestAdminOverviewPageHandler = _make_stub_test(
     AdminOverviewPageHandler, "overview", "/admin/")
-TestAdminCustomisationsPageHandler = _make_stub_test(
-    AdminCustomisationsPageHandler, "customisations", "/admin/customisations")
 TestAdminIntegrationsPageHandler = _make_stub_test(
     AdminIntegrationsPageHandler, "integrations", "/admin/integrations")
 TestAdminManageDataPageHandler = _make_stub_test(
