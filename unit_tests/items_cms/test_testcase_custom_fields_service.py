@@ -25,6 +25,17 @@ from items.services.items_cms.repositories.testcase_custom_fields_repository\
 from items.shared.service_state import ServiceState
 
 
+def _field_row(field_id=1, field_name="Old Name", description="old desc",
+               system_name="old_name", field_type="String",
+               entry_type="user", enabled=True, position=1,
+               is_required=False, default_value="", applies_to_all=True,
+               linked_projects=None):
+    """Build a get_custom_field-shaped row tuple for mocking."""
+    return (field_id, field_name, description, system_name, field_type,
+           entry_type, enabled, position, is_required, default_value,
+           applies_to_all, linked_projects)
+
+
 class TestTestcaseCustomFieldsService(unittest.IsolatedAsyncioTestCase):
     """Unit tests for TestcaseCustomFieldsService."""
 
@@ -33,6 +44,9 @@ class TestTestcaseCustomFieldsService(unittest.IsolatedAsyncioTestCase):
         self.mock_state = MagicMock(spec=ServiceState)
         self.mock_state.is_available.return_value = True
         self.mock_repo = AsyncMock(spec=TestcaseCustomFieldsRepository)
+        # Most update_custom_field tests exercise the non-system path; the
+        # small number of system-field tests override this explicitly.
+        self.mock_repo.get_custom_field.return_value = _field_row()
         self.service = TestcaseCustomFieldsService(
             self.mock_logger, self.mock_state, self.mock_repo)
 
@@ -396,6 +410,20 @@ class TestTestcaseCustomFieldsService(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result.success)
         self.assertTrue(result.is_internal)
 
+    async def test_update_field_lookup_db_exception(self):
+        self.mock_repo.get_custom_field.side_effect = (
+            SqliteInterfaceException("err"))
+        result = await self._update_field()
+        self.assertFalse(result.success)
+        self.assertTrue(result.is_internal)
+        self.mock_state.mark_database_failed.assert_called_once()
+
+    async def test_update_field_not_found(self):
+        self.mock_repo.get_custom_field.return_value = None
+        result = await self._update_field()
+        self.assertFalse(result.success)
+        self.assertTrue(result.not_found)
+
     async def test_update_field_name_conflict(self):
         self.mock_repo.custom_field_name_exists.return_value = True
         result = await self._update_field()
@@ -441,7 +469,8 @@ class TestTestcaseCustomFieldsService(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result.success)
         self.assertIn("invalid", result.error_msg)
 
-    async def test_update_field_not_found(self):
+    async def test_update_field_race_deleted_before_write(self):
+        # get_custom_field found it, but it was deleted before the write.
         self.mock_repo.custom_field_name_exists.return_value = False
         self.mock_repo.system_name_exists.return_value = False
         self.mock_repo.update_custom_field.return_value = False
@@ -449,15 +478,15 @@ class TestTestcaseCustomFieldsService(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result.success)
         self.assertTrue(result.not_found)
 
-    async def test_update_field_system_field_rejected(self):
+    async def test_update_field_unknown_type(self):
         self.mock_repo.custom_field_name_exists.return_value = False
         self.mock_repo.system_name_exists.return_value = False
         self.mock_repo.update_custom_field.return_value = None
-        result = await self._update_field()
+        result = await self._update_field(field_type="NotAType")
         self.assertFalse(result.success)
         self.assertFalse(result.not_found)
         self.assertFalse(result.is_internal)
-        self.assertIn("System", result.error_msg)
+        self.assertIn("NotAType", result.error_msg)
 
     async def test_update_field_db_exception(self):
         self.mock_repo.custom_field_name_exists.return_value = False
@@ -526,6 +555,71 @@ class TestTestcaseCustomFieldsService(unittest.IsolatedAsyncioTestCase):
         self.mock_repo.update_custom_field.assert_called_once()
         call_kwargs = self.mock_repo.update_custom_field.call_args.kwargs
         self.assertEqual(call_kwargs["project_ids"], [3, 4])
+
+    # ------------------------------------------------------------------
+    # update_custom_field - system fields
+    # ------------------------------------------------------------------
+    # System fields may only have `enabled` and project assignment changed;
+    # everything else submitted in the request must be ignored in favour
+    # of the field's current stored values.
+
+    async def test_update_system_field_locks_immutable_attributes(self):
+        self.mock_repo.get_custom_field.return_value = _field_row(
+            field_name="Milestone", description="A milestone",
+            system_name="milestone", field_type="String",
+            entry_type="system", is_required=True, default_value="",
+            applies_to_all=True)
+        self.mock_repo.update_custom_field.return_value = True
+
+        await self._update_field(
+            field_name="Hacked Name", description="hacked",
+            system_name="hacked_name", field_type="Integer",
+            is_required=False, default_value="999", enabled=False)
+
+        call_kwargs = self.mock_repo.update_custom_field.call_args.kwargs
+        self.assertEqual(call_kwargs["field_name"], "Milestone")
+        self.assertEqual(call_kwargs["description"], "A milestone")
+        self.assertEqual(call_kwargs["system_name"], "milestone")
+        self.assertEqual(call_kwargs["field_type"], "String")
+        self.assertTrue(call_kwargs["is_required"])
+        self.assertEqual(call_kwargs["default_value"], "")
+        # enabled is one of the two attributes a system field CAN change.
+        self.assertFalse(call_kwargs["enabled"])
+
+    async def test_update_system_field_skips_uniqueness_checks(self):
+        self.mock_repo.get_custom_field.return_value = _field_row(
+            entry_type="system")
+        self.mock_repo.update_custom_field.return_value = True
+
+        await self._update_field()
+
+        self.mock_repo.custom_field_name_exists.assert_not_called()
+        self.mock_repo.system_name_exists.assert_not_called()
+
+    async def test_update_system_field_still_validates_project_assignment(self):
+        self.mock_repo.get_custom_field.return_value = _field_row(
+            entry_type="system")
+
+        result = await self._update_field(
+            applies_to_all_projects=False, projects=None)
+
+        self.assertFalse(result.success)
+        self.assertIn("projects is required", result.error_msg)
+        self.mock_repo.update_custom_field.assert_not_called()
+
+    async def test_update_system_field_success_changes_projects(self):
+        self.mock_repo.get_custom_field.return_value = _field_row(
+            entry_type="system", applies_to_all=True)
+        self.mock_repo.resolve_project_names.return_value = [9]
+        self.mock_repo.update_custom_field.return_value = True
+
+        result = await self._update_field(
+            applies_to_all_projects=False, projects=["Zulu"])
+
+        self.assertTrue(result.success)
+        call_kwargs = self.mock_repo.update_custom_field.call_args.kwargs
+        self.assertEqual(call_kwargs["project_ids"], [9])
+        self.assertFalse(call_kwargs["applies_to_all_projects"])
 
 
 if __name__ == "__main__":

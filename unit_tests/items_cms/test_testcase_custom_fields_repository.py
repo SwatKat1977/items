@@ -448,13 +448,19 @@ class TestTestcaseCustomFieldsRepository(unittest.IsolatedAsyncioTestCase):
             True, False, "", True, [])
         self.assertFalse(result)
 
-    async def test_update_returns_none_for_system_field(self):
+    async def test_update_succeeds_for_system_field(self):
+        # The repository has no opinion on which fields a system field is
+        # allowed to change - that policy lives in the service layer. Given
+        # values, it updates them regardless of entry_type.
         field_id = self._insert_field(
             "SysField", "sys_field", entry_type="system")
         result = await self.repo.update_custom_field(
             field_id, "SysField", "desc", "sys_field", "String",
-            True, False, "", True, [])
-        self.assertIsNone(result)
+            False, False, "", True, [])
+        self.assertTrue(result)
+        rows = self._db_query(
+            "SELECT enabled FROM tc_custom_fields WHERE id = ?", (field_id,))
+        self.assertEqual(rows[0][0], 0)
 
     async def test_update_returns_none_for_invalid_type(self):
         field_id = self._insert_field("Priority", "priority")
