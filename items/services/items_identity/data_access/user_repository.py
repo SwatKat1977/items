@@ -19,6 +19,12 @@ class UserRepository:
             "FROM user_profile "
             "WHERE email_address = ?")
 
+    GET_USER_PROFILE_QUERY: str = (
+        "SELECT id, email_address, full_name, display_name, account_status, "
+        "logon_type, is_administrator "
+        "FROM user_profile "
+        "WHERE email_address = ?")
+
     GET_PASSWORD_HASH_QUERY: str = (
         "SELECT password "
         "FROM user_auth_details "
@@ -72,6 +78,45 @@ class UserRepository:
                 If the underlying database operation fails.
         """
         return await self._db.run_query(self.GET_USER_FOR_LOGON_QUERY,
+                                        (email,),
+                                        fetch_one=True)
+
+    async def get_user_profile_by_email(
+            self,
+            email: str) -> Optional[tuple[int, str, str, str, int, int, int]]:
+        """
+        Retrieve a user's profile details by email address.
+
+        Unlike :meth:`get_user_by_email`, which returns only the fields needed
+        to make a logon decision, this returns the user's profile for callers
+        that need to know who the user is and what they are permitted to do.
+
+        Args:
+            email:
+                Email address associated with the user account.
+
+        Returns:
+            A tuple containing the user's profile if a matching account
+            exists:
+
+            (
+                user_id,
+                email_address,
+                full_name,
+                display_name,
+                account_status,
+                logon_type,
+                is_administrator
+            )
+
+            Returns ``None`` if no user exists with the specified email
+            address.
+
+        Raises:
+            SqliteInterfaceException:
+                If the underlying database operation fails.
+        """
+        return await self._db.run_query(self.GET_USER_PROFILE_QUERY,
                                         (email,),
                                         fetch_one=True)
 

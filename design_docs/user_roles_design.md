@@ -280,7 +280,65 @@ The portal hiding a button is UX, not security — CMS and gateway endpoints
 are reachable directly. Every authorisation decision must be made server-side
 on the request path.
 
-### 9.1 Immediate gap worth closing early
+### 9.1 Trust boundary: how permissions reach CMS
+
+**They do not.** CMS and Identity stay permission-agnostic and trust their
+caller.
+
+This works because of deployment topology: **in production only the gateway
+is externally visible** — CMS and Identity bind to `127.0.0.1` rather than
+`0.0.0.0`, so they are unreachable except via the gateway. The gateway is
+therefore a genuine chokepoint, and authorisation decided there cannot be
+bypassed.
+
+Two consequences worth being explicit about:
+
+- **In development this is not true.** `docker-compose.yml` publishes CMS on
+  `6050` and Identity on `5050` (it also sets
+  `ITEMS_ENVIRONMENT=development`), so both are directly reachable on a dev
+  box. Gateway enforcement is therefore bypassable locally — do not write
+  tests that claim to verify authorisation by calling CMS directly, and do
+  not treat a dev environment as evidence the boundary holds.
+- **The model assumes single-host deployment.** Loopback binding stops
+  working the moment services are split across hosts or scaled out. At that
+  point real service-to-service authentication becomes necessary.
+
+If defence in depth is wanted before then, the machinery already exists:
+`items.shared.api_signature.generate_api_signature` and the `X-Signature`
+header are already used for the portal ↔ gateway webhook metadata call. The
+same HMAC could be required on gateway → CMS calls, giving a second layer if
+the network assumption is ever violated. CMS validates nothing today.
+
+**What CMS should receive is identity, not permissions.** Authorisation stays
+at the gateway, but CMS needs to know *who* acted in order to record it —
+required by the audit concerns in §10.5 (who purged what, and when). That is
+a distinct concern from enforcement and should not be conflated with it.
+
+### 9.2 Project scope must be in the route
+
+For the gateway to authorise a project-scoped permission, it must know which
+project the target entity belongs to — **without asking CMS**. Otherwise
+every request costs an extra hop and an authorisation decision ends up
+downstream of a data lookup.
+
+Current route shapes are inconsistent on this point:
+
+| Route | Project scope in path? | Gateway can authorise? |
+| ----- | ---------------------- | ---------------------- |
+| `/<int:project_id>/testcases` | Yes | Yes, from the path |
+| `/testcases/<int:case_id>` | **No** | **No** — owning project unknown |
+| `/testcase_custom_fields/<int:field_id>` | N/A (instance-level) | Yes, admin flag only |
+
+**Decision needed:** entity routes that are project-scoped should carry the
+project in the path, e.g. `/projects/<project_id>/testcases/<case_id>`. The
+gateway then authorises from the path alone, and CMS verifies only that the
+entity genuinely belongs to that project — an integrity check, not an
+authorisation decision.
+
+This is cheap to change now and a breaking API change once clients depend on
+the current shapes, so it is worth settling before further routes are added.
+
+### 9.3 Immediate gap worth closing early
 
 The `/admin/` routes currently have **no administrator check** — only
 `@require_session`. This cannot be fixed before this design lands, because
@@ -290,6 +348,29 @@ there is nothing to check against.
 everything else — a boolean on `user_profile`, set for `admin@localhost`, and
 a decorator on the `/admin/` routes. That closes the privilege-escalation gap
 without waiting for the full permission model.
+
+### 9.4 Ordering constraint: reader tolerates before writer emits
+
+The portal validates the gateway's session-validate response against a schema
+with **`"additionalProperties": False`** (`portal_page_handler.py`). Adding
+`is_administrator` to that response therefore **breaks the portal** — schema
+validation raises, and every authenticated page renders the internal error
+page.
+
+So the rollout order is forced:
+
+| # | Service | Change | Mergeable alone? |
+| - | ------- | ------ | ---------------- |
+| 1 | Identity | `is_administrator` column + admin seed | Yes |
+| 2 | Identity | Report the flag to callers | Yes |
+| 3 | Web Portal | *Tolerate* the optional field in the response schema | Yes — behaviour-neutral |
+| 4 | Gateway | Capture at login; return it from validate | **Only after 3** |
+| 5 | Web Portal | `require_administrator` on `/admin/` routes | Only after 4 |
+
+Step 5 must follow step 4: if the portal enforces before the gateway emits
+the flag, failing closed locks administrators out and failing open provides
+no security. The `/admin/` gap therefore closes only when the whole chain has
+landed, so the steps should not be left half-merged for long.
 
 ## 10. Dependencies and open decisions
 
