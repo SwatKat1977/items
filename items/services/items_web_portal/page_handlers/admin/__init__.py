@@ -55,6 +55,8 @@ def create_admin_page_handlers(injections: PageHandlerInjections,
         Blueprint: A configured Quart blueprint containing all
         administrative page routes.
     """
+    # pylint: disable=too-many-locals
+
     routes = Blueprint('admin_pages_routes', __name__)
 
     injections.logger.debug(" Admin Pages Handlers:")
@@ -113,6 +115,47 @@ def create_admin_page_handlers(injections: PageHandlerInjections,
     @routes.route('/customisations', methods=['GET'])
     async def admin_customisations_request():
         return await handler_customisations.customisations()
+
+    # Admin page | Case field add: POST '/admin/customisations/case_fields'
+    injections.logger.debug("=> %s POST /admin/customisations/case_fields",
+                            "Admin add case field".ljust(40))
+
+    @routes.route('/customisations/case_fields', methods=['POST'])
+    async def admin_customisations_case_field_add_request():
+        return await handler_customisations.case_field_add()
+
+    # Admin page | Case field modify:
+    # POST '/admin/customisations/case_fields/<id>/modify'
+    injections.logger.debug(
+        "=> %s POST /admin/customisations/case_fields/<id>/modify",
+        "Admin modify case field".ljust(40))
+
+    @routes.route('/customisations/case_fields/<int:field_id>/modify',
+                  methods=['POST'])
+    async def admin_customisations_case_field_modify_request(field_id: int):
+        return await handler_customisations.case_field_modify(field_id)
+
+    # Admin page | Case field move:
+    # POST '/admin/customisations/case_fields/<id>/move'
+    injections.logger.debug(
+        "=> %s POST /admin/customisations/case_fields/<id>/move",
+        "Admin move case field".ljust(40))
+
+    @routes.route('/customisations/case_fields/<int:field_id>/move',
+                  methods=['POST'])
+    async def admin_customisations_case_field_move_request(field_id: int):
+        return await handler_customisations.case_field_move(field_id)
+
+    # Admin page | Case field delete:
+    # POST '/admin/customisations/case_fields/<id>/delete'
+    injections.logger.debug(
+        "=> %s POST /admin/customisations/case_fields/<id>/delete",
+        "Admin delete case field".ljust(40))
+
+    @routes.route('/customisations/case_fields/<int:field_id>/delete',
+                  methods=['POST'])
+    async def admin_customisations_case_field_delete_request(field_id: int):
+        return await handler_customisations.case_field_delete(field_id)
 
     # Admin page | Integrations (read): '/admin/integrations'
     injections.logger.debug("=> %s GET /admin/integrations",

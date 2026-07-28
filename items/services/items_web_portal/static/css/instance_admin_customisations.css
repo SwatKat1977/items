@@ -49,6 +49,20 @@
     margin: 0;
 }
 
+/* Case fields table */
+.case-fields-table .field-name {
+    color: #2a72b5;
+    font-weight: 600;
+}
+
+.case-fields-table .field-system-name {
+    color: #7a8794;
+}
+
+.case-fields-table .btn-link {
+    text-decoration: none;
+}
+
 /*
  * Collapse the tab labels to icons only once the full-label tab bar can no
  * longer fit its container. The `icons-only` class is toggled by
