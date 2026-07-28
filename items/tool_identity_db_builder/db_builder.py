@@ -105,7 +105,8 @@ async def build_database(logger: logging.Logger,
             sql_values.DEFAULT_ADMIN_USER.get('full_name'),
             sql_values.DEFAULT_ADMIN_USER.get('display_name'),
             sql_values.DEFAULT_ADMIN_USER.get('account_status'),
-            sql_values.DEFAULT_ADMIN_USER.get('logon_type')
+            sql_values.DEFAULT_ADMIN_USER.get('logon_type'),
+            sql_values.DEFAULT_ADMIN_USER.get('is_administrator')
         )
         admin_user_id: int = await database.insert_query(
             identity_sql.SQL_ADD_USER_PROFILE, admin_profile_params)

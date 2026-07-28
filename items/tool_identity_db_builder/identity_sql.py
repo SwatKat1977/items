@@ -17,8 +17,8 @@ limitations under the License.
 
 SQL_ADD_USER_PROFILE: str = ("INSERT INTO user_profile (email_address, "
                              "full_name, display_name, insertion_date, "
-                             "account_status, logon_type) "
-                             "VALUES(?, ?, ?, 0, ?, ?)")
+                             "account_status, logon_type, is_administrator) "
+                             "VALUES(?, ?, ?, 0, ?, ?, ?)")
 
 SQL_ADD_USER_AUTH_DETAILS: str = ("INSERT INTO user_auth_details (password, "
                                   "user_id) VALUES(?, ?)")
