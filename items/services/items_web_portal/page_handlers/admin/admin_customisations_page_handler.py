@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from http import HTTPStatus
+import json
 import logging
 from typing import Optional
 from quart import request
@@ -372,7 +373,13 @@ class AdminCustomisationsPageHandler(PortalPageHandler):
         linked = row[_COL_LINKED_PROJECTS]
         project_names: list[str] = []
         if linked:
-            # Encoded as "id:name,id:name" by the CMS query.
+            # Encoded as "id:name,id:name" by the CMS query (GROUP_CONCAT
+            # with no escaping). This is inherently ambiguous if a project
+            # name contains a comma - there is no way to tell, from the
+            # string alone, whether "1:A,B,2:C" means projects "A,B" and
+            # "C", or "A" and "B,2:C". Fixing that needs CMS to return
+            # structured data instead of a flattened string; not attempted
+            # here.
             for entry in str(linked).split(","):
                 _, _, name = entry.partition(":")
                 if name:
@@ -392,4 +399,8 @@ class AdminCustomisationsPageHandler(PortalPageHandler):
             "default_value": row[_COL_DEFAULT_VALUE] or "",
             "applies_to_all_projects": bool(row[_COL_APPLIES_TO_ALL]),
             "linked_projects": project_names,
+            # JSON-encoded for the edit modal's data-projects attribute -
+            # a comma-joined string would misparse any project name that
+            # itself contains a comma.
+            "linked_projects_json": json.dumps(project_names),
         }

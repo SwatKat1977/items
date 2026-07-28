@@ -127,7 +127,7 @@
                           data-is-required="{{ '1' if field.is_required else '0' }}"
                           data-default-value="{{ field.default_value }}"
                           data-applies-all="{{ '1' if field.applies_to_all_projects else '0' }}"
-                          data-projects="{{ field.linked_projects|join(',') }}">
+                          data-projects="{{ field.linked_projects_json }}">
                     <i class="bi bi-pencil"></i>
                   </button>
                   {% if not field.is_system %}

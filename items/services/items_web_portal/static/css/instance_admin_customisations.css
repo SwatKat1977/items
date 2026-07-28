@@ -63,10 +63,6 @@
     text-decoration: none;
 }
 
-.case-fields-table .field-locked {
-    color: #b0b8c1;
-}
-
 /*
  * Collapse the tab labels to icons only once the full-label tab bar can no
  * longer fit its container. The `icons-only` class is toggled by

@@ -55,6 +55,8 @@ def create_admin_page_handlers(injections: PageHandlerInjections,
         Blueprint: A configured Quart blueprint containing all
         administrative page routes.
     """
+    # pylint: disable=too-many-locals
+
     routes = Blueprint('admin_pages_routes', __name__)
 
     injections.logger.debug(" Admin Pages Handlers:")

@@ -152,7 +152,12 @@
         form.is_required.checked = trigger.getAttribute('data-is-required') === '1';
         appliesAll.checked = trigger.getAttribute('data-applies-all') === '1';
 
-        const projects = (trigger.getAttribute('data-projects') || '').split(',');
+        let projects;
+        try {
+          projects = JSON.parse(trigger.getAttribute('data-projects') || '[]');
+        } catch (e) {
+          projects = [];
+        }
         setProjectSelection(projects);
 
         applySystemLock(isSystem);
