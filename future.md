@@ -26,29 +26,12 @@ page in the web portal
 does its best with the string it's given and documents the limitation in a
 code comment there.
 
-## CMS: system custom fields can't have partial updates
+## ~~CMS: system custom fields can't have partial updates~~ (resolved)
 
-**Where:** `items_cms.repositories.testcase_custom_fields_repository.
-update_custom_field` rejects *any* update to a field with
-`entry_type == "system"` outright:
-
-```python
-if entry_type == "system":
-    return None
-```
-
-**Context:** the web portal's Case Fields admin page
-(`admin_customisations_page_handler.py`) already has UI and payload-building
-logic (`case_field_modify`, `_build_system_field_payload`) written on the
-assumption that a system field's `enabled` (active) state and project
-assignment *can* be changed, while every other attribute (name, system
-name, type, description, default value, required) stays locked. Right now
-every such request fails with `400 "System custom fields cannot be
-modified"` — the portal UI shows the error correctly, but the feature
-itself can't succeed yet.
-
-**Fix:** a teammate is picking this up as a separate CMS-side PR — allow
-`update_custom_field` to accept changes to `enabled` and project
-assignment for system fields specifically, while continuing to reject
-changes to the immutable attributes. The portal side is already built to
-match this contract and shouldn't need further changes once CMS supports it.
+Fixed on `cms_relax_system_field_edit`: `update_custom_field` now allows
+`enabled` and project assignment to change for system fields, while
+`field_name`/`description`/`system_name`/`field_type`/`is_required`/
+`default_value` are silently overridden with the field's current stored
+values regardless of what's submitted (enforced in the service layer, not
+just trusted from the caller). The web portal's Case Fields admin page was
+already built to this exact contract and needed no changes.

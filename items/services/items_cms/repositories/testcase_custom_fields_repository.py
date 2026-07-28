@@ -59,23 +59,6 @@ class TestcaseCustomFieldsRepository:
         row = await self._db.run_query(query, (project_id,), fetch_one=True)
         return bool(row)
 
-    async def is_valid_custom_field_id(self, field_id: int) -> bool:
-        """Return True if the custom field ID exists in the database.
-
-        Args:
-            field_id: ID of the custom field to check.
-
-        Returns:
-            True if the field ID exists, False otherwise.
-
-        Raises:
-            SqliteInterfaceException: If the database query fails.
-        """
-        query = (f"SELECT 1 FROM {cms_tables.TC_CUSTOM_FIELDS} WHERE id "
-                 "= ? LIMIT 1")
-        row = await self._db.run_query(query, (field_id,), fetch_one=True)
-        return bool(row)
-
     async def custom_field_name_exists(self,
                                        field_name: str,
                                        exclude_id: Optional[int] = None) -> bool:
@@ -429,6 +412,13 @@ class TestcaseCustomFieldsRepository:
                                   project_ids: list[int]) -> Optional[bool]:
         """Update an existing custom field.
 
+        Applies whatever values it is given - callers (the service layer)
+        are responsible for enforcing which attributes a given field is
+        allowed to change (e.g. system fields may only have their
+        ``enabled`` state and project assignment altered; this method has
+        no awareness of that policy and will happily overwrite any column
+        it is asked to).
+
         If ``field_type`` changes, any type-specific option rows are cleared
         before the new type is applied. Project associations are replaced in
         full: all existing links are deleted then the new set is inserted.
@@ -456,15 +446,13 @@ class TestcaseCustomFieldsRepository:
         # pylint: disable=(too-many-locals
 
         row = await self._db.run_query(
-            f"SELECT field_type_id, entry_type FROM {cms_tables.TC_CUSTOM_FIELDS} "
+            f"SELECT field_type_id FROM {cms_tables.TC_CUSTOM_FIELDS} "
             "WHERE id = ?",
             (field_id,), fetch_one=True)
         if not row:
             return False
 
-        current_type_id, entry_type = int(row[0]), row[1]
-        if entry_type == "system":
-            return None
+        current_type_id = int(row[0])
 
         field_type_info = await self._get_field_type_info(field_type)
         if field_type_info is None:
