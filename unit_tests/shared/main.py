@@ -1,6 +1,6 @@
 import unittest
-from test_base_view import TestBaseView
-from test_configuration_manager import TestConfigurationManager
+from test_api_signature import TestApiSignature
+from test_service_state import TestServicerState
 
 if __name__ == "__main__":
     unittest.main()
