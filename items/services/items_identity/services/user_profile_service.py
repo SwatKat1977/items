@@ -50,6 +50,7 @@ class UserProfileService:
     and describing a user are different concerns, and keeping them apart means
     the authentication path is not disturbed when profile fields are added.
     """
+    # pylint: disable=too-few-public-methods
 
     def __init__(self,
                  logger: logging.Logger,
