@@ -40,6 +40,32 @@ SQL_CREATE_USER_AUTH_DETAILS_TABLE: str = """
     )
 """
 
+SQL_CREATE_PROJECT_MEMBERS_TABLE: str = """
+    CREATE TABLE IF NOT EXISTS project_members (
+        id             integer PRIMARY KEY AUTOINCREMENT,
+        principal_type text    NOT NULL CHECK (principal_type IN ('user', 'group')),
+        principal_id   integer NOT NULL,
+        project_id     integer NOT NULL,
+        UNIQUE (principal_type, principal_id, project_id)
+    )
+"""
+
+SQL_CREATE_PROJECT_PERMISSIONS_TABLE: str = """
+    CREATE TABLE IF NOT EXISTS project_permissions (
+        member_id      integer NOT NULL,
+        area           text    NOT NULL,
+        can_read       integer NOT NULL DEFAULT 0,
+        can_add_modify integer NOT NULL DEFAULT 0,
+        can_delete     integer NOT NULL DEFAULT 0,
+
+        PRIMARY KEY (member_id, area),
+        FOREIGN KEY (member_id) REFERENCES project_members(id) ON DELETE CASCADE,
+
+        -- Invariant: add/modify always implies read (§4.1 of user_roles_design.md)
+        CHECK (can_add_modify = 0 OR can_read = 1)
+    )
+"""
+
 DEFAULT_ADMIN_USER: dict = {
     'email_address': 'admin@localhost',
     'full_name': 'Local Admin',
