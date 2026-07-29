@@ -14,8 +14,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from account_status import AccountStatus
-from account_logon_type import AccountLogonType
+from items.shared.account_status import AccountStatus
+from items.shared.account_logon_type import AccountLogonType
 
 SQL_CREATE_USER_PROFILE_TABLE: str = """
     CREATE TABLE IF NOT EXISTS user_profile (
