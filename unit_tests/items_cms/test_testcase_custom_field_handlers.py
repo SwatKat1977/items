@@ -370,7 +370,7 @@ class TestUpdateCustomFieldHandler(unittest.IsolatedAsyncioTestCase):
 
     async def test_update_field_bad_request_returns_400(self):
         self.mock_service.update_custom_field.return_value = _bad_request(
-            "System custom fields cannot be modified")
+            "Unknown field type 'NotAType'")
         response = await self._put(1, _VALID_FIELD_BODY)
         self.assertEqual(response.status_code, 400)
 

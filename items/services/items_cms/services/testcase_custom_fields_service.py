@@ -289,6 +289,33 @@ class TestcaseCustomFieldsService:
                 error_msg=f"System name '{system_name}' already exists",
                 is_conflict=True), empty)
 
+        return await self._validate_project_assignment(
+            applies_to_all_projects, projects)
+
+    async def _validate_project_assignment(
+            self,
+            applies_to_all_projects: bool,
+            projects: Optional[list[str]]
+    ) -> tuple[Optional[TestcaseCustomFieldResult], list[int]]:
+        """Validate and resolve a field's project assignment.
+
+        Shared by add, update, and system-field update - the project
+        assignment is the one thing a system field is allowed to change,
+        so this is factored out from the rest of update validation (name/
+        system name uniqueness), which system fields skip entirely.
+
+        Args:
+            applies_to_all_projects: If True, project list is not checked.
+            projects:                Project names to resolve (when not global).
+
+        Returns:
+            A tuple of ``(error_result, project_ids)``. On success,
+            ``error_result`` is None and ``project_ids`` contains the resolved
+            IDs (empty list when ``applies_to_all_projects`` is True). On
+            failure, ``error_result`` is set and ``project_ids`` is empty.
+        """
+        empty: list[int] = []
+
         if applies_to_all_projects:
             return (None, empty)
 
@@ -334,19 +361,35 @@ class TestcaseCustomFieldsService:
                                    ) -> TestcaseCustomFieldResult:
         """Update an existing testcase custom field.
 
-        Validates uniqueness of ``field_name`` and ``system_name`` against
-        other fields (excluding the field being updated). Replaces project
-        associations when ``applies_to_all_projects`` is False.
+        System fields (``entry_type == "system"``) may only have their
+        ``enabled`` state and project assignment changed - every other
+        attribute (name, system name, type, description, default value,
+        required) is taken from the field's current stored values instead
+        of the request, regardless of what is submitted. This mirrors the
+        contract the web portal's admin page already builds its payloads
+        to, and is enforced here (not just trusted from the caller) since
+        the CMS API may have other callers.
+
+        For non-system fields, validates uniqueness of ``field_name`` and
+        ``system_name`` against other fields (excluding the field being
+        updated). Both kinds replace project associations when
+        ``applies_to_all_projects`` is False.
 
         Args:
             field_id:                ID of the field to update.
             field_name:              New display name (must be unique).
+                                     Ignored for system fields.
             description:             New human-readable description.
-            system_name:             New internal identifier (must be unique).
-            field_type:              New type name; must exist in types table.
+                                     Ignored for system fields.
+            system_name:             New internal identifier (must be
+                                     unique). Ignored for system fields.
+            field_type:              New type name; must exist in types
+                                     table. Ignored for system fields.
             enabled:                 Whether the field should be active.
             is_required:             Whether the field must be filled in.
-            default_value:           New default value (may be empty string).
+                                     Ignored for system fields.
+            default_value:           New default value (may be empty
+                                     string). Ignored for system fields.
             applies_to_all_projects: If True, removes per-project links.
             projects:                Project names to link when not global.
 
@@ -357,20 +400,47 @@ class TestcaseCustomFieldsService:
         """
         # pylint: disable=too-many-arguments, too-many-positional-arguments
         # pylint: disable=too-many-return-statements
+        # pylint: disable=too-many-locals
 
         if not self._state.is_available():
             return TestcaseCustomFieldResult(success=False,
                                              error_msg="Service unavailable",
                                              is_internal=True)
 
-        if not await self._repository.is_valid_custom_field_id(field_id):
+        try:
+            current = await self._repository.get_custom_field(field_id)
+        except SqliteInterfaceException as ex:
+            self._logger.exception(
+                "Database failure retrieving custom field %d for update: %s",
+                field_id, ex)
+            self._state.mark_database_failed()
+            return TestcaseCustomFieldResult(success=False,
+                                             error_msg="Internal error in CMS",
+                                             is_internal=True)
+
+        if current is None:
             return TestcaseCustomFieldResult(success=False,
                                              error_msg="Custom field not found",
                                              not_found=True)
 
-        error, project_ids = await self._validate_update_request(
-            field_id, field_name, system_name, applies_to_all_projects,
-            projects)
+        (_, current_field_name, current_description, current_system_name,
+         current_field_type, current_entry_type, _current_enabled,
+         _current_position, current_is_required, current_default_value,
+         _current_applies_all, _current_linked) = current
+
+        if current_entry_type == "system":
+            field_name = current_field_name
+            description = current_description
+            system_name = current_system_name
+            field_type = current_field_type
+            is_required = bool(current_is_required)
+            default_value = current_default_value
+            error, project_ids = await self._validate_project_assignment(
+                applies_to_all_projects, projects)
+        else:
+            error, project_ids = await self._validate_update_request(
+                field_id, field_name, system_name, applies_to_all_projects,
+                projects)
         if error is not None:
             return error
 
@@ -402,7 +472,7 @@ class TestcaseCustomFieldsService:
         if updated is None:
             return TestcaseCustomFieldResult(
                 success=False,
-                error_msg="System custom fields cannot be modified")
+                error_msg=f"Unknown field type '{field_type}'")
 
         return TestcaseCustomFieldResult(success=True)
 
@@ -414,7 +484,7 @@ class TestcaseCustomFieldsService:
             applies_to_all_projects: bool,
             projects: Optional[list[str]]
     ) -> tuple[Optional[TestcaseCustomFieldResult], list[int]]:
-        """Validate a custom field update request before any writes.
+        """Validate a non-system custom field update request before any writes.
 
         Checks name and system name uniqueness against other fields, then
         resolves project names to IDs. All checks are read-only.
@@ -431,9 +501,6 @@ class TestcaseCustomFieldsService:
             ``error_result`` is None. On failure, ``error_result`` is set
             and ``project_ids`` is empty.
         """
-        # pylint: disable=too-many-arguments, too-many-positional-arguments
-        # pylint: disable=too-many-return-statements
-
         empty: list[int] = []
 
         try:
@@ -470,36 +537,8 @@ class TestcaseCustomFieldsService:
                 error_msg=f"System name '{system_name}' already exists",
                 is_conflict=True), empty)
 
-        if applies_to_all_projects:
-            return (None, empty)
-
-        if not projects:
-            return (TestcaseCustomFieldResult(
-                success=False,
-                error_msg="projects is required when applies_to_all_projects "
-                          "is false"), empty)
-
-        if len(projects) != len(set(projects)):
-            return (TestcaseCustomFieldResult(
-                success=False,
-                error_msg="Duplicate project names in the request"), empty)
-
-        try:
-            resolved = await self._repository.resolve_project_names(projects)
-        except SqliteInterfaceException as ex:
-            self._logger.exception(
-                "Database failure resolving project names: %s", ex)
-            self._state.mark_database_failed()
-            return (TestcaseCustomFieldResult(success=False,
-                                              error_msg="Internal error in CMS",
-                                              is_internal=True), empty)
-
-        if resolved is None:
-            return (TestcaseCustomFieldResult(
-                success=False,
-                error_msg="One or more project names are invalid"), empty)
-
-        return (None, resolved)
+        return await self._validate_project_assignment(
+            applies_to_all_projects, projects)
 
     async def delete_custom_field(self, field_id: int) -> TestcaseCustomFieldResult:
         """Permanently remove a custom field and all its dependent data.
