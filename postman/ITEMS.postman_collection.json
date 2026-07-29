@@ -621,6 +621,38 @@
           ]
         },
         {
+          "name": "Users",
+          "item": [
+            {
+              "name": "Get User Profile",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email_address\": \"admin@localhost\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/users/profile",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "users",
+                    "profile"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
           "name": "Health",
           "item": [
             {

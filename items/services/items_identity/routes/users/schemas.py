@@ -1,6 +1,5 @@
 """
 Copyright 2025-2026 Integrated Test Management Suite Development Team
-Copyright 2017-2025 INTMAC Development Team [Defunct]
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,24 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-# Semantic version components
-MAJOR = 0
-MINOR = 1
-PATCH = 0
+SCHEMA_GET_USER_PROFILE_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
 
-# e.g. "alpha", "beta", "rc1", or None
-PRE_RELEASE = "Alpha Build [A2]"
+    "type": "object",
+    "additionalProperties": False,
 
-# Version tuple for comparisons
-VERSION = (MAJOR, MINOR, PATCH, PRE_RELEASE)
-
-# Construct the string representation
-__version__ = f"V{MAJOR}.{MINOR}.{PATCH}"
-
-if PRE_RELEASE:
-    __version__ += f"-{PRE_RELEASE}"
-
-SERVICE_COPYRIGHT_TEXT = "Copyright 2025-2026 Integrated Test Management " + \
-                         'Suite development team'
-
-LICENSE_TEXT = "Licensed under the Apache License, Version 2.0"
+    "properties":
+    {
+        "email_address":
+        {
+            "type": "string",
+            "format": "email",
+            "minLength": 3,
+            "maxLength": 320
+        },
+    },
+    "required": ["email_address"]
+}

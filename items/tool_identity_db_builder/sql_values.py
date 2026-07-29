@@ -14,8 +14,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from account_status import AccountStatus
-from account_logon_type import AccountLogonType
+from items.shared.account_status import AccountStatus
+from items.shared.account_logon_type import AccountLogonType
 
 SQL_CREATE_USER_PROFILE_TABLE: str = """
     CREATE TABLE IF NOT EXISTS user_profile (
@@ -25,7 +25,8 @@ SQL_CREATE_USER_PROFILE_TABLE: str = """
         display_name text NOT NULL,
         insertion_date integer NOT NULL,
         account_status integer DEFAULT 0,
-        logon_type integer DEFAULT 0 NOT NULL
+        logon_type integer DEFAULT 0 NOT NULL,
+        is_administrator integer DEFAULT 0 NOT NULL
     )
 """
 
@@ -44,5 +45,8 @@ DEFAULT_ADMIN_USER: dict = {
     'full_name': 'Local Admin',
     'display_name': 'Local Admin',
     'account_status': AccountStatus.ACTIVE.value,
-    'logon_type': AccountLogonType.BASIC.value
+    'logon_type': AccountLogonType.BASIC.value,
+    # A fresh install must have exactly one administrator, otherwise nobody
+    # can reach the admin pages to grant the flag to anyone else.
+    'is_administrator': 1
 }
