@@ -29,11 +29,13 @@ class SessionEntry:
         authentication_type (AccountLogonType): The type of authentication used.
         session_expiry (int): The session expiration timestamp (Unix time).
         token (str): The unique token identifying the session.
+        is_administrator (bool): Whether the user has administrator privileges.
     """
     email_address: str = ""
     authentication_type: AccountLogonType = AccountLogonType.BASIC
     session_expiry: int = 0
     token: str = ""
+    is_administrator: bool = False
 
 
 class Sessions:
@@ -52,7 +54,8 @@ class Sessions:
     async def add_session(self,
                           email_address: str,
                           token: str,
-                          auth_type: AccountLogonType) -> None:
+                          auth_type: AccountLogonType,
+                          is_administrator: bool = False) -> None:
         """
         Add an authentication session. Any existing session for the same email
         address is invalidated and replaced.
@@ -61,12 +64,15 @@ class Sessions:
             email_address (str): Email address of the user.
             token (str): Unique token for the session.
             auth_type (AccountLogonType): Type of authentication used.
+            is_administrator (bool): Whether the user has administrator
+                privileges. Defaults to False.
         """
         async with self._lock:
             entry: SessionEntry = SessionEntry()
             entry.email_address = email_address
             entry.token = token
             entry.authentication_type = auth_type
+            entry.is_administrator = is_administrator
 
             # If you logon a second time it will invalid any previous session.
             self._sessions.pop(email_address, None)
@@ -81,6 +87,26 @@ class Sessions:
         """
         async with self._lock:
             self._sessions.pop(email_address, None)
+
+    async def get_session_entry(self,
+                                email_address: str,
+                                token: str) -> SessionEntry | None:
+        """
+        Return the session entry if the token is valid, otherwise None.
+
+        Args:
+            email_address (str): Email address of the user.
+            token (str): Token value to validate.
+
+        Returns:
+            SessionEntry if a session exists and the token matches,
+            None otherwise.
+        """
+        async with self._lock:
+            entry = self._sessions.get(email_address)
+            if entry and entry.token == token:
+                return entry
+        return None
 
     async def is_valid_session(self, email_address: str, token: str) -> bool:
         """

@@ -76,6 +76,34 @@ class TestSessions(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(entry.authentication_type, AccountLogonType.BASIC)
         self.assertEqual(entry.session_expiry, 0)
         self.assertEqual(entry.token, "")
+        self.assertFalse(entry.is_administrator)
+
+    async def test_add_session_stores_is_administrator(self):
+        await self.sessions.add_session(
+            self.email, self.token, self.auth_type, is_administrator=True)
+        entry = await self.sessions.get_session_entry(self.email, self.token)
+        self.assertIsNotNone(entry)
+        self.assertTrue(entry.is_administrator)
+
+    async def test_add_session_is_administrator_defaults_false(self):
+        await self.sessions.add_session(self.email, self.token, self.auth_type)
+        entry = await self.sessions.get_session_entry(self.email, self.token)
+        self.assertFalse(entry.is_administrator)
+
+    async def test_get_session_entry_valid_token_returns_entry(self):
+        await self.sessions.add_session(self.email, self.token, self.auth_type)
+        entry = await self.sessions.get_session_entry(self.email, self.token)
+        self.assertIsNotNone(entry)
+        self.assertEqual(entry.token, self.token)
+
+    async def test_get_session_entry_wrong_token_returns_none(self):
+        await self.sessions.add_session(self.email, self.token, self.auth_type)
+        entry = await self.sessions.get_session_entry(self.email, "wrong_token")
+        self.assertIsNone(entry)
+
+    async def test_get_session_entry_no_session_returns_none(self):
+        entry = await self.sessions.get_session_entry(self.email, self.token)
+        self.assertIsNone(entry)
 
 
 if __name__ == "__main__":
