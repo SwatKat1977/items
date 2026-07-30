@@ -16,15 +16,14 @@ limitations under the License.
 """
 from http import HTTPStatus
 import logging
-from quart import make_response
 from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.rest_client import RestClient
-from items.shared.base_items_exception import BaseItemsException
 from items.services.items_web_portal.configuration import Configuration
 from items.services.items_web_portal.metadata_settings import MetadataSettings
 import items.services.items_web_portal.page_locations as pages
 from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
+from items.services.items_web_portal.decorators import require_session
 
 
 class IndexPageHandler(PortalPageHandler):
@@ -51,6 +50,7 @@ class IndexPageHandler(PortalPageHandler):
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
+    @require_session
     async def index(self):
         """Handles a request for the portal dashboard.
 
@@ -68,15 +68,6 @@ class IndexPageHandler(PortalPageHandler):
             - The dashboard page populated with project information.
             - The internal error page if an error occurs.
         """
-        try:
-            if not await self._has_auth_cookies() or not await self._validate_cookies():
-                redirect = self._generate_redirect('login')
-                return await make_response(redirect)
-
-        except BaseItemsException as ex:
-            self._logger.error('Internal Error: %s', ex)
-            return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
-
         base_url: str = self._config.apis_gateway_svc
         url = f"{base_url}web/projects?value_fields=name&" + \
               "count_fields=no_of_test_runs,no_of_milestones"

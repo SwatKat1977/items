@@ -15,7 +15,7 @@ limitations under the License.
 """
 import unittest
 from unittest.mock import AsyncMock, MagicMock
-from quart import Quart
+from quart import Quart, g
 from items.shared.base_items_exception import BaseItemsException
 from items.services.items_web_portal.decorators import (
     require_session, require_administrator)
@@ -45,13 +45,39 @@ class TestRequireSession(unittest.IsolatedAsyncioTestCase):
 
     async def test_calls_wrapped_handler_when_session_valid(self):
         handler = _FakeHandler()
-        result = await handler.protected_method()
+        app = Quart(__name__)
+        async with app.app_context():
+            result = await handler.protected_method()
         self.assertEqual(result, ("handler-result", (), {}))
 
     async def test_passes_through_args_and_kwargs(self):
         handler = _FakeHandler()
-        result = await handler.protected_method(1, b=2)
+        app = Quart(__name__)
+        async with app.app_context():
+            result = await handler.protected_method(1, b=2)
         self.assertEqual(result, ("handler-result", (1,), {"b": 2}))
+
+    async def test_sets_g_is_administrator_true_when_valid_admin(self):
+        handler = _FakeHandler(is_valid=True, is_administrator=True)
+        app = Quart(__name__)
+        async with app.app_context():
+            await handler.protected_method()
+            self.assertTrue(g.is_administrator)
+
+    async def test_sets_g_is_administrator_false_when_not_admin(self):
+        handler = _FakeHandler(is_valid=True, is_administrator=False)
+        app = Quart(__name__)
+        async with app.app_context():
+            await handler.protected_method()
+            self.assertFalse(g.is_administrator)
+
+    async def test_sets_g_is_administrator_false_when_no_cookies(self):
+        handler = _FakeHandler()
+        handler._has_auth_cookies.return_value = False
+        app = Quart(__name__)
+        async with app.app_context():
+            await handler.protected_method()
+            self.assertFalse(g.is_administrator)
 
     async def test_redirects_when_no_auth_cookies(self):
         handler = _FakeHandler()
@@ -72,7 +98,9 @@ class TestRequireSession(unittest.IsolatedAsyncioTestCase):
     async def test_internal_error_page_on_exception(self):
         handler = _FakeHandler()
         handler._validate_cookies.side_effect = BaseItemsException("boom")
-        result = await handler.protected_method()
+        app = Quart(__name__)
+        async with app.app_context():
+            result = await handler.protected_method()
         self.assertEqual(result, "internal-error-page")
         handler._logger.error.assert_called_once()
 
@@ -81,13 +109,24 @@ class TestRequireAdministrator(unittest.IsolatedAsyncioTestCase):
 
     async def test_calls_wrapped_handler_when_administrator(self):
         handler = _FakeHandler(is_valid=True, is_administrator=True)
-        result = await handler.admin_method()
+        app = Quart(__name__)
+        async with app.app_context():
+            result = await handler.admin_method()
         self.assertEqual(result, ("admin-result", (), {}))
 
     async def test_passes_through_args_and_kwargs(self):
         handler = _FakeHandler(is_valid=True, is_administrator=True)
-        result = await handler.admin_method(1, b=2)
+        app = Quart(__name__)
+        async with app.app_context():
+            result = await handler.admin_method(1, b=2)
         self.assertEqual(result, ("admin-result", (1,), {"b": 2}))
+
+    async def test_sets_g_is_administrator_true_for_admin(self):
+        handler = _FakeHandler(is_valid=True, is_administrator=True)
+        app = Quart(__name__)
+        async with app.app_context():
+            await handler.admin_method()
+            self.assertTrue(g.is_administrator)
 
     async def test_redirects_to_login_when_no_auth_cookies(self):
         handler = _FakeHandler(is_valid=True, is_administrator=True)
@@ -111,10 +150,19 @@ class TestRequireAdministrator(unittest.IsolatedAsyncioTestCase):
             await handler.admin_method()
         handler._generate_redirect.assert_called_once_with('')
 
+    async def test_sets_g_is_administrator_false_for_non_admin(self):
+        handler = _FakeHandler(is_valid=True, is_administrator=False)
+        app = Quart(__name__)
+        async with app.app_context():
+            await handler.admin_method()
+            self.assertFalse(g.is_administrator)
+
     async def test_internal_error_page_on_exception(self):
         handler = _FakeHandler(is_valid=True, is_administrator=True)
         handler._validate_cookies.side_effect = BaseItemsException("boom")
-        result = await handler.admin_method()
+        app = Quart(__name__)
+        async with app.app_context():
+            result = await handler.admin_method()
         self.assertEqual(result, "internal-error-page")
         handler._logger.error.assert_called_once()
 

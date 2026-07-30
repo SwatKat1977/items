@@ -15,13 +15,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from functools import wraps
-from quart import make_response
+from quart import g, make_response
 from items.shared.base_items_exception import BaseItemsException
 import items.services.items_web_portal.page_locations as pages
 
 
 async def _check_session(handler) -> tuple[bool, bool]:
     """Check cookies and validate the session against the gateway.
+
+    As a side effect, sets ``g.is_administrator`` on the current request
+    context so that templates can conditionally render admin-only UI (e.g.
+    the Administration link in the navbar) without each handler needing to
+    pass the flag explicitly.
 
     Args:
         handler: A ``SessionAuthMixin`` instance.
@@ -33,8 +38,11 @@ async def _check_session(handler) -> tuple[bool, bool]:
         BaseItemsException: If the gateway call fails unexpectedly.
     """
     if not await handler._has_auth_cookies():  # pylint: disable=protected-access
+        g.is_administrator = False
         return False, False
-    return await handler._validate_cookies()  # pylint: disable=protected-access
+    is_valid, is_administrator = await handler._validate_cookies()  # pylint: disable=protected-access
+    g.is_administrator = is_administrator
+    return is_valid, is_administrator
 
 
 def require_session(func):
