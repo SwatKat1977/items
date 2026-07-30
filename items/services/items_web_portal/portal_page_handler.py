@@ -33,6 +33,11 @@ SCHEMA_SESSION_VALIDATE_RESPONSE = {
         "status": {
             "type": "string",
             "enum": ["VALID", "INVALID"]
+        },
+        # Optional — present once the gateway begins reporting it (step 4 of
+        # the is_administrator rollout in user_roles_design.md §9.4).
+        "is_administrator": {
+            "type": "boolean"
         }
     },
     "required": ["status"],
