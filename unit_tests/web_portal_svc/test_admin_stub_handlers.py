@@ -57,7 +57,8 @@ def _make_stub_test(handler_cls, method_name, route_path):
         async def asyncSetUp(self):
             self.rest_client = AsyncMock()
             self.rest_client.post.return_value = ApiResponse(
-                status_code=HTTPStatus.OK, body={"status": "VALID"})
+                status_code=HTTPStatus.OK,
+                body={"status": "VALID", "is_administrator": True})
             handler = handler_cls(_LOGGER, _config(), self.rest_client,
                                   _metadata())
 
@@ -82,6 +83,23 @@ def _make_stub_test(handler_cls, method_name, route_path):
             self.assertEqual(response.status_code, 200)
             text = await response.get_data(as_text=True)
             self.assertIn("Refresh", text)
+
+        async def test_redirects_when_not_administrator(self):
+            self.rest_client.post.return_value = ApiResponse(
+                status_code=HTTPStatus.OK,
+                body={"status": "VALID", "is_administrator": False})
+            async with self.client as c:
+                response = await c.get(route_path, headers=_AUTH_HEADERS)
+            self.assertEqual(response.status_code, 200)
+            text = await response.get_data(as_text=True)
+            self.assertIn("Refresh", text)
+
+        async def test_internal_error_when_gateway_unavailable(self):
+            self.rest_client.post.return_value = ApiResponse(
+                status_code=HTTPStatus.SERVICE_UNAVAILABLE)
+            async with self.client as c:
+                response = await c.get(route_path, headers=_AUTH_HEADERS)
+            self.assertEqual(response.status_code, 200)
 
     return _Test
 

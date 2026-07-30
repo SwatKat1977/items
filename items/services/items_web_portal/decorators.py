@@ -20,6 +20,23 @@ from items.shared.base_items_exception import BaseItemsException
 import items.services.items_web_portal.page_locations as pages
 
 
+async def _check_session(handler) -> tuple[bool, bool]:
+    """Check cookies and validate the session against the gateway.
+
+    Args:
+        handler: A ``SessionAuthMixin`` instance.
+
+    Returns:
+        ``(is_valid, is_administrator)``. Both ``False`` if cookies are absent.
+
+    Raises:
+        BaseItemsException: If the gateway call fails unexpectedly.
+    """
+    if not await handler._has_auth_cookies():  # pylint: disable=protected-access
+        return False, False
+    return await handler._validate_cookies()  # pylint: disable=protected-access
+
+
 def require_session(func):
     """Decorator that enforces an authenticated session on a page handler.
 
@@ -57,10 +74,56 @@ def require_session(func):
         # PortalPageHandler subclasses, so `self` here is always one of
         # those - the protected-member access below is intentional.
         try:
-            if not await self._has_auth_cookies() \
-                    or not await self._validate_cookies():
-                redirect = self._generate_redirect('login')
-                return await make_response(redirect)
+            valid, _ = await _check_session(self)
+            if not valid:
+                return await make_response(self._generate_redirect('login'))
+
+        except BaseItemsException as ex:
+            self._logger.error('Internal Error: %s', ex)
+            return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
+
+        return await func(self, *args, **kwargs)
+
+    return wrapper
+
+
+def require_administrator(func):
+    """Decorator that enforces an authenticated administrator session.
+
+    Behaves identically to ``require_session`` for unauthenticated requests
+    (redirects to login). Additionally checks the ``is_administrator`` flag
+    returned by the gateway — non-administrators are redirected to the
+    dashboard rather than reaching the admin page body.
+
+    Args:
+        func: The page handler coroutine to protect. Its first positional
+            argument must be ``self`` (a ``SessionAuthMixin`` instance).
+
+    Returns:
+        The wrapped coroutine, which returns one of:
+
+        - A redirect to the login page for unauthenticated users.
+        - A redirect to the dashboard for authenticated non-administrators.
+        - The internal error page if session validation fails unexpectedly.
+        - The wrapped handler's result for authenticated administrators.
+
+    Example:
+        @require_administrator
+        async def admin_overview(self):
+            ...
+    """
+
+    @wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        # pylint: disable=protected-access
+        try:
+            valid, is_administrator = await _check_session(self)
+
+            if not valid:
+                return await make_response(self._generate_redirect('login'))
+
+            if not is_administrator:
+                return await make_response(self._generate_redirect(''))
 
         except BaseItemsException as ex:
             self._logger.error('Internal Error: %s', ex)

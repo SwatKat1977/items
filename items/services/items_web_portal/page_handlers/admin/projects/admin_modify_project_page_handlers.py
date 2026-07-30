@@ -24,7 +24,7 @@ from items.services.items_web_portal.metadata_settings import MetadataSettings
 import items.services.items_web_portal.page_locations as pages
 from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
-from items.services.items_web_portal.decorators import require_session
+from items.services.items_web_portal.decorators import require_administrator
 
 
 class AdminModifyProjectPageHandlers(PortalPageHandler):
@@ -50,7 +50,7 @@ class AdminModifyProjectPageHandlers(PortalPageHandler):
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
-    @require_session
+    @require_administrator
     async def modify_project_get(self, project_id):
         """Render the project modification page.
 
@@ -89,7 +89,7 @@ class AdminModifyProjectPageHandlers(PortalPageHandler):
             active_admin_page="admin_page_site_settings",
             form_data=form_data)
 
-    @require_session
+    @require_administrator
     async def modify_project_post(self, project_id):
         """Process a project modification request.
 

@@ -22,7 +22,7 @@ from quart import request
 from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_web_portal.configuration import Configuration
-from items.services.items_web_portal.decorators import require_session
+from items.services.items_web_portal.decorators import require_administrator
 from items.services.items_web_portal.metadata_settings import MetadataSettings
 import items.services.items_web_portal.page_locations as pages
 from items.services.items_web_portal.portal_page_handler import (
@@ -85,7 +85,7 @@ class AdminCustomisationsPageHandler(PortalPageHandler):
     # Read
     # ------------------------------------------------------------------
 
-    @require_session
+    @require_administrator
     async def customisations(self):
         """Render the administration customisations page.
 
@@ -98,7 +98,7 @@ class AdminCustomisationsPageHandler(PortalPageHandler):
     # Write: case fields
     # ------------------------------------------------------------------
 
-    @require_session
+    @require_administrator
     async def case_field_add(self):
         """Create a new case field from the submitted form.
 
@@ -115,7 +115,7 @@ class AdminCustomisationsPageHandler(PortalPageHandler):
 
         return await self._render_after_write(response, "add")
 
-    @require_session
+    @require_administrator
     async def case_field_modify(self, field_id: int):
         """Update an existing case field from the submitted form.
 
@@ -146,7 +146,7 @@ class AdminCustomisationsPageHandler(PortalPageHandler):
 
         return await self._render_after_write(response, "modify")
 
-    @require_session
+    @require_administrator
     async def case_field_delete(self, field_id: int):
         """Delete a case field.
 
@@ -163,7 +163,7 @@ class AdminCustomisationsPageHandler(PortalPageHandler):
 
         return await self._render_after_write(response, "delete")
 
-    @require_session
+    @require_administrator
     async def case_field_move(self, field_id: int):
         """Move a case field up or down in the ordered list.
 

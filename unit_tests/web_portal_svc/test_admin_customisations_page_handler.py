@@ -24,7 +24,9 @@ from items.services.items_web_portal.page_handlers.admin.\
 
 _LOGGER = MagicMock()
 _AUTH_HEADERS = {"Cookie": "items_token=abc; items_user=bob"}
-_SESSION_VALID = ApiResponse(status_code=HTTPStatus.OK, body={"status": "VALID"})
+_SESSION_VALID = ApiResponse(
+    status_code=HTTPStatus.OK,
+    body={"status": "VALID", "is_administrator": True})
 
 
 def _config():
