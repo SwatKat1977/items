@@ -29,7 +29,9 @@ _LOGGER = MagicMock()
 
 _VALID_ADD_FORM = {"project_name": "Project X", "announcement": ""}
 _AUTH_HEADERS = {"Cookie": "items_token=abc; items_user=bob"}
-_SESSION_VALID = ApiResponse(status_code=HTTPStatus.OK, body={"status": "VALID"})
+_SESSION_VALID = ApiResponse(
+    status_code=HTTPStatus.OK,
+    body={"status": "VALID", "is_administrator": True})
 
 
 def _config():
@@ -48,7 +50,7 @@ def _metadata():
 # AdminProjectsPageHandlers
 # ------------------------------------------------------------------
 # projects_read/projects_post use .get()/.delete() for their own logic, so
-# session validation (.post()) never collides with them - a single blanket
+# admin validation (.post()) never collides with them - a single blanket
 # post.return_value covers every test in this class.
 
 class TestAdminProjectsPageHandlers(unittest.IsolatedAsyncioTestCase):
@@ -110,10 +112,10 @@ class TestAdminProjectsPageHandlers(unittest.IsolatedAsyncioTestCase):
 # ------------------------------------------------------------------
 # AdminAddProjectPageHandlers
 # ------------------------------------------------------------------
-# add_project_get/add_project_post both go through @require_session (which
-# itself calls .post() to validate the session) AND add_project_post makes
-# its own .post() call to submit to CMS - so the session-validation call and
-# the CMS call share the same mocked method. side_effect lists the session
+# add_project_get/add_project_post both go through @require_administrator
+# (which calls .post() to validate the session) AND add_project_post makes
+# its own .post() call to submit to CMS - so the admin-validation call and
+# the CMS call share the same mocked method. side_effect lists the admin
 # validation response first, then whatever the test wants the CMS call to
 # return.
 
@@ -219,8 +221,8 @@ class TestAdminAddProjectPageHandlers(unittest.IsolatedAsyncioTestCase):
 # AdminModifyProjectPageHandlers
 # ------------------------------------------------------------------
 # Both modify_project_get and modify_project_post are wrapped in
-# @require_session, which validates the session via .post() - separate from
-# .get()/.patch() used by the handlers' own logic, so no side_effect
+# @require_administrator, which validates the session via .post() - separate
+# from .get()/.patch() used by the handlers' own logic, so no side_effect
 # ordering is needed, just a blanket post.return_value plus auth cookies.
 
 class TestAdminModifyProjectPageHandlers(unittest.IsolatedAsyncioTestCase):

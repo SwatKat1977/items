@@ -17,7 +17,7 @@ limitations under the License.
 import logging
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_web_portal.configuration import Configuration
-from items.services.items_web_portal.decorators import require_session
+from items.services.items_web_portal.decorators import require_administrator
 from items.services.items_web_portal.metadata_settings import MetadataSettings
 import items.services.items_web_portal.page_locations as pages
 from items.services.items_web_portal.portal_page_handler import (
@@ -47,7 +47,7 @@ class AdminSiteSettingsPageHandler(PortalPageHandler):
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
-    @require_session
+    @require_administrator
     async def site_settings(self):
         """Render the administration site settings page.
 

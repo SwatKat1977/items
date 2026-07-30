@@ -94,7 +94,7 @@ class SessionAuthMixin:
         retrieved_username = request.cookies.get(self.COOKIE_USER)
         return retrieved_token is not None and retrieved_username is not None
 
-    async def _validate_cookies(self) -> bool:
+    async def _validate_cookies(self) -> tuple[bool, bool]:
         """Validates the current authentication session.
 
         The stored authentication cookies are submitted to the gateway service
@@ -138,7 +138,12 @@ class SessionAuthMixin:
                 "Schema for gateway svc session validate response "
                 "invalid!") from ex
 
-        return response.body["status"] == "VALID"
+        is_valid = response.body["status"] == "VALID"
+        is_administrator = (
+            bool(response.body.get("is_administrator", False))
+            if is_valid else False
+        )
+        return is_valid, is_administrator
 
 
 class PortalPageHandler(SessionAuthMixin, BaseApiRoute):

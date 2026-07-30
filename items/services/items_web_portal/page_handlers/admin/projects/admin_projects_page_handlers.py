@@ -24,7 +24,7 @@ from items.services.items_web_portal.metadata_settings import MetadataSettings
 import items.services.items_web_portal.page_locations as pages
 from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
-from items.services.items_web_portal.decorators import require_session
+from items.services.items_web_portal.decorators import require_administrator
 
 
 class AdminProjectsPageHandlers(PortalPageHandler):
@@ -50,7 +50,7 @@ class AdminProjectsPageHandlers(PortalPageHandler):
         super().__init__(logger, config, rest_client)
         self._metadata_settings = metadata
 
-    @require_session
+    @require_administrator
     async def projects_post(self):
         """Delete a project.
 
@@ -77,7 +77,7 @@ class AdminProjectsPageHandlers(PortalPageHandler):
 
         return await self.projects_read()
 
-    @require_session
+    @require_administrator
     async def projects_read(self):
         """Render the administration projects page.
 

@@ -97,31 +97,35 @@ class TestValidateCookies(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(BaseItemsException):
             await self._validate()
 
-    async def test_valid_status_returns_true(self):
+    async def test_valid_status_returns_true_and_is_administrator_false(self):
         self.mock_rest_client.post.return_value = ApiResponse(
             status_code=HTTPStatus.OK, body={"status": "VALID"})
-        result = await self._validate()
-        self.assertTrue(result)
+        is_valid, is_administrator = await self._validate()
+        self.assertTrue(is_valid)
+        self.assertFalse(is_administrator)
 
-    async def test_invalid_status_returns_false(self):
+    async def test_invalid_status_returns_false_and_is_administrator_false(self):
         self.mock_rest_client.post.return_value = ApiResponse(
             status_code=HTTPStatus.OK, body={"status": "INVALID"})
-        result = await self._validate()
-        self.assertFalse(result)
+        is_valid, is_administrator = await self._validate()
+        self.assertFalse(is_valid)
+        self.assertFalse(is_administrator)
 
-    async def test_valid_status_with_is_administrator_true_returns_true(self):
+    async def test_valid_status_with_is_administrator_true(self):
         self.mock_rest_client.post.return_value = ApiResponse(
             status_code=HTTPStatus.OK,
             body={"status": "VALID", "is_administrator": True})
-        result = await self._validate()
-        self.assertTrue(result)
+        is_valid, is_administrator = await self._validate()
+        self.assertTrue(is_valid)
+        self.assertTrue(is_administrator)
 
-    async def test_valid_status_with_is_administrator_false_returns_true(self):
+    async def test_valid_status_with_is_administrator_false(self):
         self.mock_rest_client.post.return_value = ApiResponse(
             status_code=HTTPStatus.OK,
             body={"status": "VALID", "is_administrator": False})
-        result = await self._validate()
-        self.assertTrue(result)
+        is_valid, is_administrator = await self._validate()
+        self.assertTrue(is_valid)
+        self.assertFalse(is_administrator)
 
     async def test_is_administrator_wrong_type_raises(self):
         self.mock_rest_client.post.return_value = ApiResponse(
