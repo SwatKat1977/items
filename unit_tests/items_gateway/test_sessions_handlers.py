@@ -25,6 +25,7 @@ from items.services.items_gateway.routes.web.sessions.refresh_session_handler \
     import RefreshSessionHandler
 from items.services.items_gateway.routes.web.sessions.validate_session_handler \
     import ValidateSessionHandler
+from items.services.items_gateway.sessions import SessionEntry
 
 _LOGGER = MagicMock()
 _VALID_TOKEN = "a" * 32
@@ -82,7 +83,10 @@ class TestNewSessionPasswordHandler(unittest.IsolatedAsyncioTestCase):
 
     async def test_success_new_login(self):
         self.mock_sessions.has_session.return_value = False
-        self.mock_rest_client.post.return_value = ApiResponse(status_code=200)
+        self.mock_rest_client.post.side_effect = [
+            ApiResponse(status_code=200),
+            ApiResponse(status_code=200, body={"is_administrator": False})
+        ]
         response = await self._post(
             {"email_address": "a@b.com", "password": "password1"})
         self.assertEqual(response.status_code, 200)
@@ -92,11 +96,39 @@ class TestNewSessionPasswordHandler(unittest.IsolatedAsyncioTestCase):
 
     async def test_success_relogin(self):
         self.mock_sessions.has_session.return_value = True
-        self.mock_rest_client.post.return_value = ApiResponse(status_code=200)
+        self.mock_rest_client.post.side_effect = [
+            ApiResponse(status_code=200),
+            ApiResponse(status_code=200, body={"is_administrator": False})
+        ]
         response = await self._post(
             {"email_address": "a@b.com", "password": "password1"})
         self.assertEqual(response.status_code, 200)
         self.mock_sessions.add_session.assert_called_once()
+
+    async def test_success_stores_is_administrator_true(self):
+        self.mock_sessions.has_session.return_value = False
+        self.mock_rest_client.post.side_effect = [
+            ApiResponse(status_code=200),
+            ApiResponse(status_code=200, body={"is_administrator": True})
+        ]
+        await self._post({"email_address": "a@b.com", "password": "password1"})
+        args, kwargs = self.mock_sessions.add_session.call_args
+        # is_administrator may be passed positionally (index 3) or as a kwarg
+        is_admin = kwargs.get("is_administrator", args[3] if len(args) > 3 else False)
+        self.assertTrue(is_admin)
+
+    async def test_profile_fetch_failure_defaults_is_administrator_false(self):
+        self.mock_sessions.has_session.return_value = False
+        self.mock_rest_client.post.side_effect = [
+            ApiResponse(status_code=200),
+            ApiResponse(status_code=503)
+        ]
+        response = await self._post(
+            {"email_address": "a@b.com", "password": "password1"})
+        self.assertEqual(response.status_code, 200)
+        args, kwargs = self.mock_sessions.add_session.call_args
+        is_admin = kwargs.get("is_administrator", args[3] if len(args) > 3 else False)
+        self.assertFalse(is_admin)
 
 
 # ------------------------------------------------------------------
@@ -192,21 +224,36 @@ class TestValidateSessionHandler(unittest.IsolatedAsyncioTestCase):
         response = await self._post({"email_address": "a@b.com"})
         self.assertEqual(response.status_code, 400)
 
-    async def test_valid_session_returns_valid(self):
-        self.mock_sessions.is_valid_session.return_value = True
+    async def test_valid_session_returns_valid_with_is_administrator_false(self):
+        entry = SessionEntry(email_address="a@b.com", token=_VALID_TOKEN,
+                             is_administrator=False)
+        self.mock_sessions.get_session_entry.return_value = entry
         response = await self._post(
             {"email_address": "a@b.com", "token": _VALID_TOKEN})
         self.assertEqual(response.status_code, 200)
         data = await response.get_json()
         self.assertEqual(data["status"], "VALID")
+        self.assertFalse(data["is_administrator"])
+
+    async def test_valid_session_returns_is_administrator_true(self):
+        entry = SessionEntry(email_address="a@b.com", token=_VALID_TOKEN,
+                             is_administrator=True)
+        self.mock_sessions.get_session_entry.return_value = entry
+        response = await self._post(
+            {"email_address": "a@b.com", "token": _VALID_TOKEN})
+        self.assertEqual(response.status_code, 200)
+        data = await response.get_json()
+        self.assertEqual(data["status"], "VALID")
+        self.assertTrue(data["is_administrator"])
 
     async def test_invalid_session_returns_invalid(self):
-        self.mock_sessions.is_valid_session.return_value = False
+        self.mock_sessions.get_session_entry.return_value = None
         response = await self._post(
             {"email_address": "a@b.com", "token": _VALID_TOKEN})
         self.assertEqual(response.status_code, 200)
         data = await response.get_json()
         self.assertEqual(data["status"], "INVALID")
+        self.assertNotIn("is_administrator", data)
 
 
 if __name__ == "__main__":

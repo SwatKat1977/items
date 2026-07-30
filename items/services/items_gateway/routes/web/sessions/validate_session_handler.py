@@ -73,10 +73,15 @@ class ValidateSessionHandler(BaseApiRoute):
         email_address: str = request_msg.body["email_address"]
         token: str = request_msg.body["token"]
 
-        valid = await self._sessions.is_valid_session(email_address, token)
+        entry = await self._sessions.get_session_entry(email_address, token)
 
-        response_json = {"status": "VALID" if valid else "INVALID"}
-        response_status = HTTPStatus.OK
+        if entry:
+            response_json = {
+                "status": "VALID",
+                "is_administrator": entry.is_administrator
+            }
+        else:
+            response_json = {"status": "INVALID"}
 
-        return Response(json.dumps(response_json), response_status,
+        return Response(json.dumps(response_json), HTTPStatus.OK,
                         content_type="application/json")

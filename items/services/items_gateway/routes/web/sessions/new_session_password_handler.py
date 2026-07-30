@@ -128,9 +128,27 @@ class NewSessionPasswordHandler(BaseApiRoute):
             self._logger.info("User '%s' logged in",
                               email_address)
 
+        # Fetch the user profile so we can store is_administrator against
+        # the session and return it on every subsequent validate call.
+        is_administrator: bool = False
+        profile_url: str = (f"{self._configuration.apis_identity_svc}"
+                            f"users/profile")
+        profile_response: ApiResponse = await self._rest_client.post(
+            profile_url, json_data={"email_address": email_address})
+
+        if profile_response.status_code == HTTPStatus.OK and profile_response.body:
+            is_administrator = bool(
+                profile_response.body.get("is_administrator", False))
+        else:
+            self._logger.warning(
+                "Could not retrieve profile for '%s' (status %s); "
+                "is_administrator will default to False",
+                email_address, profile_response.status_code)
+
         await self._sessions.add_session(email_address,
                                          token,
-                                         AccountLogonType.BASIC)
+                                         AccountLogonType.BASIC,
+                                         is_administrator)
 
         return Response(
             json.dumps({"status": 1, "token": token}),
