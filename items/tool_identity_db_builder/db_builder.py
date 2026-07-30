@@ -99,6 +99,15 @@ async def build_database(logger: logging.Logger,
         await database.create_table(
             sql_values.SQL_CREATE_USER_AUTH_DETAILS_TABLE, "user_auth_details")
 
+        logger.info("-> Creating project_members table")
+        await database.create_table(
+            sql_values.SQL_CREATE_PROJECT_MEMBERS_TABLE, "project_members")
+
+        logger.info("-> Creating project_permissions table")
+        await database.create_table(
+            sql_values.SQL_CREATE_PROJECT_PERMISSIONS_TABLE,
+            "project_permissions")
+
         logger.info("-> Creating admin with password '%s'", admin_password)
         admin_profile_params: tuple = (
             sql_values.DEFAULT_ADMIN_USER.get('email_address'),
