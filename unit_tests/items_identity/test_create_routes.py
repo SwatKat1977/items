@@ -122,8 +122,45 @@ class TestCreateUsersRoutes(unittest.IsolatedAsyncioTestCase):
                             self.mock_config)
         self.mock_logger.debug.assert_called()
 
+    @patch("routes.users.UserManagementHandler")
     @patch("routes.users.GetUserProfileHandler")
-    async def test_route_handler_calls_get_user_profile(self, mock_handler_cls):
+    async def test_all_user_routes_are_registered(self, _profile_cls,
+                                                  _mgmt_cls):
+        app = quart.Quart(__name__)
+        app.register_blueprint(create_users_routes(
+            self.mock_logger, self.mock_state, self.mock_config))
+
+        registered = {(r.rule, method)
+                      for r in app.url_map.iter_rules()
+                      for method in r.methods}
+
+        for rule, method in (
+                ("/users/profile", "POST"),
+                ("/users", "GET"),
+                ("/users", "POST"),
+                ("/users/<int:user_id>", "GET"),
+                ("/users/<int:user_id>", "PATCH"),
+                ("/users/<int:user_id>/password", "POST"),
+        ):
+            with self.subTest(rule=rule, method=method):
+                self.assertIn((rule, method), registered)
+
+    @patch("routes.users.UserManagementHandler")
+    @patch("routes.users.GetUserProfileHandler")
+    async def test_no_delete_route_is_exposed(self, _profile_cls, _mgmt_cls):
+        """Accounts are deactivated, never deleted - see design doc 10.6."""
+        app = quart.Quart(__name__)
+        app.register_blueprint(create_users_routes(
+            self.mock_logger, self.mock_state, self.mock_config))
+
+        for rule in app.url_map.iter_rules():
+            self.assertNotIn("DELETE", rule.methods,
+                             f"unexpected DELETE on {rule.rule}")
+
+    @patch("routes.users.UserManagementHandler")
+    @patch("routes.users.GetUserProfileHandler")
+    async def test_route_handler_calls_get_user_profile(self, mock_handler_cls,
+                                                       _mgmt_cls):
         mock_handler = MagicMock()
         mock_handler.get_user_profile = AsyncMock(
             return_value=Response(
