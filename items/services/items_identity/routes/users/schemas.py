@@ -32,3 +32,75 @@ SCHEMA_GET_USER_PROFILE_REQUEST: dict = {
     },
     "required": ["email_address"]
 }
+
+# Shared field definitions, so create and update cannot drift apart.
+_EMAIL_ADDRESS: dict = {
+    "type": "string",
+    "format": "email",
+    "minLength": 3,
+    "maxLength": 320
+}
+
+_NAME: dict = {
+    "type": "string",
+    "minLength": 1,
+    "maxLength": 255
+}
+
+_PASSWORD: dict = {
+    "type": "string",
+    "minLength": 8,
+    "maxLength": 4096
+}
+
+SCHEMA_CREATE_USER_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+    {
+        "email_address": _EMAIL_ADDRESS,
+        "full_name": _NAME,
+        "display_name": _NAME,
+        "is_administrator": {"type": "boolean"},
+        "enabled": {"type": "boolean"},
+        # Omit to have a password generated and returned once in the response.
+        "password": _PASSWORD,
+    },
+    "required": ["email_address", "full_name", "display_name"]
+}
+
+SCHEMA_UPDATE_USER_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    # Every field is optional - only what is supplied gets changed. At least
+    # one must be present, otherwise the request is a no-op.
+    "minProperties": 1,
+
+    "properties":
+    {
+        "email_address": _EMAIL_ADDRESS,
+        "full_name": _NAME,
+        "display_name": _NAME,
+        "is_administrator": {"type": "boolean"},
+        "enabled": {"type": "boolean"},
+    }
+}
+
+SCHEMA_SET_PASSWORD_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+    {
+        # Omit to have a password generated and returned once in the response.
+        "password": _PASSWORD,
+    }
+}

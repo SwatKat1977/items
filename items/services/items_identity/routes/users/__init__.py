@@ -19,6 +19,7 @@ from items.services.items_identity.identity_configuration import (
     IdentityConfiguration)
 from items.shared.service_state import ServiceState
 from .get_user_profile_handler import GetUserProfileHandler
+from .user_management_handler import UserManagementHandler
 
 
 def create_users_routes(logger: logging.Logger,
@@ -31,6 +32,15 @@ def create_users_routes(logger: logging.Logger,
 
     * ``POST /users/profile`` - Retrieve a user's profile details, including
       whether they are an administrator.
+    * ``GET /users`` - List all user accounts.
+    * ``GET /users/<id>`` - Retrieve a single user account.
+    * ``POST /users`` - Create a user account.
+    * ``PATCH /users/<id>`` - Update a user account.
+    * ``POST /users/<id>/password`` - Set or reset a user's password.
+
+    There is deliberately no delete route; accounts are deactivated by setting
+    ``enabled`` to false via the update route. See section 10.6 of
+    ``design_docs/user_roles_design.md``.
 
     Args:
         logger:
@@ -51,6 +61,8 @@ def create_users_routes(logger: logging.Logger,
 
     profile_handler: GetUserProfileHandler = GetUserProfileHandler(
         logger, service_state, config)
+    management_handler: UserManagementHandler = UserManagementHandler(
+        logger, service_state, config)
 
     logger.debug("Registering Users API routes:")
 
@@ -61,5 +73,36 @@ def create_users_routes(logger: logging.Logger,
     @users_routes.route('/users/profile', methods=['POST'])
     async def get_user_profile_request():
         return await profile_handler.get_user_profile()
+
+    logger.debug("=> %s GET /users", 'List users'.ljust(40))
+
+    @users_routes.route('/users', methods=['GET'])
+    async def list_users_request():
+        return await management_handler.list_users()
+
+    logger.debug("=> %s GET /users/<user_id>", 'Get user'.ljust(40))
+
+    @users_routes.route('/users/<int:user_id>', methods=['GET'])
+    async def get_user_request(user_id: int):
+        return await management_handler.get_user(user_id)
+
+    logger.debug("=> %s POST /users", 'Create user'.ljust(40))
+
+    @users_routes.route('/users', methods=['POST'])
+    async def create_user_request():
+        return await management_handler.create_user()
+
+    logger.debug("=> %s PATCH /users/<user_id>", 'Update user'.ljust(40))
+
+    @users_routes.route('/users/<int:user_id>', methods=['PATCH'])
+    async def update_user_request(user_id: int):
+        return await management_handler.update_user(user_id)
+
+    logger.debug("=> %s POST /users/<user_id>/password",
+                 'Set user password'.ljust(40))
+
+    @users_routes.route('/users/<int:user_id>/password', methods=['POST'])
+    async def set_password_request(user_id: int):
+        return await management_handler.set_password(user_id)
 
     return users_routes

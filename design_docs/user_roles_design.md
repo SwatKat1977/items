@@ -444,6 +444,90 @@ grid; and/or log who purged what and when.
 
 Not decided. Needs a call before the sweeper is built.
 
+## 10.6 User accounts are deactivated, never deleted
+
+**Decision: there is no hard delete for user accounts.** Accounts are
+deactivated via `account_status`, which already models `DISABLED = 0` /
+`ACTIVE = 1`. No `DELETE` route is offered, so the API never promises
+something that would later have to be withdrawn.
+
+### Why
+
+Users are unlike other records: they are referenced by *history* — who
+created a test case, who executed a run, who purged something (§10.5).
+Removing the row does not remove the reference, it makes the record
+unreadable.
+
+Worse, every user reference outside `identity.db` is **cross-database and
+unenforced**, so a hard delete would fail *silently* rather than loudly:
+
+| Reference | Location | Enforced |
+| --------- | -------- | -------- |
+| `user_auth_details.user_id` | `identity.db` | Yes — foreign key, unique |
+| `project_members.principal_id` | `identity.db` | No foreign key |
+| `User`-type custom field values | `cms.db`, stored as `value TEXT` | No foreign key — impossible across databases |
+| Test case ownership | — | Does not exist yet |
+
+No constraint would catch the resulting dangling identifiers; they would
+simply render as blanks.
+
+### Erasure: anonymise in place
+
+When a genuine right-to-erasure request must be honoured, the answer is to
+**anonymise the existing row, not remove it**: keep the `id`, replace the
+personal data (email becomes something like
+`deleted-user-<id>@invalid`, names become "Deleted User"), mark the account
+deleted and revoke its credentials.
+
+This is preferred over reassigning the user's records to a shared
+"Deleted User" tombstone account because:
+
+- Referential integrity is automatic — the `id` never disappears, so nothing
+  can dangle, and no cross-database sweep is required.
+- History stays **attributable**. Under a shared tombstone, two different
+  people's work both becomes "Deleted User" and the record becomes ambiguous.
+- It is a single-row update in one database, rather than a rewrite of every
+  referencing row across two.
+- It frees the original email address for reuse in a controlled way.
+
+To an administrator this looks like deletion; underneath, the identifier
+survives.
+
+A tombstone/system account is still worth having, but for a **different
+purpose**: owning records that never had a real owner (imported data,
+automation, system actions). Not for absorbing deleted users.
+
+### Rejected: a background task that hard-deletes unused accounts
+
+Considered and rejected — deleting a deactivated user after *N* days if they
+"own nothing":
+
+- **"Owns nothing" is not cheaply knowable.** Identity would have to query CMS
+  (and every future service) for test cases, runs, results and `User`-typed
+  field values, breaking the service separation described in §9.1.
+- **It races.** The check can pass and a reference be created immediately
+  afterwards, with no foreign key to prevent it — producing exactly the
+  dangling references this section avoids.
+- **It is non-deterministic to the operator.** Two accounts deactivated on the
+  same day behave differently depending on whether either happened to author
+  anything.
+- **It does not satisfy erasure**, which must be acted on promptly when
+  requested, not opportunistically. Anonymisation covers that immediately.
+- The benefit is a negligible amount of disk, traded against the ability to
+  answer "who was this account?" during a later security review.
+
+**A narrower form may be worth revisiting:** permitting hard delete only for
+an account that has **never been used** — no successful login and no
+`project_members` rows. Both are checkable entirely within `identity.db`, and
+a user who has never logged in cannot have authored content elsewhere, so
+there is no cross-service query and no race. This requires a `last_login`
+column, which does not currently exist, and should be an explicit
+administrator action rather than a timed sweep.
+
+Note this is distinct from the purge sweeper in §6, which applies to
+soft-deleted projects and test cases. Those are not referenced by history in
+the way user accounts are.
+
 ## 11. Implementation status
 
 The grid above is deliberately designed ahead of the data model. Only Test
