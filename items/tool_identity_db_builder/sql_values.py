@@ -20,7 +20,12 @@ from items.shared.account_logon_type import AccountLogonType
 SQL_CREATE_USER_PROFILE_TABLE: str = """
     CREATE TABLE IF NOT EXISTS user_profile (
         id integer PRIMARY KEY,
-        email_address text NOT NULL,
+        -- COLLATE NOCASE applies to the implicit UNIQUE index as well as to
+        -- every comparison on this column, so 'Admin@localhost' and
+        -- 'admin@localhost' are the same address for both uniqueness and
+        -- lookups. Without it a user could register in one case and fail to
+        -- log in using another.
+        email_address text NOT NULL COLLATE NOCASE UNIQUE,
         full_name text NOT NULL,
         display_name text NOT NULL,
         insertion_date integer NOT NULL,
@@ -34,7 +39,11 @@ SQL_CREATE_USER_AUTH_DETAILS_TABLE: str = """
     CREATE TABLE IF NOT EXISTS user_auth_details (
         id integer PRIMARY KEY,
         password text NOT NULL,
-        user_id integer NOT NULL,
+        -- UNIQUE: a user has exactly one set of credentials. Without this a
+        -- second row could be inserted for the same user and
+        -- get_password_hash() (which fetches one row) would pick between them
+        -- arbitrarily.
+        user_id integer NOT NULL UNIQUE,
 
         FOREIGN KEY(user_id) REFERENCES user_profile(id)
     )
