@@ -1,8 +1,13 @@
 # User Roles & Permissions — Design
 
-**Status:** Draft for review. Nothing in here is implemented yet.
+**Status:** Draft for review. Partially implemented (see §11).
 **Scope:** v1 is users-only (no groups) and covers the General permission
-grid, the `is_administrator` flag, and the delete/purge lifecycle.
+grid, the `is_administrator` flag, the delete/purge lifecycle, and user
+management (create, modify, deactivate).
+
+**Note on scope:** this document has grown to cover user management as well
+as roles and permissions. If it continues to expand it should be renamed
+— `user_management_design.md` or `identity_design.md` are candidates.
 
 ---
 
@@ -142,6 +147,115 @@ immediately but not milestones" is a distinction with no real use case.
 
 Routine purging is handled by the background sweeper (§6); this capability
 exists only for the exceptional "this needs to be gone today" case.
+
+### 5.3 User management
+
+User management is an administrative capability — only users with
+`is_administrator = 1` can create, modify, or deactivate other users.
+
+#### 5.3.1 Create user
+
+An administrator provides:
+
+| Field | Notes |
+| ----- | ----- |
+| `email_address` | Unique; used as the login identifier. Not changeable after creation (see §5.3.4) |
+| `full_name` | Display in reports and audit trails |
+| `display_name` | Shown in the UI; may differ from full name |
+| `password` | Set by the administrator; user should change on first login (see §5.3.5) |
+| `is_administrator` | Defaults to `false` |
+
+`account_status` is set to `ACTIVE` on creation. `insertion_date` and
+`logon_type` are set server-side and are not supplied by the form.
+
+**Open:** is there a self-registration flow (user signs themselves up), or
+is all account creation admin-only? v1 assumes admin-only.
+
+#### 5.3.2 Modify user
+
+An administrator may change:
+
+| Field | Notes |
+| ----- | ----- |
+| `full_name` | Freely editable |
+| `display_name` | Freely editable |
+| `is_administrator` | Toggle; see constraint below |
+| `account_status` | Active ↔ Disabled (see §5.3.3) |
+
+**Constraint:** an administrator cannot remove their own `is_administrator`
+flag. This prevents the last admin accidentally locking everyone out of the
+admin panels. The server enforces this — the UI may hide the toggle on the
+current user's own record, but the endpoint must also reject the request.
+
+`email_address` is not editable after creation (see §5.3.4).
+`password` is not modified here — it has its own flow (§5.3.5).
+
+#### 5.3.3 Deactivate vs delete
+
+| Action | Effect | Reversible? |
+| ------ | ------ | ----------- |
+| **Deactivate** (`account_status = DISABLED`) | User cannot log in; existing sessions are invalidated at next validate call; membership rows are retained | Yes — admin re-activates |
+| **Delete** | User record and auth details removed; membership rows cascade-deleted via FK | No |
+
+**v1 decision:** expose deactivation only. Hard delete of a user is
+deferred — it raises questions about audit trails and orphaned data (test
+case history authored by that user) that are out of scope for v1.
+
+The `AccountStatus.DISABLED` value already exists; no schema change is
+needed.
+
+#### 5.3.4 Email address immutability
+
+`email_address` doubles as the login identifier and is embedded in session
+cookies (`items_user`). Allowing it to change mid-session would invalidate
+the cookie without the user knowing. Keeping it immutable avoids that class
+of problem entirely.
+
+If a rename is ever needed in a future version, it requires a coordinated
+change: new email, forced logout, re-login.
+
+#### 5.3.5 Password management
+
+Two flows:
+
+1. **Admin resets password** — administrator sets a new password on behalf
+   of a user (e.g. account recovery). The user is not notified in v1 (no
+   email integration). The admin communicates it out of band.
+
+2. **User changes own password** — a user changes their own password after
+   supplying their current password first. This does not require
+   administrator access.
+
+**Open:** force-change-on-first-login flag. Not in the current schema.
+Deferred until there is a clear need.
+
+#### 5.3.6 List users
+
+The Users & Roles admin page shows all `user_profile` rows. v1 requires no
+filtering or pagination — acceptable at low user counts. Add when needed.
+
+Columns shown: display name, email address, account status, is_administrator.
+
+#### 5.3.7 Identity service routes required
+
+| Method | Route | Action |
+| ------ | ----- | ------ |
+| `GET` | `/users` | List all users |
+| `POST` | `/users` | Create user |
+| `GET` | `/users/<id>` | Get single user |
+| `PATCH` | `/users/<id>` | Modify user (name, status, is_administrator) |
+| `POST` | `/users/<id>/password` | Reset password (admin) |
+| `POST` | `/users/me/password` | Change own password |
+
+All routes except `POST /users/me/password` are admin-only and must be
+enforced at the gateway. `POST /users/me/password` requires a valid session
+and the current password in the request body.
+
+**Note:** `POST /users/profile` (used by the gateway at login to retrieve
+`is_administrator`) already exists. It is a separate, internal route and is
+not part of this user-management surface.
+
+---
 
 ## 6. Delete lifecycle
 
@@ -444,6 +558,90 @@ grid; and/or log who purged what and when.
 
 Not decided. Needs a call before the sweeper is built.
 
+## 10.6 User accounts are deactivated, never deleted
+
+**Decision: there is no hard delete for user accounts.** Accounts are
+deactivated via `account_status`, which already models `DISABLED = 0` /
+`ACTIVE = 1`. No `DELETE` route is offered, so the API never promises
+something that would later have to be withdrawn.
+
+### Why
+
+Users are unlike other records: they are referenced by *history* — who
+created a test case, who executed a run, who purged something (§10.5).
+Removing the row does not remove the reference, it makes the record
+unreadable.
+
+Worse, every user reference outside `identity.db` is **cross-database and
+unenforced**, so a hard delete would fail *silently* rather than loudly:
+
+| Reference | Location | Enforced |
+| --------- | -------- | -------- |
+| `user_auth_details.user_id` | `identity.db` | Yes — foreign key, unique |
+| `project_members.principal_id` | `identity.db` | No foreign key |
+| `User`-type custom field values | `cms.db`, stored as `value TEXT` | No foreign key — impossible across databases |
+| Test case ownership | — | Does not exist yet |
+
+No constraint would catch the resulting dangling identifiers; they would
+simply render as blanks.
+
+### Erasure: anonymise in place
+
+When a genuine right-to-erasure request must be honoured, the answer is to
+**anonymise the existing row, not remove it**: keep the `id`, replace the
+personal data (email becomes something like
+`deleted-user-<id>@invalid`, names become "Deleted User"), mark the account
+deleted and revoke its credentials.
+
+This is preferred over reassigning the user's records to a shared
+"Deleted User" tombstone account because:
+
+- Referential integrity is automatic — the `id` never disappears, so nothing
+  can dangle, and no cross-database sweep is required.
+- History stays **attributable**. Under a shared tombstone, two different
+  people's work both becomes "Deleted User" and the record becomes ambiguous.
+- It is a single-row update in one database, rather than a rewrite of every
+  referencing row across two.
+- It frees the original email address for reuse in a controlled way.
+
+To an administrator this looks like deletion; underneath, the identifier
+survives.
+
+A tombstone/system account is still worth having, but for a **different
+purpose**: owning records that never had a real owner (imported data,
+automation, system actions). Not for absorbing deleted users.
+
+### Rejected: a background task that hard-deletes unused accounts
+
+Considered and rejected — deleting a deactivated user after *N* days if they
+"own nothing":
+
+- **"Owns nothing" is not cheaply knowable.** Identity would have to query CMS
+  (and every future service) for test cases, runs, results and `User`-typed
+  field values, breaking the service separation described in §9.1.
+- **It races.** The check can pass and a reference be created immediately
+  afterwards, with no foreign key to prevent it — producing exactly the
+  dangling references this section avoids.
+- **It is non-deterministic to the operator.** Two accounts deactivated on the
+  same day behave differently depending on whether either happened to author
+  anything.
+- **It does not satisfy erasure**, which must be acted on promptly when
+  requested, not opportunistically. Anonymisation covers that immediately.
+- The benefit is a negligible amount of disk, traded against the ability to
+  answer "who was this account?" during a later security review.
+
+**A narrower form may be worth revisiting:** permitting hard delete only for
+an account that has **never been used** — no successful login and no
+`project_members` rows. Both are checkable entirely within `identity.db`, and
+a user who has never logged in cannot have authored content elsewhere, so
+there is no cross-service query and no race. This requires a `last_login`
+column, which does not currently exist, and should be an explicit
+administrator action rather than a timed sweep.
+
+Note this is distinct from the purge sweeper in §6, which applies to
+soft-deleted projects and test cases. Those are not referenced by history in
+the way user accounts are.
+
 ## 11. Implementation status
 
 The grid above is deliberately designed ahead of the data model. Only Test
@@ -466,7 +664,7 @@ Admin areas (future grid, §5.1):
 | Projects | `prj_projects` | Exists, incl. soft delete |
 | Testcase Fields | `tc_custom_fields` | Exists; admin UI built |
 | Site Settings | — | Portal page is a placeholder; no backend |
-| Users | `user_profile` | Exists; identity exposes auth + health routes only, no user-management API |
+| Users | `user_profile` | Exists; identity exposes auth + health routes only, no user-management API (see §5.3.7) |
 
 Note: `Test Results` above means *test execution results*. It is unrelated to
 `testcase_field_values`, which stores custom field values on test case
