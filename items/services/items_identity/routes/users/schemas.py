@@ -32,3 +32,125 @@ SCHEMA_GET_USER_PROFILE_REQUEST: dict = {
     },
     "required": ["email_address"]
 }
+
+SCHEMA_CREATE_USER_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+    {
+        "email_address":
+        {
+            "type": "string",
+            "format": "email",
+            "minLength": 3,
+            "maxLength": 320
+        },
+        "full_name":
+        {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+        },
+        "display_name":
+        {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+        },
+        "password":
+        {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 1000
+        },
+        "is_administrator":
+        {
+            "type": "boolean"
+        }
+    },
+    "required": ["email_address", "full_name", "display_name"]
+}
+
+SCHEMA_MODIFY_USER_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+
+    "type": "object",
+    "additionalProperties": False,
+    "minProperties": 1,
+
+    "properties":
+    {
+        "full_name":
+        {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+        },
+        "display_name":
+        {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+        },
+        "account_status":
+        {
+            "type": "integer",
+            "enum": [0, 1]
+        },
+        "is_administrator":
+        {
+            "type": "boolean"
+        },
+    },
+    "required": []
+}
+
+SCHEMA_RESET_PASSWORD_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+    {
+        "new_password":
+        {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 1000
+        }
+    },
+    "required": ["new_password"]
+}
+
+SCHEMA_CHANGE_PASSWORD_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+    {
+        "user_id":
+        {
+            "type": "integer",
+            "minimum": 1
+        },
+        "current_password":
+        {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+        },
+        "new_password":
+        {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 1000
+        }
+    },
+    "required": ["user_id", "current_password", "new_password"]
+}
