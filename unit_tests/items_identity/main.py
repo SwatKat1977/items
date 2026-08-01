@@ -6,7 +6,16 @@ from test_apis_authentication_api import TestAuthenticatePasswordHandler
 from test_apis_health_api import TestHealthHandler
 from test_services_authentication_service import TestAuthenticationService
 from test_services_user_profile_service import TestUserProfileService
+from test_services_user_management_service import TestUserManagementService
 from test_apis_user_profile_api import TestGetUserProfileHandler
+from test_apis_user_management import (
+    TestListUsersHandler,
+    TestGetUserHandler,
+    TestCreateUserHandler,
+    TestModifyUserHandler,
+    TestResetPasswordHandler,
+    TestChangePasswordHandler,
+)
 from test_create_routes import (TestCreateAuthRoutes, TestCreateSystemRoutes,
                                 TestCreateUsersRoutes, TestCreateRoutes)
 
