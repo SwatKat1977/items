@@ -649,6 +649,203 @@
                 }
               },
               "response": []
+            },
+            {
+              "name": "List Users",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/users",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get User",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/users/1",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "users",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create User (generated password)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email_address\": \"gemma@localhost\",\n    \"full_name\": \"Gemma Tester\",\n    \"display_name\": \"Gemma\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/users",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create User (explicit password, administrator)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email_address\": \"second.admin@localhost\",\n    \"full_name\": \"Second Admin\",\n    \"display_name\": \"Admin2\",\n    \"is_administrator\": true,\n    \"enabled\": true,\n    \"password\": \"change-me-please\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/users",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "users"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update User",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"display_name\": \"Gem\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/users/2",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "users",
+                    "2"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Deactivate User",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"enabled\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/users/2",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "users",
+                    "2"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Set User Password",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"password\": \"a-new-password\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/users/2/password",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "users",
+                    "2",
+                    "password"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reset User Password (generated)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/users/2/password",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "users",
+                    "2",
+                    "password"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         },
