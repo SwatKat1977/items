@@ -71,7 +71,7 @@ SCHEMA_CREATE_USER_REQUEST: dict = {
             "type": "boolean"
         }
     },
-    "required": ["email_address", "full_name", "display_name", "password"]
+    "required": ["email_address", "full_name", "display_name"]
 }
 
 SCHEMA_MODIFY_USER_REQUEST: dict = {
@@ -104,14 +104,8 @@ SCHEMA_MODIFY_USER_REQUEST: dict = {
         {
             "type": "boolean"
         },
-        "requesting_user_id":
-        {
-            "type": "integer",
-            "minimum": 1
-        }
     },
-    "required": ["full_name", "display_name", "account_status",
-                 "is_administrator", "requesting_user_id"]
+    "required": []
 }
 
 SCHEMA_RESET_PASSWORD_REQUEST: dict = {

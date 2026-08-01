@@ -162,7 +162,7 @@ An administrator provides:
 | `email_address` | Unique; used as the login identifier. Not changeable after creation (see §5.3.4) |
 | `full_name` | Display in reports and audit trails |
 | `display_name` | Shown in the UI; may differ from full name |
-| `password` | Set by the administrator; user should change on first login (see §5.3.5) |
+| `password` | Optional. If omitted, a 16-character cryptographically secure password is generated server-side and returned once in the response — it is never stored in plaintext and cannot be retrieved again. The administrator communicates it to the user out of band. |
 | `is_administrator` | Defaults to `false` |
 
 `account_status` is set to `ACTIVE` on creation. `insertion_date` and
@@ -182,10 +182,12 @@ An administrator may change:
 | `is_administrator` | Toggle; see constraint below |
 | `account_status` | Active ↔ Disabled (see §5.3.3) |
 
-**Constraint:** an administrator cannot remove their own `is_administrator`
-flag. This prevents the last admin accidentally locking everyone out of the
-admin panels. The server enforces this — the UI may hide the toggle on the
-current user's own record, but the endpoint must also reject the request.
+**Constraint:** no change may leave zero active administrators. The server
+rejects any update to `is_administrator` or `account_status` that would
+reduce the count of active administrator accounts to zero — regardless of
+which user is making the request and which user is the target. This is
+enforced at the service layer via a `COUNT` query before writing. The UI
+should surface the same constraint, but the endpoint is authoritative.
 
 `email_address` is not editable after creation (see §5.3.4).
 `password` is not modified here — it has its own flow (§5.3.5).
@@ -664,7 +666,7 @@ Admin areas (future grid, §5.1):
 | Projects | `prj_projects` | Exists, incl. soft delete |
 | Testcase Fields | `tc_custom_fields` | Exists; admin UI built |
 | Site Settings | — | Portal page is a placeholder; no backend |
-| Users | `user_profile` | Exists; identity exposes auth + health routes only, no user-management API (see §5.3.7) |
+| Users | `user_profile` | **Implemented** — all six routes from §5.3.7 are live on the identity service (`identity_user_management` branch) |
 
 Note: `Test Results` above means *test execution results*. It is unrelated to
 `testcase_field_values`, which stores custom field values on test case

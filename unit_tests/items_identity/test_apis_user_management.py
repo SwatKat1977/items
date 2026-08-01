@@ -162,7 +162,6 @@ class TestCreateUserHandler(unittest.IsolatedAsyncioTestCase):
             "email_address": "new@example.com",
             "full_name": "New User",
             "display_name": "New",
-            "password": "securepass",
         }
         body.update(overrides)
         mock_req = MagicMock()
@@ -200,6 +199,29 @@ class TestCreateUserHandler(unittest.IsolatedAsyncioTestCase):
         kwargs = self.mock_svc.create_user.call_args[1]
         self.assertTrue(kwargs["is_administrator"])
 
+    async def test_password_none_when_not_in_body(self):
+        """No password in body → service called with password=None."""
+        await self._call(UserCreateResult(user_id=1))
+        kwargs = self.mock_svc.create_user.call_args[1]
+        self.assertIsNone(kwargs["password"])
+
+    async def test_password_passed_when_in_body(self):
+        """Explicit password in body → passed through to service."""
+        await self._call(UserCreateResult(user_id=1), password="mypassword")
+        kwargs = self.mock_svc.create_user.call_args[1]
+        self.assertEqual(kwargs["password"], "mypassword")
+
+    async def test_generated_password_included_in_201_when_set(self):
+        resp = await self._call(
+            UserCreateResult(user_id=3, generated_password="abc123!@#XYZ"))
+        body = json.loads(await resp.get_data())
+        self.assertEqual(body["generated_password"], "abc123!@#XYZ")
+
+    async def test_generated_password_absent_from_201_when_not_set(self):
+        resp = await self._call(UserCreateResult(user_id=3))
+        body = json.loads(await resp.get_data())
+        self.assertNotIn("generated_password", body)
+
     async def test_response_is_json(self):
         resp = await self._call(UserCreateResult(user_id=1))
         self.assertEqual(resp.content_type, "application/json")
@@ -214,16 +236,9 @@ class TestModifyUserHandler(unittest.IsolatedAsyncioTestCase):
     asyncSetUp = _make_handler_setup(ModifyUserHandler)
 
     def _request(self, **overrides):
-        body = {
-            "full_name": "Updated Name",
-            "display_name": "Updated",
-            "account_status": 1,
-            "is_administrator": True,
-            "requesting_user_id": 2,
-        }
-        body.update(overrides)
+        # All fields optional (patch-style); default body is empty.
         mock_req = MagicMock()
-        mock_req.body = body
+        mock_req.body = overrides
         return mock_req
 
     async def _call(self, result: UserUpdateResult,
@@ -249,6 +264,11 @@ class TestModifyUserHandler(unittest.IsolatedAsyncioTestCase):
         body = json.loads(await resp.get_data())
         self.assertIn("error", body)
 
+    async def test_forbidden_error_mentions_last_administrator(self):
+        resp = await self._call(UserUpdateResult(forbidden=True))
+        body = json.loads(await resp.get_data())
+        self.assertIn("last", body["error"].lower())
+
     async def test_unavailable_returns_503(self):
         resp = await self._call(UserUpdateResult(available=False))
         self.assertEqual(resp.status_code, HTTPStatus.SERVICE_UNAVAILABLE)
@@ -260,6 +280,19 @@ class TestModifyUserHandler(unittest.IsolatedAsyncioTestCase):
         await target(self.handler, self._request(), user_id=99)
         self.assertEqual(
             self.mock_svc.update_user.call_args[1]["user_id"], 99)
+
+    async def test_supplied_fields_passed_to_service(self):
+        """Fields present in body are forwarded; absent fields are None."""
+        self.mock_svc.update_user = AsyncMock(
+            return_value=UserUpdateResult(success=True))
+        target = _undecorated(self.handler.modify_user)
+        await target(self.handler,
+                     self._request(full_name="Changed"), user_id=1)
+        kwargs = self.mock_svc.update_user.call_args[1]
+        self.assertEqual(kwargs["full_name"], "Changed")
+        self.assertIsNone(kwargs["display_name"])
+        self.assertIsNone(kwargs["account_status"])
+        self.assertIsNone(kwargs["is_administrator"])
 
     async def test_response_is_json(self):
         resp = await self._call(UserUpdateResult(success=True))

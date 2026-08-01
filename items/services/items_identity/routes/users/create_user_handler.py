@@ -64,7 +64,7 @@ class CreateUserHandler(BaseApiRoute):
             email=body["email_address"],
             full_name=body["full_name"],
             display_name=body["display_name"],
-            password=body["password"],
+            password=body.get("password"),
             is_administrator=body.get("is_administrator", False))
 
         if not result.available:
@@ -79,7 +79,10 @@ class CreateUserHandler(BaseApiRoute):
                 status=HTTPStatus.CONFLICT,
                 content_type="application/json")
 
+        response_body: dict = {"id": result.user_id}
+        if result.generated_password is not None:
+            response_body["generated_password"] = result.generated_password
         return Response(
-            json.dumps({"id": result.user_id}),
+            json.dumps(response_body),
             status=HTTPStatus.CREATED,
             content_type="application/json")

@@ -718,7 +718,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"email_address\": \"second.admin@localhost\",\n    \"full_name\": \"Second Admin\",\n    \"display_name\": \"Admin2\",\n    \"is_administrator\": true,\n    \"enabled\": true,\n    \"password\": \"change-me-please\"\n}",
+                  "raw": "{\n    \"email_address\": \"second.admin@localhost\",\n    \"full_name\": \"Second Admin\",\n    \"display_name\": \"Admin2\",\n    \"is_administrator\": true,\n    \"password\": \"change-me-please\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -771,7 +771,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"enabled\": false\n}",
+                  "raw": "{\n    \"account_status\": 0\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -798,7 +798,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"password\": \"a-new-password\"\n}",
+                  "raw": "{\n    \"new_password\": \"a-new-password\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -820,13 +820,13 @@
               "response": []
             },
             {
-              "name": "Reset User Password (generated)",
+              "name": "Reset User Password",
               "request": {
                 "method": "POST",
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{}",
+                  "raw": "{\n    \"new_password\": \"a-new-password\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"

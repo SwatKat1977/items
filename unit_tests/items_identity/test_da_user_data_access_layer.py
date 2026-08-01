@@ -245,3 +245,25 @@ class TestUserRepository(unittest.IsolatedAsyncioTestCase):
             UserRepository.UPDATE_PASSWORD_QUERY,
             ("$argon2id$newhash", 5),
             commit=True)
+
+    # -------------------------------------------------------
+    # count_active_administrators tests
+    # -------------------------------------------------------
+
+    async def test_count_active_admins_returns_count_from_db(self):
+        self.mock_db.run_query.return_value = (3,)
+        result = await self.repo.count_active_administrators(1)
+        self.assertEqual(result, 3)
+
+    async def test_count_active_admins_returns_zero_when_db_returns_none(self):
+        self.mock_db.run_query.return_value = None
+        result = await self.repo.count_active_administrators(1)
+        self.assertEqual(result, 0)
+
+    async def test_count_active_admins_passes_correct_query(self):
+        self.mock_db.run_query.return_value = (0,)
+        await self.repo.count_active_administrators(1)
+        self.mock_db.run_query.assert_called_once_with(
+            UserRepository.COUNT_ACTIVE_ADMINS_QUERY,
+            (1,),
+            fetch_one=True)

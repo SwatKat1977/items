@@ -43,6 +43,7 @@ class TestUserManagementService(unittest.IsolatedAsyncioTestCase):
         self.mock_repo.update_user = AsyncMock()
         self.mock_repo.update_password = AsyncMock()
         self.mock_repo.get_password_hash = AsyncMock()
+        self.mock_repo.count_active_administrators = AsyncMock(return_value=2)
 
         self.svc = UserManagementService(
             self.mock_logger, self.mock_state, self.mock_repo)
@@ -155,70 +156,97 @@ class TestUserManagementService(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result.available)
         self.mock_state.set_service_degraded.assert_called_once()
 
+    async def test_create_user_generates_password_when_none_supplied(self):
+        self.mock_repo.email_exists.return_value = False
+        self.mock_repo.create_user.return_value = 3
+        result = await self.svc.create_user("a@b.com", "F", "D", None, False)
+        self.assertIsNotNone(result.generated_password)
+        self.assertGreater(len(result.generated_password), 0)
+
+    async def test_create_user_stores_hash_of_generated_password(self):
+        self.mock_repo.email_exists.return_value = False
+        self.mock_repo.create_user.return_value = 3
+        result = await self.svc.create_user("a@b.com", "F", "D", None, False)
+        stored_hash = self.mock_repo.create_user_auth.call_args[0][1]
+        # The generated password must verify against the stored hash.
+        from argon2 import PasswordHasher as _PH
+        _PH().verify(stored_hash, result.generated_password)  # raises on mismatch
+
+    async def test_create_user_no_generated_password_when_password_supplied(self):
+        self.mock_repo.email_exists.return_value = False
+        self.mock_repo.create_user.return_value = 3
+        result = await self.svc.create_user("a@b.com", "F", "D", "mypass", False)
+        self.assertIsNone(result.generated_password)
+
     # -------------------------------------------------------
     # update_user tests
     # -------------------------------------------------------
 
     async def test_update_user_returns_unavailable_when_state_unavailable(self):
         self.mock_state.is_available.return_value = False
-        result = await self.svc.update_user(1, "F", "D", 1, True, 2)
+        result = await self.svc.update_user(1)
         self.assertFalse(result.available)
 
     async def test_update_user_returns_not_found_when_user_missing(self):
         self.mock_repo.get_user_by_id.return_value = None
-        result = await self.svc.update_user(99, "F", "D", 1, True, 2)
+        result = await self.svc.update_user(99)
         self.assertFalse(result.found)
 
-    async def test_update_user_forbids_self_demotion(self):
-        """Admin cannot remove their own is_administrator flag."""
-        # row[6] = 1 (currently admin), is_administrator=False, user_id == requesting_user_id
-        self.mock_repo.get_user_by_id.return_value = _USER_ROW  # id=1, is_admin=1
+    async def test_update_user_forbids_removing_last_admin_flag(self):
+        """Cannot remove admin flag if only one active admin remains."""
+        self.mock_repo.get_user_by_id.return_value = _USER_ROW  # is_admin=1, status=1
+        self.mock_repo.count_active_administrators.return_value = 1
         result = await self.svc.update_user(
-            user_id=1,
-            full_name="F",
-            display_name="D",
-            account_status=1,
-            is_administrator=False,
-            requesting_user_id=1)
+            user_id=1, is_administrator=False)
         self.assertTrue(result.forbidden)
         self.mock_repo.update_user.assert_not_called()
 
-    async def test_update_user_allows_admin_to_demote_other_user(self):
-        """Admin can remove another user's admin flag."""
-        other_admin_row = (2, "b@c.com", "B", "B", 1, 0, 1)
-        self.mock_repo.get_user_by_id.return_value = other_admin_row
+    async def test_update_user_forbids_deactivating_last_admin(self):
+        """Cannot deactivate an account if it is the only active admin."""
+        self.mock_repo.get_user_by_id.return_value = _USER_ROW  # is_admin=1, status=1
+        self.mock_repo.count_active_administrators.return_value = 1
         result = await self.svc.update_user(
-            user_id=2,
-            full_name="B",
-            display_name="B",
-            account_status=1,
-            is_administrator=False,
-            requesting_user_id=1)  # different user making the request
+            user_id=1, account_status=0)
+        self.assertTrue(result.forbidden)
+        self.mock_repo.update_user.assert_not_called()
+
+    async def test_update_user_allows_removing_admin_flag_when_others_exist(self):
+        """Admin flag may be removed when other active admins exist."""
+        self.mock_repo.get_user_by_id.return_value = _USER_ROW
+        self.mock_repo.count_active_administrators.return_value = 2
+        result = await self.svc.update_user(user_id=1, is_administrator=False)
         self.assertFalse(result.forbidden)
         self.assertTrue(result.success)
 
-    async def test_update_user_allows_self_update_without_demotion(self):
-        """Admin updating own name/status without changing admin flag is fine."""
-        self.mock_repo.get_user_by_id.return_value = _USER_ROW  # id=1, is_admin=1
-        result = await self.svc.update_user(
-            user_id=1,
-            full_name="New Name",
-            display_name="New Display",
-            account_status=1,
-            is_administrator=True,  # keeping the flag
-            requesting_user_id=1)
-        self.assertFalse(result.forbidden)
+    async def test_update_user_skips_last_admin_check_for_non_admin(self):
+        """No guard check when the target user is not currently an admin."""
+        non_admin_row = (2, "b@c.com", "B", "B", 1, 0, 0)  # is_admin=0
+        self.mock_repo.get_user_by_id.return_value = non_admin_row
+        result = await self.svc.update_user(user_id=2, is_administrator=False)
+        self.mock_repo.count_active_administrators.assert_not_called()
         self.assertTrue(result.success)
+
+    async def test_update_user_merges_supplied_fields_over_current(self):
+        """Only the supplied field is updated; others keep their current values."""
+        self.mock_repo.get_user_by_id.return_value = _USER_ROW
+        # Supply only full_name; rest should come from _USER_ROW.
+        await self.svc.update_user(user_id=1, full_name="Changed")
+        call_args = self.mock_repo.update_user.call_args[0]
+        # (user_id, full_name, display_name, account_status, is_administrator)
+        self.assertEqual(call_args[1], "Changed")
+        self.assertEqual(call_args[2], "Display")   # unchanged
+        self.assertEqual(call_args[3], 1)            # unchanged
+        self.assertTrue(call_args[4])                # unchanged
 
     async def test_update_user_returns_success(self):
         self.mock_repo.get_user_by_id.return_value = _USER_ROW
-        result = await self.svc.update_user(1, "F", "D", 1, True, 2)
+        result = await self.svc.update_user(1, full_name="F")
         self.assertTrue(result.success)
         self.mock_repo.update_user.assert_awaited_once()
 
     async def test_update_user_returns_unavailable_on_db_exception(self):
         self.mock_repo.get_user_by_id.side_effect = SqliteInterfaceException("err")
-        result = await self.svc.update_user(1, "F", "D", 1, True, 2)
+        result = await self.svc.update_user(1)
         self.assertFalse(result.available)
         self.mock_state.set_service_degraded.assert_called_once()
 

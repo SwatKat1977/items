@@ -15,6 +15,8 @@ limitations under the License.
 """
 from dataclasses import dataclass, field
 import logging
+import secrets
+import string
 from typing import Optional
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
@@ -24,6 +26,17 @@ from items.services.items_identity.data_access.user_repository import (
 from items.shared.account_status import AccountStatus
 from items.services.items_identity.logon_type import LogonType
 from items.shared.service_state import ServiceState
+
+_PASSWORD_ALPHABET = string.ascii_letters + string.digits + string.punctuation
+_GENERATED_PASSWORD_LENGTH = 16
+
+
+def _generate_password() -> str:
+    """Generate a cryptographically secure random password."""
+    return ''.join(
+        secrets.choice(_PASSWORD_ALPHABET)
+        for _ in range(_GENERATED_PASSWORD_LENGTH)
+    )
 
 
 def _row_to_dict(row: tuple) -> dict:
@@ -80,13 +93,16 @@ class UserCreateResult:
     """Outcome of a create-user request.
 
     Attributes:
-        available: False when the service is unavailable.
-        conflict:  True when the email address is already registered.
-        user_id:   The newly created user's ID on success.
+        available:          False when the service is unavailable.
+        conflict:           True when the email address is already registered.
+        user_id:            The newly created user's ID on success.
+        generated_password: Set when no password was supplied by the caller;
+                            returned exactly once and never stored in plaintext.
     """
     available: bool = True
     conflict: bool = False
     user_id: Optional[int] = field(default=None)
+    generated_password: Optional[str] = field(default=None)
 
 
 @dataclass
@@ -96,7 +112,7 @@ class UserUpdateResult:
     Attributes:
         available:  False when the service is unavailable.
         found:      False when no user exists with the requested ID.
-        forbidden:  True when the update was rejected (e.g. self-demotion).
+        forbidden:  True when the update would leave no active administrator.
         success:    True when the update was applied.
     """
     available: bool = True
@@ -195,11 +211,16 @@ class UserManagementService:
                           email: str,
                           full_name: str,
                           display_name: str,
-                          password: str,
+                          password: Optional[str],
                           is_administrator: bool) -> UserCreateResult:
         """Create a new user account.
 
-        Hashes the supplied password with Argon2 before storing it.
+        Hashes the supplied password with Argon2 before storing it. If
+        ``password`` is ``None`` a cryptographically secure random password
+        is generated and returned in :attr:`UserCreateResult.generated_password`
+        — it is never logged or stored in plaintext and cannot be retrieved
+        again.
+
         ``account_status`` is set to ``ACTIVE`` and ``logon_type`` to
         ``PASSWORD`` for all v1 accounts.
 
@@ -207,15 +228,22 @@ class UserManagementService:
             email:            Email address (login identifier; must be unique).
             full_name:        User's full name.
             display_name:     Name shown in the UI.
-            password:         Plain-text initial password.
+            password:         Plain-text initial password, or ``None`` to
+                              generate one automatically.
             is_administrator: Whether the account has administrator access.
 
         Returns:
             A :class:`UserCreateResult`. ``conflict`` is True if the email is
-            already registered.
+            already registered. ``generated_password`` is set when the caller
+            did not supply a password.
         """
         if not self._state.is_available():
             return UserCreateResult(available=False)
+
+        generated: Optional[str] = None
+        if password is None:
+            password = _generate_password()
+            generated = password
 
         try:
             if await self._repo.email_exists(email):
@@ -240,31 +268,34 @@ class UserManagementService:
                 "User creation database unavailable")
             return UserCreateResult(available=False)
 
-        return UserCreateResult(user_id=user_id)
+        return UserCreateResult(user_id=user_id, generated_password=generated)
 
     async def update_user(self,
                           user_id: int,
-                          full_name: str,
-                          display_name: str,
-                          account_status: int,
-                          is_administrator: bool,
-                          requesting_user_id: int) -> UserUpdateResult:
-        """Update a user's profile fields.
+                          full_name: Optional[str] = None,
+                          display_name: Optional[str] = None,
+                          account_status: Optional[int] = None,
+                          is_administrator: Optional[bool] = None
+                          ) -> UserUpdateResult:
+        """Update a user's profile fields (patch-style).
 
-        Prevents an administrator from removing their own ``is_administrator``
-        flag (self-demotion guard, §5.3.2 of user_roles_design.md).
+        Only the fields that are not ``None`` are changed; omitted fields
+        retain their current values.  Before writing, the method checks that
+        the change would not leave zero active administrators (last-admin
+        guard).
 
         Args:
-            user_id:            The user to update.
-            full_name:          New full name.
-            display_name:       New display name.
-            account_status:     New account status.
-            is_administrator:   New administrator flag.
-            requesting_user_id: ID of the user making the request (used for
-                the self-demotion check).
+            user_id:          The user to update.
+            full_name:        New full name, or ``None`` to leave unchanged.
+            display_name:     New display name, or ``None`` to leave unchanged.
+            account_status:   New account status, or ``None`` to leave
+                              unchanged.
+            is_administrator: New administrator flag, or ``None`` to leave
+                              unchanged.
 
         Returns:
-            A :class:`UserUpdateResult`.
+            A :class:`UserUpdateResult`. ``forbidden`` is True when the
+            update would leave no active administrator.
         """
         if not self._state.is_available():
             return UserUpdateResult(available=False)
@@ -274,14 +305,26 @@ class UserManagementService:
             if row is None:
                 return UserUpdateResult(found=False)
 
-            # Self-demotion guard: an administrator cannot remove their own flag.
-            if (user_id == requesting_user_id
-                    and bool(row[6])          # current is_administrator
-                    and not is_administrator):
-                return UserUpdateResult(forbidden=True)
+            # Merge supplied values over current values.
+            _, _, cur_full_name, cur_display_name, cur_status, _, cur_is_admin = row
+            new_full_name = full_name if full_name is not None else cur_full_name
+            new_display_name = (display_name if display_name is not None
+                                else cur_display_name)
+            new_status = (account_status if account_status is not None
+                          else cur_status)
+            new_is_admin = (is_administrator if is_administrator is not None
+                            else bool(cur_is_admin))
 
-            await self._repo.update_user(user_id, full_name, display_name,
-                                         account_status, is_administrator)
+            # Last-admin guard: reject if this change would leave zero active admins.
+            if bool(cur_is_admin) and (not new_is_admin
+                                       or new_status != AccountStatus.ACTIVE.value):
+                admin_count = await self._repo.count_active_administrators(
+                    AccountStatus.ACTIVE.value)
+                if admin_count <= 1:
+                    return UserUpdateResult(forbidden=True)
+
+            await self._repo.update_user(user_id, new_full_name, new_display_name,
+                                         new_status, new_is_admin)
 
         except SqliteInterfaceException as ex:
             self._logger.exception(

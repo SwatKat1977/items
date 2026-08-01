@@ -50,30 +50,26 @@ class ModifyUserHandler(BaseApiRoute):
                           user_id: int) -> Response:
         """Update a user's profile fields.
 
-        ``requesting_user_id`` must be supplied in the body so that the
-        service can enforce the self-demotion guard (§5.3.2 of
-        user_roles_design.md) without the gateway needing a separate lookup.
-
         Args:
-            request_msg: Validated request containing ``full_name``,
-                ``display_name``, ``account_status``, ``is_administrator``,
-                and ``requesting_user_id``.
+            request_msg: Validated request. All fields are optional:
+                ``full_name``, ``display_name``, ``account_status``,
+                ``is_administrator``. Omitted fields retain their current
+                values.
             user_id: The user to update (from the URL).
 
         Returns:
             200 on success.
-            403 if the update is forbidden (e.g. self-demotion).
+            403 if the update would leave no active administrator.
             404 if no user exists with that ID.
             503 if the service is unavailable.
         """
         body = request_msg.body
         result = await self._service.update_user(
             user_id=user_id,
-            full_name=body["full_name"],
-            display_name=body["display_name"],
-            account_status=body["account_status"],
-            is_administrator=body["is_administrator"],
-            requesting_user_id=body["requesting_user_id"])
+            full_name=body.get("full_name"),
+            display_name=body.get("display_name"),
+            account_status=body.get("account_status"),
+            is_administrator=body.get("is_administrator"))
 
         if not result.available:
             return Response(
@@ -90,8 +86,7 @@ class ModifyUserHandler(BaseApiRoute):
         if result.forbidden:
             return Response(
                 json.dumps({"error":
-                            "An administrator cannot remove their own "
-                            "administrator flag"}),
+                            "Cannot remove the last active administrator"}),
                 status=HTTPStatus.FORBIDDEN,
                 content_type="application/json")
 

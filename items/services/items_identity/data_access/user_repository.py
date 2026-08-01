@@ -59,6 +59,10 @@ class UserRepository:
     UPDATE_PASSWORD_QUERY: str = (
         "UPDATE user_auth_details SET password = ? WHERE user_id = ?")
 
+    COUNT_ACTIVE_ADMINS_QUERY: str = (
+        "SELECT COUNT(*) FROM user_profile "
+        "WHERE is_administrator = 1 AND account_status = ?")
+
     GET_PASSWORD_HASH_QUERY: str = (
         "SELECT password "
         "FROM user_auth_details "
@@ -310,3 +314,22 @@ class UserRepository:
         await self._db.run_query(self.UPDATE_PASSWORD_QUERY,
                                  (password_hash, user_id),
                                  commit=True)
+
+    async def count_active_administrators(self, active_status: int) -> int:
+        """Return the number of active administrator accounts.
+
+        Args:
+            active_status: The ``account_status`` value that means active
+                (i.e. ``AccountStatus.ACTIVE.value``).
+
+        Returns:
+            Count of rows in ``user_profile`` where ``is_administrator = 1``
+            and ``account_status = active_status``.
+
+        Raises:
+            SqliteInterfaceException: If the database query fails.
+        """
+        row = await self._db.run_query(self.COUNT_ACTIVE_ADMINS_QUERY,
+                                       (active_status,),
+                                       fetch_one=True)
+        return row[0] if row else 0
