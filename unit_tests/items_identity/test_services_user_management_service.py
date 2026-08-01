@@ -1,6 +1,7 @@
 import unittest
 import logging
 from unittest.mock import MagicMock, AsyncMock, patch
+from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 from weaver_framework.database.sqlite_interface import SqliteInterfaceException
 from services.user_management_service import (
@@ -275,7 +276,7 @@ class TestUserManagementService(unittest.IsolatedAsyncioTestCase):
     async def test_change_own_password_returns_wrong_password_on_mismatch(self):
         self.mock_repo.get_user_by_id.return_value = _USER_ROW
         self.mock_repo.get_password_hash.return_value = "$argon2id$hash"
-        with patch.object(self.svc._ph, "verify",
+        with patch.object(PasswordHasher, "verify",
                           side_effect=VerifyMismatchError()):
             result = await self.svc.change_own_password(1, "wrongpass", "new")
         self.assertTrue(result.wrong_password)
@@ -284,7 +285,7 @@ class TestUserManagementService(unittest.IsolatedAsyncioTestCase):
     async def test_change_own_password_returns_unavailable_on_verification_error(self):
         self.mock_repo.get_user_by_id.return_value = _USER_ROW
         self.mock_repo.get_password_hash.return_value = "$argon2id$hash"
-        with patch.object(self.svc._ph, "verify",
+        with patch.object(PasswordHasher, "verify",
                           side_effect=VerificationError()):
             result = await self.svc.change_own_password(1, "old", "new")
         self.assertFalse(result.available)
@@ -292,7 +293,7 @@ class TestUserManagementService(unittest.IsolatedAsyncioTestCase):
     async def test_change_own_password_returns_unavailable_on_invalid_hash_error(self):
         self.mock_repo.get_user_by_id.return_value = _USER_ROW
         self.mock_repo.get_password_hash.return_value = "not-a-hash"
-        with patch.object(self.svc._ph, "verify",
+        with patch.object(PasswordHasher, "verify",
                           side_effect=InvalidHashError()):
             result = await self.svc.change_own_password(1, "old", "new")
         self.assertFalse(result.available)
@@ -300,7 +301,7 @@ class TestUserManagementService(unittest.IsolatedAsyncioTestCase):
     async def test_change_own_password_updates_with_new_hash(self):
         self.mock_repo.get_user_by_id.return_value = _USER_ROW
         self.mock_repo.get_password_hash.return_value = "$argon2id$hash"
-        with patch.object(self.svc._ph, "verify", return_value=True):
+        with patch.object(PasswordHasher, "verify", return_value=True):
             result = await self.svc.change_own_password(1, "old", "newpass")
         self.assertTrue(result.success)
         stored_hash = self.mock_repo.update_password.call_args[0][1]
