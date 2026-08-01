@@ -297,6 +297,7 @@ class UserManagementService:
             A :class:`UserUpdateResult`. ``forbidden`` is True when the
             update would leave no active administrator.
         """
+        # pylint: disable=too-many-locals
         if not self._state.is_available():
             return UserUpdateResult(available=False)
 
@@ -389,6 +390,7 @@ class UserManagementService:
             A :class:`PasswordResult`. ``wrong_password`` is True when the
             current password did not match.
         """
+        # pylint: disable=too-many-return-statements
         if not self._state.is_available():
             return PasswordResult(available=False)
 

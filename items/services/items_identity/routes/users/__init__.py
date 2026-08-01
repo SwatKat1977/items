@@ -58,15 +58,16 @@ def create_users_routes(logger: logging.Logger,
     Returns:
         A configured Quart blueprint containing all registered user routes.
     """
+    # pylint: disable=too-many-locals
     users_routes = quart.Blueprint("users_routes", __name__)
 
-    profile_handler = GetUserProfileHandler(logger, service_state, config)
-    list_handler = ListUsersHandler(logger, service_state, config)
-    get_handler = GetUserHandler(logger, service_state, config)
-    create_handler = CreateUserHandler(logger, service_state, config)
-    modify_handler = ModifyUserHandler(logger, service_state, config)
-    reset_password_handler = ResetPasswordHandler(logger, service_state, config)
-    change_password_handler = ChangePasswordHandler(logger, service_state, config)
+    handler_profile = GetUserProfileHandler(logger, service_state, config)
+    handler_list = ListUsersHandler(logger, service_state, config)
+    handler_get = GetUserHandler(logger, service_state, config)
+    handler_create = CreateUserHandler(logger, service_state, config)
+    handler_modify = ModifyUserHandler(logger, service_state, config)
+    handler_reset_password = ResetPasswordHandler(logger, service_state, config)
+    handler_change_password = ChangePasswordHandler(logger, service_state, config)
 
     logger.debug("Registering Users API routes:")
 
@@ -89,30 +90,30 @@ def create_users_routes(logger: logging.Logger,
 
     @users_routes.route('/users/profile', methods=['POST'])
     async def get_user_profile_request():
-        return await profile_handler.get_user_profile()
+        return await handler_profile.get_user_profile()
 
     @users_routes.route('/users', methods=['GET'])
     async def list_users_request():
-        return await list_handler.list_users()
+        return await handler_list.list_users()
 
     @users_routes.route('/users', methods=['POST'])
     async def create_user_request():
-        return await create_handler.create_user()
+        return await handler_create.create_user()
 
     @users_routes.route('/users/<int:user_id>', methods=['GET'])
     async def get_user_request(user_id: int):
-        return await get_handler.get_user(user_id)
+        return await handler_get.get_user(user_id)
 
     @users_routes.route('/users/<int:user_id>', methods=['PATCH'])
     async def modify_user_request(user_id: int):
-        return await modify_handler.modify_user(user_id=user_id)
+        return await handler_modify.modify_user(user_id=user_id)
 
     @users_routes.route('/users/<int:user_id>/password', methods=['POST'])
     async def reset_password_request(user_id: int):
-        return await reset_password_handler.reset_password(user_id=user_id)
+        return await handler_reset_password.reset_password(user_id=user_id)
 
     @users_routes.route('/users/me/password', methods=['POST'])
     async def change_password_request():
-        return await change_password_handler.change_password()
+        return await handler_change_password.change_password()
 
     return users_routes
