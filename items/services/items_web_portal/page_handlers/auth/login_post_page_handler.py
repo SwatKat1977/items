@@ -55,10 +55,15 @@ class LoginPostPageHandler(PortalPageHandler):
         """
         # pylint: disable=too-many-return-statements
         try:
-            if await self._has_auth_cookies() and await self._validate_cookies():
-                redirect = self._generate_redirect('')
-                response: Response = await make_response(redirect)
-                return response
+            if await self._has_auth_cookies():
+                # _validate_cookies returns (is_valid, is_administrator); the
+                # tuple must be unpacked rather than tested directly, since a
+                # non-empty tuple is always truthy.
+                is_valid, _ = await self._validate_cookies()
+                if is_valid:
+                    redirect = self._generate_redirect('')
+                    response: Response = await make_response(redirect)
+                    return response
 
         except BaseItemsException as ex:
             self._logger.error('Internal Error: %s', ex)

@@ -31,6 +31,8 @@ from items.services.items_web_portal.page_handlers.admin.dashboard import \
     create_admin_dashboard_page_handler
 from items.services.items_web_portal.page_handlers.admin.projects import \
     create_admin_projects_page_handlers
+from items.services.items_web_portal.page_handlers.admin.users import \
+    create_admin_users_page_handlers
 
 
 def create_admin_page_handlers(injections: PageHandlerInjections,
@@ -175,5 +177,10 @@ def create_admin_page_handlers(injections: PageHandlerInjections,
 
     # Register testcases pages
     routes.register_blueprint(create_admin_projects_page_handlers(injections))
+
+    # Register user management pages under /users_roles/
+    routes.register_blueprint(
+        create_admin_users_page_handlers(injections),
+        url_prefix='/users_roles')
 
     return routes
