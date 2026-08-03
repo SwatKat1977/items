@@ -44,8 +44,14 @@
           </td>
           <td class="text-end">
             <button class="btn btn-link text-primary"
+                    title="Edit user"
                     onclick="window.location.href='/admin/users_roles/{{ user.id }}/modify'">
               <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-link text-secondary"
+                    title="Reset password"
+                    onclick="window.location.href='/admin/users_roles/{{ user.id }}/reset_password'">
+              <i class="bi bi-key"></i>
             </button>
           </td>
         </tr>

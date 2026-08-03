@@ -50,3 +50,4 @@ PAGE_INSTANCE_ADMIN_ADD_PROJECT: str = "instance_admin_add_project.html"
 PAGE_INSTANCE_ADMIN_MODIFY_PROJECT: str = "instance_admin_modify_project.html"
 
 PAGE_INSTANCE_ADMIN_ADD_USER: str = "instance_admin_add_user.html"
+PAGE_INSTANCE_ADMIN_MODIFY_USER: str = "instance_admin_modify_user.html"

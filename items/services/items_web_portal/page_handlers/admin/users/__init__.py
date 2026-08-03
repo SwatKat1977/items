@@ -19,12 +19,14 @@ from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
 from items.services.items_web_portal.page_handlers.admin.users.admin_add_user_page_handler import (
     AdminAddUserPageHandler)
+from items.services.items_web_portal.page_handlers.admin.users.admin_modify_user_page_handler import (
+    AdminModifyUserPageHandler)
 
 
 def create_admin_users_page_handlers(injections: PageHandlerInjections) -> Blueprint:
     """Create the admin user management route handlers.
 
-    Registers routes for listing users and creating new users under the
+    Registers routes for listing, creating, and editing users under the
     /users_roles prefix.
 
     Args:
@@ -37,6 +39,12 @@ def create_admin_users_page_handlers(injections: PageHandlerInjections) -> Bluep
     routes = Blueprint('admin_users_routes', __name__)
 
     handler_add_user = AdminAddUserPageHandler(
+        injections.logger,
+        injections.config,
+        injections.rest_client,
+        injections.metadata)
+
+    handler_modify_user = AdminModifyUserPageHandler(
         injections.logger,
         injections.config,
         injections.rest_client,
@@ -55,5 +63,19 @@ def create_admin_users_page_handlers(injections: PageHandlerInjections) -> Bluep
     @routes.route('/add', methods=['POST'])
     async def admin_add_user_post():
         return await handler_add_user.add_user_post()
+
+    injections.logger.debug("=> %s GET /admin/users_roles/<id>/modify",
+                            "Admin modify user page (read)".ljust(40))
+
+    @routes.route('/<int:user_id>/modify', methods=['GET'])
+    async def admin_modify_user_get(user_id: int):
+        return await handler_modify_user.modify_user_get(user_id)
+
+    injections.logger.debug("=> %s POST /admin/users_roles/<id>/modify",
+                            "Admin modify user (submit)".ljust(40))
+
+    @routes.route('/<int:user_id>/modify', methods=['POST'])
+    async def admin_modify_user_post(user_id: int):
+        return await handler_modify_user.modify_user_post(user_id)
 
     return routes
