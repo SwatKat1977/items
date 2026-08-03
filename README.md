@@ -4,9 +4,10 @@ ITEMS is a web-based test management tool written in Python that can be used by 
 
 ## News  
 
-### 3rd July 2026
-Rework of the entire service is in progress. You cannot run ITEMS from
-the main branch.
+### 3rd August 2026
+The current Alpha release is [V0.1.0](https://github.com/SwatKat1977/items/releases/tag/V0.1.0)
+
+IMPORTANT: The current Alpha is not production ready/safe and is currently an early preview.
 
 ### Previous News
 - Important Information: The version is currently at V0.0.0 [MVP] on the main branch
