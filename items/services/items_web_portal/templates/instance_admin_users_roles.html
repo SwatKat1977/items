@@ -3,6 +3,7 @@
 {% block head %}{{ super() }}
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/instance_admin_users_roles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/instance_admin_add_user.css') }}">
 {% endblock %}
 
 {% block body_params %}id="body-pd"{% endblock %}
@@ -62,4 +63,8 @@
         <button class="btn btn-primary" onclick="window.location.href='/admin/users_roles/add'">+ Add User</button>
       </div>
     </div>
+
+    {% if error_msg_str %}
+    <div id="error_msg">{{ error_msg_str }}</div>
+    {% endif %}
 {% endblock %}

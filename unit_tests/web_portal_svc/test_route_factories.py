@@ -48,6 +48,7 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
                 "announcement": "",
                 "show_announcement_on_overview": False,
                 "projects": [],
+                "users": [],
                 "folders": [],
                 "test_cases": [],
             })
@@ -192,6 +193,48 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
         async with self.client as c:
             response = await c.post("/admin/1/modify_project",
                                     form=_VALID_PROJECT_BODY)
+        self.assertNotEqual(response.status_code, 405)
+
+    # ------------------------------------------------------------------
+    # Admin users
+    # ------------------------------------------------------------------
+
+    async def test_admin_add_user_get_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/admin/users_roles/add")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_add_user_post_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/admin/users_roles/add",
+                                    form={"full_name": "Alice",
+                                          "display_name": "Alice",
+                                          "email_address": "a@b.com",
+                                          "password": "password1"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_modify_user_get_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/admin/users_roles/1/modify")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_modify_user_post_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/admin/users_roles/1/modify",
+                                    form={"full_name": "Alice",
+                                          "display_name": "Alice"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_reset_password_get_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/admin/users_roles/1/reset_password")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_reset_password_post_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/admin/users_roles/1/reset_password",
+                                    form={"new_password": "password1",
+                                          "confirm_password": "password1"})
         self.assertNotEqual(response.status_code, 405)
 
     # ------------------------------------------------------------------
