@@ -209,7 +209,7 @@ class TestCreateUserHandler(unittest.IsolatedAsyncioTestCase):
     async def test_missing_body_returns_400(self):
         async with self.client as c:
             resp = await c.post("/users", data="not json",
-                                content_type="text/plain")
+                                headers={"Content-Type": "text/plain"})
         self.assertEqual(resp.status_code, 400)
         self.mock_rc.post.assert_not_called()
 
@@ -275,7 +275,7 @@ class TestModifyUserHandler(unittest.IsolatedAsyncioTestCase):
     async def test_missing_body_returns_400(self):
         async with self.client as c:
             resp = await c.patch("/users/1", data="not json",
-                                 content_type="text/plain")
+                                 headers={"Content-Type": "text/plain"})
         self.assertEqual(resp.status_code, 400)
         self.mock_rc.patch.assert_not_called()
 
@@ -332,7 +332,7 @@ class TestResetPasswordHandler(unittest.IsolatedAsyncioTestCase):
     async def test_missing_body_returns_400(self):
         async with self.client as c:
             resp = await c.post("/users/1/password", data="not json",
-                                content_type="text/plain")
+                                headers={"Content-Type": "text/plain"})
         self.assertEqual(resp.status_code, 400)
         self.mock_rc.post.assert_not_called()
 
