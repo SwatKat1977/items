@@ -1,0 +1,59 @@
+"""
+Copyright 2025-2026 Integrated Test Management Suite Development Team
+Copyright 2017-2025 INTMAC Development Team [Defunct]
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+from quart import Blueprint
+from items.services.items_web_portal.page_handler_injections import (
+    PageHandlerInjections)
+from items.services.items_web_portal.page_handlers.admin.users.admin_add_user_page_handler import (
+    AdminAddUserPageHandler)
+
+
+def create_admin_users_page_handlers(injections: PageHandlerInjections) -> Blueprint:
+    """Create the admin user management route handlers.
+
+    Registers routes for listing users and creating new users under the
+    /users_roles prefix.
+
+    Args:
+        injections: Dependency injection container providing the logger,
+            configuration, REST client, and metadata.
+
+    Returns:
+        A configured Quart blueprint containing the user management routes.
+    """
+    routes = Blueprint('admin_users_routes', __name__)
+
+    handler_add_user = AdminAddUserPageHandler(
+        injections.logger,
+        injections.config,
+        injections.rest_client,
+        injections.metadata)
+
+    injections.logger.debug("=> %s GET /admin/users_roles/add",
+                            "Admin add user page (read)".ljust(40))
+
+    @routes.route('/add', methods=['GET'])
+    async def admin_add_user_get():
+        return await handler_add_user.add_user_get()
+
+    injections.logger.debug("=> %s POST /admin/users_roles/add",
+                            "Admin add user (submit)".ljust(40))
+
+    @routes.route('/add', methods=['POST'])
+    async def admin_add_user_post():
+        return await handler_add_user.add_user_post()
+
+    return routes

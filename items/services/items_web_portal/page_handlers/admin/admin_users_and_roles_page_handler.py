@@ -27,8 +27,9 @@ from items.services.items_web_portal.portal_page_handler import (
 class AdminUsersAndRolesPageHandler(PortalPageHandler):
     """Handles requests for the administration users and roles page.
 
-    This handler renders the administration page used to manage user
-    accounts and role assignments.
+    This handler fetches the current list of users from the gateway and
+    renders the administration page used to manage user accounts and role
+    assignments.
     """
 
     def __init__(self,
@@ -51,11 +52,30 @@ class AdminUsersAndRolesPageHandler(PortalPageHandler):
     async def users_and_roles(self):
         """Render the administration users and roles page.
 
+        Fetches all users from the gateway and passes them to the template.
+        On gateway failure the page is rendered with an empty user list and
+        an error message.
+
         Returns:
             The rendered administration users and roles page response.
         """
+        url = f"{self._config.apis_gateway_svc}web/users"
+        response = await self._rest_client.get(url)
+
+        if response.status_code == 200:
+            users = response.body.get("users", [])
+            error_msg_str = None
+        else:
+            self._logger.error(
+                "Failed to fetch users from gateway: status=%s",
+                response.status_code)
+            users = []
+            error_msg_str = "Could not load users — please try again."
+
         return await self._render_page(
             pages.PAGE_INSTANCE_ADMIN_USERS_AND_ROLES,
             instance_name=self._metadata_settings.instance_name,
             active_page="administration",
-            active_admin_page="admin_page_users_roles")
+            active_admin_page="admin_page_users_roles",
+            users=users,
+            error_msg_str=error_msg_str)

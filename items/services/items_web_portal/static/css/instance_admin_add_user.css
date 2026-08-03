@@ -1,0 +1,69 @@
+.user-create-tab .nav-link {
+  border: none;
+  background-color: transparent;
+  color: #000;
+}
+
+.user-create-tab .nav-link.active {
+  border-bottom: 2px solid #007bff;
+  font-weight: bold;
+  color: #007bff;
+}
+
+.user-create-tab .nav-link:hover {
+  color: #007bff;
+}
+
+#error_msg {
+    color: #ff4d4d;
+    font-weight: bold;
+    padding: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 6px;
+    border: 2px solid #ff4d4d;
+    background-color: #ffe6e6;
+    text-align: center;
+}
+
+#generated_password_msg {
+    padding: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 6px;
+    border: 2px solid #28a745;
+    background-color: #e6f4ea;
+    color: #155724;
+}
+
+#generated_password_msg code {
+    font-size: 1.1rem;
+    color: #155724;
+    background-color: #c3e6cb;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.cancelButton:hover {
+  background-color: #ede9e8 !important;
+  border-color: red !important;
+  color: red !important;
+}
+
+.cancel-icon {
+  display: inline-block;
+  color: red;
+  font-size: 18px;
+  width: 22px;
+  height: 22px;
+  text-align: center;
+  line-height: 20px;
+  margin-right: 5px;
+  transition: none;
+}
+
+.cancel-icon:hover {
+  color: red !important;
+  border-color: red !important;
+  background-color: #ffe6e6 !important;
+}
