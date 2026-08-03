@@ -1,0 +1,347 @@
+"""
+Unit tests for gateway user management route handlers:
+  GET  /users              - ListUsersHandler
+  GET  /users/<id>         - GetUserHandler
+  POST /users              - CreateUserHandler
+  PATCH /users/<id>        - ModifyUserHandler
+  POST /users/<id>/password - ResetPasswordHandler
+"""
+import json
+import unittest
+from unittest.mock import AsyncMock, MagicMock
+from quart import Quart
+from weaver_framework.microservice.api_response import ApiResponse
+from items.services.items_gateway.routes.web.users.list_users_handler import (
+    ListUsersHandler)
+from items.services.items_gateway.routes.web.users.get_user_handler import (
+    GetUserHandler)
+from items.services.items_gateway.routes.web.users.create_user_handler import (
+    CreateUserHandler)
+from items.services.items_gateway.routes.web.users.modify_user_handler import (
+    ModifyUserHandler)
+from items.services.items_gateway.routes.web.users.reset_password_handler import (
+    ResetPasswordHandler)
+
+_LOGGER = MagicMock()
+_USER = {
+    "id": 1,
+    "email_address": "a@b.com",
+    "full_name": "Full",
+    "display_name": "Display",
+    "account_status": 1,
+    "logon_type": 0,
+    "is_administrator": True,
+}
+
+
+def _config():
+    cfg = MagicMock()
+    cfg.apis_identity_svc = "http://identity/"
+    return cfg
+
+
+def _ok(body):
+    return ApiResponse(status_code=200, body=body)
+
+
+def _err(body, status=500):
+    return ApiResponse(status_code=status, body=body)
+
+
+def _conn_err():
+    r = ApiResponse(status_code=0, body=None)
+    r.exception_msg = "connection refused"
+    return r
+
+
+# ---------------------------------------------------------------------------
+# ListUsersHandler
+# ---------------------------------------------------------------------------
+
+class TestListUsersHandler(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.mock_rc = AsyncMock()
+        handler = ListUsersHandler(_LOGGER, _config(), self.mock_rc)
+        app = Quart(__name__)
+
+        @app.route("/users", methods=["GET"])
+        async def route():
+            return await handler.list_users()
+
+        self.client = app.test_client()
+
+    async def _get(self):
+        async with self.client as c:
+            return await c.get("/users")
+
+    async def test_success_returns_200_with_body(self):
+        self.mock_rc.get.return_value = _ok({"users": [_USER]})
+        resp = await self._get()
+        self.assertEqual(resp.status_code, 200)
+        body = json.loads(await resp.get_data())
+        self.assertEqual(body["users"], [_USER])
+
+    async def test_identity_url_is_correct(self):
+        self.mock_rc.get.return_value = _ok({"users": []})
+        await self._get()
+        self.mock_rc.get.assert_called_once_with("http://identity/users")
+
+    async def test_identity_503_is_propagated(self):
+        self.mock_rc.get.return_value = _err({"error": "unavailable"}, 503)
+        resp = await self._get()
+        self.assertEqual(resp.status_code, 503)
+
+    async def test_connection_error_returns_500(self):
+        self.mock_rc.get.return_value = _conn_err()
+        resp = await self._get()
+        self.assertEqual(resp.status_code, 500)
+
+    async def test_response_is_json(self):
+        self.mock_rc.get.return_value = _ok({"users": []})
+        resp = await self._get()
+        self.assertEqual(resp.content_type, "application/json")
+
+
+# ---------------------------------------------------------------------------
+# GetUserHandler
+# ---------------------------------------------------------------------------
+
+class TestGetUserHandler(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.mock_rc = AsyncMock()
+        handler = GetUserHandler(_LOGGER, _config(), self.mock_rc)
+        app = Quart(__name__)
+
+        @app.route("/users/<int:user_id>", methods=["GET"])
+        async def route(user_id: int):
+            return await handler.get_user(user_id)
+
+        self.client = app.test_client()
+
+    async def _get(self, user_id=1):
+        async with self.client as c:
+            return await c.get(f"/users/{user_id}")
+
+    async def test_success_returns_200_with_user(self):
+        self.mock_rc.get.return_value = _ok(_USER)
+        resp = await self._get(1)
+        self.assertEqual(resp.status_code, 200)
+        body = json.loads(await resp.get_data())
+        self.assertEqual(body, _USER)
+
+    async def test_user_id_included_in_url(self):
+        self.mock_rc.get.return_value = _ok(_USER)
+        await self._get(42)
+        self.mock_rc.get.assert_called_once_with("http://identity/users/42")
+
+    async def test_identity_404_is_propagated(self):
+        self.mock_rc.get.return_value = _err({"error": "User not found"}, 404)
+        resp = await self._get(99)
+        self.assertEqual(resp.status_code, 404)
+
+    async def test_connection_error_returns_500(self):
+        self.mock_rc.get.return_value = _conn_err()
+        resp = await self._get()
+        self.assertEqual(resp.status_code, 500)
+
+    async def test_response_is_json(self):
+        self.mock_rc.get.return_value = _ok(_USER)
+        resp = await self._get()
+        self.assertEqual(resp.content_type, "application/json")
+
+
+# ---------------------------------------------------------------------------
+# CreateUserHandler
+# ---------------------------------------------------------------------------
+
+class TestCreateUserHandler(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.mock_rc = AsyncMock()
+        handler = CreateUserHandler(_LOGGER, _config(), self.mock_rc)
+        app = Quart(__name__)
+
+        @app.route("/users", methods=["POST"])
+        async def route():
+            return await handler.create_user()
+
+        self.client = app.test_client()
+
+    async def _post(self, body):
+        async with self.client as c:
+            return await c.post("/users", json=body)
+
+    async def test_success_returns_201_with_id(self):
+        self.mock_rc.post.return_value = ApiResponse(
+            status_code=201, body={"id": 5})
+        resp = await self._post({"email_address": "a@b.com",
+                                  "full_name": "A", "display_name": "A"})
+        self.assertEqual(resp.status_code, 201)
+        body = json.loads(await resp.get_data())
+        self.assertEqual(body["id"], 5)
+
+    async def test_generated_password_propagated(self):
+        self.mock_rc.post.return_value = ApiResponse(
+            status_code=201, body={"id": 5, "generated_password": "xyz"})
+        resp = await self._post({"email_address": "a@b.com",
+                                  "full_name": "A", "display_name": "A"})
+        body = json.loads(await resp.get_data())
+        self.assertEqual(body["generated_password"], "xyz")
+
+    async def test_body_forwarded_to_identity(self):
+        self.mock_rc.post.return_value = ApiResponse(
+            status_code=201, body={"id": 1})
+        payload = {"email_address": "a@b.com",
+                   "full_name": "A", "display_name": "A"}
+        await self._post(payload)
+        _, kwargs = self.mock_rc.post.call_args
+        self.assertEqual(kwargs["json_data"], payload)
+
+    async def test_identity_409_is_propagated(self):
+        self.mock_rc.post.return_value = _err(
+            {"error": "Email address already registered"}, 409)
+        resp = await self._post({"email_address": "a@b.com",
+                                  "full_name": "A", "display_name": "A"})
+        self.assertEqual(resp.status_code, 409)
+
+    async def test_missing_body_returns_400(self):
+        async with self.client as c:
+            resp = await c.post("/users", data="not json",
+                                content_type="text/plain")
+        self.assertEqual(resp.status_code, 400)
+        self.mock_rc.post.assert_not_called()
+
+    async def test_connection_error_returns_500(self):
+        self.mock_rc.post.return_value = _conn_err()
+        resp = await self._post({"email_address": "a@b.com",
+                                  "full_name": "A", "display_name": "A"})
+        self.assertEqual(resp.status_code, 500)
+
+    async def test_response_is_json(self):
+        self.mock_rc.post.return_value = ApiResponse(
+            status_code=201, body={"id": 1})
+        resp = await self._post({"email_address": "a@b.com",
+                                  "full_name": "A", "display_name": "A"})
+        self.assertEqual(resp.content_type, "application/json")
+
+
+# ---------------------------------------------------------------------------
+# ModifyUserHandler
+# ---------------------------------------------------------------------------
+
+class TestModifyUserHandler(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.mock_rc = AsyncMock()
+        handler = ModifyUserHandler(_LOGGER, _config(), self.mock_rc)
+        app = Quart(__name__)
+
+        @app.route("/users/<int:user_id>", methods=["PATCH"])
+        async def route(user_id: int):
+            return await handler.modify_user(user_id)
+
+        self.client = app.test_client()
+
+    async def _patch(self, user_id=1, body=None):
+        async with self.client as c:
+            return await c.patch(f"/users/{user_id}",
+                                 json=body or {"display_name": "New"})
+
+    async def test_success_returns_200(self):
+        self.mock_rc.patch.return_value = _ok({"status": "ok"})
+        resp = await self._patch()
+        self.assertEqual(resp.status_code, 200)
+
+    async def test_user_id_and_body_forwarded(self):
+        self.mock_rc.patch.return_value = _ok({"status": "ok"})
+        await self._patch(user_id=7, body={"full_name": "Changed"})
+        call_args = self.mock_rc.patch.call_args
+        self.assertIn("users/7", call_args[0][0])
+        self.assertEqual(call_args[1]["json_data"], {"full_name": "Changed"})
+
+    async def test_identity_403_is_propagated(self):
+        self.mock_rc.patch.return_value = _err(
+            {"error": "Cannot remove the last active administrator"}, 403)
+        resp = await self._patch()
+        self.assertEqual(resp.status_code, 403)
+
+    async def test_identity_404_is_propagated(self):
+        self.mock_rc.patch.return_value = _err({"error": "User not found"}, 404)
+        resp = await self._patch()
+        self.assertEqual(resp.status_code, 404)
+
+    async def test_missing_body_returns_400(self):
+        async with self.client as c:
+            resp = await c.patch("/users/1", data="not json",
+                                 content_type="text/plain")
+        self.assertEqual(resp.status_code, 400)
+        self.mock_rc.patch.assert_not_called()
+
+    async def test_connection_error_returns_500(self):
+        self.mock_rc.patch.return_value = _conn_err()
+        resp = await self._patch()
+        self.assertEqual(resp.status_code, 500)
+
+    async def test_response_is_json(self):
+        self.mock_rc.patch.return_value = _ok({"status": "ok"})
+        resp = await self._patch()
+        self.assertEqual(resp.content_type, "application/json")
+
+
+# ---------------------------------------------------------------------------
+# ResetPasswordHandler
+# ---------------------------------------------------------------------------
+
+class TestResetPasswordHandler(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.mock_rc = AsyncMock()
+        handler = ResetPasswordHandler(_LOGGER, _config(), self.mock_rc)
+        app = Quart(__name__)
+
+        @app.route("/users/<int:user_id>/password", methods=["POST"])
+        async def route(user_id: int):
+            return await handler.reset_password(user_id)
+
+        self.client = app.test_client()
+
+    async def _post(self, user_id=1, body=None):
+        async with self.client as c:
+            return await c.post(f"/users/{user_id}/password",
+                                json=body or {"new_password": "newpass123"})
+
+    async def test_success_returns_200(self):
+        self.mock_rc.post.return_value = _ok({"status": "ok"})
+        resp = await self._post()
+        self.assertEqual(resp.status_code, 200)
+
+    async def test_user_id_and_body_forwarded(self):
+        self.mock_rc.post.return_value = _ok({"status": "ok"})
+        await self._post(user_id=3, body={"new_password": "abc"})
+        call_args = self.mock_rc.post.call_args
+        self.assertIn("users/3/password", call_args[0][0])
+        self.assertEqual(call_args[1]["json_data"], {"new_password": "abc"})
+
+    async def test_identity_404_is_propagated(self):
+        self.mock_rc.post.return_value = _err({"error": "User not found"}, 404)
+        resp = await self._post()
+        self.assertEqual(resp.status_code, 404)
+
+    async def test_missing_body_returns_400(self):
+        async with self.client as c:
+            resp = await c.post("/users/1/password", data="not json",
+                                content_type="text/plain")
+        self.assertEqual(resp.status_code, 400)
+        self.mock_rc.post.assert_not_called()
+
+    async def test_connection_error_returns_500(self):
+        self.mock_rc.post.return_value = _conn_err()
+        resp = await self._post()
+        self.assertEqual(resp.status_code, 500)
+
+    async def test_response_is_json(self):
+        self.mock_rc.post.return_value = _ok({"status": "ok"})
+        resp = await self._post()
+        self.assertEqual(resp.content_type, "application/json")

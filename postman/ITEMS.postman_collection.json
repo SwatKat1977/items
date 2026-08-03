@@ -1372,6 +1372,127 @@
                   "response": []
                 }
               ]
+            },
+            {
+              "name": "Users",
+              "item": [
+                {
+                  "name": "List Users",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/users",
+                      "host": ["{{GATEWAY_SVC_URL}}"],
+                      "path": ["web", "users"]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Get User",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/users/1",
+                      "host": ["{{GATEWAY_SVC_URL}}"],
+                      "path": ["web", "users", "1"]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Create User (generated password)",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"email_address\": \"gemma@localhost\",\n    \"full_name\": \"Gemma Tester\",\n    \"display_name\": \"Gemma\"\n}",
+                      "options": {"raw": {"language": "json"}}
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/users",
+                      "host": ["{{GATEWAY_SVC_URL}}"],
+                      "path": ["web", "users"]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Create User (explicit password, administrator)",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"email_address\": \"second.admin@localhost\",\n    \"full_name\": \"Second Admin\",\n    \"display_name\": \"Admin2\",\n    \"is_administrator\": true,\n    \"password\": \"change-me-please\"\n}",
+                      "options": {"raw": {"language": "json"}}
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/users",
+                      "host": ["{{GATEWAY_SVC_URL}}"],
+                      "path": ["web", "users"]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Update User",
+                  "request": {
+                    "method": "PATCH",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"display_name\": \"Gem\"\n}",
+                      "options": {"raw": {"language": "json"}}
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/users/2",
+                      "host": ["{{GATEWAY_SVC_URL}}"],
+                      "path": ["web", "users", "2"]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Deactivate User",
+                  "request": {
+                    "method": "PATCH",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"account_status\": 0\n}",
+                      "options": {"raw": {"language": "json"}}
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/users/2",
+                      "host": ["{{GATEWAY_SVC_URL}}"],
+                      "path": ["web", "users", "2"]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Reset User Password",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"new_password\": \"a-new-password\"\n}",
+                      "options": {"raw": {"language": "json"}}
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/users/2/password",
+                      "host": ["{{GATEWAY_SVC_URL}}"],
+                      "path": ["web", "users", "2", "password"]
+                    }
+                  },
+                  "response": []
+                }
+              ]
             }
           ]
         }

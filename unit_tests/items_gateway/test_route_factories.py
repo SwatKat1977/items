@@ -190,6 +190,40 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
         self.assertNotEqual(response.status_code, 405)
 
     # ------------------------------------------------------------------
+    # Users routes (routes/web/users/__init__.py)
+    # ------------------------------------------------------------------
+
+    async def test_list_users_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/web/users")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_get_user_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/web/users/1")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_create_user_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/web/users",
+                                    json={"email_address": "a@b.com",
+                                          "full_name": "A",
+                                          "display_name": "A"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_modify_user_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.patch("/web/users/1",
+                                     json={"display_name": "New"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_reset_password_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/web/users/1/password",
+                                    json={"new_password": "newpass123"})
+        self.assertNotEqual(response.status_code, 405)
+
+    # ------------------------------------------------------------------
     # Webhook routes (routes/web/webhook/__init__.py)
     # ------------------------------------------------------------------
 

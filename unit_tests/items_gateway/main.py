@@ -41,6 +41,13 @@ from test_testcase_custom_fields_handlers import (
     TestModifyCustomFieldHandler,
     TestMoveCustomFieldHandler,
 )
+from test_users_handlers import (
+    TestListUsersHandler,
+    TestGetUserHandler,
+    TestCreateUserHandler,
+    TestModifyUserHandler,
+    TestResetPasswordHandler,
+)
 from test_webhook_handler import TestGetMetadataHandler
 
 if __name__ == "__main__":
