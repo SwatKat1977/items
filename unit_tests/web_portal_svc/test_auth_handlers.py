@@ -132,6 +132,14 @@ class TestLoginGetPageHandler(unittest.IsolatedAsyncioTestCase):
                 "/login", headers={"Cookie": "items_token=a; items_user=b"})
         self.assertEqual(response.status_code, 200)
 
+        # A redirect is also served as a 200 (it is a meta-refresh document),
+        # so the status code alone cannot distinguish the login page from a
+        # bounce to '/'. Assert the absence of the refresh explicitly:
+        # stale cookies must land on the login page, not be redirected to a
+        # page that sends them straight back here.
+        text = await response.get_data(as_text=True)
+        self.assertNotIn("Refresh", text)
+
     async def test_validation_exception_renders_internal_error_page(self):
         self.mock_rest_client.post.side_effect = BaseItemsException("boom")
         async with self.client as c:
@@ -170,6 +178,25 @@ class TestLoginPostPageHandler(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, 200)
         text = await response.get_data(as_text=True)
         self.assertIn("Refresh", text)
+
+    async def test_stale_cookies_do_not_redirect_and_login_proceeds(self):
+        """Submitting the form with stale cookies must not bounce to '/'.
+
+        _validate_cookies returns a (is_valid, is_administrator) tuple. If it
+        is tested directly rather than unpacked it is always truthy - even
+        (False, False) - which redirects the user to '/', where the session
+        guard sends them back to /login, looping indefinitely.
+        """
+        self.mock_rest_client.post.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body={"status": "INVALID"})
+
+        response = await self._post(cookies="items_token=a; items_user=b")
+
+        self.assertEqual(response.status_code, 200)
+        text = await response.get_data(as_text=True)
+        self.assertNotIn("Refresh", text)
+        # Fell through to processing the (empty) form rather than redirecting.
+        self.assertIn("Invalid username/password", text)
 
     async def test_validate_exception_renders_internal_error_page(self):
         self.mock_rest_client.post.side_effect = BaseItemsException("boom")

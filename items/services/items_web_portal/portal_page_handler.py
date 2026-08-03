@@ -102,7 +102,12 @@ class SessionAuthMixin:
         before the session status is returned.
 
         Returns:
-            ``True`` if the session is valid; otherwise, ``False``.
+            A ``(is_valid, is_administrator)`` tuple. ``is_administrator`` is
+            ``False`` whenever the session is not valid.
+
+            Callers must unpack this tuple. Testing the return value directly
+            is always true, because any non-empty tuple is truthy - including
+            ``(False, False)``.
 
         Raises:
             BaseItemsException: If the gateway service returns an unexpected

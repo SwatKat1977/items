@@ -51,10 +51,17 @@ class LoginGetPageHandler(PortalPageHandler):
                 - The internal error page if an exception occurs.
         """
         try:
-            if await self._has_auth_cookies() and await self._validate_cookies():
-                redirect = self._generate_redirect('')
-                response = await make_response(redirect)
-                return response
+            if await self._has_auth_cookies():
+                # _validate_cookies returns (is_valid, is_administrator). The
+                # tuple must be unpacked - testing it directly is always true,
+                # because any non-empty tuple is truthy, which would redirect
+                # users with stale cookies to a page that bounces them
+                # straight back here.
+                is_valid, _ = await self._validate_cookies()
+                if is_valid:
+                    redirect = self._generate_redirect('')
+                    response = await make_response(redirect)
+                    return response
 
         except BaseItemsException as ex:
             self._logger.error('Internal Error: %s', ex)
