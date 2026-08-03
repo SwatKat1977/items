@@ -17,12 +17,12 @@ limitations under the License.
 from quart import Blueprint
 from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
-from items.services.items_web_portal.page_handlers.admin.users.admin_add_user_page_handler import (
-    AdminAddUserPageHandler)
-from items.services.items_web_portal.page_handlers.admin.users.admin_modify_user_page_handler import (
-    AdminModifyUserPageHandler)
-from items.services.items_web_portal.page_handlers.admin.users.admin_reset_password_page_handler import (
-    AdminResetPasswordPageHandler)
+from items.services.items_web_portal.page_handlers.admin.users.\
+    admin_add_user_page_handler import AdminAddUserPageHandler
+from items.services.items_web_portal.page_handlers.admin.users.\
+    admin_modify_user_page_handler import AdminModifyUserPageHandler
+from items.services.items_web_portal.page_handlers.admin.users.\
+    admin_reset_password_page_handler import AdminResetPasswordPageHandler
 
 
 def create_admin_users_page_handlers(injections: PageHandlerInjections) -> Blueprint:
