@@ -21,6 +21,8 @@ from items.services.items_web_portal.page_handlers.admin.users.admin_add_user_pa
     AdminAddUserPageHandler)
 from items.services.items_web_portal.page_handlers.admin.users.admin_modify_user_page_handler import (
     AdminModifyUserPageHandler)
+from items.services.items_web_portal.page_handlers.admin.users.admin_reset_password_page_handler import (
+    AdminResetPasswordPageHandler)
 
 
 def create_admin_users_page_handlers(injections: PageHandlerInjections) -> Blueprint:
@@ -45,6 +47,12 @@ def create_admin_users_page_handlers(injections: PageHandlerInjections) -> Bluep
         injections.metadata)
 
     handler_modify_user = AdminModifyUserPageHandler(
+        injections.logger,
+        injections.config,
+        injections.rest_client,
+        injections.metadata)
+
+    handler_reset_password = AdminResetPasswordPageHandler(
         injections.logger,
         injections.config,
         injections.rest_client,
@@ -77,5 +85,19 @@ def create_admin_users_page_handlers(injections: PageHandlerInjections) -> Bluep
     @routes.route('/<int:user_id>/modify', methods=['POST'])
     async def admin_modify_user_post(user_id: int):
         return await handler_modify_user.modify_user_post(user_id)
+
+    injections.logger.debug("=> %s GET /admin/users_roles/<id>/reset_password",
+                            "Admin reset password page (read)".ljust(40))
+
+    @routes.route('/<int:user_id>/reset_password', methods=['GET'])
+    async def admin_reset_password_get(user_id: int):
+        return await handler_reset_password.reset_password_get(user_id)
+
+    injections.logger.debug("=> %s POST /admin/users_roles/<id>/reset_password",
+                            "Admin reset password (submit)".ljust(40))
+
+    @routes.route('/<int:user_id>/reset_password', methods=['POST'])
+    async def admin_reset_password_post(user_id: int):
+        return await handler_reset_password.reset_password_post(user_id)
 
     return routes
