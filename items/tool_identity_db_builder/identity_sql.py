@@ -22,3 +22,29 @@ SQL_ADD_USER_PROFILE: str = ("INSERT INTO user_profile (uuid, email_address, "
 
 SQL_ADD_USER_AUTH_DETAILS: str = ("INSERT INTO user_auth_details (password, "
                                   "user_id) VALUES(?, ?)")
+
+SQL_ADD_USER_INVITE: str = ("INSERT INTO user_invite (token, email_address, "
+                            "created_at, expires_at) "
+                            "VALUES(?, ?, ?, ?)")
+
+SQL_GET_INVITE_BY_TOKEN: str = ("SELECT id, token, email_address, created_at, "
+                                "expires_at, is_expired, expired_at "
+                                "FROM user_invite WHERE token = ?")
+
+SQL_GET_INVITE_BY_EMAIL: str = ("SELECT id, token, email_address, created_at, "
+                                "expires_at, is_expired, expired_at "
+                                "FROM user_invite "
+                                "WHERE email_address = ? AND is_expired = 0")
+
+SQL_RESEND_INVITE: str = ("UPDATE user_invite SET token = ?, expires_at = ? "
+                          "WHERE email_address = ? AND is_expired = 0")
+
+SQL_SOFT_EXPIRE_INVITE_BY_EMAIL: str = ("UPDATE user_invite "
+                                        "SET is_expired = 1, expired_at = ? "
+                                        "WHERE email_address = ? "
+                                        "AND is_expired = 0")
+
+SQL_SOFT_EXPIRE_PENDING_INVITES: str = ("UPDATE user_invite "
+                                        "SET is_expired = 1, expired_at = ? "
+                                        "WHERE is_expired = 0 "
+                                        "AND expires_at < ?")

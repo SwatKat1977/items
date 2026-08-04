@@ -109,6 +109,10 @@ async def build_database(logger: logging.Logger,
             sql_values.SQL_CREATE_PROJECT_PERMISSIONS_TABLE,
             "project_permissions")
 
+        logger.info("-> Creating user_invite table")
+        await database.create_table(
+            sql_values.SQL_CREATE_USER_INVITE_TABLE, "user_invite")
+
         admin_uuid: str = str(uuid.uuid4())
         logger.info("-> Creating admin with password '%s'", admin_password)
         logger.info("-> Admin UUID: %s", admin_uuid)
