@@ -1,4 +1,4 @@
 aiosmtplib==3.0.2
 jsonschema==4.26.0
 tzlocal==5.4.4
-https://github.com/SwatKat1977/WeaverFramework/releases/download/V0.2.1/weaver_framework-0.2.1-py3-none-any.whl
+https://github.com/SwatKat1977/WeaverFramework/releases/download/V0.3.0/weaver_framework-0.3.0-py3-none-any.whl
