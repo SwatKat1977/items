@@ -383,6 +383,18 @@ class TestResetPasswordHandlerEmail(unittest.IsolatedAsyncioTestCase):
         _, kwargs = email_svc.send.call_args
         self.assertEqual(kwargs["to"], _USER["email_address"])
 
+    async def test_email_body_contains_login_link(self):
+        email_svc = AsyncMock()
+        mock_rc, app = self._make_handler_and_app(email_svc)
+        mock_rc.post.return_value = _ok({"status": "ok"})
+        mock_rc.get.return_value = _ok(_USER)
+
+        async with app.test_client() as c:
+            await c.post("/users/1/password",
+                         json={"new_password": "newpass123"})
+        _, kwargs = email_svc.send.call_args
+        self.assertIn("http://gateway/login", kwargs["body"])
+
     async def test_email_not_sent_on_404(self):
         email_svc = AsyncMock()
         mock_rc, app = self._make_handler_and_app(email_svc)

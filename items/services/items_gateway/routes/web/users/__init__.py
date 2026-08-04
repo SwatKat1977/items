@@ -63,7 +63,8 @@ def create_users_routes(injections: RouteInjections) -> Blueprint:
     handler_modify = ModifyUserHandler(
         injections.logger, injections.configuration, injections.rest_client)
     handler_reset_password = ResetPasswordHandler(
-        injections.logger, injections.configuration, injections.rest_client)
+        injections.logger, injections.configuration, injections.rest_client,
+        injections.email_service)
 
     injections.logger.debug(" Users WEB routes:")
 
