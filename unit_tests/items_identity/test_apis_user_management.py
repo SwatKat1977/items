@@ -1,10 +1,10 @@
 """
 Handler-level tests for the user management API endpoints:
   GET  /users               - ListUsersHandler
-  GET  /users/<id>          - GetUserHandler
+  GET  /users/<uuid>        - GetUserHandler
   POST /users               - CreateUserHandler
-  PATCH /users/<id>         - ModifyUserHandler
-  POST /users/<id>/password - ResetPasswordHandler
+  PATCH /users/<uuid>       - ModifyUserHandler
+  POST /users/<uuid>/password - ResetPasswordHandler
   POST /users/me/password   - ChangePasswordHandler
 """
 import unittest
@@ -27,8 +27,11 @@ from services.user_management_service import (
     PasswordResult,
 )
 
+_UUID = "550e8400-e29b-41d4-a716-446655440000"
+_UUID2 = "660e8400-e29b-41d4-a716-446655440000"
+
 _USER_DICT = {
-    "id": 1,
+    "id": _UUID,        # public id is the UUID string
     "email_address": "a@b.com",
     "full_name": "Full Name",
     "display_name": "Display",
@@ -114,8 +117,9 @@ class TestGetUserHandler(unittest.IsolatedAsyncioTestCase):
 
     asyncSetUp = _make_handler_setup(GetUserHandler)
 
-    async def _call(self, result: UserLookupResult, user_id: int = 1) -> Response:
-        self.mock_svc.get_user_by_id = AsyncMock(return_value=result)
+    async def _call(self, result: UserLookupResult,
+                    user_id: str = _UUID) -> Response:
+        self.mock_svc.get_user_by_uuid = AsyncMock(return_value=result)
         return await self.handler.get_user(user_id)
 
     async def test_success_returns_200_with_user(self):
@@ -138,15 +142,21 @@ class TestGetUserHandler(unittest.IsolatedAsyncioTestCase):
         resp = await self._call(UserLookupResult(available=False, found=False))
         self.assertEqual(resp.status_code, HTTPStatus.SERVICE_UNAVAILABLE)
 
-    async def test_user_id_passed_to_service(self):
-        self.mock_svc.get_user_by_id = AsyncMock(
+    async def test_uuid_passed_to_service(self):
+        self.mock_svc.get_user_by_uuid = AsyncMock(
             return_value=UserLookupResult(user=_USER_DICT))
-        await self.handler.get_user(42)
-        self.mock_svc.get_user_by_id.assert_awaited_once_with(42)
+        await self.handler.get_user(_UUID2)
+        self.mock_svc.get_user_by_uuid.assert_awaited_once_with(_UUID2)
 
     async def test_response_is_json(self):
         resp = await self._call(UserLookupResult(user=_USER_DICT))
         self.assertEqual(resp.content_type, "application/json")
+
+    async def test_id_in_response_is_uuid_string(self):
+        resp = await self._call(UserLookupResult(user=_USER_DICT))
+        body = json.loads(await resp.get_data())
+        self.assertIsInstance(body["id"], str)
+        self.assertEqual(body["id"], _UUID)
 
 
 # ---------------------------------------------------------------------------
@@ -173,11 +183,16 @@ class TestCreateUserHandler(unittest.IsolatedAsyncioTestCase):
         target = _undecorated(self.handler.create_user)
         return await target(self.handler, self._request(**body_overrides))
 
-    async def test_success_returns_201_with_id(self):
-        resp = await self._call(UserCreateResult(user_id=5))
+    async def test_success_returns_201_with_uuid(self):
+        resp = await self._call(UserCreateResult(user_uuid=_UUID))
         self.assertEqual(resp.status_code, HTTPStatus.CREATED)
         body = json.loads(await resp.get_data())
-        self.assertEqual(body["id"], 5)
+        self.assertEqual(body["id"], _UUID)
+
+    async def test_id_in_response_is_uuid_string(self):
+        resp = await self._call(UserCreateResult(user_uuid=_UUID))
+        body = json.loads(await resp.get_data())
+        self.assertIsInstance(body["id"], str)
 
     async def test_conflict_returns_409(self):
         resp = await self._call(UserCreateResult(conflict=True))
@@ -190,40 +205,40 @@ class TestCreateUserHandler(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(resp.status_code, HTTPStatus.SERVICE_UNAVAILABLE)
 
     async def test_is_administrator_defaults_to_false_when_absent(self):
-        await self._call(UserCreateResult(user_id=1))
+        await self._call(UserCreateResult(user_uuid=_UUID))
         kwargs = self.mock_svc.create_user.call_args[1]
         self.assertFalse(kwargs.get("is_administrator", False))
 
     async def test_is_administrator_passed_when_provided(self):
-        await self._call(UserCreateResult(user_id=1), is_administrator=True)
+        await self._call(UserCreateResult(user_uuid=_UUID), is_administrator=True)
         kwargs = self.mock_svc.create_user.call_args[1]
         self.assertTrue(kwargs["is_administrator"])
 
     async def test_password_none_when_not_in_body(self):
         """No password in body → service called with password=None."""
-        await self._call(UserCreateResult(user_id=1))
+        await self._call(UserCreateResult(user_uuid=_UUID))
         kwargs = self.mock_svc.create_user.call_args[1]
         self.assertIsNone(kwargs["password"])
 
     async def test_password_passed_when_in_body(self):
         """Explicit password in body → passed through to service."""
-        await self._call(UserCreateResult(user_id=1), password="mypassword")
+        await self._call(UserCreateResult(user_uuid=_UUID), password="mypassword")
         kwargs = self.mock_svc.create_user.call_args[1]
         self.assertEqual(kwargs["password"], "mypassword")
 
     async def test_generated_password_included_in_201_when_set(self):
         resp = await self._call(
-            UserCreateResult(user_id=3, generated_password="abc123!@#XYZ"))
+            UserCreateResult(user_uuid=_UUID, generated_password="abc123!@#XYZ"))
         body = json.loads(await resp.get_data())
         self.assertEqual(body["generated_password"], "abc123!@#XYZ")
 
     async def test_generated_password_absent_from_201_when_not_set(self):
-        resp = await self._call(UserCreateResult(user_id=3))
+        resp = await self._call(UserCreateResult(user_uuid=_UUID))
         body = json.loads(await resp.get_data())
         self.assertNotIn("generated_password", body)
 
     async def test_response_is_json(self):
-        resp = await self._call(UserCreateResult(user_id=1))
+        resp = await self._call(UserCreateResult(user_uuid=_UUID))
         self.assertEqual(resp.content_type, "application/json")
 
 
@@ -242,7 +257,7 @@ class TestModifyUserHandler(unittest.IsolatedAsyncioTestCase):
         return mock_req
 
     async def _call(self, result: UserUpdateResult,
-                    user_id: int = 1, **body_overrides) -> Response:
+                    user_id: str = _UUID, **body_overrides) -> Response:
         self.mock_svc.update_user = AsyncMock(return_value=result)
         target = _undecorated(self.handler.modify_user)
         return await target(self.handler, self._request(**body_overrides),
@@ -273,13 +288,13 @@ class TestModifyUserHandler(unittest.IsolatedAsyncioTestCase):
         resp = await self._call(UserUpdateResult(available=False))
         self.assertEqual(resp.status_code, HTTPStatus.SERVICE_UNAVAILABLE)
 
-    async def test_user_id_from_url_passed_to_service(self):
+    async def test_uuid_from_url_passed_to_service(self):
         self.mock_svc.update_user = AsyncMock(
             return_value=UserUpdateResult(success=True))
         target = _undecorated(self.handler.modify_user)
-        await target(self.handler, self._request(), user_id=99)
+        await target(self.handler, self._request(), user_id=_UUID2)
         self.assertEqual(
-            self.mock_svc.update_user.call_args[1]["user_id"], 99)
+            self.mock_svc.update_user.call_args[1]["user_uuid"], _UUID2)
 
     async def test_supplied_fields_passed_to_service(self):
         """Fields present in body are forwarded; absent fields are None."""
@@ -287,7 +302,7 @@ class TestModifyUserHandler(unittest.IsolatedAsyncioTestCase):
             return_value=UserUpdateResult(success=True))
         target = _undecorated(self.handler.modify_user)
         await target(self.handler,
-                     self._request(full_name="Changed"), user_id=1)
+                     self._request(full_name="Changed"), user_id=_UUID)
         kwargs = self.mock_svc.update_user.call_args[1]
         self.assertEqual(kwargs["full_name"], "Changed")
         self.assertIsNone(kwargs["display_name"])
@@ -312,7 +327,8 @@ class TestResetPasswordHandler(unittest.IsolatedAsyncioTestCase):
         mock_req.body = {"new_password": new_password}
         return mock_req
 
-    async def _call(self, result: PasswordResult, user_id: int = 1) -> Response:
+    async def _call(self, result: PasswordResult,
+                    user_id: str = _UUID) -> Response:
         self.mock_svc.reset_password = AsyncMock(return_value=result)
         target = _undecorated(self.handler.reset_password)
         return await target(self.handler, self._request(), user_id=user_id)
@@ -331,13 +347,13 @@ class TestResetPasswordHandler(unittest.IsolatedAsyncioTestCase):
         resp = await self._call(PasswordResult(available=False))
         self.assertEqual(resp.status_code, HTTPStatus.SERVICE_UNAVAILABLE)
 
-    async def test_user_id_passed_to_service(self):
+    async def test_uuid_passed_to_service(self):
         self.mock_svc.reset_password = AsyncMock(
             return_value=PasswordResult(success=True))
         target = _undecorated(self.handler.reset_password)
-        await target(self.handler, self._request(), user_id=77)
+        await target(self.handler, self._request(), user_id=_UUID2)
         self.assertEqual(
-            self.mock_svc.reset_password.call_args[1]["user_id"], 77)
+            self.mock_svc.reset_password.call_args[1]["user_uuid"], _UUID2)
 
     async def test_response_is_json(self):
         resp = await self._call(PasswordResult(success=True))
@@ -352,7 +368,7 @@ class TestChangePasswordHandler(unittest.IsolatedAsyncioTestCase):
 
     asyncSetUp = _make_handler_setup(ChangePasswordHandler)
 
-    def _request(self, user_id=1, current_password="oldpass",
+    def _request(self, user_id=_UUID, current_password="oldpass",
                  new_password="newpass123"):
         mock_req = MagicMock()
         mock_req.body = {
@@ -363,7 +379,7 @@ class TestChangePasswordHandler(unittest.IsolatedAsyncioTestCase):
         return mock_req
 
     async def _call(self, result: PasswordResult,
-                    user_id=1, current_password="old",
+                    user_id=_UUID, current_password="old",
                     new_password="new123") -> Response:
         self.mock_svc.change_own_password = AsyncMock(return_value=result)
         target = _undecorated(self.handler.change_password)
@@ -399,9 +415,10 @@ class TestChangePasswordHandler(unittest.IsolatedAsyncioTestCase):
         target = _undecorated(self.handler.change_password)
         await target(
             self.handler,
-            self._request(user_id=5, current_password="old", new_password="new"))
+            self._request(user_id=_UUID2, current_password="old",
+                          new_password="new"))
         self.mock_svc.change_own_password.assert_awaited_once_with(
-            user_id=5, current_password="old", new_password="new")
+            user_uuid=_UUID2, current_password="old", new_password="new")
 
     async def test_response_is_json(self):
         resp = await self._call(PasswordResult(success=True))

@@ -41,18 +41,18 @@ class GetUserHandler(BaseApiRoute):
         self._service = UserManagementService(
             self._logger, self._service_state, repo)
 
-    async def get_user(self, user_id: int) -> Response:
-        """Return a single user's profile by numeric ID.
+    async def get_user(self, user_id: str) -> Response:
+        """Return a single user's profile by UUID.
 
         Args:
-            user_id: The user's primary key (from the URL).
+            user_id: The user's UUID (from the URL).
 
         Returns:
             200 with the user profile dict on success.
-            404 if no user exists with that ID.
+            404 if no user exists with that UUID.
             503 if the service is unavailable.
         """
-        result = await self._service.get_user_by_id(user_id)
+        result = await self._service.get_user_by_uuid(user_id)
 
         if not result.available:
             return Response(

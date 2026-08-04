@@ -3,6 +3,8 @@ from unittest.mock import MagicMock, AsyncMock, patch
 import logging
 from data_access.user_repository import UserRepository
 
+_UUID = "550e8400-e29b-41d4-a716-446655440000"
+
 
 class TestUserRepository(unittest.IsolatedAsyncioTestCase):
 
@@ -55,7 +57,7 @@ class TestUserRepository(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(result)
 
     async def test_get_user_profile_returns_row(self):
-        expected = (1, "admin@localhost", "Local Admin", "Local Admin", 1, 0, 1)
+        expected = (1, _UUID, "admin@localhost", "Local Admin", "Local Admin", 1, 0, 1)
         self.mock_db.run_query.return_value = expected
         result = await self.repo.get_user_profile_by_email("admin@localhost")
         self.assertEqual(result, expected)
@@ -72,6 +74,10 @@ class TestUserRepository(unittest.IsolatedAsyncioTestCase):
         """The admin flag is the reason this query exists."""
         self.assertIn("is_administrator",
                       UserRepository.GET_USER_PROFILE_QUERY)
+
+    async def test_profile_query_selects_uuid(self):
+        """UUID must be present in the profile query."""
+        self.assertIn("uuid", UserRepository.GET_USER_PROFILE_QUERY)
 
     async def test_password_update_does_not_insert_a_second_row(self):
         """user_auth_details.user_id is UNIQUE - this must UPDATE, not INSERT."""
@@ -111,9 +117,10 @@ class TestUserRepository(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result, [])
 
     async def test_get_all_users_returns_rows(self):
+        uuid2 = "660e8400-e29b-41d4-a716-446655440000"
         rows = [
-            (1, "a@b.com", "A", "A", 1, 0, 1),
-            (2, "c@d.com", "C", "C", 1, 0, 0),
+            (1, _UUID, "a@b.com", "A", "A", 1, 0, 1),
+            (2, uuid2, "c@d.com", "C", "C", 1, 0, 0),
         ]
         self.mock_db.run_query.return_value = rows
         result = await self.repo.get_all_users()
@@ -135,7 +142,7 @@ class TestUserRepository(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(result)
 
     async def test_get_user_by_id_returns_row_when_found(self):
-        row = (1, "a@b.com", "Full", "Display", 1, 0, 1)
+        row = (1, _UUID, "a@b.com", "Full", "Display", 1, 0, 1)
         self.mock_db.run_query.return_value = row
         result = await self.repo.get_user_by_id(1)
         self.assertEqual(result, row)
@@ -145,6 +152,30 @@ class TestUserRepository(unittest.IsolatedAsyncioTestCase):
         await self.repo.get_user_by_id(5)
         self.mock_db.run_query.assert_called_once_with(
             UserRepository.GET_USER_BY_ID_QUERY, (5,), fetch_one=True)
+
+    # -------------------------------------------------------
+    # get_user_by_uuid tests
+    # -------------------------------------------------------
+
+    async def test_get_user_by_uuid_returns_none_when_not_found(self):
+        self.mock_db.run_query.return_value = None
+        result = await self.repo.get_user_by_uuid(_UUID)
+        self.assertIsNone(result)
+
+    async def test_get_user_by_uuid_returns_row_when_found(self):
+        row = (1, _UUID, "a@b.com", "Full", "Display", 1, 0, 1)
+        self.mock_db.run_query.return_value = row
+        result = await self.repo.get_user_by_uuid(_UUID)
+        self.assertEqual(result, row)
+
+    async def test_get_user_by_uuid_passes_correct_query(self):
+        self.mock_db.run_query.return_value = None
+        await self.repo.get_user_by_uuid(_UUID)
+        self.mock_db.run_query.assert_called_once_with(
+            UserRepository.GET_USER_BY_UUID_QUERY, (_UUID,), fetch_one=True)
+
+    async def test_get_user_by_uuid_query_contains_uuid_column(self):
+        self.assertIn("uuid", UserRepository.GET_USER_BY_UUID_QUERY)
 
     # -------------------------------------------------------
     # email_exists tests
@@ -179,32 +210,37 @@ class TestUserRepository(unittest.IsolatedAsyncioTestCase):
     async def test_create_user_returns_new_user_id(self):
         self.mock_db.insert_query.return_value = 42
         result = await self.repo.create_user(
-            "a@b.com", "Full Name", "Display", 1, 0, False)
+            _UUID, "a@b.com", "Full Name", "Display", 1, 0, False)
         self.assertEqual(result, 42)
 
     async def test_create_user_passes_correct_query(self):
         self.mock_db.insert_query.return_value = 1
         with patch("data_access.user_repository.time") as mock_time:
             mock_time.time.return_value = 1000000
-            await self.repo.create_user("a@b.com", "Full", "Display", 1, 0, True)
+            await self.repo.create_user(
+                _UUID, "a@b.com", "Full", "Display", 1, 0, True)
 
         args = self.mock_db.insert_query.call_args
         self.assertEqual(args[0][0], UserRepository.INSERT_USER_PROFILE_QUERY)
         params = args[0][1]
-        self.assertEqual(params[0], "a@b.com")
-        self.assertEqual(params[1], "Full")
-        self.assertEqual(params[2], "Display")
-        self.assertEqual(params[3], 1000000)   # insertion_date
-        self.assertEqual(params[4], 1)          # account_status
-        self.assertEqual(params[5], 0)          # logon_type
-        self.assertEqual(params[6], 1)          # is_administrator cast to int
+        self.assertEqual(params[0], _UUID)        # uuid
+        self.assertEqual(params[1], "a@b.com")    # email
+        self.assertEqual(params[2], "Full")        # full_name
+        self.assertEqual(params[3], "Display")     # display_name
+        self.assertEqual(params[4], 1000000)       # insertion_date
+        self.assertEqual(params[5], 1)             # account_status
+        self.assertEqual(params[6], 0)             # logon_type
+        self.assertEqual(params[7], 1)             # is_administrator cast to int
 
     async def test_create_user_converts_is_administrator_to_int(self):
         self.mock_db.insert_query.return_value = 1
         with patch("data_access.user_repository.time"):
-            await self.repo.create_user("a@b.com", "F", "D", 1, 0, False)
+            await self.repo.create_user(_UUID, "a@b.com", "F", "D", 1, 0, False)
         params = self.mock_db.insert_query.call_args[0][1]
-        self.assertEqual(params[6], 0)
+        self.assertEqual(params[7], 0)
+
+    async def test_insert_query_includes_uuid_column(self):
+        self.assertIn("uuid", UserRepository.INSERT_USER_PROFILE_QUERY)
 
     # -------------------------------------------------------
     # create_user_auth tests

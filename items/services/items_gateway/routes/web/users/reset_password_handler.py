@@ -59,14 +59,14 @@ class ResetPasswordHandler(BaseApiRoute):
         self._rest_client = rest_client
         self._email_service = email_service
 
-    async def reset_password(self, user_id: int) -> Response:
+    async def reset_password(self, user_id: str) -> Response:
         """Reset a user's password without verifying the current one.
 
         On success, attempts to send a notification email to the user.
         Email delivery failures are logged but do not affect the response.
 
         Args:
-            user_id: The user's primary key (from the URL).
+            user_id: The user's UUID (from the URL).
 
         Returns:
             200 on success.
@@ -101,7 +101,7 @@ class ResetPasswordHandler(BaseApiRoute):
                         status=response.status_code,
                         content_type="application/json")
 
-    async def _send_reset_notification(self, user_id: int) -> None:
+    async def _send_reset_notification(self, user_id: str) -> None:
         """Fetch the user's email address and send a reset notification.
 
         Failures are logged but not propagated — the password has already
@@ -113,14 +113,14 @@ class ResetPasswordHandler(BaseApiRoute):
         if user_response.exception_msg is not None or \
                 user_response.status_code != HTTPStatus.OK:
             self._logger.warning(
-                "Could not fetch user %d to send password reset email: "
+                "Could not fetch user %s to send password reset email: "
                 "status=%s", user_id, user_response.status_code)
             return
 
         email_address = user_response.body.get("email_address")
         if not email_address:
             self._logger.warning(
-                "User %d has no email address; skipping reset notification",
+                "User %s has no email address; skipping reset notification",
                 user_id)
             return
 

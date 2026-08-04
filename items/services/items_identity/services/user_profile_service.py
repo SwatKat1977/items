@@ -96,11 +96,11 @@ class UserProfileService:
         if row is None:
             return UserProfileResult(found=False)
 
-        (user_id, email_address, full_name, display_name, account_status,
+        (_, user_uuid, email_address, full_name, display_name, account_status,
          logon_type, is_administrator) = row
 
         return UserProfileResult(profile={
-            "id": user_id,
+            "id": user_uuid,
             "email_address": email_address,
             "full_name": full_name,
             "display_name": display_name,

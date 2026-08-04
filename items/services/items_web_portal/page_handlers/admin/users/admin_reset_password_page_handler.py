@@ -51,7 +51,7 @@ class AdminResetPasswordPageHandler(PortalPageHandler):
         self._metadata_settings = metadata
 
     @require_administrator
-    async def reset_password_get(self, user_id: int):
+    async def reset_password_get(self, user_id: str):
         """Render the reset password page.
 
         Fetches the user's full name and email to display as context.
@@ -76,7 +76,7 @@ class AdminResetPasswordPageHandler(PortalPageHandler):
             user_email=user_email)
 
     @require_administrator
-    async def reset_password_post(self, user_id: int):
+    async def reset_password_post(self, user_id: str):
         """Process a password reset submission.
 
         Validates the two password fields match and meet the minimum length,
@@ -135,7 +135,7 @@ class AdminResetPasswordPageHandler(PortalPageHandler):
         return await make_response(
             self._generate_redirect('/admin/users_roles'))
 
-    async def _fetch_user_display(self, user_id: int) -> tuple[str | None, str | None]:
+    async def _fetch_user_display(self, user_id: str) -> tuple[str | None, str | None]:
         """Fetch the user's full name and email for display purposes.
 
         Args:
@@ -153,7 +153,7 @@ class AdminResetPasswordPageHandler(PortalPageHandler):
                 response.body.get("email_address"))
 
     async def _render(self,
-                      user_id: int,
+                      user_id: str,
                       user_full_name: str,
                       user_email: str,
                       error_msg_str: str | None = None):

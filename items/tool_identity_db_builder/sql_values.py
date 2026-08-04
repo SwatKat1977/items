@@ -20,6 +20,10 @@ from items.shared.account_logon_type import AccountLogonType
 SQL_CREATE_USER_PROFILE_TABLE: str = """
     CREATE TABLE IF NOT EXISTS user_profile (
         id integer PRIMARY KEY,
+        -- UUID is the public-facing identifier for this user. The integer
+        -- primary key is an internal implementation detail and is never
+        -- exposed outside the identity service.
+        uuid text NOT NULL UNIQUE,
         -- COLLATE NOCASE applies to the implicit UNIQUE index as well as to
         -- every comparison on this column, so 'Admin@localhost' and
         -- 'admin@localhost' are the same address for both uniqueness and

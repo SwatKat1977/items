@@ -673,13 +673,13 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{IDENTITY_SVC_URL}}/users/1",
+                  "raw": "{{IDENTITY_SVC_URL}}/users/{{USER_UUID}}",
                   "host": [
                     "{{IDENTITY_SVC_URL}}"
                   ],
                   "path": [
                     "users",
-                    "1"
+                    "{{USER_UUID}}"
                   ]
                 }
               },
@@ -752,13 +752,13 @@
                   }
                 },
                 "url": {
-                  "raw": "{{IDENTITY_SVC_URL}}/users/2",
+                  "raw": "{{IDENTITY_SVC_URL}}/users/{{USER_UUID}}",
                   "host": [
                     "{{IDENTITY_SVC_URL}}"
                   ],
                   "path": [
                     "users",
-                    "2"
+                    "{{USER_UUID}}"
                   ]
                 }
               },
@@ -779,13 +779,13 @@
                   }
                 },
                 "url": {
-                  "raw": "{{IDENTITY_SVC_URL}}/users/2",
+                  "raw": "{{IDENTITY_SVC_URL}}/users/{{USER_UUID}}",
                   "host": [
                     "{{IDENTITY_SVC_URL}}"
                   ],
                   "path": [
                     "users",
-                    "2"
+                    "{{USER_UUID}}"
                   ]
                 }
               },
@@ -806,13 +806,13 @@
                   }
                 },
                 "url": {
-                  "raw": "{{IDENTITY_SVC_URL}}/users/2/password",
+                  "raw": "{{IDENTITY_SVC_URL}}/users/{{USER_UUID}}/password",
                   "host": [
                     "{{IDENTITY_SVC_URL}}"
                   ],
                   "path": [
                     "users",
-                    "2",
+                    "{{USER_UUID}}",
                     "password"
                   ]
                 }
@@ -834,13 +834,13 @@
                   }
                 },
                 "url": {
-                  "raw": "{{IDENTITY_SVC_URL}}/users/2/password",
+                  "raw": "{{IDENTITY_SVC_URL}}/users/{{USER_UUID}}/password",
                   "host": [
                     "{{IDENTITY_SVC_URL}}"
                   ],
                   "path": [
                     "users",
-                    "2",
+                    "{{USER_UUID}}",
                     "password"
                   ]
                 }
@@ -1395,9 +1395,9 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/users/1",
+                      "raw": "{{GATEWAY_SVC_URL}}/web/users/{{USER_UUID}}",
                       "host": ["{{GATEWAY_SVC_URL}}"],
-                      "path": ["web", "users", "1"]
+                      "path": ["web", "users", "{{USER_UUID}}"]
                     }
                   },
                   "response": []
@@ -1449,9 +1449,9 @@
                       "options": {"raw": {"language": "json"}}
                     },
                     "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/users/2",
+                      "raw": "{{GATEWAY_SVC_URL}}/web/users/{{USER_UUID}}",
                       "host": ["{{GATEWAY_SVC_URL}}"],
-                      "path": ["web", "users", "2"]
+                      "path": ["web", "users", "{{USER_UUID}}"]
                     }
                   },
                   "response": []
@@ -1467,9 +1467,9 @@
                       "options": {"raw": {"language": "json"}}
                     },
                     "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/users/2",
+                      "raw": "{{GATEWAY_SVC_URL}}/web/users/{{USER_UUID}}",
                       "host": ["{{GATEWAY_SVC_URL}}"],
-                      "path": ["web", "users", "2"]
+                      "path": ["web", "users", "{{USER_UUID}}"]
                     }
                   },
                   "response": []
@@ -1485,9 +1485,9 @@
                       "options": {"raw": {"language": "json"}}
                     },
                     "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/users/2/password",
+                      "raw": "{{GATEWAY_SVC_URL}}/web/users/{{USER_UUID}}/password",
                       "host": ["{{GATEWAY_SVC_URL}}"],
-                      "path": ["web", "users", "2", "password"]
+                      "path": ["web", "users", "{{USER_UUID}}", "password"]
                     }
                   },
                   "response": []

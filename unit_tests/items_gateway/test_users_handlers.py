@@ -1,10 +1,10 @@
 """
 Unit tests for gateway user management route handlers:
   GET  /users              - ListUsersHandler
-  GET  /users/<id>         - GetUserHandler
+  GET  /users/<uuid>       - GetUserHandler
   POST /users              - CreateUserHandler
-  PATCH /users/<id>        - ModifyUserHandler
-  POST /users/<id>/password - ResetPasswordHandler
+  PATCH /users/<uuid>      - ModifyUserHandler
+  POST /users/<uuid>/password - ResetPasswordHandler
 """
 import json
 import unittest
@@ -24,8 +24,10 @@ from items.services.items_gateway.routes.web.users.reset_password_handler import
 from items.services.items_gateway.services.email_service import EmailServiceError
 
 _LOGGER = MagicMock()
+_UUID = "550e8400-e29b-41d4-a716-446655440000"
+_UUID2 = "660e8400-e29b-41d4-a716-446655440000"
 _USER = {
-    "id": 1,
+    "id": _UUID,
     "email_address": "a@b.com",
     "full_name": "Full",
     "display_name": "Display",
@@ -116,31 +118,32 @@ class TestGetUserHandler(unittest.IsolatedAsyncioTestCase):
         handler = GetUserHandler(_LOGGER, _config(), self.mock_rc)
         app = Quart(__name__)
 
-        @app.route("/users/<int:user_id>", methods=["GET"])
-        async def route(user_id: int):
+        @app.route("/users/<string:user_id>", methods=["GET"])
+        async def route(user_id: str):
             return await handler.get_user(user_id)
 
         self.client = app.test_client()
 
-    async def _get(self, user_id=1):
+    async def _get(self, user_id=_UUID):
         async with self.client as c:
             return await c.get(f"/users/{user_id}")
 
     async def test_success_returns_200_with_user(self):
         self.mock_rc.get.return_value = _ok(_USER)
-        resp = await self._get(1)
+        resp = await self._get(_UUID)
         self.assertEqual(resp.status_code, 200)
         body = json.loads(await resp.get_data())
         self.assertEqual(body, _USER)
 
-    async def test_user_id_included_in_url(self):
+    async def test_uuid_included_in_url(self):
         self.mock_rc.get.return_value = _ok(_USER)
-        await self._get(42)
-        self.mock_rc.get.assert_called_once_with("http://identity/users/42")
+        await self._get(_UUID2)
+        self.mock_rc.get.assert_called_once_with(
+            f"http://identity/users/{_UUID2}")
 
     async def test_identity_404_is_propagated(self):
         self.mock_rc.get.return_value = _err({"error": "User not found"}, 404)
-        resp = await self._get(99)
+        resp = await self._get(_UUID)
         self.assertEqual(resp.status_code, 404)
 
     async def test_connection_error_returns_500(self):
@@ -152,6 +155,12 @@ class TestGetUserHandler(unittest.IsolatedAsyncioTestCase):
         self.mock_rc.get.return_value = _ok(_USER)
         resp = await self._get()
         self.assertEqual(resp.content_type, "application/json")
+
+    async def test_id_in_response_is_uuid_string(self):
+        self.mock_rc.get.return_value = _ok(_USER)
+        resp = await self._get()
+        body = json.loads(await resp.get_data())
+        self.assertIsInstance(body["id"], str)
 
 
 # ---------------------------------------------------------------------------
@@ -175,18 +184,26 @@ class TestCreateUserHandler(unittest.IsolatedAsyncioTestCase):
         async with self.client as c:
             return await c.post("/users", json=body)
 
-    async def test_success_returns_201_with_id(self):
+    async def test_success_returns_201_with_uuid(self):
         self.mock_rc.post.return_value = ApiResponse(
-            status_code=201, body={"id": 5})
+            status_code=201, body={"id": _UUID})
         resp = await self._post({"email_address": "a@b.com",
                                   "full_name": "A", "display_name": "A"})
         self.assertEqual(resp.status_code, 201)
         body = json.loads(await resp.get_data())
-        self.assertEqual(body["id"], 5)
+        self.assertEqual(body["id"], _UUID)
+
+    async def test_id_in_response_is_uuid_string(self):
+        self.mock_rc.post.return_value = ApiResponse(
+            status_code=201, body={"id": _UUID})
+        resp = await self._post({"email_address": "a@b.com",
+                                  "full_name": "A", "display_name": "A"})
+        body = json.loads(await resp.get_data())
+        self.assertIsInstance(body["id"], str)
 
     async def test_generated_password_propagated(self):
         self.mock_rc.post.return_value = ApiResponse(
-            status_code=201, body={"id": 5, "generated_password": "xyz"})
+            status_code=201, body={"id": _UUID, "generated_password": "xyz"})
         resp = await self._post({"email_address": "a@b.com",
                                   "full_name": "A", "display_name": "A"})
         body = json.loads(await resp.get_data())
@@ -194,7 +211,7 @@ class TestCreateUserHandler(unittest.IsolatedAsyncioTestCase):
 
     async def test_body_forwarded_to_identity(self):
         self.mock_rc.post.return_value = ApiResponse(
-            status_code=201, body={"id": 1})
+            status_code=201, body={"id": _UUID})
         payload = {"email_address": "a@b.com",
                    "full_name": "A", "display_name": "A"}
         await self._post(payload)
@@ -223,7 +240,7 @@ class TestCreateUserHandler(unittest.IsolatedAsyncioTestCase):
 
     async def test_response_is_json(self):
         self.mock_rc.post.return_value = ApiResponse(
-            status_code=201, body={"id": 1})
+            status_code=201, body={"id": _UUID})
         resp = await self._post({"email_address": "a@b.com",
                                   "full_name": "A", "display_name": "A"})
         self.assertEqual(resp.content_type, "application/json")
@@ -240,13 +257,13 @@ class TestModifyUserHandler(unittest.IsolatedAsyncioTestCase):
         handler = ModifyUserHandler(_LOGGER, _config(), self.mock_rc)
         app = Quart(__name__)
 
-        @app.route("/users/<int:user_id>", methods=["PATCH"])
-        async def route(user_id: int):
+        @app.route("/users/<string:user_id>", methods=["PATCH"])
+        async def route(user_id: str):
             return await handler.modify_user(user_id)
 
         self.client = app.test_client()
 
-    async def _patch(self, user_id=1, body=None):
+    async def _patch(self, user_id=_UUID, body=None):
         async with self.client as c:
             return await c.patch(f"/users/{user_id}",
                                  json=body or {"display_name": "New"})
@@ -256,11 +273,11 @@ class TestModifyUserHandler(unittest.IsolatedAsyncioTestCase):
         resp = await self._patch()
         self.assertEqual(resp.status_code, 200)
 
-    async def test_user_id_and_body_forwarded(self):
+    async def test_uuid_and_body_forwarded(self):
         self.mock_rc.patch.return_value = _ok({"status": "ok"})
-        await self._patch(user_id=7, body={"full_name": "Changed"})
+        await self._patch(user_id=_UUID2, body={"full_name": "Changed"})
         call_args = self.mock_rc.patch.call_args
-        self.assertIn("users/7", call_args[0][0])
+        self.assertIn(f"users/{_UUID2}", call_args[0][0])
         self.assertEqual(call_args[1]["json_data"], {"full_name": "Changed"})
 
     async def test_identity_403_is_propagated(self):
@@ -276,7 +293,7 @@ class TestModifyUserHandler(unittest.IsolatedAsyncioTestCase):
 
     async def test_missing_body_returns_400(self):
         async with self.client as c:
-            resp = await c.patch("/users/1", data="not json",
+            resp = await c.patch(f"/users/{_UUID}", data="not json",
                                  headers={"Content-Type": "text/plain"})
         self.assertEqual(resp.status_code, 400)
         self.mock_rc.patch.assert_not_called()
@@ -303,13 +320,13 @@ class TestResetPasswordHandler(unittest.IsolatedAsyncioTestCase):
         handler = ResetPasswordHandler(_LOGGER, _config(), self.mock_rc)
         app = Quart(__name__)
 
-        @app.route("/users/<int:user_id>/password", methods=["POST"])
-        async def route(user_id: int):
+        @app.route("/users/<string:user_id>/password", methods=["POST"])
+        async def route(user_id: str):
             return await handler.reset_password(user_id)
 
         self.client = app.test_client()
 
-    async def _post(self, user_id=1, body=None):
+    async def _post(self, user_id=_UUID, body=None):
         async with self.client as c:
             return await c.post(f"/users/{user_id}/password",
                                 json=body or {"new_password": "newpass123"})
@@ -319,11 +336,11 @@ class TestResetPasswordHandler(unittest.IsolatedAsyncioTestCase):
         resp = await self._post()
         self.assertEqual(resp.status_code, 200)
 
-    async def test_user_id_and_body_forwarded(self):
+    async def test_uuid_and_body_forwarded(self):
         self.mock_rc.post.return_value = _ok({"status": "ok"})
-        await self._post(user_id=3, body={"new_password": "abc"})
+        await self._post(user_id=_UUID2, body={"new_password": "abc"})
         call_args = self.mock_rc.post.call_args
-        self.assertIn("users/3/password", call_args[0][0])
+        self.assertIn(f"users/{_UUID2}/password", call_args[0][0])
         self.assertEqual(call_args[1]["json_data"], {"new_password": "abc"})
 
     async def test_identity_404_is_propagated(self):
@@ -333,7 +350,7 @@ class TestResetPasswordHandler(unittest.IsolatedAsyncioTestCase):
 
     async def test_missing_body_returns_400(self):
         async with self.client as c:
-            resp = await c.post("/users/1/password", data="not json",
+            resp = await c.post(f"/users/{_UUID}/password", data="not json",
                                 headers={"Content-Type": "text/plain"})
         self.assertEqual(resp.status_code, 400)
         self.mock_rc.post.assert_not_called()
@@ -362,8 +379,8 @@ class TestResetPasswordHandlerEmail(unittest.IsolatedAsyncioTestCase):
             _LOGGER, _config(), mock_rc, email_service)
         app = Quart(__name__)
 
-        @app.route("/users/<int:user_id>/password", methods=["POST"])
-        async def route(user_id: int):
+        @app.route("/users/<string:user_id>/password", methods=["POST"])
+        async def route(user_id: str):
             return await handler.reset_password(user_id)
 
         return mock_rc, app
@@ -377,7 +394,7 @@ class TestResetPasswordHandlerEmail(unittest.IsolatedAsyncioTestCase):
         mock_rc.get.return_value = _ok(_USER)
 
         async with app.test_client() as c:
-            resp = await c.post("/users/1/password",
+            resp = await c.post(f"/users/{_UUID}/password",
                                 json={"new_password": "newpass123"})
         self.assertEqual(resp.status_code, 200)
         email_svc.send.assert_awaited_once()
@@ -391,7 +408,7 @@ class TestResetPasswordHandlerEmail(unittest.IsolatedAsyncioTestCase):
         mock_rc.get.return_value = _ok(_USER)
 
         async with app.test_client() as c:
-            await c.post("/users/1/password",
+            await c.post(f"/users/{_UUID}/password",
                          json={"new_password": "newpass123"})
         _, kwargs = email_svc.send.call_args
         self.assertIn("http://portal/login", kwargs["body"])
@@ -402,7 +419,7 @@ class TestResetPasswordHandlerEmail(unittest.IsolatedAsyncioTestCase):
         mock_rc.post.return_value = _err({"error": "not found"}, 404)
 
         async with app.test_client() as c:
-            resp = await c.post("/users/1/password",
+            resp = await c.post(f"/users/{_UUID}/password",
                                 json={"new_password": "newpass123"})
         self.assertEqual(resp.status_code, 404)
         email_svc.send.assert_not_awaited()
@@ -415,7 +432,7 @@ class TestResetPasswordHandlerEmail(unittest.IsolatedAsyncioTestCase):
         mock_rc.get.return_value = _ok(_USER)
 
         async with app.test_client() as c:
-            resp = await c.post("/users/1/password",
+            resp = await c.post(f"/users/{_UUID}/password",
                                 json={"new_password": "newpass123"})
         # Password was reset successfully; email failure must not flip status
         self.assertEqual(resp.status_code, 200)
@@ -427,7 +444,7 @@ class TestResetPasswordHandlerEmail(unittest.IsolatedAsyncioTestCase):
         mock_rc.get.return_value = _err({}, 404)
 
         async with app.test_client() as c:
-            resp = await c.post("/users/1/password",
+            resp = await c.post(f"/users/{_UUID}/password",
                                 json={"new_password": "newpass123"})
         self.assertEqual(resp.status_code, 200)
         email_svc.send.assert_not_awaited()
@@ -437,10 +454,10 @@ class TestResetPasswordHandlerEmail(unittest.IsolatedAsyncioTestCase):
         mock_rc, app = self._make_handler_and_app(email_svc)
         mock_rc.post.return_value = _ok({"status": "ok"})
         # User fetched OK but email_address is absent from the body
-        mock_rc.get.return_value = _ok({"id": 1, "full_name": "Alice"})
+        mock_rc.get.return_value = _ok({"id": _UUID, "full_name": "Alice"})
 
         async with app.test_client() as c:
-            resp = await c.post("/users/1/password",
+            resp = await c.post(f"/users/{_UUID}/password",
                                 json={"new_password": "newpass123"})
         self.assertEqual(resp.status_code, 200)
         email_svc.send.assert_not_awaited()
@@ -450,7 +467,7 @@ class TestResetPasswordHandlerEmail(unittest.IsolatedAsyncioTestCase):
         mock_rc.post.return_value = _ok({"status": "ok"})
 
         async with app.test_client() as c:
-            resp = await c.post("/users/1/password",
+            resp = await c.post(f"/users/{_UUID}/password",
                                 json={"new_password": "newpass123"})
         # Should succeed without attempting any email
         self.assertEqual(resp.status_code, 200)

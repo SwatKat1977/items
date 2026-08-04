@@ -20,6 +20,7 @@ import logging
 import os.path
 import secrets
 import string
+import uuid
 from argon2 import PasswordHasher
 import identity_sql
 import sql_values
@@ -108,8 +109,11 @@ async def build_database(logger: logging.Logger,
             sql_values.SQL_CREATE_PROJECT_PERMISSIONS_TABLE,
             "project_permissions")
 
+        admin_uuid: str = str(uuid.uuid4())
         logger.info("-> Creating admin with password '%s'", admin_password)
+        logger.info("-> Admin UUID: %s", admin_uuid)
         admin_profile_params: tuple = (
+            admin_uuid,
             sql_values.DEFAULT_ADMIN_USER.get('email_address'),
             sql_values.DEFAULT_ADMIN_USER.get('full_name'),
             sql_values.DEFAULT_ADMIN_USER.get('display_name'),

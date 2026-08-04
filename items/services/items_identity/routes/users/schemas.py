@@ -136,8 +136,8 @@ SCHEMA_CHANGE_PASSWORD_REQUEST: dict = {
     {
         "user_id":
         {
-            "type": "integer",
-            "minimum": 1
+            "type": "string",
+            "format": "uuid"
         },
         "current_password":
         {

@@ -51,7 +51,7 @@ class AdminModifyUserPageHandler(PortalPageHandler):
         self._metadata_settings = metadata
 
     @require_administrator
-    async def modify_user_get(self, user_id: int):
+    async def modify_user_get(self, user_id: str):
         """Render the edit user page pre-populated with current user data.
 
         Args:
@@ -89,7 +89,7 @@ class AdminModifyUserPageHandler(PortalPageHandler):
         return await self._render(user_id=user_id, form_data=form_data)
 
     @require_administrator
-    async def modify_user_post(self, user_id: int):
+    async def modify_user_post(self, user_id: str):
         """Process an edit user submission.
 
         Sends a PATCH request to the gateway with the supplied fields.
@@ -154,7 +154,7 @@ class AdminModifyUserPageHandler(PortalPageHandler):
             self._generate_redirect('/admin/users_roles'))
 
     async def _render(self,
-                      user_id: int,
+                      user_id: str,
                       form_data: dict,
                       error_msg_str: str | None = None):
         """Render the edit user page.

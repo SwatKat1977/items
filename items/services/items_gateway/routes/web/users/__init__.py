@@ -82,25 +82,25 @@ def create_users_routes(injections: RouteInjections) -> Blueprint:
     async def create_user_request():
         return await handler_create.create_user()
 
-    injections.logger.debug("=> %s GET  /web/users/<int:user_id>",
+    injections.logger.debug("=> %s GET  /web/users/<string:user_id>",
                             "Get user".ljust(40))
 
-    @routes.route('/users/<int:user_id>', methods=['GET'])
-    async def get_user_request(user_id: int):
+    @routes.route('/users/<string:user_id>', methods=['GET'])
+    async def get_user_request(user_id: str):
         return await handler_get.get_user(user_id)
 
-    injections.logger.debug("=> %s PATCH /web/users/<int:user_id>",
+    injections.logger.debug("=> %s PATCH /web/users/<string:user_id>",
                             "Modify user".ljust(40))
 
-    @routes.route('/users/<int:user_id>', methods=['PATCH'])
-    async def modify_user_request(user_id: int):
+    @routes.route('/users/<string:user_id>', methods=['PATCH'])
+    async def modify_user_request(user_id: str):
         return await handler_modify.modify_user(user_id)
 
-    injections.logger.debug("=> %s POST /web/users/<int:user_id>/password",
+    injections.logger.debug("=> %s POST /web/users/<string:user_id>/password",
                             "Reset user password".ljust(40))
 
-    @routes.route('/users/<int:user_id>/password', methods=['POST'])
-    async def reset_password_request(user_id: int):
+    @routes.route('/users/<string:user_id>/password', methods=['POST'])
+    async def reset_password_request(user_id: str):
         return await handler_reset_password.reset_password(user_id)
 
     return routes

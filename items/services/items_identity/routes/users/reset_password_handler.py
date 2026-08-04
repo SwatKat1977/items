@@ -47,7 +47,7 @@ class ResetPasswordHandler(BaseApiRoute):
 
     @validate_json(SCHEMA_RESET_PASSWORD_REQUEST)
     async def reset_password(self, request_msg: ApiResponse,
-                             user_id: int) -> Response:
+                             user_id: str) -> Response:
         """Reset a user's password without verifying the current one.
 
         Intended for administrator use only (enforced at the gateway).
@@ -56,15 +56,15 @@ class ResetPasswordHandler(BaseApiRoute):
 
         Args:
             request_msg: Validated request containing ``new_password``.
-            user_id:     The user whose password is being reset (from URL).
+            user_id:     The user's UUID (from URL).
 
         Returns:
             200 on success.
-            404 if no user exists with that ID.
+            404 if no user exists with that UUID.
             503 if the service is unavailable.
         """
         result = await self._service.reset_password(
-            user_id=user_id,
+            user_uuid=user_id,
             new_password=request_msg.body["new_password"])
 
         if not result.available:

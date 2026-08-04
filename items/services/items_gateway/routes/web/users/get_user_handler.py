@@ -37,11 +37,11 @@ class GetUserHandler(BaseApiRoute):
         self._configuration = configuration
         self._rest_client = rest_client
 
-    async def get_user(self, user_id: int) -> Response:
-        """Return a single user account by ID.
+    async def get_user(self, user_id: str) -> Response:
+        """Return a single user account by UUID.
 
         Args:
-            user_id: The user's primary key (from the URL).
+            user_id: The user's UUID (from the URL).
 
         Returns:
             200 with user profile on success.
