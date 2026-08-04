@@ -27,13 +27,14 @@ from items.services.items_web_portal.page_handlers.admin.users.\
 
 _LOGGER = MagicMock()
 _AUTH_HEADERS = {"Cookie": "items_token=abc; items_user=bob"}
+_UUID = "550e8400-e29b-41d4-a716-446655440000"
 
 _SESSION_VALID = ApiResponse(
     status_code=HTTPStatus.OK,
     body={"status": "VALID", "is_administrator": True})
 
 _USER = {
-    "id": 1,
+    "id": _UUID,
     "full_name": "Alice Smith",
     "display_name": "Alice",
     "email_address": "alice@localhost",
@@ -194,22 +195,22 @@ class TestAdminModifyUserPageHandler(unittest.IsolatedAsyncioTestCase):
 
         app = make_app()
 
-        @app.route("/admin/users_roles/<int:user_id>/modify", methods=["GET"])
-        async def get_route(user_id: int):
+        @app.route("/admin/users_roles/<string:user_id>/modify", methods=["GET"])
+        async def get_route(user_id: str):
             return await handler.modify_user_get(user_id)
 
-        @app.route("/admin/users_roles/<int:user_id>/modify", methods=["POST"])
-        async def post_route(user_id: int):
+        @app.route("/admin/users_roles/<string:user_id>/modify", methods=["POST"])
+        async def post_route(user_id: str):
             return await handler.modify_user_post(user_id)
 
         self.client = app.test_client()
 
-    async def _get(self, user_id=1):
+    async def _get(self, user_id=_UUID):
         async with self.client as c:
             return await c.get(f"/admin/users_roles/{user_id}/modify",
                                headers=_AUTH_HEADERS)
 
-    async def _post(self, form, user_id=1):
+    async def _post(self, form, user_id=_UUID):
         async with self.client as c:
             return await c.post(f"/admin/users_roles/{user_id}/modify",
                                 form=form, headers=_AUTH_HEADERS)
@@ -288,7 +289,7 @@ class TestAdminModifyUserPageHandler(unittest.IsolatedAsyncioTestCase):
 
     async def test_redirects_when_not_authenticated(self):
         async with self.client as c:
-            response = await c.get("/admin/users_roles/1/modify")
+            response = await c.get(f"/admin/users_roles/{_UUID}/modify")
         text = await response.get_data(as_text=True)
         self.assertIn("Refresh", text)
 
@@ -307,25 +308,25 @@ class TestAdminResetPasswordPageHandler(unittest.IsolatedAsyncioTestCase):
 
         app = make_app()
 
-        @app.route("/admin/users_roles/<int:user_id>/reset_password",
+        @app.route("/admin/users_roles/<string:user_id>/reset_password",
                    methods=["GET"])
-        async def get_route(user_id: int):
+        async def get_route(user_id: str):
             return await handler.reset_password_get(user_id)
 
-        @app.route("/admin/users_roles/<int:user_id>/reset_password",
+        @app.route("/admin/users_roles/<string:user_id>/reset_password",
                    methods=["POST"])
-        async def post_route(user_id: int):
+        async def post_route(user_id: str):
             return await handler.reset_password_post(user_id)
 
         self.client = app.test_client()
 
-    async def _get(self, user_id=1):
+    async def _get(self, user_id=_UUID):
         async with self.client as c:
             return await c.get(
                 f"/admin/users_roles/{user_id}/reset_password",
                 headers=_AUTH_HEADERS)
 
-    async def _post(self, form, user_id=1):
+    async def _post(self, form, user_id=_UUID):
         async with self.client as c:
             return await c.post(
                 f"/admin/users_roles/{user_id}/reset_password",
@@ -413,7 +414,7 @@ class TestAdminResetPasswordPageHandler(unittest.IsolatedAsyncioTestCase):
 
     async def test_redirects_when_not_authenticated(self):
         async with self.client as c:
-            response = await c.get("/admin/users_roles/1/reset_password")
+            response = await c.get(f"/admin/users_roles/{_UUID}/reset_password")
         text = await response.get_data(as_text=True)
         self.assertIn("Refresh", text)
 

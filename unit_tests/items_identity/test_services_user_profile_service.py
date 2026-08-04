@@ -4,12 +4,17 @@ import logging
 from weaver_framework.database.sqlite_interface import SqliteInterfaceException
 from services.user_profile_service import UserProfileService
 
+_ADMIN_UUID = "550e8400-e29b-41d4-a716-446655440000"
+_NON_ADMIN_UUID = "660e8400-e29b-41d4-a716-446655440000"
+
 # A full profile row as returned by
 # UserRepository.get_user_profile_by_email():
-#   (id, email, full_name, display_name, account_status, logon_type,
+#   (id, uuid, email, full_name, display_name, account_status, logon_type,
 #    is_administrator)
-ADMIN_ROW = (1, "admin@localhost", "Local Admin", "Local Admin", 1, 0, 1)
-NON_ADMIN_ROW = (7, "gemma@localhost", "Gemma", "Gemma", 1, 0, 0)
+ADMIN_ROW = (1, _ADMIN_UUID, "admin@localhost", "Local Admin", "Local Admin",
+             1, 0, 1)
+NON_ADMIN_ROW = (7, _NON_ADMIN_UUID, "gemma@localhost", "Gemma", "Gemma",
+                 1, 0, 0)
 
 
 class TestUserProfileService(unittest.IsolatedAsyncioTestCase):
@@ -66,7 +71,7 @@ class TestUserProfileService(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result.available)
         self.assertTrue(result.found)
         self.assertEqual(result.profile, {
-            "id": 1,
+            "id": _ADMIN_UUID,
             "email_address": "admin@localhost",
             "full_name": "Local Admin",
             "display_name": "Local Admin",
