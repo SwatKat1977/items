@@ -38,6 +38,7 @@ _USER = {
 def _config():
     cfg = MagicMock()
     cfg.apis_identity_svc = "http://identity/"
+    cfg.apis_web_portal_svc = "http://portal/"
     return cfg
 
 
@@ -393,7 +394,7 @@ class TestResetPasswordHandlerEmail(unittest.IsolatedAsyncioTestCase):
             await c.post("/users/1/password",
                          json={"new_password": "newpass123"})
         _, kwargs = email_svc.send.call_args
-        self.assertIn("http://gateway/login", kwargs["body"])
+        self.assertIn("http://portal/login", kwargs["body"])
 
     async def test_email_not_sent_on_404(self):
         email_svc = AsyncMock()
@@ -424,6 +425,19 @@ class TestResetPasswordHandlerEmail(unittest.IsolatedAsyncioTestCase):
         mock_rc, app = self._make_handler_and_app(email_svc)
         mock_rc.post.return_value = _ok({"status": "ok"})
         mock_rc.get.return_value = _err({}, 404)
+
+        async with app.test_client() as c:
+            resp = await c.post("/users/1/password",
+                                json={"new_password": "newpass123"})
+        self.assertEqual(resp.status_code, 200)
+        email_svc.send.assert_not_awaited()
+
+    async def test_no_email_when_user_has_no_email_address(self):
+        email_svc = AsyncMock()
+        mock_rc, app = self._make_handler_and_app(email_svc)
+        mock_rc.post.return_value = _ok({"status": "ok"})
+        # User fetched OK but email_address is absent from the body
+        mock_rc.get.return_value = _ok({"id": 1, "full_name": "Alice"})
 
         async with app.test_client() as c:
             resp = await c.post("/users/1/password",
