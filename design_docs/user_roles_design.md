@@ -221,8 +221,16 @@ change: new email, forced logout, re-login.
 Two flows:
 
 1. **Admin resets password** — administrator sets a new password on behalf
-   of a user (e.g. account recovery). The user is not notified in v1 (no
-   email integration). The admin communicates it out of band.
+   of a user (e.g. account recovery). The gateway sends a notification email
+   to the user's registered address after a successful reset, including a
+   direct link to the portal login page. Email delivery is best-effort —
+   a failure to send does not roll back the password change.
+
+   Email is delivered via the gateway's `SmtpEmailService`. For production,
+   Brevo is the recommended relay: `host = smtp-relay.brevo.com`, `port = 587`,
+   `use_tls = true`, `from_address` must be a verified Brevo sender address.
+   For local development, a local `aiosmtpd` relay on `localhost:1025`
+   (no TLS, no credentials) is used by default.
 
 2. **User changes own password** — a user changes their own password after
    supplying their current password first. This does not require
