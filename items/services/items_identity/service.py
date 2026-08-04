@@ -26,10 +26,16 @@ from items.services.items_identity.identity_configuration import \
 from items.services.items_identity.routes import create_routes
 from items.services.items_identity.configuration_layout import \
     CONFIGURATION_LAYOUT
+from items.services.items_identity.data_access.invite_repository import \
+    InviteRepository
 from items.services.items_identity.data_access.user_repository import \
     UserRepository
 from items.services.items_identity.services.authentication_service import \
     AuthenticationService
+from items.services.items_identity.services.invite_management_service import \
+    InviteManagementService
+
+_INVITE_EXPIRY_INTERVAL_SECONDS: int = 5 * 60  # 5 minutes
 
 
 class Service(BaseMicroservice):
@@ -47,6 +53,7 @@ class Service(BaseMicroservice):
         self._authentication_service: AuthenticationService | None = None
 
         self._service_state.database_enabled = True
+        self._invite_service: InviteManagementService | None = None
 
     async def _initialise(self) -> bool:
         self.logger.info('ITEMS Identity Microservice %s', __version__)
@@ -69,6 +76,10 @@ class Service(BaseMicroservice):
             self._service_state,
             self._user_repository)
 
+        invite_repo = InviteRepository(self.logger, self._config)
+        self._invite_service = InviteManagementService(
+            self.logger, invite_repo, self._user_repository)
+
         db_filename: Path = Path(self._config.backend_db_filename)
         if not db_filename.is_file():
             self._logger.critical("Backend database file '%s' is missing!",
@@ -81,8 +92,8 @@ class Service(BaseMicroservice):
         return True
 
     async def _create_tasks(self) -> list[asyncio.Task]:
-        """ Create and return the service's background tasks. """
-        return [asyncio.create_task(self._dummy_task())]
+        """Create and return the service's background tasks."""
+        return [asyncio.create_task(self._invite_expiry_task())]
 
     async def _shutdown(self):
         """ Abstract method for application shutdown. """
@@ -126,5 +137,20 @@ class Service(BaseMicroservice):
 
         return True
 
-    async def _dummy_task(self) -> None:
-        await self.shutdown_event.wait()
+    async def _invite_expiry_task(self) -> None:
+        """Background task: soft-expire overdue pending invites every 5 minutes.
+
+        Runs immediately on startup, then repeats on the configured interval
+        until the shutdown event is set.
+        """
+        self._logger.info("Invite expiry task started (interval=%ds)",
+                          _INVITE_EXPIRY_INTERVAL_SECONDS)
+        while not self.shutdown_event.is_set():
+            await self._invite_service.expire_pending_invites()
+            try:
+                await asyncio.wait_for(
+                    self.shutdown_event.wait(),
+                    timeout=_INVITE_EXPIRY_INTERVAL_SECONDS)
+            except asyncio.TimeoutError:
+                pass
+        self._logger.info("Invite expiry task stopped")
