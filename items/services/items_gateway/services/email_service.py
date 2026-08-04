@@ -23,6 +23,7 @@ class EmailService(ABC):
     intentionally minimal — subject, body (plain text), and a single
     recipient. Callers are responsible for constructing the message content.
     """
+    # pylint: disable=too-few-public-methods
 
     @abstractmethod
     async def send(self, to: str, subject: str, body: str) -> None:

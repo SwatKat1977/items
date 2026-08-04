@@ -41,6 +41,7 @@ class SmtpEmailService(EmailService):
         use_tls: If ``True``, connect with STARTTLS (default ``True``).
                  Set to ``False`` for a plain local dev relay.
     """
+    # pylint: disable=too-few-public-methods
 
     def __init__(
             self,
@@ -51,6 +52,7 @@ class SmtpEmailService(EmailService):
             password: str | None,
             from_address: str,
             use_tls: bool = True) -> None:
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         self._logger = logger.getChild(type(self).__name__)
         self._host = host
         self._port = port
