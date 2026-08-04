@@ -20,6 +20,7 @@ from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.metadata_handler import MetadataHandler
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
 from items.services.items_gateway.sessions import Sessions
+from items.services.items_gateway.services.email_service import EmailService
 
 
 @dataclass(frozen=True)
@@ -37,9 +38,11 @@ class RouteInjections:
         configuration: Gateway application configuration.
         rest_client: REST client used to communicate with external services.
         metadata_handler: Handler responsible for generating webhook metadata.
+        email_service: Email service for sending transactional notifications.
     """
     logger: logging.Logger | None = None
     sessions: Sessions | None = None
     configuration: GatewayConfiguration | None = None
     rest_client: RestClient | None = None
     metadata_handler: MetadataHandler | None = None
+    email_service: EmailService | None = None

@@ -76,6 +76,54 @@ class TestGatewayConfiguration(unittest.TestCase):
             ConfigurationConstants.APIS_WEB_PORTAL_SVC)
         self.assertEqual(result, "http://localhost:8080/")
 
+    def test_smtp_host(self):
+        self.config.get_entry.return_value = "smtp.example.com"
+        result = self.config.smtp_host
+        self.config.get_entry.assert_called_once_with(
+            ConfigurationConstants.SECTION_SMTP,
+            ConfigurationConstants.SMTP_HOST)
+        self.assertEqual(result, "smtp.example.com")
+
+    def test_smtp_port(self):
+        self.config.get_entry.return_value = 587
+        result = self.config.smtp_port
+        self.config.get_entry.assert_called_once_with(
+            ConfigurationConstants.SECTION_SMTP,
+            ConfigurationConstants.SMTP_PORT)
+        self.assertEqual(result, 587)
+
+    def test_smtp_username(self):
+        self.config.get_entry.return_value = "user@example.com"
+        result = self.config.smtp_username
+        self.config.get_entry.assert_called_once_with(
+            ConfigurationConstants.SECTION_SMTP,
+            ConfigurationConstants.SMTP_USERNAME)
+        self.assertEqual(result, "user@example.com")
+
+    def test_smtp_password(self):
+        self.config.get_entry.return_value = "s3cr3t"
+        result = self.config.smtp_password
+        self.config.get_entry.assert_called_once_with(
+            ConfigurationConstants.SECTION_SMTP,
+            ConfigurationConstants.SMTP_PASSWORD)
+        self.assertEqual(result, "s3cr3t")
+
+    def test_smtp_from_address(self):
+        self.config.get_entry.return_value = "noreply@items.local"
+        result = self.config.smtp_from_address
+        self.config.get_entry.assert_called_once_with(
+            ConfigurationConstants.SECTION_SMTP,
+            ConfigurationConstants.SMTP_FROM_ADDRESS)
+        self.assertEqual(result, "noreply@items.local")
+
+    def test_smtp_use_tls(self):
+        self.config.get_entry.return_value = True
+        result = self.config.smtp_use_tls
+        self.config.get_entry.assert_called_once_with(
+            ConfigurationConstants.SECTION_SMTP,
+            ConfigurationConstants.SMTP_USE_TLS)
+        self.assertTrue(result)
+
 
 if __name__ == "__main__":
     unittest.main()

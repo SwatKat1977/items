@@ -21,6 +21,7 @@ from items.services.items_gateway.routes.web.users.modify_user_handler import (
     ModifyUserHandler)
 from items.services.items_gateway.routes.web.users.reset_password_handler import (
     ResetPasswordHandler)
+from items.services.items_gateway.services.email_service import EmailServiceError
 
 _LOGGER = MagicMock()
 _USER = {
@@ -345,3 +346,87 @@ class TestResetPasswordHandler(unittest.IsolatedAsyncioTestCase):
         self.mock_rc.post.return_value = _ok({"status": "ok"})
         resp = await self._post()
         self.assertEqual(resp.content_type, "application/json")
+
+
+# ---------------------------------------------------------------------------
+# ResetPasswordHandler — email notification behaviour
+# ---------------------------------------------------------------------------
+
+class TestResetPasswordHandlerEmail(unittest.IsolatedAsyncioTestCase):
+    """Tests for the email notification sent after a successful password reset."""
+
+    def _make_handler_and_app(self, email_service=None):
+        mock_rc = AsyncMock()
+        handler = ResetPasswordHandler(
+            _LOGGER, _config(), mock_rc, email_service)
+        app = Quart(__name__)
+
+        @app.route("/users/<int:user_id>/password", methods=["POST"])
+        async def route(user_id: int):
+            return await handler.reset_password(user_id)
+
+        return mock_rc, app
+
+    async def test_email_sent_on_success(self):
+        email_svc = AsyncMock()
+        mock_rc, app = self._make_handler_and_app(email_svc)
+        # POST /users/.../password → 200
+        mock_rc.post.return_value = _ok({"status": "ok"})
+        # GET /users/... → user with email
+        mock_rc.get.return_value = _ok(_USER)
+
+        async with app.test_client() as c:
+            resp = await c.post("/users/1/password",
+                                json={"new_password": "newpass123"})
+        self.assertEqual(resp.status_code, 200)
+        email_svc.send.assert_awaited_once()
+        _, kwargs = email_svc.send.call_args
+        self.assertEqual(kwargs["to"], _USER["email_address"])
+
+    async def test_email_not_sent_on_404(self):
+        email_svc = AsyncMock()
+        mock_rc, app = self._make_handler_and_app(email_svc)
+        mock_rc.post.return_value = _err({"error": "not found"}, 404)
+
+        async with app.test_client() as c:
+            resp = await c.post("/users/1/password",
+                                json={"new_password": "newpass123"})
+        self.assertEqual(resp.status_code, 404)
+        email_svc.send.assert_not_awaited()
+
+    async def test_email_failure_does_not_affect_response(self):
+        email_svc = AsyncMock()
+        email_svc.send.side_effect = EmailServiceError("SMTP down")
+        mock_rc, app = self._make_handler_and_app(email_svc)
+        mock_rc.post.return_value = _ok({"status": "ok"})
+        mock_rc.get.return_value = _ok(_USER)
+
+        async with app.test_client() as c:
+            resp = await c.post("/users/1/password",
+                                json={"new_password": "newpass123"})
+        # Password was reset successfully; email failure must not flip status
+        self.assertEqual(resp.status_code, 200)
+
+    async def test_no_email_when_user_fetch_fails(self):
+        email_svc = AsyncMock()
+        mock_rc, app = self._make_handler_and_app(email_svc)
+        mock_rc.post.return_value = _ok({"status": "ok"})
+        mock_rc.get.return_value = _err({}, 404)
+
+        async with app.test_client() as c:
+            resp = await c.post("/users/1/password",
+                                json={"new_password": "newpass123"})
+        self.assertEqual(resp.status_code, 200)
+        email_svc.send.assert_not_awaited()
+
+    async def test_no_email_when_email_service_is_none(self):
+        mock_rc, app = self._make_handler_and_app(email_service=None)
+        mock_rc.post.return_value = _ok({"status": "ok"})
+
+        async with app.test_client() as c:
+            resp = await c.post("/users/1/password",
+                                json={"new_password": "newpass123"})
+        # Should succeed without attempting any email
+        self.assertEqual(resp.status_code, 200)
+        # get should not have been called (no user fetch without email service)
+        mock_rc.get.assert_not_awaited()

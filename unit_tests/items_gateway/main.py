@@ -47,6 +47,12 @@ from test_users_handlers import (
     TestCreateUserHandler,
     TestModifyUserHandler,
     TestResetPasswordHandler,
+    TestResetPasswordHandlerEmail,
+)
+from test_email_service import (
+    TestEmailServiceAbstract,
+    TestSmtpEmailServiceInit,
+    TestSmtpEmailServiceSend,
 )
 from test_webhook_handler import TestGetMetadataHandler
 
