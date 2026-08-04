@@ -79,7 +79,7 @@ class CreateUserHandler(BaseApiRoute):
                 status=HTTPStatus.CONFLICT,
                 content_type="application/json")
 
-        response_body: dict = {"id": result.user_id}
+        response_body: dict = {"id": result.user_uuid}
         if result.generated_password is not None:
             response_body["generated_password"] = result.generated_password
         return Response(

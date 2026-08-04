@@ -39,9 +39,9 @@ def create_users_routes(logger: logging.Logger,
       (internal; used by the gateway at login).
     * ``GET  /users``                  - List all user profiles.
     * ``POST /users``                  - Create a new user account.
-    * ``GET  /users/<user_id>``        - Retrieve a single user's profile.
-    * ``PATCH /users/<user_id>``       - Update a user's profile fields.
-    * ``POST /users/<user_id>/password`` - Admin password reset.
+    * ``GET  /users/<user_id>``        - Retrieve a single user's profile (UUID).
+    * ``PATCH /users/<user_id>``       - Update a user's profile fields (UUID).
+    * ``POST /users/<user_id>/password`` - Admin password reset (UUID).
     * ``POST /users/me/password``      - Self-service password change.
 
     Args:
@@ -100,16 +100,16 @@ def create_users_routes(logger: logging.Logger,
     async def create_user_request():
         return await handler_create.create_user()
 
-    @users_routes.route('/users/<int:user_id>', methods=['GET'])
-    async def get_user_request(user_id: int):
+    @users_routes.route('/users/<string:user_id>', methods=['GET'])
+    async def get_user_request(user_id: str):
         return await handler_get.get_user(user_id)
 
-    @users_routes.route('/users/<int:user_id>', methods=['PATCH'])
-    async def modify_user_request(user_id: int):
+    @users_routes.route('/users/<string:user_id>', methods=['PATCH'])
+    async def modify_user_request(user_id: str):
         return await handler_modify.modify_user(user_id=user_id)
 
-    @users_routes.route('/users/<int:user_id>/password', methods=['POST'])
-    async def reset_password_request(user_id: int):
+    @users_routes.route('/users/<string:user_id>/password', methods=['POST'])
+    async def reset_password_request(user_id: str):
         return await handler_reset_password.reset_password(user_id=user_id)
 
     @users_routes.route('/users/me/password', methods=['POST'])

@@ -47,7 +47,7 @@ class ModifyUserHandler(BaseApiRoute):
 
     @validate_json(SCHEMA_MODIFY_USER_REQUEST)
     async def modify_user(self, request_msg: ApiResponse,
-                          user_id: int) -> Response:
+                          user_id: str) -> Response:
         """Update a user's profile fields.
 
         Args:
@@ -55,17 +55,17 @@ class ModifyUserHandler(BaseApiRoute):
                 ``full_name``, ``display_name``, ``account_status``,
                 ``is_administrator``. Omitted fields retain their current
                 values.
-            user_id: The user to update (from the URL).
+            user_id: The user's UUID (from the URL).
 
         Returns:
             200 on success.
             403 if the update would leave no active administrator.
-            404 if no user exists with that ID.
+            404 if no user exists with that UUID.
             503 if the service is unavailable.
         """
         body = request_msg.body
         result = await self._service.update_user(
-            user_id=user_id,
+            user_uuid=user_id,
             full_name=body.get("full_name"),
             display_name=body.get("display_name"),
             account_status=body.get("account_status"),

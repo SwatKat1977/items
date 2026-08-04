@@ -75,29 +75,29 @@ def create_admin_users_page_handlers(injections: PageHandlerInjections) -> Bluep
     injections.logger.debug("=> %s GET /admin/users_roles/<id>/modify",
                             "Admin modify user page (read)".ljust(40))
 
-    @routes.route('/<int:user_id>/modify', methods=['GET'])
-    async def admin_modify_user_get(user_id: int):
+    @routes.route('/<string:user_id>/modify', methods=['GET'])
+    async def admin_modify_user_get(user_id: str):
         return await handler_modify_user.modify_user_get(user_id)
 
     injections.logger.debug("=> %s POST /admin/users_roles/<id>/modify",
                             "Admin modify user (submit)".ljust(40))
 
-    @routes.route('/<int:user_id>/modify', methods=['POST'])
-    async def admin_modify_user_post(user_id: int):
+    @routes.route('/<string:user_id>/modify', methods=['POST'])
+    async def admin_modify_user_post(user_id: str):
         return await handler_modify_user.modify_user_post(user_id)
 
     injections.logger.debug("=> %s GET /admin/users_roles/<id>/reset_password",
                             "Admin reset password page (read)".ljust(40))
 
-    @routes.route('/<int:user_id>/reset_password', methods=['GET'])
-    async def admin_reset_password_get(user_id: int):
+    @routes.route('/<string:user_id>/reset_password', methods=['GET'])
+    async def admin_reset_password_get(user_id: str):
         return await handler_reset_password.reset_password_get(user_id)
 
     injections.logger.debug("=> %s POST /admin/users_roles/<id>/reset_password",
                             "Admin reset password (submit)".ljust(40))
 
-    @routes.route('/<int:user_id>/reset_password', methods=['POST'])
-    async def admin_reset_password_post(user_id: int):
+    @routes.route('/<string:user_id>/reset_password', methods=['POST'])
+    async def admin_reset_password_post(user_id: str):
         return await handler_reset_password.reset_password_post(user_id)
 
     return routes

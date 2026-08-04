@@ -38,11 +38,11 @@ class ModifyUserHandler(BaseApiRoute):
         self._configuration = configuration
         self._rest_client = rest_client
 
-    async def modify_user(self, user_id: int) -> Response:
+    async def modify_user(self, user_id: str) -> Response:
         """Update a user's profile fields.
 
         Args:
-            user_id: The user's primary key (from the URL).
+            user_id: The user's UUID (from the URL).
 
         Returns:
             200 on success.

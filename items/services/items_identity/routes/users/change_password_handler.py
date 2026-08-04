@@ -65,7 +65,7 @@ class ChangePasswordHandler(BaseApiRoute):
         """
         body = request_msg.body
         result = await self._service.change_own_password(
-            user_id=body["user_id"],
+            user_uuid=body["user_id"],
             current_password=body["current_password"],
             new_password=body["new_password"])
 

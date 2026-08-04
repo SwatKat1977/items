@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 import logging
 import secrets
 import string
+import uuid as uuid_mod
 from typing import Optional
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
@@ -42,17 +43,22 @@ def _generate_password() -> str:
 def _row_to_dict(row: tuple) -> dict:
     """Convert a ``user_profile`` row tuple to a profile dict.
 
+    The public-facing ``"id"`` field carries the UUID, not the integer
+    primary key. The integer primary key is an internal implementation detail
+    and is never included in the returned dict.
+
     Args:
-        row: ``(id, email_address, full_name, display_name, account_status,
-              logon_type, is_administrator)``
+        row: ``(id, uuid, email_address, full_name, display_name,
+              account_status, logon_type, is_administrator)``
 
     Returns:
-        A dict with the same fields, ``is_administrator`` converted to bool.
+        A dict with ``"id"`` set to the UUID and all profile fields included.
+        ``is_administrator`` is converted to bool.
     """
-    user_id, email_address, full_name, display_name, account_status, \
+    _, user_uuid, email_address, full_name, display_name, account_status, \
         logon_type, is_administrator = row
     return {
-        "id": user_id,
+        "id": user_uuid,
         "email_address": email_address,
         "full_name": full_name,
         "display_name": display_name,
@@ -80,7 +86,7 @@ class UserLookupResult:
 
     Attributes:
         available: False when the service is unavailable.
-        found:     False when no user exists with the requested ID.
+        found:     False when no user exists with the requested UUID.
         user:      The user's profile dict when the lookup succeeded.
     """
     available: bool = True
@@ -95,13 +101,13 @@ class UserCreateResult:
     Attributes:
         available:          False when the service is unavailable.
         conflict:           True when the email address is already registered.
-        user_id:            The newly created user's ID on success.
+        user_uuid:          The newly created user's UUID on success.
         generated_password: Set when no password was supplied by the caller;
                             returned exactly once and never stored in plaintext.
     """
     available: bool = True
     conflict: bool = False
-    user_id: Optional[int] = field(default=None)
+    user_uuid: Optional[str] = field(default=None)
     generated_password: Optional[str] = field(default=None)
 
 
@@ -111,7 +117,7 @@ class UserUpdateResult:
 
     Attributes:
         available:  False when the service is unavailable.
-        found:      False when no user exists with the requested ID.
+        found:      False when no user exists with the requested UUID.
         forbidden:  True when the update would leave no active administrator.
         success:    True when the update was applied.
     """
@@ -127,7 +133,7 @@ class PasswordResult:
 
     Attributes:
         available:      False when the service is unavailable.
-        found:          False when no user exists with the requested ID.
+        found:          False when no user exists with the requested UUID.
         wrong_password: True when the supplied current password did not match
                         (self-change flow only).
         success:        True when the password was updated.
@@ -145,6 +151,9 @@ class UserManagementService:
     deactivating accounts, and changing passwords. Authentication is
     handled by :class:`AuthenticationService`; this service handles
     everything that happens *after* an account exists.
+
+    All public-facing methods identify users by UUID. The integer primary key
+    is used only for internal database joins and is never surfaced externally.
     """
 
     def __init__(self,
@@ -182,11 +191,11 @@ class UserManagementService:
 
         return UserListResult(users=[_row_to_dict(r) for r in rows])
 
-    async def get_user_by_id(self, user_id: int) -> UserLookupResult:
-        """Return a single user's profile by ID.
+    async def get_user_by_uuid(self, user_uuid: str) -> UserLookupResult:
+        """Return a single user's profile by UUID.
 
         Args:
-            user_id: The user's primary key.
+            user_uuid: The user's public UUID string.
 
         Returns:
             A :class:`UserLookupResult`.
@@ -195,10 +204,10 @@ class UserManagementService:
             return UserLookupResult(available=False)
 
         try:
-            row = await self._repo.get_user_by_id(user_id)
+            row = await self._repo.get_user_by_uuid(user_uuid)
         except SqliteInterfaceException as ex:
             self._logger.exception(
-                "Database failure fetching user %s: %s", user_id, ex)
+                "Database failure fetching user %s: %s", user_uuid, ex)
             self._state.set_service_degraded("User lookup database unavailable")
             return UserLookupResult(available=False)
 
@@ -215,11 +224,12 @@ class UserManagementService:
                           is_administrator: bool) -> UserCreateResult:
         """Create a new user account.
 
-        Hashes the supplied password with Argon2 before storing it. If
-        ``password`` is ``None`` a cryptographically secure random password
-        is generated and returned in :attr:`UserCreateResult.generated_password`
-        — it is never logged or stored in plaintext and cannot be retrieved
-        again.
+        A UUID is generated automatically and assigned as the public
+        identifier. Hashes the supplied password with Argon2 before storing
+        it. If ``password`` is ``None`` a cryptographically secure random
+        password is generated and returned in
+        :attr:`UserCreateResult.generated_password` — it is never logged or
+        stored in plaintext and cannot be retrieved again.
 
         ``account_status`` is set to ``ACTIVE`` and ``logon_type`` to
         ``PASSWORD`` for all v1 accounts.
@@ -234,8 +244,9 @@ class UserManagementService:
 
         Returns:
             A :class:`UserCreateResult`. ``conflict`` is True if the email is
-            already registered. ``generated_password`` is set when the caller
-            did not supply a password.
+            already registered. ``user_uuid`` is set on success.
+            ``generated_password`` is set when the caller did not supply a
+            password.
         """
         if not self._state.is_available():
             return UserCreateResult(available=False)
@@ -250,8 +261,10 @@ class UserManagementService:
                 return UserCreateResult(conflict=True)
 
             password_hash = self._ph.hash(password)
+            user_uuid = str(uuid_mod.uuid4())
 
             user_id = await self._repo.create_user(
+                user_uuid=user_uuid,
                 email=email,
                 full_name=full_name,
                 display_name=display_name,
@@ -268,10 +281,10 @@ class UserManagementService:
                 "User creation database unavailable")
             return UserCreateResult(available=False)
 
-        return UserCreateResult(user_id=user_id, generated_password=generated)
+        return UserCreateResult(user_uuid=user_uuid, generated_password=generated)
 
     async def update_user(self,
-                          user_id: int,
+                          user_uuid: str,
                           full_name: Optional[str] = None,
                           display_name: Optional[str] = None,
                           account_status: Optional[int] = None,
@@ -285,7 +298,7 @@ class UserManagementService:
         guard).
 
         Args:
-            user_id:          The user to update.
+            user_uuid:        UUID of the user to update.
             full_name:        New full name, or ``None`` to leave unchanged.
             display_name:     New display name, or ``None`` to leave unchanged.
             account_status:   New account status, or ``None`` to leave
@@ -302,12 +315,16 @@ class UserManagementService:
             return UserUpdateResult(available=False)
 
         try:
-            row = await self._repo.get_user_by_id(user_id)
+            row = await self._repo.get_user_by_uuid(user_uuid)
             if row is None:
                 return UserUpdateResult(found=False)
 
+            # Unpack: (id, uuid, email_address, full_name, display_name,
+            #          account_status, logon_type, is_administrator)
+            user_id, _, _, cur_full_name, cur_display_name, \
+                cur_status, _, cur_is_admin = row
+
             # Merge supplied values over current values.
-            _, _, cur_full_name, cur_display_name, cur_status, _, cur_is_admin = row
             new_full_name = full_name if full_name is not None else cur_full_name
             new_display_name = (display_name if display_name is not None
                                 else cur_display_name)
@@ -329,7 +346,7 @@ class UserManagementService:
 
         except SqliteInterfaceException as ex:
             self._logger.exception(
-                "Database failure updating user %s: %s", user_id, ex)
+                "Database failure updating user %s: %s", user_uuid, ex)
             self._state.set_service_degraded(
                 "User update database unavailable")
             return UserUpdateResult(available=False)
@@ -337,7 +354,7 @@ class UserManagementService:
         return UserUpdateResult(success=True)
 
     async def reset_password(self,
-                             user_id: int,
+                             user_uuid: str,
                              new_password: str) -> PasswordResult:
         """Reset a user's password without verifying the current one.
 
@@ -345,7 +362,7 @@ class UserManagementService:
         is required.
 
         Args:
-            user_id:      The user whose password is being reset.
+            user_uuid:    UUID of the user whose password is being reset.
             new_password: New plain-text password.
 
         Returns:
@@ -355,17 +372,18 @@ class UserManagementService:
             return PasswordResult(available=False)
 
         try:
-            row = await self._repo.get_user_by_id(user_id)
+            row = await self._repo.get_user_by_uuid(user_uuid)
             if row is None:
                 return PasswordResult(found=False)
 
+            user_id = row[0]
             password_hash = self._ph.hash(new_password)
             await self._repo.update_password(user_id, password_hash)
 
         except SqliteInterfaceException as ex:
             self._logger.exception(
                 "Database failure resetting password for user %s: %s",
-                user_id, ex)
+                user_uuid, ex)
             self._state.set_service_degraded(
                 "Password reset database unavailable")
             return PasswordResult(available=False)
@@ -373,7 +391,7 @@ class UserManagementService:
         return PasswordResult(success=True)
 
     async def change_own_password(self,
-                                  user_id: int,
+                                  user_uuid: str,
                                   current_password: str,
                                   new_password: str) -> PasswordResult:
         """Change a user's password after verifying their current one.
@@ -382,7 +400,7 @@ class UserManagementService:
         and must match before the new one is stored.
 
         Args:
-            user_id:          The user changing their own password.
+            user_uuid:        UUID of the user changing their own password.
             current_password: Plain-text current password for verification.
             new_password:     New plain-text password.
 
@@ -395,13 +413,14 @@ class UserManagementService:
             return PasswordResult(available=False)
 
         try:
-            row = await self._repo.get_user_by_id(user_id)
+            row = await self._repo.get_user_by_uuid(user_uuid)
             if row is None:
                 return PasswordResult(found=False)
 
+            user_id = row[0]
             stored_hash = await self._repo.get_password_hash(user_id)
             if stored_hash is None:
-                self._logger.error("User %s has no password record", user_id)
+                self._logger.error("User %s has no password record", user_uuid)
                 return PasswordResult(available=False)
 
             try:
@@ -410,7 +429,7 @@ class UserManagementService:
                 return PasswordResult(wrong_password=True)
             except (VerificationError, InvalidHashError) as ex:
                 self._logger.error(
-                    "Password verification error for user %s: %s", user_id, ex)
+                    "Password verification error for user %s: %s", user_uuid, ex)
                 return PasswordResult(available=False)
 
             new_hash = self._ph.hash(new_password)
@@ -419,7 +438,7 @@ class UserManagementService:
         except SqliteInterfaceException as ex:
             self._logger.exception(
                 "Database failure changing password for user %s: %s",
-                user_id, ex)
+                user_uuid, ex)
             self._state.set_service_degraded(
                 "Password change database unavailable")
             return PasswordResult(available=False)

@@ -13,6 +13,11 @@ class UserRepository:
     This repository encapsulates database access for user identity and
     credential information. It serves as the data access layer between
     application services and the underlying SQLite storage.
+
+    All queries that return user profile rows now include the ``uuid`` column.
+    The integer primary key (``id``) is used internally for joins and foreign
+    keys but is never surfaced in API responses; the ``uuid`` is the public
+    identifier.
     """
 
     GET_USER_FOR_LOGON_QUERY: str = (
@@ -21,31 +26,37 @@ class UserRepository:
             "WHERE email_address = ?")
 
     GET_USER_PROFILE_QUERY: str = (
-        "SELECT id, email_address, full_name, display_name, account_status, "
-        "logon_type, is_administrator "
+        "SELECT id, uuid, email_address, full_name, display_name, "
+        "account_status, logon_type, is_administrator "
         "FROM user_profile "
         "WHERE email_address = ?")
 
     GET_ALL_USERS_QUERY: str = (
-        "SELECT id, email_address, full_name, display_name, account_status, "
-        "logon_type, is_administrator "
+        "SELECT id, uuid, email_address, full_name, display_name, "
+        "account_status, logon_type, is_administrator "
         "FROM user_profile "
         "ORDER BY id")
 
     GET_USER_BY_ID_QUERY: str = (
-        "SELECT id, email_address, full_name, display_name, account_status, "
-        "logon_type, is_administrator "
+        "SELECT id, uuid, email_address, full_name, display_name, "
+        "account_status, logon_type, is_administrator "
         "FROM user_profile "
         "WHERE id = ?")
+
+    GET_USER_BY_UUID_QUERY: str = (
+        "SELECT id, uuid, email_address, full_name, display_name, "
+        "account_status, logon_type, is_administrator "
+        "FROM user_profile "
+        "WHERE uuid = ?")
 
     EMAIL_EXISTS_QUERY: str = (
         "SELECT COUNT(*) FROM user_profile WHERE email_address = ?")
 
     INSERT_USER_PROFILE_QUERY: str = (
         "INSERT INTO user_profile "
-        "(email_address, full_name, display_name, insertion_date, "
+        "(uuid, email_address, full_name, display_name, insertion_date, "
         "account_status, logon_type, is_administrator) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)")
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
 
     INSERT_USER_AUTH_QUERY: str = (
         "INSERT INTO user_auth_details (password, user_id) VALUES (?, ?)")
@@ -121,7 +132,8 @@ class UserRepository:
 
     async def get_user_profile_by_email(
             self,
-            email: str) -> Optional[tuple[int, str, str, str, int, int, int]]:
+            email: str) -> Optional[
+                tuple[int, str, str, str, str, int, int, int]]:
         """
         Retrieve a user's profile details by email address.
 
@@ -138,7 +150,8 @@ class UserRepository:
             exists:
 
             (
-                user_id,
+                id,
+                uuid,
                 email_address,
                 full_name,
                 display_name,
@@ -166,7 +179,7 @@ class UserRepository:
 
         Args:
             user_id:
-                Unique identifier of the user.
+                Internal integer primary key of the user.
 
         Returns:
             The stored Argon2 password hash string if a password record
@@ -186,8 +199,8 @@ class UserRepository:
 
         Returns:
             A list of tuples, each containing:
-            ``(id, email_address, full_name, display_name, account_status,
-            logon_type, is_administrator)``.
+            ``(id, uuid, email_address, full_name, display_name,
+            account_status, logon_type, is_administrator)``.
             Returns an empty list if no users exist.
 
         Raises:
@@ -198,14 +211,18 @@ class UserRepository:
 
     async def get_user_by_id(
             self,
-            user_id: int) -> Optional[tuple[int, str, str, str, int, int, int]]:
-        """Retrieve a user's profile by their numeric ID.
+            user_id: int) -> Optional[
+                tuple[int, str, str, str, str, int, int, int]]:
+        """Retrieve a user's profile by their internal integer ID.
+
+        This is an internal lookup used within the identity service. External
+        callers should use UUIDs; see :meth:`get_user_by_uuid`.
 
         Args:
             user_id: The user's primary key.
 
         Returns:
-            A tuple ``(id, email_address, full_name, display_name,
+            A tuple ``(id, uuid, email_address, full_name, display_name,
             account_status, logon_type, is_administrator)`` if found,
             otherwise ``None``.
 
@@ -214,6 +231,30 @@ class UserRepository:
         """
         return await self._db.run_query(self.GET_USER_BY_ID_QUERY,
                                         (user_id,),
+                                        fetch_one=True)
+
+    async def get_user_by_uuid(
+            self,
+            user_uuid: str) -> Optional[
+                tuple[int, str, str, str, str, int, int, int]]:
+        """Retrieve a user's profile by their public UUID.
+
+        This is the primary external lookup. The UUID is the identifier
+        exposed in API responses; the integer ``id`` is kept internal.
+
+        Args:
+            user_uuid: The user's UUID string.
+
+        Returns:
+            A tuple ``(id, uuid, email_address, full_name, display_name,
+            account_status, logon_type, is_administrator)`` if found,
+            otherwise ``None``.
+
+        Raises:
+            SqliteInterfaceException: If the database query fails.
+        """
+        return await self._db.run_query(self.GET_USER_BY_UUID_QUERY,
+                                        (user_uuid,),
                                         fetch_one=True)
 
     async def email_exists(self, email: str) -> bool:
@@ -234,6 +275,7 @@ class UserRepository:
         return bool(row and row[0])
 
     async def create_user(self,
+                          user_uuid: str,
                           email: str,
                           full_name: str,
                           display_name: str,
@@ -245,6 +287,7 @@ class UserRepository:
         ``insertion_date`` is set to the current Unix timestamp automatically.
 
         Args:
+            user_uuid:        UUID to assign as the public identifier.
             email:            Email address (login identifier).
             full_name:        User's full name.
             display_name:     Name shown in the UI.
@@ -253,7 +296,7 @@ class UserRepository:
             is_administrator: Whether the new account has administrator access.
 
         Returns:
-            The ``id`` of the newly inserted row.
+            The internal ``id`` of the newly inserted row.
 
         Raises:
             SqliteInterfaceException: If the database insert fails.
@@ -261,14 +304,14 @@ class UserRepository:
         insertion_date = int(time.time())
         return await self._db.insert_query(
             self.INSERT_USER_PROFILE_QUERY,
-            (email, full_name, display_name, insertion_date,
+            (user_uuid, email, full_name, display_name, insertion_date,
              account_status, logon_type, int(is_administrator)))
 
     async def create_user_auth(self, user_id: int, password_hash: str) -> None:
         """Insert a password hash record for a user.
 
         Args:
-            user_id:       The user's primary key.
+            user_id:       The user's internal primary key.
             password_hash: Argon2 hash of the user's initial password.
 
         Raises:
@@ -286,7 +329,7 @@ class UserRepository:
         """Update a user's profile fields.
 
         Args:
-            user_id:          The user's primary key.
+            user_id:          The user's internal primary key.
             full_name:        New full name.
             display_name:     New display name.
             account_status:   New account status value.
@@ -305,7 +348,7 @@ class UserRepository:
         """Replace the stored password hash for a user.
 
         Args:
-            user_id:       The user's primary key.
+            user_id:       The user's internal primary key.
             password_hash: New Argon2 hash.
 
         Raises:
