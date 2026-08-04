@@ -27,6 +27,7 @@ class TestRouteInjections(unittest.TestCase):
         self.assertIsNone(injections.configuration)
         self.assertIsNone(injections.rest_client)
         self.assertIsNone(injections.metadata_handler)
+        self.assertIsNone(injections.email_service)
 
     def test_populated(self):
         logger = MagicMock()
@@ -34,19 +35,22 @@ class TestRouteInjections(unittest.TestCase):
         configuration = MagicMock()
         rest_client = MagicMock()
         metadata_handler = MagicMock()
+        email_service = MagicMock()
 
         injections = RouteInjections(
             logger=logger,
             sessions=sessions,
             configuration=configuration,
             rest_client=rest_client,
-            metadata_handler=metadata_handler)
+            metadata_handler=metadata_handler,
+            email_service=email_service)
 
         self.assertIs(injections.logger, logger)
         self.assertIs(injections.sessions, sessions)
         self.assertIs(injections.configuration, configuration)
         self.assertIs(injections.rest_client, rest_client)
         self.assertIs(injections.metadata_handler, metadata_handler)
+        self.assertIs(injections.email_service, email_service)
 
     def test_is_frozen(self):
         injections = RouteInjections()

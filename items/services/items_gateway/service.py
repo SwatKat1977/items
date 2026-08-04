@@ -41,6 +41,7 @@ from items.services.items_gateway.metadata_handler import MetadataHandler
 from items.services.items_gateway.web_portal_client import WebPortalClient
 from items.services.items_gateway.sessions import Sessions
 from items.services.items_gateway.route_injections import RouteInjections
+from items.services.items_gateway.services.smtp_email_service import SmtpEmailService
 
 
 class Service(BaseMicroservice):
@@ -87,6 +88,15 @@ class Service(BaseMicroservice):
             self._http_session)
         self._rest_client: RestClient = RestClient(self._http_session)
 
+        email_service = SmtpEmailService(
+            logger=self.logger,
+            host=self._config.smtp_host,
+            port=self._config.smtp_port,
+            username=self._config.smtp_username,
+            password=self._config.smtp_password,
+            from_address=self._config.smtp_from_address or "noreply@items.local",
+            use_tls=self._config.smtp_use_tls)
+
         if not self._metadata_handler.read_metadata_file():
             return False
 
@@ -101,7 +111,8 @@ class Service(BaseMicroservice):
             sessions=self._sessions,
             configuration=self._config,
             rest_client=self._rest_client,
-            metadata_handler=self._metadata_handler)
+            metadata_handler=self._metadata_handler,
+            email_service=email_service)
 
         self._quart_instance.register_blueprint(
             create_routes(route_injections))
@@ -160,6 +171,11 @@ class Service(BaseMicroservice):
                          self._config.apis_cms_svc)
         self.logger.info("=> Web Portal Service API : %s",
                          self._config.apis_web_portal_svc)
+        self.logger.info("[smtp]")
+        self.logger.info("=> SMTP Host : %s", self._config.smtp_host)
+        self.logger.info("=> SMTP Port : %s", self._config.smtp_port)
+        self.logger.info("=> SMTP Use TLS : %s", self._config.smtp_use_tls)
+        self.logger.info("=> SMTP From : %s", self._config.smtp_from_address)
 
         return True
 

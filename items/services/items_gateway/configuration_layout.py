@@ -41,6 +41,17 @@ class ConfigurationConstants:
     APIS_CMS_SVC_DEFAULT: str = "http://localhost:6050/"
     APIS_WEB_PORTAL_SVC_DEFAULT: str = "http://localhost:8080/"
 
+    SECTION_SMTP: str = "smtp"
+    SMTP_HOST: str = "host"
+    SMTP_PORT: str = "port"
+    SMTP_USERNAME: str = "username"
+    SMTP_PASSWORD: str = "password"
+    SMTP_FROM_ADDRESS: str = "from_address"
+    SMTP_USE_TLS: str = "use_tls"
+    SMTP_HOST_DEFAULT: str = "localhost"
+    SMTP_PORT_DEFAULT: int = 1025
+    SMTP_USE_TLS_DEFAULT: bool = False
+
 
 CONFIGURATION_LAYOUT = ConfigurationSetup(
     {
@@ -81,6 +92,33 @@ CONFIGURATION_LAYOUT = ConfigurationSetup(
                 ConfigItemDataType.STRING,
                 default_value=
                 ConfigurationConstants.APIS_WEB_PORTAL_SVC_DEFAULT)
+        ],
+
+        ConfigurationConstants.SECTION_SMTP: [
+            ConfigurationSetupItem(
+                ConfigurationConstants.SMTP_HOST,
+                ConfigItemDataType.STRING,
+                default_value=ConfigurationConstants.SMTP_HOST_DEFAULT),
+            ConfigurationSetupItem(
+                ConfigurationConstants.SMTP_PORT,
+                ConfigItemDataType.INTEGER,
+                default_value=ConfigurationConstants.SMTP_PORT_DEFAULT),
+            ConfigurationSetupItem(
+                ConfigurationConstants.SMTP_USERNAME,
+                ConfigItemDataType.STRING,
+                is_required=False),
+            ConfigurationSetupItem(
+                ConfigurationConstants.SMTP_PASSWORD,
+                ConfigItemDataType.STRING,
+                is_required=False),
+            ConfigurationSetupItem(
+                ConfigurationConstants.SMTP_FROM_ADDRESS,
+                ConfigItemDataType.STRING,
+                is_required=False),
+            ConfigurationSetupItem(
+                ConfigurationConstants.SMTP_USE_TLS,
+                ConfigItemDataType.BOOLEAN,
+                default_value=ConfigurationConstants.SMTP_USE_TLS_DEFAULT),
         ]
     }
 )

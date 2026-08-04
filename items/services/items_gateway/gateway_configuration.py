@@ -59,3 +59,39 @@ class GatewayConfiguration(ConfigurationManager):
         """ Configuration property : APIs | Web Portal Service base path """
         return self.get_entry(ConfigurationConstants.SECTION_APIS,
                               ConfigurationConstants.APIS_WEB_PORTAL_SVC)
+
+    @property
+    def smtp_host(self) -> str:
+        """ Configuration property : SMTP | host """
+        return self.get_entry(ConfigurationConstants.SECTION_SMTP,
+                              ConfigurationConstants.SMTP_HOST)
+
+    @property
+    def smtp_port(self) -> int:
+        """ Configuration property : SMTP | port """
+        return self.get_entry(ConfigurationConstants.SECTION_SMTP,
+                              ConfigurationConstants.SMTP_PORT)
+
+    @property
+    def smtp_username(self) -> str | None:
+        """ Configuration property : SMTP | username (optional) """
+        return self.get_entry(ConfigurationConstants.SECTION_SMTP,
+                              ConfigurationConstants.SMTP_USERNAME)
+
+    @property
+    def smtp_password(self) -> str | None:
+        """ Configuration property : SMTP | password (optional) """
+        return self.get_entry(ConfigurationConstants.SECTION_SMTP,
+                              ConfigurationConstants.SMTP_PASSWORD)
+
+    @property
+    def smtp_from_address(self) -> str | None:
+        """ Configuration property : SMTP | from address (optional) """
+        return self.get_entry(ConfigurationConstants.SECTION_SMTP,
+                              ConfigurationConstants.SMTP_FROM_ADDRESS)
+
+    @property
+    def smtp_use_tls(self) -> bool:
+        """ Configuration property : SMTP | use TLS/STARTTLS """
+        return self.get_entry(ConfigurationConstants.SECTION_SMTP,
+                              ConfigurationConstants.SMTP_USE_TLS)
