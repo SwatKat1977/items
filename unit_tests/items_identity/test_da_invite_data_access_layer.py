@@ -128,7 +128,8 @@ class TestInviteRepository(unittest.IsolatedAsyncioTestCase):
         await self.repo.resend_invite(_EMAIL, _TOKEN2, _EXPIRES)
         self.mock_db.run_query.assert_called_once_with(
             InviteRepository.RESEND_INVITE_QUERY,
-            (_TOKEN2, _EXPIRES, _EMAIL))
+            (_TOKEN2, _EXPIRES, _EMAIL),
+            commit=True)
 
     async def test_resend_invite_query_updates_token_and_expires(self):
         self.assertIn("token", InviteRepository.RESEND_INVITE_QUERY)
@@ -145,7 +146,8 @@ class TestInviteRepository(unittest.IsolatedAsyncioTestCase):
         await self.repo.uninvite(_EMAIL, _NOW)
         self.mock_db.run_query.assert_called_once_with(
             InviteRepository.SOFT_EXPIRE_BY_EMAIL_QUERY,
-            (_NOW, _EMAIL))
+            (_NOW, _EMAIL),
+            commit=True)
 
     async def test_uninvite_query_sets_is_expired(self):
         self.assertIn("is_expired = 1",
@@ -167,7 +169,8 @@ class TestInviteRepository(unittest.IsolatedAsyncioTestCase):
         await self.repo.expire_pending_invites(_NOW)
         self.mock_db.run_query.assert_called_once_with(
             InviteRepository.SOFT_EXPIRE_PENDING_QUERY,
-            (_NOW, _NOW))
+            (_NOW, _NOW),
+            commit=True)
 
     async def test_expire_pending_query_sets_is_expired(self):
         self.assertIn("is_expired = 1",

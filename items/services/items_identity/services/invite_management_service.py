@@ -29,35 +29,47 @@ _INVITE_EXPIRY_SECONDS: int = 48 * 60 * 60  # 48 hours
 
 
 class InviteCreateStatus(Enum):
+    """Outcome codes for an invite creation attempt."""
+
     SUCCESS = auto()
     ALREADY_REGISTERED = auto()   # email exists in user_profile
     ALREADY_INVITED = auto()      # pending invite already exists
 
 
 class InviteResendStatus(Enum):
+    """Outcome codes for an invite resend attempt."""
+
     SUCCESS = auto()
     NO_PENDING_INVITE = auto()    # no pending invite found for email
 
 
 class InviteUninviteStatus(Enum):
+    """Outcome codes for an uninvite attempt."""
+
     SUCCESS = auto()
     NO_PENDING_INVITE = auto()    # no pending invite found for email
 
 
 @dataclass
 class InviteCreateResult:
+    """Result returned by :meth:`InviteManagementService.create_invite`."""
+
     status: InviteCreateStatus
     token: Optional[str] = field(default=None)
 
 
 @dataclass
 class InviteResendResult:
+    """Result returned by :meth:`InviteManagementService.resend_invite`."""
+
     status: InviteResendStatus
     token: Optional[str] = field(default=None)
 
 
 @dataclass
 class InviteUninviteResult:
+    """Result returned by :meth:`InviteManagementService.uninvite`."""
+
     status: InviteUninviteStatus
 
 

@@ -54,6 +54,8 @@ def create_invite_routes(logger: logging.Logger,
     logger.debug("=> %s POST /invites/uninvite",
                  "Uninvite".ljust(40))
 
+    # pylint: disable=no-value-for-parameter
+
     @invite_routes.route('/invites', methods=['POST'])
     async def create_invite_request():
         return await handler_create.create_invite()
