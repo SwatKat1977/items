@@ -12,7 +12,7 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from routes.invites.create_invite_handler import CreateInviteHandler
 from routes.invites.resend_invite_handler import ResendInviteHandler
 from routes.invites.uninvite_handler import UninviteHandler
-from services.invite_management_service import (
+from items.services.items_identity.services.invite_management_service import (
     InviteCreateResult,
     InviteCreateStatus,
     InviteResendResult,
@@ -98,7 +98,7 @@ class TestCreateInviteHandler(unittest.IsolatedAsyncioTestCase):
             return_value=InviteCreateResult(
                 status=InviteCreateStatus.SUCCESS, token=_TOKEN))
         response = await self._call()
-        body = json.loads(response.get_data())
+        body = json.loads(await response.get_data())
         self.assertEqual(body["token"], _TOKEN)
 
     async def test_email_passed_to_service(self):
@@ -120,7 +120,7 @@ class TestCreateInviteHandler(unittest.IsolatedAsyncioTestCase):
             return_value=InviteCreateResult(
                 status=InviteCreateStatus.ALREADY_REGISTERED))
         response = await self._call()
-        body = json.loads(response.get_data())
+        body = json.loads(await response.get_data())
         self.assertIn("already registered", body["error"])
 
     async def test_already_invited_returns_409(self):
@@ -135,7 +135,7 @@ class TestCreateInviteHandler(unittest.IsolatedAsyncioTestCase):
             return_value=InviteCreateResult(
                 status=InviteCreateStatus.ALREADY_INVITED))
         response = await self._call()
-        body = json.loads(response.get_data())
+        body = json.loads(await response.get_data())
         self.assertIn("pending invite", body["error"])
 
 
@@ -165,7 +165,7 @@ class TestResendInviteHandler(unittest.IsolatedAsyncioTestCase):
             return_value=InviteResendResult(
                 status=InviteResendStatus.SUCCESS, token=_TOKEN2))
         response = await self._call()
-        body = json.loads(response.get_data())
+        body = json.loads(await response.get_data())
         self.assertEqual(body["token"], _TOKEN2)
 
     async def test_email_passed_to_service(self):
@@ -187,7 +187,7 @@ class TestResendInviteHandler(unittest.IsolatedAsyncioTestCase):
             return_value=InviteResendResult(
                 status=InviteResendStatus.NO_PENDING_INVITE))
         response = await self._call()
-        body = json.loads(response.get_data())
+        body = json.loads(await response.get_data())
         self.assertIn("No pending invite", body["error"])
 
 
@@ -231,7 +231,7 @@ class TestUninviteHandler(unittest.IsolatedAsyncioTestCase):
             return_value=InviteUninviteResult(
                 status=InviteUninviteStatus.NO_PENDING_INVITE))
         response = await self._call()
-        body = json.loads(response.get_data())
+        body = json.loads(await response.get_data())
         self.assertIn("No pending invite", body["error"])
 
 
