@@ -133,7 +133,8 @@ class InviteRepository:
         """
         await self._db.run_query(
             self.RESEND_INVITE_QUERY,
-            (new_token, new_expires_at, email_address))
+            (new_token, new_expires_at, email_address),
+            commit=True)
 
     async def uninvite(self, email_address: str, now: int) -> None:
         """Soft-expire the pending invite for an email address.
@@ -146,7 +147,8 @@ class InviteRepository:
             now:           Current timestamp (epoch seconds).
         """
         await self._db.run_query(
-            self.SOFT_EXPIRE_BY_EMAIL_QUERY, (now, email_address))
+            self.SOFT_EXPIRE_BY_EMAIL_QUERY, (now, email_address),
+            commit=True)
 
     async def expire_pending_invites(self, now: int) -> None:
         """Soft-expire all pending invites whose expiry time has passed.
@@ -159,4 +161,5 @@ class InviteRepository:
             now: Current timestamp (epoch seconds).
         """
         await self._db.run_query(
-            self.SOFT_EXPIRE_PENDING_QUERY, (now, now))
+            self.SOFT_EXPIRE_PENDING_QUERY, (now, now),
+            commit=True)
