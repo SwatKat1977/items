@@ -79,6 +79,23 @@ SQL_CREATE_PROJECT_PERMISSIONS_TABLE: str = """
     )
 """
 
+SQL_CREATE_USER_INVITE_TABLE: str = """
+    CREATE TABLE IF NOT EXISTS user_invite (
+        id           integer PRIMARY KEY,
+        -- UUID token embedded in the invite email link. Regenerated on resend.
+        token        text    NOT NULL UNIQUE,
+        email_address text   NOT NULL,
+        created_at   integer NOT NULL,
+        expires_at   integer NOT NULL,
+        -- Soft-delete flag: 0 = pending, 1 = expired/uninvited.
+        -- Set by the background expiry task or by an admin uninvite action.
+        -- Rows are hard-purged by a separate scheduled task after a retention
+        -- period.
+        is_expired   integer NOT NULL DEFAULT 0,
+        expired_at   integer             -- NULL until soft-expired
+    )
+"""
+
 DEFAULT_ADMIN_USER: dict = {
     'email_address': 'admin@localhost',
     'full_name': 'Local Admin',

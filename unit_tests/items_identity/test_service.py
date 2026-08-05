@@ -1,7 +1,7 @@
 import asyncio
 import os
 import unittest
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
 from service import Service
 from identity_configuration import IdentityConfiguration
 from weaver_framework.configuration_system.configuration_manager import (
@@ -117,10 +117,46 @@ class TestService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(tasks), 1)
         await asyncio.gather(*tasks, return_exceptions=True)
 
-    async def test_dummy_task_completes_on_shutdown(self):
+    async def test_invite_expiry_task_completes_on_shutdown(self):
         service = Service(self.mock_quart_instance)
         service._shutdown_event.set()
-        await asyncio.wait_for(service._dummy_task(), timeout=1.0)
+        await asyncio.wait_for(service._invite_expiry_task(), timeout=1.0)
+
+    async def test_invite_expiry_task_calls_expire_when_not_shutdown(self):
+        """Loop body executes once when shutdown is signalled via wait_for."""
+        service = Service(self.mock_quart_instance)
+        service._invite_service = MagicMock()
+        service._invite_service.expire_pending_invites = AsyncMock()
+
+        async def fake_wait_for(coro, **kwargs):
+            coro.close()  # prevent "coroutine never awaited" warning
+            service._shutdown_event.set()
+
+        with patch("asyncio.wait_for", side_effect=fake_wait_for):
+            await service._invite_expiry_task()
+
+        service._invite_service.expire_pending_invites.assert_awaited_once()
+
+    async def test_invite_expiry_task_loops_after_timeout(self):
+        """TimeoutError causes the loop to iterate again before shutdown."""
+        service = Service(self.mock_quart_instance)
+        service._invite_service = MagicMock()
+        service._invite_service.expire_pending_invites = AsyncMock()
+        call_count = 0
+
+        async def fake_wait_for(coro, **kwargs):
+            nonlocal call_count
+            coro.close()  # prevent "coroutine never awaited" warning
+            call_count += 1
+            if call_count == 1:
+                raise asyncio.TimeoutError()
+            service._shutdown_event.set()
+
+        with patch("asyncio.wait_for", side_effect=fake_wait_for):
+            await service._invite_expiry_task()
+
+        self.assertEqual(
+            service._invite_service.expire_pending_invites.await_count, 2)
 
     @patch.dict(os.environ, {
         "ITEMS_IDENTITY_CONFIG_FILE": "config_file_path",

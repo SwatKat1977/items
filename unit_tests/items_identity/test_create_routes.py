@@ -6,6 +6,7 @@ import quart
 from quart import Response
 from routes import create_routes
 from routes.auth import create_auth_routes
+from routes.invites import create_invite_routes
 from routes.system import create_system_routes
 from routes.users import create_users_routes
 
@@ -331,6 +332,101 @@ class TestCreateUsersRoutes(unittest.IsolatedAsyncioTestCase):
         mock_handler.change_password.assert_called_once()
 
 
+class TestCreateInviteRoutes(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.mock_logger = MagicMock(spec=logging.Logger)
+        self.mock_config = MagicMock()
+
+    @patch("routes.invites.UninviteHandler")
+    @patch("routes.invites.ResendInviteHandler")
+    @patch("routes.invites.CreateInviteHandler")
+    async def test_returns_blueprint_with_correct_name(self, *_mocks):
+        bp = create_invite_routes(self.mock_logger, self.mock_config)
+        self.assertIsInstance(bp, quart.Blueprint)
+        self.assertEqual(bp.name, "invite_routes")
+
+    @patch("routes.invites.UninviteHandler")
+    @patch("routes.invites.ResendInviteHandler")
+    @patch("routes.invites.CreateInviteHandler")
+    async def test_initialises_all_handlers_with_correct_args(
+            self, mock_create, mock_resend, mock_uninvite):
+        create_invite_routes(self.mock_logger, self.mock_config)
+        for mock_cls in (mock_create, mock_resend, mock_uninvite):
+            mock_cls.assert_called_once_with(self.mock_logger, self.mock_config)
+
+    @patch("routes.invites.UninviteHandler")
+    @patch("routes.invites.ResendInviteHandler")
+    @patch("routes.invites.CreateInviteHandler")
+    async def test_logs_route_registration(self, *_mocks):
+        create_invite_routes(self.mock_logger, self.mock_config)
+        self.mock_logger.debug.assert_called()
+
+    def _ok_response(self, body=None, status=200):
+        return Response(
+            json.dumps(body or {}),
+            status=status,
+            content_type="application/json")
+
+    @patch("routes.invites.UninviteHandler")
+    @patch("routes.invites.ResendInviteHandler")
+    @patch("routes.invites.CreateInviteHandler")
+    async def test_post_invites_calls_create_invite(
+            self, mock_create_cls, *_rest):
+        mock_handler = MagicMock()
+        mock_handler.create_invite = AsyncMock(
+            return_value=self._ok_response({"token": "abc"}, status=201))
+        mock_create_cls.return_value = mock_handler
+
+        app = quart.Quart(__name__)
+        bp = create_invite_routes(self.mock_logger, self.mock_config)
+        app.register_blueprint(bp)
+
+        async with app.test_client() as client:
+            await client.post("/invites", json={"email_address": "a@b.com"})
+
+        mock_handler.create_invite.assert_called_once()
+
+    @patch("routes.invites.UninviteHandler")
+    @patch("routes.invites.ResendInviteHandler")
+    @patch("routes.invites.CreateInviteHandler")
+    async def test_post_invites_resend_calls_resend_invite(
+            self, _create, mock_resend_cls, _uninvite):
+        mock_handler = MagicMock()
+        mock_handler.resend_invite = AsyncMock(
+            return_value=self._ok_response({"token": "abc"}))
+        mock_resend_cls.return_value = mock_handler
+
+        app = quart.Quart(__name__)
+        bp = create_invite_routes(self.mock_logger, self.mock_config)
+        app.register_blueprint(bp)
+
+        async with app.test_client() as client:
+            await client.post("/invites/resend",
+                              json={"email_address": "a@b.com"})
+
+        mock_handler.resend_invite.assert_called_once()
+
+    @patch("routes.invites.UninviteHandler")
+    @patch("routes.invites.ResendInviteHandler")
+    @patch("routes.invites.CreateInviteHandler")
+    async def test_post_invites_uninvite_calls_uninvite(
+            self, _create, _resend, mock_uninvite_cls):
+        mock_handler = MagicMock()
+        mock_handler.uninvite = AsyncMock(
+            return_value=self._ok_response())
+        mock_uninvite_cls.return_value = mock_handler
+
+        app = quart.Quart(__name__)
+        bp = create_invite_routes(self.mock_logger, self.mock_config)
+        app.register_blueprint(bp)
+
+        async with app.test_client() as client:
+            await client.post("/invites/uninvite",
+                              json={"email_address": "a@b.com"})
+
+        mock_handler.uninvite.assert_called_once()
+
+
 class TestCreateRoutes(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.mock_logger = MagicMock(spec=logging.Logger)
@@ -339,10 +435,13 @@ class TestCreateRoutes(unittest.IsolatedAsyncioTestCase):
 
     @patch("routes.create_users_routes")
     @patch("routes.create_system_routes")
+    @patch("routes.create_invite_routes")
     @patch("routes.create_auth_routes")
-    async def test_returns_blueprint_with_correct_name(self, mock_auth, mock_sys,
+    async def test_returns_blueprint_with_correct_name(self, mock_auth,
+                                                       mock_invite, mock_sys,
                                                        mock_users):
         mock_auth.return_value = quart.Blueprint("mock_auth", __name__)
+        mock_invite.return_value = quart.Blueprint("mock_invite", __name__)
         mock_sys.return_value = quart.Blueprint("mock_sys", __name__)
         mock_users.return_value = quart.Blueprint("mock_users", __name__)
         bp = create_routes(self.mock_logger, self.mock_state, self.mock_config)
@@ -351,15 +450,18 @@ class TestCreateRoutes(unittest.IsolatedAsyncioTestCase):
 
     @patch("routes.create_users_routes")
     @patch("routes.create_system_routes")
+    @patch("routes.create_invite_routes")
     @patch("routes.create_auth_routes")
-    async def test_registers_all_sub_blueprints(self, mock_auth, mock_sys,
-                                                mock_users):
+    async def test_registers_all_sub_blueprints(self, mock_auth, mock_invite,
+                                                mock_sys, mock_users):
         mock_auth.return_value = quart.Blueprint("mock_auth", __name__)
+        mock_invite.return_value = quart.Blueprint("mock_invite", __name__)
         mock_sys.return_value = quart.Blueprint("mock_sys", __name__)
         mock_users.return_value = quart.Blueprint("mock_users", __name__)
         create_routes(self.mock_logger, self.mock_state, self.mock_config)
         mock_auth.assert_called_once_with(
             self.mock_logger, self.mock_state, self.mock_config)
+        mock_invite.assert_called_once_with(self.mock_logger, self.mock_config)
         mock_sys.assert_called_once_with(self.mock_logger, self.mock_state)
         mock_users.assert_called_once_with(
             self.mock_logger, self.mock_state, self.mock_config)
