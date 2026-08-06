@@ -1,0 +1,75 @@
+"""
+Copyright 2025-2026 Integrated Test Management Suite Development Team
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+from quart import Blueprint
+from items.services.items_gateway.route_injections import RouteInjections
+from items.services.items_gateway.routes.web.invites.create_invite_handler import (
+    CreateInviteHandler)
+from items.services.items_gateway.routes.web.invites.resend_invite_handler import (
+    ResendInviteHandler)
+from items.services.items_gateway.routes.web.invites.uninvite_handler import (
+    UninviteHandler)
+
+
+def create_invite_routes(injections: RouteInjections) -> Blueprint:
+    """Create the Blueprint containing invite management web routes.
+
+    All routes are admin-only and must be enforced at this layer or by the
+    caller (the web portal, which checks ``is_administrator`` before calling).
+
+    Registered routes:
+        POST /invites              Create a new pending invite.
+        POST /invites/resend       Refresh token and expiry on an existing invite.
+        POST /invites/uninvite     Cancel (soft-expire) a pending invite.
+
+    Args:
+        injections: Shared application dependencies.
+
+    Returns:
+        A configured Quart Blueprint.
+    """
+    routes = Blueprint('invites_routes', __name__)
+
+    handler_create = CreateInviteHandler(
+        injections.logger, injections.configuration, injections.rest_client)
+    handler_resend = ResendInviteHandler(
+        injections.logger, injections.configuration, injections.rest_client)
+    handler_uninvite = UninviteHandler(
+        injections.logger, injections.configuration, injections.rest_client)
+
+    injections.logger.debug(" Invites WEB routes:")
+
+    injections.logger.debug("=> %s POST /web/invites",
+                            "Create invite".ljust(40))
+
+    @routes.route('/invites', methods=['POST'])
+    async def create_invite_request():
+        return await handler_create.create_invite()
+
+    injections.logger.debug("=> %s POST /web/invites/resend",
+                            "Resend invite".ljust(40))
+
+    @routes.route('/invites/resend', methods=['POST'])
+    async def resend_invite_request():
+        return await handler_resend.resend_invite()
+
+    injections.logger.debug("=> %s POST /web/invites/uninvite",
+                            "Uninvite".ljust(40))
+
+    @routes.route('/invites/uninvite', methods=['POST'])
+    async def uninvite_request():
+        return await handler_uninvite.uninvite()
+
+    return routes

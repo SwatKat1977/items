@@ -95,6 +95,17 @@ class TestCreateInviteHandler(unittest.IsolatedAsyncioTestCase):
         resp = await self._post(_EMAIL_BODY)
         self.assertEqual(resp.status_code, 500)
 
+    async def test_non_json_downstream_response_returns_500(self):
+        # e.g. a stale identity deployment serving its own generic HTML
+        # error page for a route it doesn't have.
+        self.mock_rc.post.return_value = ApiResponse(
+            status_code=404, body="<!doctype html><h1>Not Found</h1>",
+            content_type="text/html")
+        resp = await self._post(_EMAIL_BODY)
+        self.assertEqual(resp.status_code, 500)
+        body = json.loads(await resp.get_data())
+        self.assertIn("unexpected response", body["error"])
+
     async def test_response_is_json(self):
         self.mock_rc.post.return_value = ApiResponse(
             status_code=201, body={"token": "abc123"})
@@ -157,6 +168,15 @@ class TestResendInviteHandler(unittest.IsolatedAsyncioTestCase):
         resp = await self._post(_EMAIL_BODY)
         self.assertEqual(resp.status_code, 500)
 
+    async def test_non_json_downstream_response_returns_500(self):
+        self.mock_rc.post.return_value = ApiResponse(
+            status_code=404, body="<!doctype html><h1>Not Found</h1>",
+            content_type="text/html")
+        resp = await self._post(_EMAIL_BODY)
+        self.assertEqual(resp.status_code, 500)
+        body = json.loads(await resp.get_data())
+        self.assertIn("unexpected response", body["error"])
+
 
 # ---------------------------------------------------------------------------
 # UninviteHandler
@@ -208,6 +228,15 @@ class TestUninviteHandler(unittest.IsolatedAsyncioTestCase):
         self.mock_rc.post.return_value = _conn_err()
         resp = await self._post(_EMAIL_BODY)
         self.assertEqual(resp.status_code, 500)
+
+    async def test_non_json_downstream_response_returns_500(self):
+        self.mock_rc.post.return_value = ApiResponse(
+            status_code=404, body="<!doctype html><h1>Not Found</h1>",
+            content_type="text/html")
+        resp = await self._post(_EMAIL_BODY)
+        self.assertEqual(resp.status_code, 500)
+        body = json.loads(await resp.get_data())
+        self.assertIn("unexpected response", body["error"])
 
 
 if __name__ == "__main__":
