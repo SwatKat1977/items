@@ -26,16 +26,6 @@ page in the web portal
 does its best with the string it's given and documents the limitation in a
 code comment there.
 
-## ~~CMS: system custom fields can't have partial updates~~ (resolved)
-
-Fixed on `cms_relax_system_field_edit`: `update_custom_field` now allows
-`enabled` and project assignment to change for system fields, while
-`field_name`/`description`/`system_name`/`field_type`/`is_required`/
-`default_value` are silently overridden with the field's current stored
-values regardless of what's submitted (enforced in the service layer, not
-just trusted from the caller). The web portal's Case Fields admin page was
-already built to this exact contract and needed no changes.
-
 ## Docker: SQLite DB can end up read-only inside containers
 
 **Where:** `docker-compose.yml` bind-mounts each service's SQLite file
