@@ -35,3 +35,49 @@ Fixed on `cms_relax_system_field_edit`: `update_custom_field` now allows
 values regardless of what's submitted (enforced in the service layer, not
 just trusted from the caller). The web portal's Case Fields admin page was
 already built to this exact contract and needed no changes.
+
+## Docker: SQLite DB can end up read-only inside containers
+
+**Where:** `docker-compose.yml` bind-mounts each service's SQLite file
+directly from the host, e.g.
+
+```yaml
+volumes:
+  - "${ITEMS_DOCKER_IDENTITY_SVC_DB_FILE}:/usr/local/items/identity.db"
+```
+
+but the corresponding Dockerfiles (`docker/Dockerfile.identity_svc`,
+`docker/Dockerfile.cms_svc` — likely all of them, same template) run the
+service as a non-root `items` user:
+
+```dockerfile
+RUN addgroup -S items && adduser -S items -G items && \
+    mkdir /usr/local/items && chown items:items /usr/local/items
+...
+USER items
+```
+
+**Problem:** `chown items:items` only applies to the image's baked-in
+filesystem at build time. A bind-mounted file's ownership/permissions come
+from the *host* at runtime and can overlay right past that — if the host
+file's owner/mode doesn't happen to be writable by the container's `items`
+UID, SQLite opens it read-only and every write fails. Hit in practice
+during manual testing of `gateway_user_invite` against the identity
+container on devbox.
+
+**Fix (not attempted yet, needs a design call):** a few standard options,
+roughly in order of how much they change the setup:
+- Quick/fragile: just ensure the host DB file is `chmod`-ed writable by
+  whatever UID the container's `items` user ends up with.
+- Docker-native: switch from a host bind-mount to a named Docker volume for
+  the DB file — Docker manages ownership for named volumes consistently
+  from the container side, sidestepping host UID/GID mismatches entirely.
+- Most robust: add an entrypoint script that runs as root, `chown`/`chmod`s
+  the mounted DB path to match `items`, then drops privileges (`gosu`/
+  `su-exec`) before exec-ing the actual service — works regardless of host
+  UID, standard pattern for this exact class of problem, but adds
+  complexity (an entrypoint script per service).
+
+Affects `identity_svc` and `cms_svc` for certain (identical bind-mount +
+non-root-user pattern in both); worth checking `web_portal_svc` and
+`gateway_svc` too if either persists local state the same way.
