@@ -1459,6 +1459,94 @@
               ]
             },
             {
+              "name": "Invites",
+              "item": [
+                {
+                  "name": "Create Invite",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"email_address\": \"newuser@localhost\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/invites",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "invites"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Resend Invite",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"email_address\": \"newuser@localhost\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/invites/resend",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "invites",
+                        "resend"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Uninvite",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"email_address\": \"newuser@localhost\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/invites/uninvite",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "invites",
+                        "uninvite"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
               "name": "Users",
               "item": [
                 {

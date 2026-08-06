@@ -49,6 +49,11 @@ from test_users_handlers import (
     TestResetPasswordHandler,
     TestResetPasswordHandlerEmail,
 )
+from test_invites_handlers import (
+    TestCreateInviteHandler,
+    TestResendInviteHandler,
+    TestUninviteHandler,
+)
 from test_email_service import (
     TestEmailServiceAbstract,
     TestSmtpEmailServiceInit,

@@ -224,6 +224,28 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
         self.assertNotEqual(response.status_code, 405)
 
     # ------------------------------------------------------------------
+    # Invites routes (routes/web/invites/__init__.py)
+    # ------------------------------------------------------------------
+
+    async def test_create_invite_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/web/invites", json={"email_address": "a@b.com"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_resend_invite_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/web/invites/resend", json={"email_address": "a@b.com"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_uninvite_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/web/invites/uninvite", json={"email_address": "a@b.com"})
+        self.assertNotEqual(response.status_code, 405)
+
+    # ------------------------------------------------------------------
     # Webhook routes (routes/web/webhook/__init__.py)
     # ------------------------------------------------------------------
 
