@@ -27,7 +27,6 @@ from test_admin_stub_handlers import (
     TestAdminIntegrationsPageHandler,
     TestAdminManageDataPageHandler,
     TestAdminSiteSettingsPageHandler,
-    TestAdminUsersAndRolesPageHandler,
 )
 from test_admin_customisations_page_handler import (
     TestCustomisationsRead,
@@ -36,6 +35,13 @@ from test_admin_customisations_page_handler import (
     TestCaseFieldDelete,
     TestCaseFieldMove,
     TestRowToField,
+)
+from test_admin_users_and_roles_page_handler import (
+    TestUsersAndRolesRead,
+    TestInviteUser,
+    TestResendInvite,
+    TestUninvite,
+    TestFormatEpoch,
 )
 from test_admin_projects_handlers import (
     TestAdminProjectsPageHandlers,

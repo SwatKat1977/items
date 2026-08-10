@@ -49,6 +49,7 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
                 "show_announcement_on_overview": False,
                 "projects": [],
                 "users": [],
+                "invites": [],
                 "folders": [],
                 "test_cases": [],
             })
@@ -108,6 +109,27 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
     async def test_admin_users_roles_route_is_reachable(self):
         async with self.client as c:
             response = await c.get("/admin/users_roles")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_invite_user_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/admin/users_roles/invite",
+                form={"email_address": "a@b.com"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_resend_invite_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/admin/users_roles/invite/resend",
+                form={"email_address": "a@b.com"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_uninvite_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/admin/users_roles/invite/uninvite",
+                form={"email_address": "a@b.com"})
         self.assertNotEqual(response.status_code, 405)
 
     async def test_admin_manage_data_route_is_reachable(self):

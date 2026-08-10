@@ -26,8 +26,6 @@ from items.services.items_web_portal.page_handlers.admin.\
     admin_manage_data_page_handler import AdminManageDataPageHandler
 from items.services.items_web_portal.page_handlers.admin.\
     admin_site_settings_page_handler import AdminSiteSettingsPageHandler
-from items.services.items_web_portal.page_handlers.admin.\
-    admin_users_and_roles_page_handler import AdminUsersAndRolesPageHandler
 
 _LOGGER = MagicMock()
 
@@ -112,56 +110,6 @@ TestAdminManageDataPageHandler = _make_stub_test(
     AdminManageDataPageHandler, "manage_data", "/admin/manage_data")
 TestAdminSiteSettingsPageHandler = _make_stub_test(
     AdminSiteSettingsPageHandler, "site_settings", "/admin/site_settings")
-class TestAdminUsersAndRolesPageHandler(unittest.IsolatedAsyncioTestCase):
-    """Users & Roles list page — now fetches users from gateway."""
-
-    async def asyncSetUp(self):
-        self.mock_rest_client = AsyncMock()
-        self.mock_rest_client.post.return_value = ApiResponse(
-            status_code=HTTPStatus.OK,
-            body={"status": "VALID", "is_administrator": True})
-        handler = AdminUsersAndRolesPageHandler(
-            _LOGGER, _config(), self.mock_rest_client, _metadata())
-
-        app = make_app()
-
-        @app.route("/admin/users_roles", methods=["GET"])
-        async def route():
-            return await handler.users_and_roles()
-
-        self.client = app.test_client()
-
-    async def _get(self, headers=_AUTH_HEADERS):
-        async with self.client as c:
-            return await c.get("/admin/users_roles", headers=headers)
-
-    async def test_renders_page_with_users(self):
-        self.mock_rest_client.get.return_value = ApiResponse(
-            status_code=HTTPStatus.OK,
-            body={"users": [{"id": 1, "full_name": "Alice"}]})
-        response = await self._get()
-        self.assertEqual(response.status_code, 200)
-
-    async def test_gateway_failure_renders_error_message(self):
-        self.mock_rest_client.get.return_value = ApiResponse(
-            status_code=HTTPStatus.SERVICE_UNAVAILABLE, body={})
-        response = await self._get()
-        self.assertEqual(response.status_code, 200)
-        text = await response.get_data(as_text=True)
-        self.assertIn("Could not load users", text)
-
-    async def test_redirects_when_not_authenticated(self):
-        response = await self._get(headers={})
-        text = await response.get_data(as_text=True)
-        self.assertIn("Refresh", text)
-
-    async def test_redirects_when_not_administrator(self):
-        self.mock_rest_client.post.return_value = ApiResponse(
-            status_code=HTTPStatus.OK,
-            body={"status": "VALID", "is_administrator": False})
-        response = await self._get()
-        text = await response.get_data(as_text=True)
-        self.assertIn("Refresh", text)
 
 
 if __name__ == "__main__":
