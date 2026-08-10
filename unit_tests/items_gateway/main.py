@@ -50,6 +50,7 @@ from test_users_handlers import (
     TestResetPasswordHandlerEmail,
 )
 from test_invites_handlers import (
+    TestGetInvitesHandler,
     TestCreateInviteHandler,
     TestResendInviteHandler,
     TestUninviteHandler,

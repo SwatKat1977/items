@@ -1,5 +1,6 @@
 """
 Unit tests for gateway invite management route handlers:
+  GET  /invites            - GetInvitesHandler
   POST /invites            - CreateInviteHandler
   POST /invites/resend     - ResendInviteHandler
   POST /invites/uninvite   - UninviteHandler
@@ -9,6 +10,8 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock
 from quart import Quart
 from weaver_framework.microservice.api_response import ApiResponse
+from items.services.items_gateway.routes.web.invites.get_invites_handler import (
+    GetInvitesHandler)
 from items.services.items_gateway.routes.web.invites.create_invite_handler import (
     CreateInviteHandler)
 from items.services.items_gateway.routes.web.invites.resend_invite_handler import (
@@ -32,6 +35,59 @@ def _err(body, status=500):
 
 def _conn_err():
     return ApiResponse(status_code=None, exception_msg="connection refused")
+
+
+# ---------------------------------------------------------------------------
+# GetInvitesHandler
+# ---------------------------------------------------------------------------
+
+class TestGetInvitesHandler(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.mock_rc = AsyncMock()
+        handler = GetInvitesHandler(_LOGGER, _config(), self.mock_rc)
+        app = Quart(__name__)
+
+        @app.route("/invites", methods=["GET"])
+        async def route():
+            return await handler.get_invites()
+
+        self.client = app.test_client()
+
+    async def _get(self):
+        async with self.client as c:
+            return await c.get("/invites")
+
+    async def test_success_returns_200_with_invites(self):
+        self.mock_rc.get.return_value = ApiResponse(
+            status_code=200, body={"invites": [
+                {"email_address": "a@b.com", "created_at": 1,
+                 "expires_at": 2}]})
+        resp = await self._get()
+        self.assertEqual(resp.status_code, 200)
+        body = json.loads(await resp.get_data())
+        self.assertEqual(len(body["invites"]), 1)
+
+    async def test_request_forwarded_to_identity(self):
+        self.mock_rc.get.return_value = ApiResponse(
+            status_code=200, body={"invites": []})
+        await self._get()
+        args, _kwargs = self.mock_rc.get.call_args
+        self.assertEqual(args[0], "http://identity/invites")
+
+    async def test_connection_error_returns_500(self):
+        self.mock_rc.get.return_value = _conn_err()
+        resp = await self._get()
+        self.assertEqual(resp.status_code, 500)
+
+    async def test_non_json_downstream_response_returns_500(self):
+        self.mock_rc.get.return_value = ApiResponse(
+            status_code=404, body="<!doctype html><h1>Not Found</h1>",
+            content_type="text/html")
+        resp = await self._get()
+        self.assertEqual(resp.status_code, 500)
+        body = json.loads(await resp.get_data())
+        self.assertIn("unexpected response", body["error"])
 
 
 # ---------------------------------------------------------------------------

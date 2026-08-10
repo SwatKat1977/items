@@ -227,6 +227,11 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
     # Invites routes (routes/web/invites/__init__.py)
     # ------------------------------------------------------------------
 
+    async def test_get_invites_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/web/invites")
+        self.assertNotEqual(response.status_code, 405)
+
     async def test_create_invite_route_is_reachable(self):
         async with self.client as c:
             response = await c.post(
