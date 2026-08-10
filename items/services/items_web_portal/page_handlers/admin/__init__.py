@@ -102,6 +102,32 @@ def create_admin_page_handlers(injections: PageHandlerInjections,
     async def admin_admin_users_and_roles_request():
         return await handler_users_and_roles.users_and_roles()
 
+    # Admin page | Invite user: POST '/admin/users_roles/invite'
+    injections.logger.debug("=> %s POST /admin/users_roles/invite",
+                            "Admin invite user".ljust(40))
+
+    @routes.route('/users_roles/invite', methods=['POST'])
+    async def admin_users_and_roles_invite_request():
+        return await handler_users_and_roles.invite_user()
+
+    # Admin page | Resend invite: POST '/admin/users_roles/invite/resend'
+    injections.logger.debug(
+        "=> %s POST /admin/users_roles/invite/resend",
+        "Admin resend invite".ljust(40))
+
+    @routes.route('/users_roles/invite/resend', methods=['POST'])
+    async def admin_users_and_roles_resend_invite_request():
+        return await handler_users_and_roles.resend_invite()
+
+    # Admin page | Cancel invite: POST '/admin/users_roles/invite/uninvite'
+    injections.logger.debug(
+        "=> %s POST /admin/users_roles/invite/uninvite",
+        "Admin cancel invite".ljust(40))
+
+    @routes.route('/users_roles/invite/uninvite', methods=['POST'])
+    async def admin_users_and_roles_uninvite_request():
+        return await handler_users_and_roles.uninvite()
+
     # Admin page | Manage Data (read): '/admin/users_roles'
     injections.logger.debug("=> %s GET /admin/manage_data",
                             "Admin manage data page (read)".ljust(40))
