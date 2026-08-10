@@ -73,6 +73,21 @@ class InviteUninviteResult:
     status: InviteUninviteStatus
 
 
+@dataclass
+class PendingInvite:
+    """A single pending invite, as exposed to API callers.
+
+    Deliberately excludes the invite ``token`` - it's a secret embedded in
+    the invite email link, not needed by anything a list view does
+    (resend/uninvite act on ``email_address``), so there's no reason to
+    expose it over a general listing endpoint.
+    """
+
+    email_address: str
+    created_at: int
+    expires_at: int
+
+
 class InviteManagementService:
     """Business logic for user invite lifecycle management.
 
@@ -101,6 +116,20 @@ class InviteManagementService:
         self._logger = logger.getChild(type(self).__name__)
         self._invite_repo = invite_repo
         self._user_repo = user_repo
+
+    async def get_pending_invites(self) -> list[PendingInvite]:
+        """Return every pending (not yet expired or cancelled) invite.
+
+        Returns:
+            A list of :class:`PendingInvite`, ordered by creation time,
+            oldest first. Empty if there are no pending invites.
+        """
+        rows = await self._invite_repo.get_pending_invites()
+        return [
+            PendingInvite(email_address=row[2], created_at=row[3],
+                         expires_at=row[4])
+            for row in rows
+        ]
 
     async def create_invite(self, email_address: str) -> InviteCreateResult:
         """Create a new pending invite for an email address.

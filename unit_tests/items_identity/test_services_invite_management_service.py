@@ -20,7 +20,8 @@ from services.invite_management_service import (
     InviteManagementService,
     InviteCreateStatus,
     InviteResendStatus,
-    InviteUninviteStatus)
+    InviteUninviteStatus,
+    PendingInvite)
 
 _TOKEN = "550e8400-e29b-41d4-a716-446655440000"
 _TOKEN2 = "660e8400-e29b-41d4-a716-446655440000"
@@ -39,6 +40,7 @@ class TestInviteManagementService(unittest.IsolatedAsyncioTestCase):
         self.mock_invite_repo = MagicMock()
         self.mock_invite_repo.get_invite_by_email = AsyncMock()
         self.mock_invite_repo.get_invite_by_token = AsyncMock()
+        self.mock_invite_repo.get_pending_invites = AsyncMock()
         self.mock_invite_repo.create_invite = AsyncMock()
         self.mock_invite_repo.resend_invite = AsyncMock()
         self.mock_invite_repo.uninvite = AsyncMock()
@@ -49,6 +51,27 @@ class TestInviteManagementService(unittest.IsolatedAsyncioTestCase):
 
         self.service = InviteManagementService(
             self.logger, self.mock_invite_repo, self.mock_user_repo)
+
+    # -------------------------------------------------------
+    # get_pending_invites
+    # -------------------------------------------------------
+
+    async def test_get_pending_invites_returns_empty_list_when_none(self):
+        self.mock_invite_repo.get_pending_invites.return_value = []
+        result = await self.service.get_pending_invites()
+        self.assertEqual(result, [])
+
+    async def test_get_pending_invites_maps_rows_to_pending_invite(self):
+        self.mock_invite_repo.get_pending_invites.return_value = [_PENDING_ROW]
+        result = await self.service.get_pending_invites()
+        self.assertEqual(result, [
+            PendingInvite(email_address=_EMAIL, created_at=_NOW,
+                         expires_at=_EXPIRES)])
+
+    async def test_get_pending_invites_does_not_expose_token(self):
+        self.mock_invite_repo.get_pending_invites.return_value = [_PENDING_ROW]
+        result = await self.service.get_pending_invites()
+        self.assertFalse(hasattr(result[0], "token"))
 
     # -------------------------------------------------------
     # create_invite

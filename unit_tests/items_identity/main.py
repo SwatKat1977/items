@@ -19,6 +19,7 @@ from test_apis_user_management import (
     TestChangePasswordHandler,
 )
 from test_apis_invite_management import (
+    TestGetInvitesHandler,
     TestCreateInviteHandler,
     TestResendInviteHandler,
     TestUninviteHandler,

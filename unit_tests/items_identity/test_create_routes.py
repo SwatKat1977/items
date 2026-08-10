@@ -340,6 +340,7 @@ class TestCreateInviteRoutes(unittest.IsolatedAsyncioTestCase):
     @patch("routes.invites.UninviteHandler")
     @patch("routes.invites.ResendInviteHandler")
     @patch("routes.invites.CreateInviteHandler")
+    @patch("routes.invites.GetInvitesHandler")
     async def test_returns_blueprint_with_correct_name(self, *_mocks):
         bp = create_invite_routes(self.mock_logger, self.mock_config)
         self.assertIsInstance(bp, quart.Blueprint)
@@ -348,15 +349,17 @@ class TestCreateInviteRoutes(unittest.IsolatedAsyncioTestCase):
     @patch("routes.invites.UninviteHandler")
     @patch("routes.invites.ResendInviteHandler")
     @patch("routes.invites.CreateInviteHandler")
+    @patch("routes.invites.GetInvitesHandler")
     async def test_initialises_all_handlers_with_correct_args(
-            self, mock_create, mock_resend, mock_uninvite):
+            self, mock_get, mock_create, mock_resend, mock_uninvite):
         create_invite_routes(self.mock_logger, self.mock_config)
-        for mock_cls in (mock_create, mock_resend, mock_uninvite):
+        for mock_cls in (mock_get, mock_create, mock_resend, mock_uninvite):
             mock_cls.assert_called_once_with(self.mock_logger, self.mock_config)
 
     @patch("routes.invites.UninviteHandler")
     @patch("routes.invites.ResendInviteHandler")
     @patch("routes.invites.CreateInviteHandler")
+    @patch("routes.invites.GetInvitesHandler")
     async def test_logs_route_registration(self, *_mocks):
         create_invite_routes(self.mock_logger, self.mock_config)
         self.mock_logger.debug.assert_called()
@@ -370,8 +373,9 @@ class TestCreateInviteRoutes(unittest.IsolatedAsyncioTestCase):
     @patch("routes.invites.UninviteHandler")
     @patch("routes.invites.ResendInviteHandler")
     @patch("routes.invites.CreateInviteHandler")
+    @patch("routes.invites.GetInvitesHandler")
     async def test_post_invites_calls_create_invite(
-            self, mock_create_cls, *_rest):
+            self, _get_cls, mock_create_cls, *_rest):
         mock_handler = MagicMock()
         mock_handler.create_invite = AsyncMock(
             return_value=self._ok_response({"token": "abc"}, status=201))
@@ -389,8 +393,9 @@ class TestCreateInviteRoutes(unittest.IsolatedAsyncioTestCase):
     @patch("routes.invites.UninviteHandler")
     @patch("routes.invites.ResendInviteHandler")
     @patch("routes.invites.CreateInviteHandler")
+    @patch("routes.invites.GetInvitesHandler")
     async def test_post_invites_resend_calls_resend_invite(
-            self, _create, mock_resend_cls, _uninvite):
+            self, _get_cls, _create, mock_resend_cls, _uninvite):
         mock_handler = MagicMock()
         mock_handler.resend_invite = AsyncMock(
             return_value=self._ok_response({"token": "abc"}))
@@ -409,8 +414,9 @@ class TestCreateInviteRoutes(unittest.IsolatedAsyncioTestCase):
     @patch("routes.invites.UninviteHandler")
     @patch("routes.invites.ResendInviteHandler")
     @patch("routes.invites.CreateInviteHandler")
+    @patch("routes.invites.GetInvitesHandler")
     async def test_post_invites_uninvite_calls_uninvite(
-            self, _create, _resend, mock_uninvite_cls):
+            self, _get_cls, _create, _resend, mock_uninvite_cls):
         mock_handler = MagicMock()
         mock_handler.uninvite = AsyncMock(
             return_value=self._ok_response())
@@ -425,6 +431,26 @@ class TestCreateInviteRoutes(unittest.IsolatedAsyncioTestCase):
                               json={"email_address": "a@b.com"})
 
         mock_handler.uninvite.assert_called_once()
+
+    @patch("routes.invites.UninviteHandler")
+    @patch("routes.invites.ResendInviteHandler")
+    @patch("routes.invites.CreateInviteHandler")
+    @patch("routes.invites.GetInvitesHandler")
+    async def test_get_invites_calls_get_invites(
+            self, mock_get_cls, *_rest):
+        mock_handler = MagicMock()
+        mock_handler.get_invites = AsyncMock(
+            return_value=self._ok_response({"invites": []}))
+        mock_get_cls.return_value = mock_handler
+
+        app = quart.Quart(__name__)
+        bp = create_invite_routes(self.mock_logger, self.mock_config)
+        app.register_blueprint(bp)
+
+        async with app.test_client() as client:
+            await client.get("/invites")
+
+        mock_handler.get_invites.assert_called_once()
 
 
 class TestCreateRoutes(unittest.IsolatedAsyncioTestCase):

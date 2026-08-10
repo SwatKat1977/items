@@ -9,10 +9,12 @@ import json
 import logging
 from http import HTTPStatus
 from unittest.mock import patch, MagicMock, AsyncMock
+from routes.invites.get_invites_handler import GetInvitesHandler
 from routes.invites.create_invite_handler import CreateInviteHandler
 from routes.invites.resend_invite_handler import ResendInviteHandler
 from routes.invites.uninvite_handler import UninviteHandler
 from items.services.items_identity.services.invite_management_service import (
+    PendingInvite,
     InviteCreateResult,
     InviteCreateStatus,
     InviteResendResult,
@@ -70,6 +72,52 @@ def _make_handler_setup(handler_cls, module_name: str):
         self.handler = handler_cls(self.mock_logger, self.mock_config)
 
     return asyncSetUp
+
+
+# ---------------------------------------------------------------------------
+# GetInvitesHandler
+# ---------------------------------------------------------------------------
+
+class TestGetInvitesHandler(unittest.IsolatedAsyncioTestCase):
+
+    asyncSetUp = _make_handler_setup(GetInvitesHandler, "get_invites_handler")
+
+    async def _call(self):
+        app = _make_app()
+        async with app.app_context():
+            return await self.handler.get_invites()
+
+    async def test_success_returns_200(self):
+        self.mock_svc.get_pending_invites = AsyncMock(return_value=[])
+        response = await self._call()
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    async def test_empty_list_returns_empty_invites(self):
+        self.mock_svc.get_pending_invites = AsyncMock(return_value=[])
+        response = await self._call()
+        body = json.loads(await response.get_data())
+        self.assertEqual(body["invites"], [])
+
+    async def test_returns_invites_from_service(self):
+        self.mock_svc.get_pending_invites = AsyncMock(return_value=[
+            PendingInvite(email_address=_EMAIL, created_at=1700000000,
+                         expires_at=1700172800),
+        ])
+        response = await self._call()
+        body = json.loads(await response.get_data())
+        self.assertEqual(len(body["invites"]), 1)
+        self.assertEqual(body["invites"][0]["email_address"], _EMAIL)
+        self.assertEqual(body["invites"][0]["created_at"], 1700000000)
+        self.assertEqual(body["invites"][0]["expires_at"], 1700172800)
+
+    async def test_token_not_exposed_in_response(self):
+        self.mock_svc.get_pending_invites = AsyncMock(return_value=[
+            PendingInvite(email_address=_EMAIL, created_at=1700000000,
+                         expires_at=1700172800),
+        ])
+        response = await self._call()
+        body = json.loads(await response.get_data())
+        self.assertNotIn("token", body["invites"][0])
 
 
 # ---------------------------------------------------------------------------

@@ -17,6 +17,7 @@ import logging
 import quart
 from items.services.items_identity.identity_configuration import (
     IdentityConfiguration)
+from .get_invites_handler import GetInvitesHandler
 from .create_invite_handler import CreateInviteHandler
 from .resend_invite_handler import ResendInviteHandler
 from .uninvite_handler import UninviteHandler
@@ -28,6 +29,7 @@ def create_invite_routes(logger: logging.Logger,
 
     Registered routes:
 
+    * ``GET  /invites``           - List all pending invites.
     * ``POST /invites``          - Create a new pending invite.
     * ``POST /invites/resend``   - Refresh token and expiry on an existing invite.
     * ``POST /invites/uninvite`` - Cancel (soft-expire) a pending invite.
@@ -41,12 +43,15 @@ def create_invite_routes(logger: logging.Logger,
     """
     invite_routes = quart.Blueprint("invite_routes", __name__)
 
+    handler_get = GetInvitesHandler(logger, config)
     handler_create = CreateInviteHandler(logger, config)
     handler_resend = ResendInviteHandler(logger, config)
     handler_uninvite = UninviteHandler(logger, config)
 
     logger.debug("Registering Invite API routes:")
 
+    logger.debug("=> %s GET  /invites",
+                 "List pending invites".ljust(40))
     logger.debug("=> %s POST /invites",
                  "Create invite".ljust(40))
     logger.debug("=> %s POST /invites/resend",
@@ -55,6 +60,10 @@ def create_invite_routes(logger: logging.Logger,
                  "Uninvite".ljust(40))
 
     # pylint: disable=no-value-for-parameter
+
+    @invite_routes.route('/invites', methods=['GET'])
+    async def get_invites_request():
+        return await handler_get.get_invites()
 
     @invite_routes.route('/invites', methods=['POST'])
     async def create_invite_request():
