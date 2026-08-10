@@ -44,6 +44,13 @@ class InviteRepository:
         "FROM user_invite "
         "WHERE email_address = ? AND is_expired = 0")
 
+    GET_PENDING_INVITES_QUERY: str = (
+        "SELECT id, token, email_address, created_at, expires_at, "
+        "is_expired, expired_at "
+        "FROM user_invite "
+        "WHERE is_expired = 0 "
+        "ORDER BY created_at")
+
     INSERT_INVITE_QUERY: str = (
         "INSERT INTO user_invite (token, email_address, created_at, expires_at) "
         "VALUES(?, ?, ?, ?)")
@@ -99,6 +106,16 @@ class InviteRepository:
         """
         return await self._db.run_query(
             self.GET_INVITE_BY_EMAIL_QUERY, (email_address,), fetch_one=True)
+
+    async def get_pending_invites(self) -> list[tuple]:
+        """Fetch every pending (not yet expired or cancelled) invite.
+
+        Returns:
+            A list of 7-field row tuples, ordered by creation time, oldest
+            first. Empty if there are no pending invites.
+        """
+        rows = await self._db.run_query(self.GET_PENDING_INVITES_QUERY, ())
+        return rows or []
 
     async def create_invite(self,
                             token: str,
