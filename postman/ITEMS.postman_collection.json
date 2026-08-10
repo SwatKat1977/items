@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "513b7cd4-d023-4724-b3f1-4e821bf70009",
+    "_postman_id": "9c53508b-17ba-44e7-bad7-12a1337904b4",
     "name": "ITEMS",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "10935426"
@@ -1215,52 +1215,6 @@
               ]
             },
             {
-              "name": "Admin",
-              "item": [
-                {
-                  "name": "Project API",
-                  "item": [
-                    {
-                      "name": "Test Cases",
-                      "item": [
-                        {
-                          "name": "New Request",
-                          "request": {
-                            "method": "GET",
-                            "header": [],
-                            "url": {
-                              "raw": ""
-                            }
-                          },
-                          "response": []
-                        }
-                      ]
-                    },
-                    {
-                      "name": "Delete Project",
-                      "request": {
-                        "method": "DELETE",
-                        "header": [],
-                        "url": {
-                          "raw": "{{GATEWAY_SVC_URL}}/web/admin/projects/4",
-                          "host": [
-                            "{{GATEWAY_SVC_URL}}"
-                          ],
-                          "path": [
-                            "web",
-                            "admin",
-                            "projects",
-                            "4"
-                          ]
-                        }
-                      },
-                      "response": []
-                    }
-                  ]
-                }
-              ]
-            },
-            {
               "name": "Session",
               "item": [
                 {
@@ -1591,8 +1545,13 @@
                     "header": [],
                     "url": {
                       "raw": "{{GATEWAY_SVC_URL}}/web/users",
-                      "host": ["{{GATEWAY_SVC_URL}}"],
-                      "path": ["web", "users"]
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "users"
+                      ]
                     }
                   },
                   "response": []
@@ -1604,8 +1563,14 @@
                     "header": [],
                     "url": {
                       "raw": "{{GATEWAY_SVC_URL}}/web/users/{{USER_UUID}}",
-                      "host": ["{{GATEWAY_SVC_URL}}"],
-                      "path": ["web", "users", "{{USER_UUID}}"]
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "users",
+                        "{{USER_UUID}}"
+                      ]
                     }
                   },
                   "response": []
@@ -1618,12 +1583,21 @@
                     "body": {
                       "mode": "raw",
                       "raw": "{\n    \"email_address\": \"gemma@localhost\",\n    \"full_name\": \"Gemma Tester\",\n    \"display_name\": \"Gemma\"\n}",
-                      "options": {"raw": {"language": "json"}}
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
                     },
                     "url": {
                       "raw": "{{GATEWAY_SVC_URL}}/web/users",
-                      "host": ["{{GATEWAY_SVC_URL}}"],
-                      "path": ["web", "users"]
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "users"
+                      ]
                     }
                   },
                   "response": []
@@ -1636,12 +1610,21 @@
                     "body": {
                       "mode": "raw",
                       "raw": "{\n    \"email_address\": \"second.admin@localhost\",\n    \"full_name\": \"Second Admin\",\n    \"display_name\": \"Admin2\",\n    \"is_administrator\": true,\n    \"password\": \"change-me-please\"\n}",
-                      "options": {"raw": {"language": "json"}}
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
                     },
                     "url": {
                       "raw": "{{GATEWAY_SVC_URL}}/web/users",
-                      "host": ["{{GATEWAY_SVC_URL}}"],
-                      "path": ["web", "users"]
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "users"
+                      ]
                     }
                   },
                   "response": []
@@ -1654,12 +1637,22 @@
                     "body": {
                       "mode": "raw",
                       "raw": "{\n    \"display_name\": \"Gem\"\n}",
-                      "options": {"raw": {"language": "json"}}
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
                     },
                     "url": {
                       "raw": "{{GATEWAY_SVC_URL}}/web/users/{{USER_UUID}}",
-                      "host": ["{{GATEWAY_SVC_URL}}"],
-                      "path": ["web", "users", "{{USER_UUID}}"]
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "users",
+                        "{{USER_UUID}}"
+                      ]
                     }
                   },
                   "response": []
@@ -1672,12 +1665,22 @@
                     "body": {
                       "mode": "raw",
                       "raw": "{\n    \"account_status\": 0\n}",
-                      "options": {"raw": {"language": "json"}}
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
                     },
                     "url": {
                       "raw": "{{GATEWAY_SVC_URL}}/web/users/{{USER_UUID}}",
-                      "host": ["{{GATEWAY_SVC_URL}}"],
-                      "path": ["web", "users", "{{USER_UUID}}"]
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "users",
+                        "{{USER_UUID}}"
+                      ]
                     }
                   },
                   "response": []
@@ -1690,12 +1693,23 @@
                     "body": {
                       "mode": "raw",
                       "raw": "{\n    \"new_password\": \"a-new-password\"\n}",
-                      "options": {"raw": {"language": "json"}}
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
                     },
                     "url": {
                       "raw": "{{GATEWAY_SVC_URL}}/web/users/{{USER_UUID}}/password",
-                      "host": ["{{GATEWAY_SVC_URL}}"],
-                      "path": ["web", "users", "{{USER_UUID}}", "password"]
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "users",
+                        "{{USER_UUID}}",
+                        "password"
+                      ]
                     }
                   },
                   "response": []
