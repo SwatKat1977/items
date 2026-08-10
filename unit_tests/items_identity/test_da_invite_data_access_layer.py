@@ -101,6 +101,34 @@ class TestInviteRepository(unittest.IsolatedAsyncioTestCase):
                       InviteRepository.GET_INVITE_BY_EMAIL_QUERY)
 
     # -------------------------------------------------------
+    # get_pending_invites
+    # -------------------------------------------------------
+
+    async def test_get_pending_invites_returns_empty_list_when_none(self):
+        self.mock_db.run_query.return_value = None
+        result = await self.repo.get_pending_invites()
+        self.assertEqual(result, [])
+
+    async def test_get_pending_invites_returns_rows(self):
+        self.mock_db.run_query.return_value = [_PENDING_ROW]
+        result = await self.repo.get_pending_invites()
+        self.assertEqual(result, [_PENDING_ROW])
+
+    async def test_get_pending_invites_passes_correct_query(self):
+        self.mock_db.run_query.return_value = None
+        await self.repo.get_pending_invites()
+        self.mock_db.run_query.assert_called_once_with(
+            InviteRepository.GET_PENDING_INVITES_QUERY, ())
+
+    async def test_get_pending_invites_query_filters_pending_only(self):
+        self.assertIn("is_expired = 0",
+                      InviteRepository.GET_PENDING_INVITES_QUERY)
+
+    async def test_get_pending_invites_query_orders_by_created_at(self):
+        self.assertIn("ORDER BY created_at",
+                      InviteRepository.GET_PENDING_INVITES_QUERY)
+
+    # -------------------------------------------------------
     # create_invite
     # -------------------------------------------------------
 

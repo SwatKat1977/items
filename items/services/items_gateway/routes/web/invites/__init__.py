@@ -15,6 +15,8 @@ limitations under the License.
 """
 from quart import Blueprint
 from items.services.items_gateway.route_injections import RouteInjections
+from items.services.items_gateway.routes.web.invites.get_invites_handler import (
+    GetInvitesHandler)
 from items.services.items_gateway.routes.web.invites.create_invite_handler import (
     CreateInviteHandler)
 from items.services.items_gateway.routes.web.invites.resend_invite_handler import (
@@ -30,6 +32,7 @@ def create_invite_routes(injections: RouteInjections) -> Blueprint:
     caller (the web portal, which checks ``is_administrator`` before calling).
 
     Registered routes:
+        GET  /invites              List all pending invites.
         POST /invites              Create a new pending invite.
         POST /invites/resend       Refresh token and expiry on an existing invite.
         POST /invites/uninvite     Cancel (soft-expire) a pending invite.
@@ -40,8 +43,12 @@ def create_invite_routes(injections: RouteInjections) -> Blueprint:
     Returns:
         A configured Quart Blueprint.
     """
+    # pylint: disable=too-many-locals
+
     routes = Blueprint('invites_routes', __name__)
 
+    handler_get = GetInvitesHandler(
+        injections.logger, injections.configuration, injections.rest_client)
     handler_create = CreateInviteHandler(
         injections.logger, injections.configuration, injections.rest_client)
     handler_resend = ResendInviteHandler(
@@ -50,6 +57,13 @@ def create_invite_routes(injections: RouteInjections) -> Blueprint:
         injections.logger, injections.configuration, injections.rest_client)
 
     injections.logger.debug(" Invites WEB routes:")
+
+    injections.logger.debug("=> %s GET  /web/invites",
+                            "List pending invites".ljust(40))
+
+    @routes.route('/invites', methods=['GET'])
+    async def get_invites_request():
+        return await handler_get.get_invites()
 
     injections.logger.debug("=> %s POST /web/invites",
                             "Create invite".ljust(40))

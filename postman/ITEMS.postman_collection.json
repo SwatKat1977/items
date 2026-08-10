@@ -624,6 +624,23 @@
           "name": "Invites",
           "item": [
             {
+              "name": "List Invites",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/invites",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "invites"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
               "name": "Create Invite",
               "request": {
                 "method": "POST",
@@ -1461,6 +1478,24 @@
             {
               "name": "Invites",
               "item": [
+                {
+                  "name": "List Invites",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/invites",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "invites"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
                 {
                   "name": "Create Invite",
                   "request": {
