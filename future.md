@@ -71,3 +71,31 @@ roughly in order of how much they change the setup:
 Affects `identity_svc` and `cms_svc` for certain (identical bind-mount +
 non-root-user pattern in both); worth checking `web_portal_svc` and
 `gateway_svc` too if either persists local state the same way.
+
+## Gateway: health check doesn't verify *which* service answered
+
+**Where:** `Service._identity_svc_health_check` /
+`_check_cms_svc_status` in `items_gateway/service.py` — each just GETs
+`<configured_url>/system/health` and validates the response body against
+a JSON schema (`SCHEMA_IDENTITY_SVC_HEALTH_RESPONSE` /
+`SCHEMA_CMS_SVC_HEALTH_RESPONSE`).
+
+**Problem:** those two schemas are nearly identical (`status`,
+`dependencies`, `uptime_seconds`, `version` — CMS's is a strict subset of
+Identity's). Neither includes anything identifying which service actually
+produced the response. If a misconfigured port/URL means the Gateway ends
+up talking to the wrong backend (e.g. CMS reachable on the port meant for
+Identity), the health check would validate successfully and the Gateway
+would treat the wrong service as healthy and proceed - the mismatch would
+only surface later, confusingly, when an actual request 404s or behaves
+oddly (this is close to what caused the multi-message stale-container
+confusion earlier in the invite work, just via a different mechanism).
+
+**Fix:** add a required `service` field (a string, e.g. `"identity"` /
+`"cms"` / `"gateway"` / `"web_portal"`) to the shared health-check schema
+and response, and have the Gateway check it matches the service it thinks
+it's talking to - fail the health check (rather than silently proceeding)
+if it doesn't. Touches the shared schema
+(`items/shared/interfaces/*/health.py`) and every service's own health
+handler, not just the Gateway, so this is a coordinated change across all
+services rather than a Gateway-only fix.
