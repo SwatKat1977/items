@@ -14,27 +14,56 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from http import HTTPStatus
+from quart import make_response, request, Response
+from weaver_framework.microservice.api_response import ApiResponse
 from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
-import items.services.items_web_portal.page_locations as pages
 
 
 class LogoutPageHandler(PortalPageHandler):
     """Handles user logout requests.
 
-    This handler is responsible for terminating an authenticated user session.
-    The current implementation is a placeholder and returns the internal error
-    page until logout functionality has been implemented.
+    Terminates the current authenticated session and returns the visitor to
+    the login page. Deliberately not wrapped in ``require_session`` - logout
+    must also work when the session cookies are missing or already stale
+    (e.g. a second tab, or a link followed after the session expired), and
+    the outcome is the same either way: end up logged out.
     """
 
     async def logout(self):
         """Handles a logout request.
 
-        This method will eventually invalidate the user's authenticated session,
-        remove any authentication cookies, and redirect the user to the login
-        page. It is currently a placeholder implementation.
+        If authentication cookies are present, the session is invalidated on
+        the gateway first. That call is best-effort: the local cookies are
+        cleared and the user is sent to the login page regardless of whether
+        it succeeds, since a failed server-side invalidation should not
+        strand the user in a state where they can't leave the page they
+        asked to leave. A session left behind on the gateway this way is
+        harmless - it expires on its own like any other stale session.
 
         Returns:
-            A Quart response containing the internal error page.
+            A Quart response that clears the authentication cookies and
+            redirects to the login page.
         """
-        return await self._render_page(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
+        email_address = request.cookies.get(self.COOKIE_USER)
+        token = request.cookies.get(self.COOKIE_TOKEN)
+
+        if email_address and token:
+            url = f"{self._config.apis_gateway_svc}web/sessions"
+            response: ApiResponse = await self._rest_client.delete(
+                url,
+                json_data={"email_address": email_address, "token": token},
+                timeout=5)
+
+            if response.status_code != HTTPStatus.OK:
+                self._logger.warning(
+                    "Gateway svc logout request for '%s' failed with "
+                    "status %s - clearing local session anyway",
+                    email_address, response.status_code)
+
+        redirect = self._generate_redirect('login')
+        logout_response: Response = await make_response(redirect)
+        logout_response.delete_cookie(self.COOKIE_USER)
+        logout_response.delete_cookie(self.COOKIE_TOKEN)
+        return logout_response
