@@ -719,6 +719,25 @@
                 }
               },
               "response": []
+            },
+            {
+              "name": "Get Invite By Token",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/invites/token/{{INVITE_TOKEN}}",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "invites",
+                    "token",
+                    "{{INVITE_TOKEN}}"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         },
@@ -1528,6 +1547,53 @@
                         "web",
                         "invites",
                         "uninvite"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Get Invite By Token (unauthenticated)",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/invites/token/{{INVITE_TOKEN}}",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "invites",
+                        "token",
+                        "{{INVITE_TOKEN}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Accept Invite (unauthenticated)",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"token\": \"{{INVITE_TOKEN}}\",\n    \"full_name\": \"Gemma Tester\",\n    \"display_name\": \"Gemma\",\n    \"password\": \"a-strong-password\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/accept_invite",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "accept_invite"
                       ]
                     }
                   },

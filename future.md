@@ -3,6 +3,61 @@
 Running list of known, deliberately-deferred items — not urgent, but worth
 tracking so they don't get lost.
 
+## Gateway: admin-only routes are not actually enforced
+
+**This one is a security issue rather than a tidy-up**, and is listed first
+for that reason.
+
+**Where:** every route under `items_gateway/routes/web/`. There is no
+authorisation check anywhere in the Gateway — no session validation, no
+`is_administrator` check, no decorator. The invites blueprint states the
+position outright:
+
+```python
+"""All routes are admin-only and must be enforced at this layer or by the
+caller (the web portal, which checks ``is_administrator`` before calling)."""
+```
+
+It is currently the second of those: the Gateway trusts that the caller was
+the web portal and that the portal checked.
+
+**Problem:** in production the Gateway is the *only* externally visible
+service — CMS and Identity bind to `127.0.0.1`. So the Gateway is the public
+attack surface, and nothing about a request proves it came from the portal.
+`POST /web/users` is therefore a publicly reachable, unauthenticated
+account-creation endpoint: anyone who can reach the Gateway can create
+themselves an account, including an administrator one, with a single `curl`
+and without ever loading the portal. The same applies to every other
+admin-only route (project deletion, custom field changes, invites, user
+modification).
+
+The portal's `require_administrator` decorator is real and works, but it
+guards the *portal's* pages. Hiding a button is a user-experience decision,
+not a security boundary — exactly the point already made in §9.1 of
+`design_docs/user_roles_design.md`, which names the Gateway as the
+enforcement point. That part was never implemented.
+
+**Fix:** enforce at the Gateway. It already holds the session table
+(`sessions.py`), and `SessionEntry` already carries `is_administrator`, so
+the pieces exist — what is missing is a check on the request path. Broadly:
+
+- Require session credentials on `/web/*` requests and validate them against
+  the session store.
+- Gate admin-only routes on the session's `is_administrator` flag.
+- Decide how the portal passes the caller's session to the Gateway; it
+  currently forwards none, so this is the main design question.
+
+**Two routes must be explicitly exempted**, and this is easy to get wrong
+with a blanket rule:
+
+- `GET  /web/invites/token/<token>`
+- `POST /web/accept_invite`
+
+Both are deliberately unauthenticated, because somebody redeeming an
+invitation has no account yet — the invite token authorises them instead.
+This is documented in the invites blueprint docstring so it is not
+"corrected" by mistake.
+
 ## CMS: `linked_projects` encoding is ambiguous
 
 **Where:** `items_cms.repositories.testcase_custom_fields_repository`'s
