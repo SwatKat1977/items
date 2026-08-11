@@ -21,6 +21,9 @@ from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
+from items.services.items_gateway.services.email_service import EmailService
+from items.services.items_gateway.services.invite_email import (
+    send_invite_email)
 
 
 class ResendInviteHandler(BaseApiRoute):
@@ -30,15 +33,21 @@ class ResendInviteHandler(BaseApiRoute):
     Proxies the request body to the identity service and propagates the
     response. Schema validation is performed by the identity service;
     invalid payloads will receive a 400 response propagated from there.
+
+    Because the token is regenerated, the invitation is emailed again with the
+    new link — otherwise "resend" would refresh the token without the
+    recipient ever receiving it.
     """
 
     def __init__(self,
                  logger: logging.Logger,
                  configuration: GatewayConfiguration,
-                 rest_client: RestClient) -> None:
+                 rest_client: RestClient,
+                 email_service: EmailService | None = None) -> None:
         self._logger = logger.getChild(type(self).__name__)
         self._configuration = configuration
         self._rest_client = rest_client
+        self._email_service = email_service
 
     async def resend_invite(self) -> Response:
         """Refresh the invite token and expiry for a pending invite.
@@ -82,6 +91,14 @@ class ResendInviteHandler(BaseApiRoute):
                                      "unexpected response"}),
                 status=HTTPStatus.INTERNAL_SERVER_ERROR,
                 content_type="application/json")
+
+        await send_invite_email(
+            logger=self._logger,
+            email_service=self._email_service,
+            portal_url=self._configuration.apis_web_portal_svc,
+            response=response,
+            email_address=body.get("email_address", ""),
+            expected_status=HTTPStatus.OK)
 
         return Response(json.dumps(response.body),
                         status=response.status_code,

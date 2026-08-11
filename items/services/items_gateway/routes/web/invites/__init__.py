@@ -49,10 +49,15 @@ def create_invite_routes(injections: RouteInjections) -> Blueprint:
 
     handler_get = GetInvitesHandler(
         injections.logger, injections.configuration, injections.rest_client)
+    # Both of these send mail: creating an invite emails the invitation, and
+    # resending it regenerates the token and emails the new link. Omitting the
+    # email service leaves them silently issuing invites nobody receives.
     handler_create = CreateInviteHandler(
-        injections.logger, injections.configuration, injections.rest_client)
+        injections.logger, injections.configuration, injections.rest_client,
+        injections.email_service)
     handler_resend = ResendInviteHandler(
-        injections.logger, injections.configuration, injections.rest_client)
+        injections.logger, injections.configuration, injections.rest_client,
+        injections.email_service)
     handler_uninvite = UninviteHandler(
         injections.logger, injections.configuration, injections.rest_client)
 
