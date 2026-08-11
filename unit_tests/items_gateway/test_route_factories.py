@@ -17,9 +17,12 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock
 from quart import Quart
 from weaver_framework.microservice.api_response import ApiResponse
+from items.services.items_gateway.auth_decorators import (
+    HEADER_TOKEN, HEADER_USER)
 from items.services.items_gateway.route_injections import RouteInjections
 from items.services.items_gateway.routes import create_routes
 from items.services.items_gateway.sessions import Sessions
+from items.shared.account_logon_type import AccountLogonType
 
 _VALID_PROJECT_BODY = {
     "name": "WiringTest",
@@ -38,6 +41,16 @@ _VALID_FIELD_BODY = {
     "applies_to_all_projects": True,
 }
 
+# Every route in this file is exercised as an authenticated administrator.
+# The point of this test class is coverage of the route-registration
+# closures themselves - whether a given route *should* require a session or
+# administrator rights is covered separately in
+# test_admin_route_enforcement.py. Using an admin session for everything
+# here means both admin-only and merely-authenticated routes are reachable
+# with the same fixture, so no route needs special-casing to get through.
+_ADMIN_TOKEN = "a" * 32
+_AUTH_HEADERS = {HEADER_USER: "admin@x.com", HEADER_TOKEN: _ADMIN_TOKEN}
+
 
 class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
     """
@@ -52,6 +65,9 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         logger = MagicMock()
         sessions = Sessions()
+        await sessions.add_session(
+            "admin@x.com", _ADMIN_TOKEN, AccountLogonType.BASIC,
+            is_administrator=True)
         configuration = MagicMock()
         configuration.apis_cms_svc = "http://cms/"
         configuration.apis_identity_svc = "http://identity/"
@@ -114,27 +130,29 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
 
     async def test_get_project_route_is_reachable(self):
         async with self.client as c:
-            response = await c.get("/web/projects/1")
+            response = await c.get("/web/projects/1", headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_list_projects_route_is_reachable(self):
         async with self.client as c:
-            response = await c.get("/web/projects")
+            response = await c.get("/web/projects", headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_add_project_route_is_reachable(self):
         async with self.client as c:
-            response = await c.post("/web/projects", json=_VALID_PROJECT_BODY)
+            response = await c.post("/web/projects", json=_VALID_PROJECT_BODY,
+                                    headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_update_project_route_is_reachable(self):
         async with self.client as c:
-            response = await c.patch("/web/projects/1", json=_VALID_PROJECT_BODY)
+            response = await c.patch("/web/projects/1", json=_VALID_PROJECT_BODY,
+                                     headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_delete_project_route_is_reachable(self):
         async with self.client as c:
-            response = await c.delete("/web/projects/1")
+            response = await c.delete("/web/projects/1", headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     # ------------------------------------------------------------------
@@ -143,12 +161,12 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
 
     async def test_get_testcases_for_project_route_is_reachable(self):
         async with self.client as c:
-            response = await c.get("/web/1/testcases")
+            response = await c.get("/web/1/testcases", headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_get_testcase_route_is_reachable(self):
         async with self.client as c:
-            response = await c.get("/web/testcases/1")
+            response = await c.get("/web/testcases/1", headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     # ------------------------------------------------------------------
@@ -158,35 +176,41 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
 
     async def test_get_all_custom_fields_route_is_reachable(self):
         async with self.client as c:
-            response = await c.get("/web/testcase_custom_fields/")
+            response = await c.get("/web/testcase_custom_fields/",
+                                   headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_get_custom_field_route_is_reachable(self):
         async with self.client as c:
-            response = await c.get("/web/testcase_custom_fields/1")
+            response = await c.get("/web/testcase_custom_fields/1",
+                                   headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_add_custom_field_route_is_reachable(self):
         async with self.client as c:
             response = await c.post("/web/testcase_custom_fields/",
-                                    json=_VALID_FIELD_BODY)
+                                    json=_VALID_FIELD_BODY,
+                                    headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_modify_custom_field_route_is_reachable(self):
         async with self.client as c:
             response = await c.put("/web/testcase_custom_fields/1",
-                                   json=_VALID_FIELD_BODY)
+                                   json=_VALID_FIELD_BODY,
+                                   headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_move_custom_field_route_is_reachable(self):
         async with self.client as c:
             response = await c.patch("/web/testcase_custom_fields/1",
-                                     json={"direction": "up"})
+                                     json={"direction": "up"},
+                                     headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_delete_custom_field_route_is_reachable(self):
         async with self.client as c:
-            response = await c.delete("/web/testcase_custom_fields/1")
+            response = await c.delete("/web/testcase_custom_fields/1",
+                                      headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     # ------------------------------------------------------------------
@@ -195,12 +219,12 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
 
     async def test_list_users_route_is_reachable(self):
         async with self.client as c:
-            response = await c.get("/web/users")
+            response = await c.get("/web/users", headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_get_user_route_is_reachable(self):
         async with self.client as c:
-            response = await c.get("/web/users/1")
+            response = await c.get("/web/users/1", headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_create_user_route_is_reachable(self):
@@ -208,19 +232,22 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
             response = await c.post("/web/users",
                                     json={"email_address": "a@b.com",
                                           "full_name": "A",
-                                          "display_name": "A"})
+                                          "display_name": "A"},
+                                    headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_modify_user_route_is_reachable(self):
         async with self.client as c:
             response = await c.patch("/web/users/1",
-                                     json={"display_name": "New"})
+                                     json={"display_name": "New"},
+                                     headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_reset_password_route_is_reachable(self):
         async with self.client as c:
             response = await c.post("/web/users/1/password",
-                                    json={"new_password": "newpass123"})
+                                    json={"new_password": "newpass123"},
+                                    headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     # ------------------------------------------------------------------
@@ -229,25 +256,41 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
 
     async def test_get_invites_route_is_reachable(self):
         async with self.client as c:
-            response = await c.get("/web/invites")
+            response = await c.get("/web/invites", headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_create_invite_route_is_reachable(self):
         async with self.client as c:
             response = await c.post(
-                "/web/invites", json={"email_address": "a@b.com"})
+                "/web/invites", json={"email_address": "a@b.com"},
+                headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_resend_invite_route_is_reachable(self):
         async with self.client as c:
             response = await c.post(
-                "/web/invites/resend", json={"email_address": "a@b.com"})
+                "/web/invites/resend", json={"email_address": "a@b.com"},
+                headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     async def test_uninvite_route_is_reachable(self):
         async with self.client as c:
             response = await c.post(
-                "/web/invites/uninvite", json={"email_address": "a@b.com"})
+                "/web/invites/uninvite", json={"email_address": "a@b.com"},
+                headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_get_invite_by_token_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/web/invites/token/abc123")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_accept_invite_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/web/accept_invite",
+                json={"token": "abc123", "full_name": "A",
+                     "display_name": "A", "password": "password1"})
         self.assertNotEqual(response.status_code, 405)
 
     # ------------------------------------------------------------------

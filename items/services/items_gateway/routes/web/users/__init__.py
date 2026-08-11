@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from quart import Blueprint
+from items.services.items_gateway.auth_decorators import require_administrator
 from items.services.items_gateway.route_injections import RouteInjections
 from items.services.items_gateway.routes.web.users.list_users_handler import (
     ListUsersHandler)
@@ -30,8 +31,8 @@ from items.services.items_gateway.routes.web.users.reset_password_handler import
 def create_users_routes(injections: RouteInjections) -> Blueprint:
     """Create the Blueprint containing user management web routes.
 
-    All routes are admin-only and must be enforced at this layer or by the
-    caller (the web portal, which checks ``is_administrator`` before calling).
+    All routes are admin-only, enforced here via ``@require_administrator``
+    rather than trusted to the caller.
 
     Registered routes:
         GET  /users              List all user accounts.
@@ -72,6 +73,7 @@ def create_users_routes(injections: RouteInjections) -> Blueprint:
                             "List users".ljust(40))
 
     @routes.route('/users', methods=['GET'])
+    @require_administrator(injections.sessions)
     async def list_users_request():
         return await handler_list.list_users()
 
@@ -79,6 +81,7 @@ def create_users_routes(injections: RouteInjections) -> Blueprint:
                             "Create user".ljust(40))
 
     @routes.route('/users', methods=['POST'])
+    @require_administrator(injections.sessions)
     async def create_user_request():
         return await handler_create.create_user()
 
@@ -86,6 +89,7 @@ def create_users_routes(injections: RouteInjections) -> Blueprint:
                             "Get user".ljust(40))
 
     @routes.route('/users/<string:user_id>', methods=['GET'])
+    @require_administrator(injections.sessions)
     async def get_user_request(user_id: str):
         return await handler_get.get_user(user_id)
 
@@ -93,6 +97,7 @@ def create_users_routes(injections: RouteInjections) -> Blueprint:
                             "Modify user".ljust(40))
 
     @routes.route('/users/<string:user_id>', methods=['PATCH'])
+    @require_administrator(injections.sessions)
     async def modify_user_request(user_id: str):
         return await handler_modify.modify_user(user_id)
 
@@ -100,6 +105,7 @@ def create_users_routes(injections: RouteInjections) -> Blueprint:
                             "Reset user password".ljust(40))
 
     @routes.route('/users/<string:user_id>/password', methods=['POST'])
+    @require_administrator(injections.sessions)
     async def reset_password_request(user_id: str):
         return await handler_reset_password.reset_password(user_id)
 

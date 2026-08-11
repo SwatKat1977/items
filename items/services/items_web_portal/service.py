@@ -24,6 +24,8 @@ from weaver_framework.microservice.base_microservice import BaseMicroservice
 from weaver_framework.configuration_system.configuration_manager import (
     ConfigurationError)
 from weaver_framework.microservice.rest_client import RestClient
+from items.services.items_web_portal.authenticated_rest_client import (
+    AuthenticatedRestClient)
 from items.services.items_web_portal.metadata_settings import MetadataSettings
 from items.services.items_web_portal.page_handlers import create_page_handlers
 from items.shared import LICENSE_TEXT, SERVICE_COPYRIGHT_TEXT, __version__
@@ -71,11 +73,19 @@ class Service(BaseMicroservice):
         self._metadata_settings: MetadataSettings = MetadataSettings()
         self._rest_client: RestClient = RestClient(self._http_session)
 
+        # Page handlers get a wrapped client that forwards the caller's
+        # session as headers on every gateway call, so the gateway can
+        # enforce admin-only routes itself. The raw client above stays
+        # unwrapped for _get_metadata below, which runs at startup with no
+        # request context to read cookies from, and authenticates via its
+        # own HMAC signature instead.
+        page_handler_rest_client = AuthenticatedRestClient(self._rest_client)
+
         injections: PageHandlerInjections = PageHandlerInjections(
             self._config,
             self.logger,
             self._metadata_settings,
-            self._rest_client)
+            page_handler_rest_client)
 
         try:
             metadata_retrieved: bool = await self._get_metadata(
