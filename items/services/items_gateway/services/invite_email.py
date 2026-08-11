@@ -61,6 +61,60 @@ def build_invite_body(portal_url: str, token: str) -> str:
     )
 
 
+WELCOME_SUBJECT: str = "Welcome to ITEMS"
+
+
+def build_welcome_body(portal_url: str, display_name: str) -> str:
+    """Build the body of the welcome email sent after an invite is accepted.
+
+    Args:
+        portal_url:   Base URL of the web portal.
+        display_name: Name the new user chose to be known by.
+
+    Returns:
+        The plain-text email body.
+    """
+    login_url = portal_url.rstrip("/") + "/login"
+    return (
+        f"Hello {display_name},\n\n"
+        "Your ITEMS account is now set up and ready to use.\n\n"
+        f"You can sign in here:\n{login_url}\n\n"
+        "If you have any trouble signing in, contact your administrator.\n"
+    )
+
+
+async def send_welcome_email(logger: logging.Logger,
+                             email_service: EmailService | None,
+                             portal_url: str,
+                             email_address: str,
+                             display_name: str) -> None:
+    """Email a newly created user to confirm their account is ready.
+
+    Delivery failures are logged rather than raised: the account already
+    exists and the person can sign in regardless of whether this arrives.
+
+    Args:
+        logger:        Logger used to record delivery problems.
+        email_service: Service used to send the message; None when no mail is
+            configured.
+        portal_url:    Base URL of the web portal.
+        email_address: Recipient address.
+        display_name:  Name to greet the recipient by.
+    """
+    if email_service is None:
+        return
+
+    try:
+        await email_service.send(
+            to=email_address,
+            subject=WELCOME_SUBJECT,
+            body=build_welcome_body(portal_url, display_name))
+
+    except EmailServiceError as exc:
+        logger.error("Failed to send welcome email to %s: %s",
+                     email_address, exc)
+
+
 async def send_invite_email(logger: logging.Logger,
                             email_service: EmailService | None,
                             portal_url: str,

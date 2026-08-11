@@ -54,6 +54,10 @@ from test_invite_emails import (
     TestResendInviteSendsEmail,
     TestInviteBlueprintWiring,
 )
+from test_accept_invite_handler import (
+    TestAcceptInviteHandler,
+    TestGetInviteByTokenHandler,
+)
 from test_invites_handlers import (
     TestGetInvitesHandler,
     TestCreateInviteHandler,

@@ -23,19 +23,31 @@ from items.services.items_gateway.routes.web.invites.resend_invite_handler impor
     ResendInviteHandler)
 from items.services.items_gateway.routes.web.invites.uninvite_handler import (
     UninviteHandler)
+from items.services.items_gateway.routes.web.invites.accept_invite_handler import (
+    AcceptInviteHandler)
+from items.services.items_gateway.routes.web.invites.get_invite_by_token_handler import (
+    GetInviteByTokenHandler)
 
 
 def create_invite_routes(injections: RouteInjections) -> Blueprint:
     """Create the Blueprint containing invite management web routes.
 
-    All routes are admin-only and must be enforced at this layer or by the
-    caller (the web portal, which checks ``is_administrator`` before calling).
+    The management routes are admin-only and must be enforced at this layer or
+    by the caller (the web portal, which checks ``is_administrator`` before
+    calling).
+
+    ``POST /accept_invite`` is the exception: it is **deliberately
+    unauthenticated**, because the person redeeming an invitation does not yet
+    have an account. The invite token authorises that request instead. When
+    authorisation is enforced at this layer, this route must be explicitly
+    exempted rather than being caught by a blanket rule.
 
     Registered routes:
         GET  /invites              List all pending invites.
         POST /invites              Create a new pending invite.
         POST /invites/resend       Refresh token and expiry on an existing invite.
         POST /invites/uninvite     Cancel (soft-expire) a pending invite.
+        POST /accept_invite        Redeem an invitation (unauthenticated).
 
     Args:
         injections: Shared application dependencies.
@@ -49,6 +61,12 @@ def create_invite_routes(injections: RouteInjections) -> Blueprint:
 
     handler_get = GetInvitesHandler(
         injections.logger, injections.configuration, injections.rest_client)
+    handler_accept = AcceptInviteHandler(
+        injections.logger, injections.configuration, injections.rest_client,
+        injections.email_service)
+    handler_by_token = GetInviteByTokenHandler(
+        injections.logger, injections.configuration, injections.rest_client)
+
     # Both of these send mail: creating an invite emails the invitation, and
     # resending it regenerates the token and emails the new link. Omitting the
     # email service leaves them silently issuing invites nobody receives.
@@ -83,6 +101,20 @@ def create_invite_routes(injections: RouteInjections) -> Blueprint:
     @routes.route('/invites/resend', methods=['POST'])
     async def resend_invite_request():
         return await handler_resend.resend_invite()
+
+    injections.logger.debug("=> %s GET  /web/invites/token/<token>",
+                            "Resolve invite token (unauthenticated)".ljust(40))
+
+    @routes.route('/invites/token/<string:token>', methods=['GET'])
+    async def get_invite_by_token_request(token: str):
+        return await handler_by_token.get_invite_by_token(token)
+
+    injections.logger.debug("=> %s POST /web/accept_invite",
+                            "Accept invite (unauthenticated)".ljust(40))
+
+    @routes.route('/accept_invite', methods=['POST'])
+    async def accept_invite_request():
+        return await handler_accept.accept_invite()
 
     injections.logger.debug("=> %s POST /web/invites/uninvite",
                             "Uninvite".ljust(40))
