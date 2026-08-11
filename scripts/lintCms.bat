@@ -1,2 +1,2 @@
 SET PYTHONPATH=.
-pylint items/services/items_cms
+python -m pylint items/services/items_cms

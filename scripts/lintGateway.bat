@@ -1,2 +1,2 @@
 SET PYTHONPATH=.
-pylint items/services/items_gateway
+python -m pylint items/services/items_gateway
