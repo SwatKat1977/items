@@ -161,6 +161,13 @@ class TestAcceptInviteHandler(unittest.IsolatedAsyncioTestCase):
         response = await self._post({**_FORM, "password": ""})
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
+    async def test_non_json_body_is_rejected(self):
+        async with self.client as c:
+            response = await c.post("/accept_invite", data="not json at all")
+
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.mock_rc.get.assert_not_awaited()
+
     # ------------------------------------------------------------------
     # Success and failure reporting
     # ------------------------------------------------------------------

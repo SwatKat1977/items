@@ -176,3 +176,44 @@ class TestInviteBlueprintWiring(unittest.IsolatedAsyncioTestCase):
                           ("ResendInviteHandler", resend_cls)):
             self.assertIn(injections.email_service, cls.call_args.args,
                           f"{name} was not given the email service")
+
+    async def test_accept_invite_route_is_registered_and_dispatches(self):
+        """A handler that exists but is never registered is unreachable."""
+        from quart import Response as QuartResponse
+
+        injections = MagicMock()
+        handler = MagicMock()
+        handler.accept_invite = AsyncMock(return_value=QuartResponse(
+            json.dumps({"id": "new"}), status=HTTPStatus.CREATED,
+            content_type="application/json"))
+
+        with patch("items.services.items_gateway.routes.web.invites"
+                   ".AcceptInviteHandler", return_value=handler):
+            app = Quart(__name__)
+            app.register_blueprint(create_invite_routes(injections))
+
+            async with app.test_client() as client:
+                response = await client.post("/accept_invite", json={})
+
+        self.assertEqual(response.status_code, HTTPStatus.CREATED)
+        handler.accept_invite.assert_awaited_once()
+
+    async def test_token_lookup_route_is_registered_and_dispatches(self):
+        from quart import Response as QuartResponse
+
+        injections = MagicMock()
+        handler = MagicMock()
+        handler.get_invite_by_token = AsyncMock(return_value=QuartResponse(
+            json.dumps({"email_address": _RECIPIENT}), status=HTTPStatus.OK,
+            content_type="application/json"))
+
+        with patch("items.services.items_gateway.routes.web.invites"
+                   ".GetInviteByTokenHandler", return_value=handler):
+            app = Quart(__name__)
+            app.register_blueprint(create_invite_routes(injections))
+
+            async with app.test_client() as client:
+                response = await client.get("/invites/token/some-token")
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        handler.get_invite_by_token.assert_awaited_once_with("some-token")
