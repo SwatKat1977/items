@@ -185,3 +185,46 @@ NO_PENDING_INVITE on whether the rowcount was 1 or 0. The Gateway's
 already just checks for a 200 status. Roughly a 30-45 minute change
 including light test updates to `test_da_invite_data_access_layer.py` and
 `test_services_invite_management_service.py`.
+
+## Gateway: no way to configure "no mail server"
+
+**Where:** `Service.initialise()` in `items_gateway/service.py` always
+constructs a `SmtpEmailService` from `self._config.smtp_*` and injects it
+into every route, regardless of whether SMTP has actually been configured.
+
+**Problem:** an instance that hasn't set up a mail server (a fresh
+install, a dev environment, someone who just doesn't want email invites)
+still gets a live `SmtpEmailService` wired in. Invite create/resend/accept
+will attempt to connect and send through it - not skip it - and the
+attempt will simply fail against empty/default SMTP settings rather than
+being recognised as "email is deliberately off".
+
+**Fix:** add an explicit "no mail server" config state (e.g. `smtp_host`
+unset/empty, or a dedicated `SMTP_ENABLED=0` flag) and branch on it in
+`Service.initialise()`: when unset, skip constructing `SmtpEmailService`
+and pass `email_service=None` instead. The invite handlers already treat
+`email_service: EmailService | None = None` as a valid, no-op case
+(`send_invite_email`/`send_welcome_email` both no-op on `None`), so the
+call sites need no changes - this is purely a startup-wiring change plus a
+config flag.
+
+## Identity: no soft-delete for users (admin)
+
+**Where:** `items_identity` has no delete path for users at all today -
+only create, list/get, modify, reset/change password
+(`services/user_management_service.py`, `routes/users/`). Projects already
+have a soft-delete-plus-background-purge convention
+(`is_deleted`/background expiry task); users have no equivalent.
+
+**Problem:** an administrator who invites/creates the wrong person, or
+needs to offboard someone, has no way to remove their account short of
+direct database access. Given the existing soft-delete convention
+elsewhere in the codebase, a hard delete would also be inconsistent with
+how the rest of the system handles removal.
+
+**Fix:** add a soft-delete column to the user table (mirroring the
+project/invite `is_deleted`/`is_expired` pattern), a repository method,
+a service method enforcing whatever business rules apply (e.g. can an
+administrator delete themselves? the last remaining administrator?), a
+Gateway route, and an admin-page action on Users & Roles. Sizeable enough
+to be its own small PR rather than a squeeze-in - candidate for 0.3.0.
