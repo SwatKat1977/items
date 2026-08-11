@@ -18,6 +18,9 @@ limitations under the License.
 # Login page template
 TEMPLATE_LOGIN_PAGE: str = "login.html"
 
+# Account setup page reached from an invitation email link
+PAGE_ACCEPT_INVITE: str = "accept_invite.html"
+
 # Dashboard page template
 TEMPLATE_DASHBOARD_PAGE: str = "dashboard.html"
 

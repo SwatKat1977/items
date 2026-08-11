@@ -1,0 +1,107 @@
+{% extends "bootstrap_enabled_template.html" %}
+{% block title %}Integrated Test Management Suite | Accept Invitation{% endblock %}
+{% block head %}{{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+  <style>
+    /* login.css gives the page a dark navy background, against which the
+       default Bootstrap text colours are unreadable. This is a minimal
+       contrast fix only - the page still needs proper styling. */
+    .accept-invite,
+    .accept-invite .form-label,
+    .accept-invite h3,
+    .accept-invite h5 {
+        color: #ffffff;
+    }
+
+    /* .text-muted and .form-text both resolve to a dark grey that vanishes
+       on the navy background. */
+    .accept-invite .form-text,
+    .accept-invite .text-muted {
+        color: #cfd8e3 !important;
+    }
+
+    /* A disabled input is greyed by the browser; keep it legible while still
+       reading as non-editable. */
+    .accept-invite input:disabled {
+        background-color: #e9edf2;
+        color: #33415c;
+        opacity: 1;
+    }
+  </style>
+{% endblock %}
+
+{% block page_body %}
+<div class="container accept-invite" style="max-width: 540px; margin-top: 60px;">
+
+  <h3 class="mb-1">{{ instance_name or 'ITEMS' }}</h3>
+
+  {% if account_created %}
+    <h5 class="text-muted mb-4">Account created</h5>
+    <div class="alert alert-success" role="alert">
+      Your account is ready. A confirmation has been sent to your email
+      address.
+    </div>
+    <a class="btn btn-primary" href="/login">Continue to sign in</a>
+
+  {% elif invalid_message %}
+    <h5 class="text-muted mb-4">Invitation</h5>
+    <div class="alert alert-warning" role="alert">
+      {{ invalid_message }}
+    </div>
+    <a class="btn btn-secondary" href="/login">Go to sign in</a>
+
+  {% else %}
+    <h5 class="text-muted mb-4">Set up your account</h5>
+
+    {% if error_message %}
+    <div class="alert alert-danger" role="alert">{{ error_message }}</div>
+    {% endif %}
+
+    <form method="POST" action="/accept_invite">
+      <input type="hidden" name="token" value="{{ token }}">
+
+      <div class="mb-3">
+        <label for="email_address" class="form-label">Email address</label>
+        {# Fixed by the invitation. Shown so it is clear which invitation is
+           being accepted, but not editable and never submitted - the server
+           takes the address from the invite record regardless. #}
+        <input type="email" class="form-control" id="email_address"
+               value="{{ email_address }}" disabled readonly>
+        <div class="form-text">
+          This is the address your invitation was sent to and cannot be
+          changed.
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="full_name" class="form-label">Full name</label>
+        <input type="text" class="form-control" id="full_name"
+               name="full_name" required autofocus>
+      </div>
+
+      <div class="mb-3">
+        <label for="display_name" class="form-label">Display name</label>
+        <input type="text" class="form-control" id="display_name"
+               name="display_name" required>
+        <div class="form-text">The name other people will see.</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" class="form-control" id="password"
+               name="password" minlength="8" required>
+        <div class="form-text">At least 8 characters.</div>
+      </div>
+
+      <div class="mb-4">
+        <label for="confirm_password" class="form-label">Confirm password</label>
+        <input type="password" class="form-control" id="confirm_password"
+               name="confirm_password" minlength="8" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Create my account</button>
+    </form>
+  {% endif %}
+
+</div>
+{% endblock %}

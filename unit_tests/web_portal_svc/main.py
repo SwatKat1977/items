@@ -15,6 +15,7 @@ from test_service import (
     TestServiceTasksAndShutdown,
     TestGetMetadata,
 )
+from test_accept_invite_page_handler import TestAcceptInvitePageHandler
 from test_auth_handlers import (
     TestIndexPageHandler,
     TestLoginGetPageHandler,
