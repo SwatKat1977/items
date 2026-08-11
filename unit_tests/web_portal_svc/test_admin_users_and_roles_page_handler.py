@@ -196,6 +196,25 @@ class TestInviteUser(unittest.IsolatedAsyncioTestCase):
         text = await response.get_data(as_text=True)
         self.assertIn("could not be completed", text)
 
+    async def test_success_confirms_the_invitation(self):
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID, ApiResponse(status_code=HTTPStatus.CREATED)]
+
+        response = await self._post({"email_address": "new@b.com"})
+        text = await response.get_data(as_text=True)
+
+        self.assertIn("alert-success", text)
+        self.assertIn("sent to new@b.com", text)
+
+    async def test_invite_banner_uses_the_default_dismiss_delay(self):
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID, ApiResponse(status_code=HTTPStatus.CREATED)]
+
+        response = await self._post({"email_address": "new@b.com"})
+        text = await response.get_data(as_text=True)
+
+        self.assertIn('data-auto-dismiss-ms="10000"', text)
+
 
 class TestResendInvite(unittest.IsolatedAsyncioTestCase):
     """POST /admin/users_roles/invite/resend"""
@@ -237,6 +256,62 @@ class TestResendInvite(unittest.IsolatedAsyncioTestCase):
         text = await response.get_data(as_text=True)
         self.assertIn("No pending invite found", text)
 
+    async def test_success_confirms_the_resend(self):
+        """Without this the page looks identical to having done nothing."""
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID, ApiResponse(status_code=HTTPStatus.OK)]
+
+        response = await self._post({"email_address": "new@b.com"})
+        text = await response.get_data(as_text=True)
+
+        self.assertIn("alert-success", text)
+        self.assertIn("resent to new@b.com", text)
+
+    async def test_success_warns_the_previous_link_is_dead(self):
+        """Resending regenerates the token, invalidating any earlier link."""
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID, ApiResponse(status_code=HTTPStatus.OK)]
+
+        response = await self._post({"email_address": "new@b.com"})
+        text = await response.get_data(as_text=True)
+
+        self.assertIn("no longer valid", text)
+
+    async def test_failure_shows_no_success_banner(self):
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID,
+            ApiResponse(status_code=HTTPStatus.NOT_FOUND,
+                       body={"error": "No pending invite found"})]
+
+        response = await self._post({"email_address": "new@b.com"})
+        text = await response.get_data(as_text=True)
+
+        self.assertIn("alert-danger", text)
+        self.assertNotIn("alert-success", text)
+
+    async def test_resend_banner_stays_longer_than_the_default(self):
+        """It reports the previous link is dead, so it needs reading time."""
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID, ApiResponse(status_code=HTTPStatus.OK)]
+
+        response = await self._post({"email_address": "new@b.com"})
+        text = await response.get_data(as_text=True)
+
+        self.assertIn('data-auto-dismiss-ms="20000"', text)
+
+    async def test_error_banner_has_no_auto_dismiss(self):
+        """A missed error is worse than a missed confirmation."""
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID,
+            ApiResponse(status_code=HTTPStatus.NOT_FOUND,
+                       body={"error": "No pending invite found"})]
+
+        response = await self._post({"email_address": "new@b.com"})
+        text = await response.get_data(as_text=True)
+
+        # The attribute drives auto-dismissal; errors must not carry it.
+        self.assertNotIn("data-auto-dismiss-ms", text)
+
 
 class TestUninvite(unittest.IsolatedAsyncioTestCase):
     """POST /admin/users_roles/invite/uninvite"""
@@ -276,6 +351,17 @@ class TestUninvite(unittest.IsolatedAsyncioTestCase):
         call = self.mock_rest_client.post.call_args_list[1]
         self.assertEqual(call[0][0], "http://gateway/web/invites/uninvite")
         self.assertEqual(call[1]["json_data"], {"email_address": "new@b.com"})
+
+    async def test_success_confirms_the_cancellation(self):
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID, ApiResponse(status_code=HTTPStatus.OK)]
+
+        response = await self._post({"email_address": "new@b.com"})
+        text = await response.get_data(as_text=True)
+
+        self.assertIn("alert-success", text)
+        self.assertIn("new@b.com", text)
+        self.assertIn("cancelled", text)
 
     async def test_no_pending_invite_shows_error(self):
         self.mock_rest_client.post.side_effect = [

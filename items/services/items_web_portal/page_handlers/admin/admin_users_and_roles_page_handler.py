@@ -89,15 +89,16 @@ class AdminUsersAndRolesPageHandler(PortalPageHandler):
         response: ApiResponse = await self._rest_client.post(
             url, json_data={"email_address": email_address})
 
-        return await self._render_after_write(response, "invite")
+        return await self._render_after_write(response, "invite",
+                                              email_address)
 
     @require_administrator
     async def resend_invite(self):
         """Refresh the token and expiry for a pending invite.
 
         Returns:
-            The re-rendered users and roles page, showing an error banner
-            if the gateway/identity rejects the request.
+            The re-rendered users and roles page, confirming the resend or
+            showing an error banner if the gateway/identity rejects it.
         """
         form = await request.form
         email_address = form.get("email_address", "").strip()
@@ -106,7 +107,8 @@ class AdminUsersAndRolesPageHandler(PortalPageHandler):
         response: ApiResponse = await self._rest_client.post(
             url, json_data={"email_address": email_address})
 
-        return await self._render_after_write(response, "resend")
+        return await self._render_after_write(response, "resend",
+                                              email_address)
 
     @require_administrator
     async def uninvite(self):
@@ -123,33 +125,70 @@ class AdminUsersAndRolesPageHandler(PortalPageHandler):
         response: ApiResponse = await self._rest_client.post(
             url, json_data={"email_address": email_address})
 
-        return await self._render_after_write(response, "uninvite")
+        return await self._render_after_write(response, "uninvite",
+                                              email_address)
 
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
 
+    # Confirmation shown after each invite action succeeds. Without these the
+    # page re-renders looking identical to having done nothing, so there is no
+    # way to tell a successful action from one that silently failed.
+    #
+    # The resend message mentions the previous link because resending
+    # regenerates the token: any invitation already sent stops working, which
+    # the administrator cannot otherwise know.
+    _SUCCESS_MESSAGES: dict = {
+        "invite": "Invitation sent to {email}.",
+        "resend": ("Invitation resent to {email}. Any previous invitation "
+                   "link is no longer valid."),
+        "uninvite": "Invitation for {email} has been cancelled.",
+    }
+
+    # How long each confirmation stays on screen. Resend gets longer because
+    # it reports that the previous link has stopped working - a fact the
+    # administrator may need to act on, rather than a simple acknowledgement.
+    # Errors are never auto-dismissed; see the template.
+    _DEFAULT_DISMISS_MS: int = 10_000
+    _SUCCESS_DISMISS_MS: dict = {
+        "resend": 20_000,
+    }
+
     async def _render_after_write(self, response: ApiResponse,
-                                  action: str):
-        """Re-render the page after a write, surfacing any gateway error.
+                                  action: str,
+                                  email_address: str = ""):
+        """Re-render the page after a write, confirming it or showing an error.
 
         Args:
             response: The gateway response for the write operation.
-            action: Short action name used in logging ("invite", "resend",
-                "uninvite").
+            action: Short action name used in logging and to select the
+                confirmation message ("invite", "resend", "uninvite").
+            email_address: Address the action applied to, named in the
+                confirmation so it is clear which row was affected.
 
         Returns:
             The re-rendered users and roles page.
         """
         error_msg_str: Optional[str] = None
+        success_msg_str: Optional[str] = None
+        success_dismiss_ms: int = self._DEFAULT_DISMISS_MS
 
         if response.status_code not in (HTTPStatus.OK, HTTPStatus.CREATED):
             error_msg_str = self._extract_error(response)
             self._logger.warning(
                 "Invite %s failed (status %s): %s",
                 action, response.status_code, error_msg_str)
+        else:
+            template = self._SUCCESS_MESSAGES.get(action)
+            if template:
+                success_msg_str = template.format(email=email_address)
+                success_dismiss_ms = self._SUCCESS_DISMISS_MS.get(
+                    action, self._DEFAULT_DISMISS_MS)
 
-        return await self._render(error_msg_str=error_msg_str)
+        return await self._render(error_msg_str=error_msg_str,
+                                  success_msg_str=success_msg_str,
+                                  success_dismiss_ms=success_dismiss_ms)
 
     @staticmethod
     def _extract_error(response: ApiResponse) -> str:
@@ -158,11 +197,17 @@ class AdminUsersAndRolesPageHandler(PortalPageHandler):
             return str(response.body["error"])
         return "The request could not be completed. Please try again."
 
-    async def _render(self, error_msg_str: Optional[str] = None):
+    async def _render(self, error_msg_str: Optional[str] = None,
+                      success_msg_str: Optional[str] = None,
+                      success_dismiss_ms: int = _DEFAULT_DISMISS_MS):
         """Fetch users and pending invites, then render the page.
 
         Args:
             error_msg_str: Optional error banner to display on the page.
+            success_msg_str: Optional confirmation banner to display on the
+                page.
+            success_dismiss_ms: How long the confirmation stays on screen
+                before dismissing itself.
 
         Returns:
             The rendered users and roles page response.
@@ -189,7 +234,9 @@ class AdminUsersAndRolesPageHandler(PortalPageHandler):
             active_admin_page="admin_page_users_roles",
             users=users,
             invites=invites,
-            error_msg_str=error_msg_str)
+            error_msg_str=error_msg_str,
+            success_msg_str=success_msg_str,
+            success_dismiss_ms=success_dismiss_ms)
 
     async def _fetch_pending_invites(self) -> list[dict]:
         """Fetch the list of pending invites from the gateway.

@@ -8,6 +8,12 @@
 
 {% block body_params %}id="body-pd"{% endblock %}
 
+{% block postBody %}{{ super() }}
+<script type="text/javascript"
+        src="{{ url_for('static', filename='scripts/instance_admin_users_roles.js') }}">
+</script>
+{% endblock %}
+
 {% block instance_admin_body %}
     <div class="flex-grow-1">
       <h4 class="mb-3">Users & Roles</h4>
@@ -16,6 +22,22 @@
       {% if error_msg_str %}
       <div class="alert alert-danger alert-dismissible fade show" role="alert">
         {{ error_msg_str }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% endif %}
+
+      {# Confirmations clear themselves after a few seconds; errors do not.
+         A missed confirmation costs nothing, whereas a missed error leaves
+         the user believing something worked when it did not.
+
+         The dismiss delay is set per message by the handler: the resend
+         confirmation gets longer, because it reports that the previous
+         invitation link has stopped working - a fact worth reading rather
+         than merely an acknowledgement. #}
+      {% if success_msg_str %}
+      <div class="alert alert-success alert-dismissible fade show" role="alert"
+           data-auto-dismiss-ms="{{ success_dismiss_ms }}">
+        {{ success_msg_str }}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
       {% endif %}
