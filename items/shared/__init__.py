@@ -17,11 +17,11 @@ limitations under the License.
 
 # Semantic version components
 MAJOR = 0
-MINOR = 2
+MINOR = 3
 PATCH = 0
 
 # e.g. "alpha", "beta", "rc1", or None
-PRE_RELEASE = "Alpha Build"
+PRE_RELEASE = "Alpha Build 1"
 
 # Version tuple for comparisons
 VERSION = (MAJOR, MINOR, PATCH, PRE_RELEASE)
