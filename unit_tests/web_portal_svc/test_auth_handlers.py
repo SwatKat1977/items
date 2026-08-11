@@ -252,7 +252,8 @@ class TestLoginPostPageHandler(unittest.IsolatedAsyncioTestCase):
 class TestLogoutPageHandler(unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self):
-        handler = LogoutPageHandler(_LOGGER, _config(), AsyncMock())
+        self.mock_rest_client = AsyncMock()
+        handler = LogoutPageHandler(_LOGGER, _config(), self.mock_rest_client)
 
         app = make_app()
 
@@ -262,10 +263,57 @@ class TestLogoutPageHandler(unittest.IsolatedAsyncioTestCase):
 
         self.client = app.test_client()
 
-    async def test_logout_renders_internal_error_page(self):
+    @staticmethod
+    def _cookies_cleared(response) -> bool:
+        set_cookie_headers = response.headers.get_all("Set-Cookie")
+        return (
+            any(h.startswith("items_user=;") for h in set_cookie_headers) and
+            any(h.startswith("items_token=;") for h in set_cookie_headers))
+
+    async def test_logout_without_cookies_skips_gateway_call(self):
+        """No session to invalidate - nothing to tell the gateway about."""
         async with self.client as c:
             response = await c.get("/logout")
+
+        self.mock_rest_client.delete.assert_not_called()
         self.assertEqual(response.status_code, 200)
+        text = await response.get_data(as_text=True)
+        self.assertIn("url='http://localhost/login'", text)
+        self.assertTrue(self._cookies_cleared(response))
+
+    async def test_logout_invalidates_session_and_clears_cookies(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body="OK")
+
+        async with self.client as c:
+            response = await c.get(
+                "/logout", headers={"Cookie": "items_token=a; items_user=b"})
+
+        self.mock_rest_client.delete.assert_awaited_once()
+        call = self.mock_rest_client.delete.await_args
+        self.assertEqual(call.args[0], "http://gateway/web/sessions")
+        self.assertEqual(call.kwargs["json_data"],
+                         {"email_address": "b", "token": "a"})
+
+        self.assertEqual(response.status_code, 200)
+        text = await response.get_data(as_text=True)
+        self.assertIn("url='http://localhost/login'", text)
+        self.assertTrue(self._cookies_cleared(response))
+
+    async def test_logout_clears_cookies_even_if_gateway_call_fails(self):
+        """A failed server-side invalidation must not strand the user."""
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            exception_msg="boom")
+
+        async with self.client as c:
+            response = await c.get(
+                "/logout", headers={"Cookie": "items_token=a; items_user=b"})
+
+        self.assertEqual(response.status_code, 200)
+        text = await response.get_data(as_text=True)
+        self.assertIn("url='http://localhost/login'", text)
+        self.assertTrue(self._cookies_cleared(response))
 
 
 if __name__ == "__main__":
