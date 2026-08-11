@@ -78,6 +78,11 @@ class AdminAddUserPageHandler(PortalPageHandler):
         display_name: str = form.get("display_name", "").strip()
         email_address: str = form.get("email_address", "").strip()
         password: str = form.get("password", "").strip()
+        is_administrator: bool = form.get("is_administrator") == "1"
+
+        # Re-inject for template re-population - an unchecked checkbox is
+        # simply absent from form_data, unlike the text fields above.
+        form_data["is_administrator"] = is_administrator
 
         if not all([full_name, display_name, email_address]):
             return await self._render(
@@ -94,6 +99,7 @@ class AdminAddUserPageHandler(PortalPageHandler):
             "display_name": display_name,
             "email_address": email_address,
             "password": password,
+            "is_administrator": is_administrator,
         }
 
         url = f"{self._config.apis_gateway_svc}web/users"

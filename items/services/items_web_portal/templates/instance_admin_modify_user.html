@@ -53,15 +53,6 @@
           <div class="form-text text-muted">Email address cannot be changed.</div>
         </div>
 
-        <div class="mb-3">
-          <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="account_status"
-                   name="account_status" value="1"
-                   {% if form_data.get('account_status') == 1 %}checked{% endif %}>
-            <label class="form-check-label" for="account_status">Active</label>
-          </div>
-        </div>
-
         <hr class="my-4">
 
         <div class="mb-3">
@@ -92,8 +83,38 @@
 
       <!-- ACCESS TAB -->
       <div class="tab-pane" id="tab-access">
-        <p class="text-muted mt-3">
-          Role and access configuration will be available in a future release.
+
+        <div class="mb-3 mt-3">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="account_status"
+                   name="account_status" value="1"
+                   {% if form_data.get('account_status') == 1 %}checked{% endif %}>
+            <label class="form-check-label" for="account_status">This user is active</label>
+          </div>
+          <div class="form-text text-muted">
+            Every active user can log in. Deactivate a user who no longer
+            needs access rather than deleting their account.
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <div class="mb-3">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="is_administrator"
+                   name="is_administrator" value="1"
+                   {% if form_data.get('is_administrator') %}checked{% endif %}>
+            <label class="form-check-label" for="is_administrator">This user is an administrator</label>
+          </div>
+          <div class="form-text text-muted">
+            Administrators can manage projects, users, and instance settings.
+            There must always be at least one active administrator.
+          </div>
+        </div>
+
+        <p class="text-muted mt-4">
+          Per-project access configuration will be available in a future
+          release.
         </p>
       </div>
 

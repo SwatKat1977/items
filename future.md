@@ -228,3 +228,42 @@ a service method enforcing whatever business rules apply (e.g. can an
 administrator delete themselves? the last remaining administrator?), a
 Gateway route, and an admin-page action on Users & Roles. Sizeable enough
 to be its own small PR rather than a squeeze-in - candidate for 0.3.0.
+
+## Gateway: deactivating a user does not touch their existing session
+
+**Where:** `Sessions` (`items_gateway/sessions.py`) is a pure in-memory
+`email_address -> SessionEntry` map. `ValidateSessionHandler.validate_session`
+only checks that an entry exists and the token matches - it never asks
+Identity whether the account is still active. `SessionEntry.session_expiry`
+is declared but not read anywhere either, so today nothing ever
+invalidates a session except an explicit logout or a server restart.
+
+**Problem:** the design doc (`user_roles_design.md` §5.3.3) already commits
+to different behaviour: "existing sessions are invalidated at next
+validate call". That was never built. An administrator who deactivates a
+user (the "Active" toggle added in `portal_admin_access_tab`) only blocks
+*future* logins - anyone with an already-open session keeps working
+normally until they happen to log out themselves.
+
+**Fix:** proactive delete, not a lazy per-request check. A lazy check (ask
+Identity "is this account still active" on every `validate_session` call)
+would add a permanent Gateway->Identity round trip to every single
+authenticated request, forever, to guard against something rare and
+deliberate - a bad trade. Proactive delete costs nothing extra on the hot
+path and can piggyback on a call that already happens:
+
+- **Identity**: include `email_address` in the success response of
+  `PATCH /users/<id>` (`modify_user_handler.py` /
+  `UserManagementService.update_user`) - it doesn't today.
+- **Gateway**: `ModifyUserHandler.modify_user` already sees both the
+  outgoing request body (so it knows if `account_status` was set to `0`)
+  and Identity's response for the same call. On a 200 with
+  `account_status == 0` in the request, call
+  `sessions.delete_session(response.body["email_address"])`. No new
+  network call anywhere.
+
+Small and well-defined - no open design questions - but deliberately not
+folded into `portal_admin_access_tab` (which only added the UI checkbox)
+or decided yet against the gateway admin-route enforcement piece. Both
+touch Gateway session/authorization code, so worth doing whichever one
+lands first.

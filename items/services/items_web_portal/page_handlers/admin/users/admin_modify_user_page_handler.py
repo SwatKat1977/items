@@ -85,6 +85,7 @@ class AdminModifyUserPageHandler(PortalPageHandler):
             "display_name": user.get("display_name", ""),
             "email_address": user.get("email_address", ""),
             "account_status": user.get("account_status", 1),
+            "is_administrator": bool(user.get("is_administrator", False)),
         }
         return await self._render(user_id=user_id, form_data=form_data)
 
@@ -109,9 +110,12 @@ class AdminModifyUserPageHandler(PortalPageHandler):
         full_name: str = form.get("full_name", "").strip()
         display_name: str = form.get("display_name", "").strip()
         account_status: int = 1 if form.get("account_status") == "1" else 0
+        is_administrator: bool = form.get("is_administrator") == "1"
 
-        # Re-inject account_status as int for template re-population
+        # Re-inject checkbox fields for template re-population - unlike text
+        # inputs, an unchecked checkbox is simply absent from form_data.
         form_data["account_status"] = account_status
+        form_data["is_administrator"] = is_administrator
 
         if not all([full_name, display_name]):
             return await self._render(
@@ -123,6 +127,7 @@ class AdminModifyUserPageHandler(PortalPageHandler):
             "full_name": full_name,
             "display_name": display_name,
             "account_status": account_status,
+            "is_administrator": is_administrator,
         }
 
         url = f"{self._config.apis_gateway_svc}web/users/{user_id}"
@@ -133,7 +138,9 @@ class AdminModifyUserPageHandler(PortalPageHandler):
             return await self._render(
                 user_id=user_id,
                 form_data=form_data,
-                error_msg_str="Cannot deactivate the last active administrator.")
+                error_msg_str="This change would leave no active "
+                             "administrator - there must always be at "
+                             "least one.")
 
         if response.status_code == http.HTTPStatus.NOT_FOUND:
             return await self._render(

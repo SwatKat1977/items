@@ -180,6 +180,37 @@ class TestAdminAddUserPageHandler(unittest.IsolatedAsyncioTestCase):
         text = await response.get_data(as_text=True)
         self.assertIn("Refresh", text)
 
+    async def test_post_is_administrator_checked_is_sent_to_gateway(self):
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID,
+            ApiResponse(status_code=HTTPStatus.CREATED, body={"id": 2}),
+        ]
+        form = dict(_VALID_ADD_FORM)
+        form["is_administrator"] = "1"
+        await self._post(form)
+        create_call = self.mock_rest_client.post.await_args_list[1]
+        self.assertTrue(create_call.kwargs["json_data"]["is_administrator"])
+
+    async def test_post_is_administrator_unchecked_is_sent_as_false(self):
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID,
+            ApiResponse(status_code=HTTPStatus.CREATED, body={"id": 2}),
+        ]
+        await self._post(_VALID_ADD_FORM)
+        create_call = self.mock_rest_client.post.await_args_list[1]
+        self.assertFalse(create_call.kwargs["json_data"]["is_administrator"])
+
+    async def test_post_validation_error_re_populates_is_administrator(self):
+        self.mock_rest_client.post.return_value = _SESSION_VALID
+        form = dict(_VALID_ADD_FORM)
+        form["is_administrator"] = "1"
+        del form["full_name"]
+        response = await self._post(form)
+        text = await response.get_data(as_text=True)
+        checkbox_start = text.index('id="is_administrator"')
+        checkbox_tag = text[checkbox_start:text.index(">", checkbox_start)]
+        self.assertIn("checked", checkbox_tag)
+
 
 # ---------------------------------------------------------------------------
 # AdminModifyUserPageHandler
@@ -261,7 +292,7 @@ class TestAdminModifyUserPageHandler(unittest.IsolatedAsyncioTestCase):
         response = await self._post(_VALID_MODIFY_FORM)
         self.assertEqual(response.status_code, 200)
         text = await response.get_data(as_text=True)
-        self.assertIn("last active administrator", text)
+        self.assertIn("no active administrator", text)
 
     async def test_post_not_found_renders_error(self):
         self.mock_rest_client.patch.return_value = ApiResponse(
@@ -292,6 +323,41 @@ class TestAdminModifyUserPageHandler(unittest.IsolatedAsyncioTestCase):
             response = await c.get(f"/admin/users_roles/{_UUID}/modify")
         text = await response.get_data(as_text=True)
         self.assertIn("Refresh", text)
+
+    async def test_get_pre_populates_is_administrator_when_true(self):
+        admin_user = dict(_USER, is_administrator=True)
+        self.mock_rest_client.get.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body=admin_user)
+        response = await self._get()
+        text = await response.get_data(as_text=True)
+        checkbox_start = text.index('id="is_administrator"')
+        checkbox_tag = text[checkbox_start:text.index(">", checkbox_start)]
+        self.assertIn("checked", checkbox_tag)
+
+    async def test_get_does_not_pre_populate_is_administrator_when_false(self):
+        self.mock_rest_client.get.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body=_USER)
+        response = await self._get()
+        text = await response.get_data(as_text=True)
+        checkbox_start = text.index('id="is_administrator"')
+        checkbox_tag = text[checkbox_start:text.index(">", checkbox_start)]
+        self.assertNotIn("checked", checkbox_tag)
+
+    async def test_post_is_administrator_checked_is_sent_to_gateway(self):
+        self.mock_rest_client.patch.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body={})
+        form = dict(_VALID_MODIFY_FORM)
+        form["is_administrator"] = "1"
+        await self._post(form)
+        patch_call = self.mock_rest_client.patch.await_args
+        self.assertTrue(patch_call.kwargs["json_data"]["is_administrator"])
+
+    async def test_post_is_administrator_unchecked_is_sent_as_false(self):
+        self.mock_rest_client.patch.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body={})
+        await self._post(_VALID_MODIFY_FORM)
+        patch_call = self.mock_rest_client.patch.await_args
+        self.assertFalse(patch_call.kwargs["json_data"]["is_administrator"])
 
 
 # ---------------------------------------------------------------------------
