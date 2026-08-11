@@ -41,6 +41,7 @@ _INVITE_EXPIRY_INTERVAL_SECONDS: int = 5 * 60  # 5 minutes
 class Service(BaseMicroservice):
     """ ITEMS Identity Microservice """
 
+    SERVICE_NAME: str = "Identity"
     CONFIG_FILE_ENV: str = "ITEMS_IDENTITY_CONFIG_FILE"
     CONFIG_REQUIRED_ENV: str = "ITEMS_IDENTITY_CONFIG_FILE_REQUIRED"
 
