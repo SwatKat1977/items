@@ -74,6 +74,23 @@ class InviteUninviteResult:
 
 
 @dataclass
+class InviteLookupResult:
+    """Outcome of looking up an invite by its token.
+
+    Attributes:
+        valid:         True only when the token matches a pending, unexpired
+            invite. Unknown, cancelled and expired tokens are all reported
+            identically, so a caller cannot probe for token existence.
+        email_address: The address the invite was issued to, present only
+            when ``valid`` is True. This is the address the account must be
+            created for - it is never taken from the recipient's input.
+    """
+
+    valid: bool
+    email_address: Optional[str] = None
+
+
+@dataclass
 class PendingInvite:
     """A single pending invite, as exposed to API callers.
 
@@ -116,6 +133,40 @@ class InviteManagementService:
         self._logger = logger.getChild(type(self).__name__)
         self._invite_repo = invite_repo
         self._user_repo = user_repo
+
+    async def get_invite_by_token(self, token: str) -> InviteLookupResult:
+        """Look up an invite by the token from its email link.
+
+        Used when an invited person opens their invitation link, so the
+        address the account will be created for comes from the invite itself
+        rather than from anything the recipient supplies.
+
+        An invite is only usable while it is pending and unexpired. Expired,
+        cancelled and unknown tokens are all reported as simply not valid, so
+        that a caller cannot use this endpoint to discover whether a given
+        token ever existed.
+
+        Args:
+            token: The token from the invitation link.
+
+        Returns:
+            An :class:`InviteLookupResult`. ``email_address`` is populated
+            only when ``valid`` is True.
+        """
+        row = await self._invite_repo.get_invite_by_token(token)
+
+        if row is None:
+            return InviteLookupResult(valid=False)
+
+        _, _, email_address, _, expires_at, is_expired, _ = row
+
+        if is_expired:
+            return InviteLookupResult(valid=False)
+
+        if expires_at <= int(time.time()):
+            return InviteLookupResult(valid=False)
+
+        return InviteLookupResult(valid=True, email_address=email_address)
 
     async def get_pending_invites(self) -> list[PendingInvite]:
         """Return every pending (not yet expired or cancelled) invite.

@@ -24,6 +24,10 @@ from test_apis_invite_management import (
     TestResendInviteHandler,
     TestUninviteHandler,
 )
+from test_invite_token_lookup import (
+    TestGetInviteByTokenService,
+    TestGetInviteByTokenHandler,
+)
 from test_create_routes import (TestCreateAuthRoutes, TestCreateSystemRoutes,
                                 TestCreateInviteRoutes, TestCreateUsersRoutes,
                                 TestCreateRoutes)

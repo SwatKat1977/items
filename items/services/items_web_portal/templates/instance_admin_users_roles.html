@@ -8,10 +8,40 @@
 
 {% block body_params %}id="body-pd"{% endblock %}
 
+{% block postBody %}{{ super() }}
+<script type="text/javascript"
+        src="{{ url_for('static', filename='scripts/instance_admin_users_roles.js') }}">
+</script>
+{% endblock %}
+
 {% block instance_admin_body %}
     <div class="flex-grow-1">
       <h4 class="mb-3">Users & Roles</h4>
       <hr />
+
+      {% if error_msg_str %}
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ error_msg_str }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% endif %}
+
+      {# Confirmations clear themselves after a few seconds; errors do not.
+         A missed confirmation costs nothing, whereas a missed error leaves
+         the user believing something worked when it did not.
+
+         The dismiss delay is set per message by the handler: the resend
+         confirmation gets longer, because it reports that the previous
+         invitation link has stopped working - a fact worth reading rather
+         than merely an acknowledgement. #}
+      {% if success_msg_str %}
+      <div class="alert alert-success alert-dismissible fade show" role="alert"
+           data-auto-dismiss-ms="{{ success_dismiss_ms }}">
+        {{ success_msg_str }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% endif %}
+
       <table class="table">
         <thead>
           <tr>
@@ -59,12 +89,80 @@
         {% endfor %}
         </tbody>
       </table>
-      <div class="mt-3">
+      <div class="mt-3 mb-4">
         <button class="btn btn-primary" onclick="window.location.href='/admin/users_roles/add'">+ Add User</button>
+        <button class="btn btn-outline-primary" type="button"
+                data-bs-toggle="modal" data-bs-target="#inviteUserModal">+ Invite User</button>
       </div>
+
+      <h5 class="mb-3">Pending Invites</h5>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Email Address</th>
+            <th scope="col">Invited</th>
+            <th scope="col">Expires</th>
+            <th scope="col" class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for invite in invites %}
+        <tr>
+          <td>{{ invite.email_address }}</td>
+          <td>{{ invite.created_display }}</td>
+          <td>{{ invite.expires_display }}</td>
+          <td class="text-end">
+            <form class="d-inline" method="POST" action="/admin/users_roles/invite/resend">
+              <input type="hidden" name="email_address" value="{{ invite.email_address }}">
+              <button type="submit" class="btn btn-link text-primary p-1" title="Resend invite">
+                <i class="bi bi-arrow-repeat"></i>
+              </button>
+            </form>
+            <form class="d-inline" method="POST" action="/admin/users_roles/invite/uninvite"
+                  onsubmit="return confirm('Cancel the invite for {{ invite.email_address }}?');">
+              <input type="hidden" name="email_address" value="{{ invite.email_address }}">
+              <button type="submit" class="btn btn-link text-danger p-1" title="Cancel invite">
+                <i class="bi bi-x-circle"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" class="text-muted">No pending invites.</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
 
-    {% if error_msg_str %}
-    <div id="error_msg">{{ error_msg_str }}</div>
-    {% endif %}
+<!-- Invite User modal -->
+<div class="modal fade" id="inviteUserModal" tabindex="-1"
+     aria-labelledby="inviteUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="/admin/users_roles/invite">
+        <div class="modal-header">
+          <h5 class="modal-title" id="inviteUserModalLabel">Invite User</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="invite-email" class="form-label">Email Address</label>
+            <input type="email" class="form-control" id="invite-email" name="email_address"
+                   required placeholder="e.g. jane@example.com">
+            <div class="form-text">
+              An invite link valid for 48 hours will be generated. The
+              invited person completes their own registration.
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Send Invite</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock %}

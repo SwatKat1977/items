@@ -452,6 +452,33 @@ class TestCreateInviteRoutes(unittest.IsolatedAsyncioTestCase):
 
         mock_handler.get_invites.assert_called_once()
 
+    @patch("routes.invites.GetInviteByTokenHandler")
+    @patch("routes.invites.UninviteHandler")
+    @patch("routes.invites.ResendInviteHandler")
+    @patch("routes.invites.CreateInviteHandler")
+    @patch("routes.invites.GetInvitesHandler")
+    async def test_get_invite_by_token_is_registered_and_dispatches(
+            self, _get, _create, _resend, _uninvite, mock_by_token_cls):
+        """The route an invitation link relies on must actually be wired up.
+
+        A handler that exists but is never registered is unreachable, and
+        every other test in this file would still pass.
+        """
+        mock_handler = MagicMock()
+        mock_handler.get_invite_by_token = AsyncMock(
+            return_value=self._ok_response({"email_address": "a@b.com"}))
+        mock_by_token_cls.return_value = mock_handler
+
+        app = quart.Quart(__name__)
+        bp = create_invite_routes(self.mock_logger, self.mock_config)
+        app.register_blueprint(bp)
+
+        async with app.test_client() as client:
+            response = await client.get("/invites/token/some-token")
+
+        self.assertEqual(response.status_code, 200)
+        mock_handler.get_invite_by_token.assert_called_once_with("some-token")
+
 
 class TestCreateRoutes(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):

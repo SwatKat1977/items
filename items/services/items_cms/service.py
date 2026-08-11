@@ -31,6 +31,7 @@ from items.services.items_cms.routes import create_routes
 class Service(BaseMicroservice):
     """ ITEMS CMS Microservice """
 
+    SERVICE_NAME: str = "CMS"
     CONFIG_FILE_ENV: str = "ITEMS_CMS_CONFIG_FILE"
     CONFIG_REQUIRED_ENV: str = "ITEMS_CMS_CONFIG_FILE_REQUIRED"
 

@@ -25,6 +25,8 @@ from items.services.items_web_portal.page_handlers.auth.login_post_page_handler 
     import LoginPostPageHandler
 from items.services.items_web_portal.page_handlers.auth.logout_page_handler \
     import LogoutPageHandler
+from items.services.items_web_portal.page_handlers.auth.accept_invite_page_handler \
+    import AcceptInvitePageHandler
 
 
 def create_auth_page_handlers(injections: PageHandlerInjections) -> Blueprint:
@@ -68,6 +70,11 @@ def create_auth_page_handlers(injections: PageHandlerInjections) -> Blueprint:
         injections.logger,
         injections.config,
         injections.rest_client)
+    handler_accept_invite: AcceptInvitePageHandler = AcceptInvitePageHandler(
+        injections.logger,
+        injections.config,
+        injections.rest_client,
+        injections.metadata)
 
     routes = Blueprint('auth_routes', __name__)
 
@@ -96,6 +103,26 @@ def create_auth_page_handlers(injections: PageHandlerInjections) -> Blueprint:
     @routes.route('/login', methods=['GET'])
     async def login_page_request_get():
         return await handler_login_get.login_get()
+
+    # Accept invitation: '/accept_invite'
+    #
+    # Both routes are intentionally unauthenticated - someone following an
+    # invitation link has no account yet, so no session guard can apply. The
+    # invite token authorises the request instead, and is validated by the
+    # gateway rather than trusted from this page.
+    injections.logger.debug("=> %s GET /accept_invite",
+                            "Accept invitation (read page)".ljust(40))
+
+    @routes.route('/accept_invite', methods=['GET'])
+    async def accept_invite_request_get():
+        return await handler_accept_invite.accept_invite_get()
+
+    injections.logger.debug("=> %s POST /accept_invite",
+                            "Accept invitation (create account)".ljust(40))
+
+    @routes.route('/accept_invite', methods=['POST'])
+    async def accept_invite_request_post():
+        return await handler_accept_invite.accept_invite_post()
 
     # Logout page: '/logout'
     injections.logger.debug("=> %s GET /logout",

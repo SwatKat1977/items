@@ -49,6 +49,7 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
                 "show_announcement_on_overview": False,
                 "projects": [],
                 "users": [],
+                "invites": [],
                 "folders": [],
                 "test_cases": [],
             })
@@ -84,6 +85,30 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
             response = await c.get("/login")
         self.assertNotEqual(response.status_code, 405)
 
+    async def test_accept_invite_get_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/accept_invite?token=abc")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_accept_invite_post_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/accept_invite", form={"token": "abc"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_accept_invite_routes_are_not_session_guarded(self):
+        """Someone redeeming an invitation has no session yet.
+
+        If either route were wrapped in require_session/require_administrator
+        it would redirect to the login page, and the invitation link would be
+        unusable for exactly the people it is meant for.
+        """
+        async with self.client as c:
+            get_response = await c.get("/accept_invite?token=abc")
+            get_body = await get_response.get_data(as_text=True)
+
+        # A guarded route answers with a meta-refresh redirect to /login.
+        self.assertNotIn("url='http://localhost/login'", get_body)
+
     async def test_login_post_route_is_reachable(self):
         async with self.client as c:
             response = await c.post(
@@ -108,6 +133,27 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
     async def test_admin_users_roles_route_is_reachable(self):
         async with self.client as c:
             response = await c.get("/admin/users_roles")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_invite_user_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/admin/users_roles/invite",
+                form={"email_address": "a@b.com"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_resend_invite_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/admin/users_roles/invite/resend",
+                form={"email_address": "a@b.com"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_uninvite_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/admin/users_roles/invite/uninvite",
+                form={"email_address": "a@b.com"})
         self.assertNotEqual(response.status_code, 405)
 
     async def test_admin_manage_data_route_is_reachable(self):
