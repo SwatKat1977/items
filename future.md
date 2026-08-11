@@ -154,3 +154,34 @@ if it doesn't. Touches the shared schema
 (`items/shared/interfaces/*/health.py`) and every service's own health
 handler, not just the Gateway, so this is a coordinated change across all
 services rather than a Gateway-only fix.
+
+## Identity: invite consumption has a narrow TOCTOU race (low priority)
+
+**Where:** `InviteManagementService.uninvite()` (also used as the "consume"
+step inside `accept_invite`'s flow) does a `SELECT` (existence check via
+`get_invite_by_email`) followed by a separate `UPDATE` (soft-expire) as two
+sequential DB round trips, rather than one atomic statement.
+
+**Problem:** two concurrent callers submitting the same token/email within
+the few-millisecond gap between the SELECT and the UPDATE could both pass
+the existence check before either UPDATE lands, both believing they
+successfully consumed the invite. In practice this requires the exact same
+token submitted twice near-simultaneously (a double-click, a client retry,
+or deliberate racing) - a narrow window, and even if hit, the failure is
+already safe: `create_user`'s email-uniqueness constraint means the second
+`accept_invite` attempt fails at account creation regardless, so there is no
+duplicate account and no takeover - just a confusing "please ask for a new
+invite" error for the losing request.
+
+**Fix (not attempted - low priority, P4/P5):** no framework change needed -
+`SqliteInterface.run_query(..., commit=True)` already returns
+`cursor.rowcount`. Change `InviteRepository.uninvite()` to return that
+rowcount instead of discarding it, and change
+`InviteManagementService.uninvite()` to drop the separate
+`get_invite_by_email()` pre-check, performing the atomic
+`UPDATE ... WHERE is_expired = 0` directly and branching SUCCESS vs.
+NO_PENDING_INVITE on whether the rowcount was 1 or 0. The Gateway's
+`_consume_invite` (in `accept_invite_handler.py`) needs no changes - it
+already just checks for a 200 status. Roughly a 30-45 minute change
+including light test updates to `test_da_invite_data_access_layer.py` and
+`test_services_invite_management_service.py`.
