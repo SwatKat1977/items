@@ -76,7 +76,7 @@ _SESSION_ONLY_ROUTES = [
     ("GET", "/web/projects", None),
     ("GET", "/web/projects/1", None),
     ("GET", "/web/1/testcases", None),
-    ("GET", "/web/testcases/1", None),
+    ("GET", "/web/testcases/1?project_id=1", None),
 ]
 
 # (method, path, json_body) - routes that must stay reachable with no

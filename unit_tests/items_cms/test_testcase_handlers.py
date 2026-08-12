@@ -102,6 +102,32 @@ class TestGetTestcaseHandler(unittest.IsolatedAsyncioTestCase):
             response = await c.get("/testcases/1")
         self.assertEqual(response.status_code, 500)
 
+    async def test_get_testcase_without_project_id_passes_none(self):
+        self.mock_service.get_testcase.return_value = _ok(data={"id": 10})
+        async with self.client as c:
+            await c.get("/testcases/10")
+        self.mock_service.get_testcase.assert_awaited_once_with(10, None)
+
+    async def test_get_testcase_with_valid_project_id_passes_it_through(self):
+        self.mock_service.get_testcase.return_value = _ok(data={"id": 10})
+        async with self.client as c:
+            await c.get("/testcases/10?project_id=5")
+        self.mock_service.get_testcase.assert_awaited_once_with(10, 5)
+
+    async def test_get_testcase_project_id_mismatch_returns_404(self):
+        """Same outcome as case_id not existing at all - see the service
+        layer's reasoning for treating the two identically."""
+        self.mock_service.get_testcase.return_value = _not_found()
+        async with self.client as c:
+            response = await c.get("/testcases/10?project_id=999")
+        self.assertEqual(response.status_code, 404)
+
+    async def test_get_testcase_non_integer_project_id_returns_400(self):
+        async with self.client as c:
+            response = await c.get("/testcases/10?project_id=abc")
+        self.assertEqual(response.status_code, 400)
+        self.mock_service.get_testcase.assert_not_called()
+
 
 # ------------------------------------------------------------------
 # ListTestcasesHandler

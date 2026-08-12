@@ -108,12 +108,33 @@ class TestTestcaseService(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result.not_found)
 
     async def test_get_testcase_success(self):
-        tc = {"id": 42, "folder_id": 1, "name": "Login test",
+        tc = {"id": 42, "project_id": 5, "folder_id": 1, "name": "Login test",
               "description": "Verify login works"}
         self.mock_repo.get_testcase.return_value = tc
         result = await self.service.get_testcase(42)
         self.assertTrue(result.success)
         self.assertEqual(result.data, tc)
+
+    async def test_get_testcase_no_project_id_check_returns_regardless(self):
+        """Omitting project_id keeps existing behaviour unchanged - direct
+        CMS callers and other services don't need to opt in to the check."""
+        self.mock_repo.get_testcase.return_value = _TESTCASE
+        result = await self.service.get_testcase(1)
+        self.assertTrue(result.success)
+
+    async def test_get_testcase_matching_project_id_succeeds(self):
+        self.mock_repo.get_testcase.return_value = _TESTCASE
+        result = await self.service.get_testcase(
+            1, project_id=_TESTCASE["project_id"])
+        self.assertTrue(result.success)
+        self.assertEqual(result.data, _TESTCASE)
+
+    async def test_get_testcase_mismatched_project_id_reports_not_found(self):
+        self.mock_repo.get_testcase.return_value = _TESTCASE
+        result = await self.service.get_testcase(
+            1, project_id=_TESTCASE["project_id"] + 1)
+        self.assertFalse(result.success)
+        self.assertTrue(result.not_found)
 
     # ------------------------------------------------------------------
     # create_testcase

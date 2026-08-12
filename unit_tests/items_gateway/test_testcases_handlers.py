@@ -49,30 +49,47 @@ class TestGetTestcaseHandler(unittest.IsolatedAsyncioTestCase):
 
         self.client = app.test_client()
 
-    async def _get(self):
+    async def _get(self, query=""):
         async with self.client as c:
-            return await c.get("/testcases/1")
+            return await c.get(f"/testcases/1{query}")
 
     async def test_not_found_returns_404(self):
         self.mock_rest_client.get.return_value = ApiResponse(
             status_code=404, body={"error": "Test case not found"})
-        response = await self._get()
+        response = await self._get("?project_id=5")
         self.assertEqual(response.status_code, 404)
         data = await response.get_json()
         self.assertEqual(data["error"], "Test case not found")
 
     async def test_other_error_returns_500(self):
         self.mock_rest_client.get.return_value = ApiResponse(status_code=503)
-        response = await self._get()
+        response = await self._get("?project_id=5")
         self.assertEqual(response.status_code, 500)
 
     async def test_success_returns_200(self):
         self.mock_rest_client.get.return_value = ApiResponse(
             status_code=200, body={"id": 1, "name": "Login test"})
-        response = await self._get()
+        response = await self._get("?project_id=5")
         self.assertEqual(response.status_code, 200)
         data = await response.get_json()
         self.assertEqual(data["name"], "Login test")
+
+    async def test_forwards_project_id_to_cms(self):
+        self.mock_rest_client.get.return_value = ApiResponse(
+            status_code=200, body={"id": 1})
+        await self._get("?project_id=5")
+        called_url = self.mock_rest_client.get.await_args.args[0]
+        self.assertIn("project_id=5", called_url)
+
+    async def test_missing_project_id_returns_400_without_calling_cms(self):
+        response = await self._get()
+        self.assertEqual(response.status_code, 400)
+        self.mock_rest_client.get.assert_not_called()
+
+    async def test_non_integer_project_id_returns_400_without_calling_cms(self):
+        response = await self._get("?project_id=abc")
+        self.assertEqual(response.status_code, 400)
+        self.mock_rest_client.get.assert_not_called()
 
 
 # ------------------------------------------------------------------

@@ -16,7 +16,7 @@ limitations under the License.
 import json
 import logging
 from http import HTTPStatus
-from quart import Response
+from quart import request, Response
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from items.services.items_cms.services.testcase_service import TestcaseService
 
@@ -45,12 +45,26 @@ class GetTestcaseHandler(BaseApiRoute):
 
         Returns:
             200 with the test case details dict on success.
-            404 if no test case exists with the given ID.
+            400 if the optional ``project_id`` query parameter is present
+            but not a valid integer.
+            404 if no test case exists with the given ID, or one does but
+            ``project_id`` was supplied and doesn't match.
             500 on an internal database error.
         """
         # pylint: disable=duplicate-code
 
-        result = await self._service.get_testcase(case_id)
+        project_id: int | None = None
+        raw_project_id = request.args.get("project_id")
+        if raw_project_id is not None:
+            try:
+                project_id = int(raw_project_id)
+            except ValueError:
+                return Response(
+                    json.dumps({"error": "project_id must be an integer"}),
+                    status=HTTPStatus.BAD_REQUEST,
+                    content_type="application/json")
+
+        result = await self._service.get_testcase(case_id, project_id)
 
         if not result.success:
             status = (HTTPStatus.INTERNAL_SERVER_ERROR

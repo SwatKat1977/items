@@ -1218,7 +1218,7 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/web/testcases/1",
+                      "raw": "{{GATEWAY_SVC_URL}}/web/testcases/1?project_id=6",
                       "host": [
                         "{{GATEWAY_SVC_URL}}"
                       ],
@@ -1226,6 +1226,12 @@
                         "web",
                         "testcases",
                         "1"
+                      ],
+                      "query": [
+                        {
+                          "key": "project_id",
+                          "value": "6"
+                        }
                       ]
                     }
                   },

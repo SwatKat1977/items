@@ -310,6 +310,7 @@ class TestTestcaseRepository(unittest.IsolatedAsyncioTestCase):
         result = await self.repo.get_testcase(tc_id)
         self.assertIsNotNone(result)
         self.assertEqual(result["id"], tc_id)
+        self.assertEqual(result["project_id"], pid)
         self.assertEqual(result["name"], "Login Test")
         self.assertEqual(result["description"], "Verify login")
         self.assertIsNone(result["folder_id"])
