@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from quart import Blueprint
+from items.services.items_gateway.auth_decorators import require_administrator
 from items.services.items_gateway.route_injections import RouteInjections
 from items.services.items_gateway.routes.web.testcase_custom_fields.\
     add_custom_field_handler import AddCustomFieldHandler
@@ -38,6 +39,11 @@ def create_testcase_custom_fields_routes(injections: RouteInjections) \
     custom field definitions through the web interface. It instantiates the
     required request handlers, registers the available endpoints, and logs the
     registered routes during application startup.
+
+    All routes are admin-only (the Customisations page they back is entirely
+    ``@require_administrator`` in the web portal, including its read view),
+    enforced here via ``@require_administrator`` rather than trusted to the
+    caller.
 
     Registered routes:
         - GET /testcase_custom_fields/:
@@ -88,6 +94,7 @@ def create_testcase_custom_fields_routes(injections: RouteInjections) \
                             "Get all TC custom fields".ljust(40))
 
     @routes.route('/testcase_custom_fields/', methods=['GET'])
+    @require_administrator(injections.sessions)
     async def get_all_custom_fields_request():
         return await handler_get_all_fields.get_all_custom_fields()
 
@@ -96,6 +103,7 @@ def create_testcase_custom_fields_routes(injections: RouteInjections) \
         "Get single TC custom field".ljust(40))
 
     @routes.route('/testcase_custom_fields/<int:field_id>', methods=['GET'])
+    @require_administrator(injections.sessions)
     async def get_custom_field_request(field_id: int):
         return await handler_get_custom_field.get_custom_field(field_id)
 
@@ -103,6 +111,7 @@ def create_testcase_custom_fields_routes(injections: RouteInjections) \
                             "Modify Testcase Custom Fields".ljust(40))
 
     @routes.route('/testcase_custom_fields/<int:field_id>', methods=['PUT'])
+    @require_administrator(injections.sessions)
     async def modify_custom_field_request(field_id: int):
         # pylint: disable=no-value-for-parameter
         return await handler_modify_custom_field.modify_custom_field(field_id)
@@ -112,6 +121,7 @@ def create_testcase_custom_fields_routes(injections: RouteInjections) \
         "Move Testcase Custom Fields Position".ljust(40))
 
     @routes.route('/testcase_custom_fields/<int:field_id>', methods=['PATCH'])
+    @require_administrator(injections.sessions)
     async def move_custom_field_request(field_id: int):
         # pylint: disable=no-value-for-parameter
         return await handler_move_custom_field.move_custom_field(field_id)
@@ -120,11 +130,13 @@ def create_testcase_custom_fields_routes(injections: RouteInjections) \
                             "Add Testcase Custom Field".ljust(40))
 
     @routes.route('/testcase_custom_fields/', methods=['POST'])
+    @require_administrator(injections.sessions)
     async def add_custom_field_request():
         # pylint: disable=no-value-for-parameter
         return await handler_add_custom_field.add_custom_field()
 
     @routes.route('/testcase_custom_fields/<int:field_id>', methods=['DELETE'])
+    @require_administrator(injections.sessions)
     async def delete_custom_field_request(field_id: int):
         # pylint: disable=no-value-for-parameter
         return await handler_delete_custom_field.delete_custom_field(field_id)

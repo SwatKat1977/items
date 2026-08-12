@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from quart import Blueprint
+from items.services.items_gateway.auth_decorators import require_session
 from items.services.items_gateway.route_injections import RouteInjections
 from items.services.items_gateway.routes.web.testcases.get_testcase_handler \
     import GetTestcaseHandler
@@ -29,6 +30,12 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
     information through the web interface. It instantiates the required request
     handlers, registers the available endpoints, and logs the registered routes
     during application startup.
+
+    Both routes require a valid session (``@require_session``) but not
+    administrator rights - any authenticated user with access to the portal
+    can browse testcases, not just admins. (There is no per-project
+    membership check yet - see ``user_roles_design.md`` and the
+    `future.md` items tracking that work.)
 
     Registered routes:
         - GET /<project_id>/testcases:
@@ -62,6 +69,7 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
 
     @routes.route('/<int:project_id>/testcases',
                   methods=['GET'])
+    @require_session(injections.sessions)
     async def testcases_details_request(project_id: int):
         return await handler_get_testcases.get_testcases(project_id)
 
@@ -71,6 +79,7 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
 
     @routes.route('/testcases/<int:case_id>',
                   methods=['GET'])
+    @require_session(injections.sessions)
     async def get_case_request(case_id: int):
         # pylint: disable=unused-variable
         return await handler_get_testcase.get_testcase(case_id)

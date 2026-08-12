@@ -267,3 +267,49 @@ folded into `portal_admin_access_tab` (which only added the UI checkbox)
 or decided yet against the gateway admin-route enforcement piece. Both
 touch Gateway session/authorization code, so worth doing whichever one
 lands first.
+
+## Web Portal: session cookies are missing HttpOnly and SameSite
+
+**Where:** `login_post_page_handler.py:114-115` -
+`login_response.set_cookie(self.COOKIE_USER, user_email)` and
+`.set_cookie(self.COOKIE_TOKEN, response.body.get("token"))`, both called
+with no extra arguments. Quart's `set_cookie` defaults every
+security-relevant flag off: `secure=False`, `httponly=False`,
+`samesite=None`.
+
+**Problem:** the session token itself is fine - generated as
+`uuid.uuid4().hex` (`new_session_password_handler.py:122`), 122 bits from
+`os.urandom`, not predictable. The cookie carrying it isn't locked down
+though:
+
+- No `HttpOnly` - JavaScript can read `items_token` via `document.cookie`.
+  Any XSS anywhere on the site hands over the session token outright.
+- No explicit `SameSite` - left to browser default rather than a
+  deliberate choice.
+
+**Fix:** add `httponly=True` and `samesite="Lax"` to both `set_cookie`
+calls. Neither depends on HTTPS or any environment detection - safe to do
+immediately, independent of everything else here. (The third flag,
+`Secure`, is deliberately not part of this item - see the HTTPS entry
+below.)
+
+## Move to HTTPS
+
+**Where:** deployment-wide. Flagged while discussing session cookie
+hardening (above) - `Secure` can't be set on the session cookies until
+there's always a TLS connection to require it over, and setting it
+unconditionally today would silently break login on any current non-HTTPS
+setup (including local dev on `http://localhost`).
+
+**Problem:** scope is genuinely unknown right now - "possibly massive" per
+the conversation that raised it. At minimum it touches: the `Secure`
+cookie flag (blocked on this), any hardcoded `http://` URLs, CORS/cookie
+`SameSite` interactions once `Secure` is involved, and cert/reverse-proxy
+setup for however this actually gets deployed. Likely more once someone
+sits down and lists it properly.
+
+**Fix:** not scoped yet - deliberately just a placeholder so it isn't
+lost. Needs its own focused pass to turn "possibly massive" into an actual
+list before any code changes. Do this before making `Secure` conditional
+on an environment flag (above) - guessing at the environment-detection
+shape now risks redoing it once the real migration is scoped.

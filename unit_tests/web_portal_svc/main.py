@@ -2,6 +2,7 @@ import unittest
 from test_configuration import TestConfiguration
 from test_metadata_settings import TestMetadataSettings
 from test_page_handler_injections import TestPageHandlerInjections
+from test_authenticated_rest_client import TestAuthenticatedRestClient
 from test_decorators import TestRequireSession
 from test_portal_page_handler import (
     TestSessionAuthMixinGenerateRedirect,

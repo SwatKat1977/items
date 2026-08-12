@@ -55,7 +55,8 @@ def create_web_routes(injections: RouteInjections) -> quart.Blueprint:
     routes_bp.register_blueprint(create_projects_routes(
         injections.logger,
         injections.configuration,
-        injections.rest_client))
+        injections.rest_client,
+        injections.sessions))
 
     # Register sessions routes.
     routes_bp.register_blueprint(create_sessions_routes(injections.logger,

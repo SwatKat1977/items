@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from quart import Blueprint
+from items.services.items_gateway.auth_decorators import require_administrator
 from items.services.items_gateway.route_injections import RouteInjections
 from items.services.items_gateway.routes.web.invites.get_invites_handler import (
     GetInvitesHandler)
@@ -32,22 +33,24 @@ from items.services.items_gateway.routes.web.invites.get_invite_by_token_handler
 def create_invite_routes(injections: RouteInjections) -> Blueprint:
     """Create the Blueprint containing invite management web routes.
 
-    The management routes are admin-only and must be enforced at this layer or
-    by the caller (the web portal, which checks ``is_administrator`` before
-    calling).
+    The management routes are admin-only, enforced here via
+    ``@require_administrator`` rather than trusted to the caller - the web
+    portal also checks ``is_administrator`` before calling, but that is UX,
+    not the security boundary.
 
-    ``POST /accept_invite`` is the exception: it is **deliberately
-    unauthenticated**, because the person redeeming an invitation does not yet
-    have an account. The invite token authorises that request instead. When
-    authorisation is enforced at this layer, this route must be explicitly
-    exempted rather than being caught by a blanket rule.
+    ``GET /invites/token/<token>`` and ``POST /accept_invite`` are the
+    exceptions: both are **deliberately unauthenticated**, because the
+    person redeeming an invitation does not yet have an account. The invite
+    token authorises those requests instead - they are explicitly left
+    undecorated rather than being caught by a blanket rule.
 
     Registered routes:
-        GET  /invites              List all pending invites.
-        POST /invites              Create a new pending invite.
-        POST /invites/resend       Refresh token and expiry on an existing invite.
-        POST /invites/uninvite     Cancel (soft-expire) a pending invite.
-        POST /accept_invite        Redeem an invitation (unauthenticated).
+        GET  /invites              List all pending invites. (admin)
+        POST /invites              Create a new pending invite. (admin)
+        POST /invites/resend       Refresh token and expiry on an existing invite. (admin)
+        POST /invites/uninvite     Cancel (soft-expire) a pending invite. (admin)
+        GET  /invites/token/<token> Resolve an invite token. (unauthenticated)
+        POST /accept_invite        Redeem an invitation. (unauthenticated)
 
     Args:
         injections: Shared application dependencies.
@@ -85,6 +88,7 @@ def create_invite_routes(injections: RouteInjections) -> Blueprint:
                             "List pending invites".ljust(40))
 
     @routes.route('/invites', methods=['GET'])
+    @require_administrator(injections.sessions)
     async def get_invites_request():
         return await handler_get.get_invites()
 
@@ -92,6 +96,7 @@ def create_invite_routes(injections: RouteInjections) -> Blueprint:
                             "Create invite".ljust(40))
 
     @routes.route('/invites', methods=['POST'])
+    @require_administrator(injections.sessions)
     async def create_invite_request():
         return await handler_create.create_invite()
 
@@ -99,6 +104,7 @@ def create_invite_routes(injections: RouteInjections) -> Blueprint:
                             "Resend invite".ljust(40))
 
     @routes.route('/invites/resend', methods=['POST'])
+    @require_administrator(injections.sessions)
     async def resend_invite_request():
         return await handler_resend.resend_invite()
 
@@ -120,6 +126,7 @@ def create_invite_routes(injections: RouteInjections) -> Blueprint:
                             "Uninvite".ljust(40))
 
     @routes.route('/invites/uninvite', methods=['POST'])
+    @require_administrator(injections.sessions)
     async def uninvite_request():
         return await handler_uninvite.uninvite()
 
