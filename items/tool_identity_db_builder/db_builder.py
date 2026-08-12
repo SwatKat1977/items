@@ -100,14 +100,17 @@ async def build_database(logger: logging.Logger,
         await database.create_table(
             sql_values.SQL_CREATE_USER_AUTH_DETAILS_TABLE, "user_auth_details")
 
+        logger.info("-> Creating roles table")
+        await database.create_table(
+            sql_values.SQL_CREATE_ROLES_TABLE, "roles")
+
+        logger.info("-> Creating role_permissions table")
+        await database.create_table(
+            sql_values.SQL_CREATE_ROLE_PERMISSIONS_TABLE, "role_permissions")
+
         logger.info("-> Creating project_members table")
         await database.create_table(
             sql_values.SQL_CREATE_PROJECT_MEMBERS_TABLE, "project_members")
-
-        logger.info("-> Creating project_permissions table")
-        await database.create_table(
-            sql_values.SQL_CREATE_PROJECT_PERMISSIONS_TABLE,
-            "project_permissions")
 
         logger.info("-> Creating user_invite table")
         await database.create_table(

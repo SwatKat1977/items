@@ -62,9 +62,18 @@ groups are a convenience for assigning many users at once. Per-project
 access works fine with users only — exclusion is simply the *absence* of a
 membership row.
 
-## 4. The General grid (per project)
+## 4. The General grid (per role)
 
-For each **area**, a member is granted any combination of:
+**The grid lives on named roles, not directly on a membership.** An
+administrator defines a role once (e.g. "Tester"), sets its grid, and
+*assigns* that role to memberships - editing the role updates everyone who
+holds it, rather than needing to be repeated per person. See §7 for why:
+raw per-membership checkboxes were the original design, revised after
+comparing against how tools like TestRail actually work in practice - a
+name you assign is far more maintainable at any real team size than
+re-ticking the same boxes for every new membership.
+
+For each **area**, a role is granted any combination of:
 
 | Area | Read | Add/Modify | Delete |
 | ---- | ---- | ---------- | ------ |
@@ -81,7 +90,10 @@ column — that capability was deliberately removed from this grid.
 ### 4.1 Invariant: Add/Modify implies Read
 
 If `Add/Modify` is granted, `Read` is granted and **cannot be revoked while
-`Add/Modify` remains set**.
+`Add/Modify` remains set**. This applies to a role's own grid - it says
+nothing about the *effective* result once roles are combined via
+membership and group union (§8), which can only ever add further access,
+never remove it.
 
 Enforced in **two** places — the UI half alone is not sufficient:
 
@@ -110,10 +122,12 @@ requires no migration of existing grants.
 Two layers:
 
 - **Membership** — the project is visible and can be opened.
-- **Per-area `Read`** — what is visible *inside* it.
+- **Per-area `Read`** (via the member's assigned role) — what is visible
+  *inside* it.
 
-A member with no `Read` anywhere sees the project shell and no content. That
-is a valid (if unusual) state, not an error.
+A member with **no role assigned at all** sees the project shell and no
+content. That is a valid (if unusual) state, not an error - see §7 for why
+`project_members.role_id` is nullable rather than required.
 
 ## 5. Administration
 
@@ -305,32 +319,50 @@ purging a project must clean up its grants in the other database (§10.4).
 ALTER TABLE user_profile
     ADD COLUMN is_administrator integer DEFAULT 0 NOT NULL;
 
--- Project membership (the access gate)
-CREATE TABLE project_members (
-    id             INTEGER PRIMARY KEY AUTOINCREMENT,
-    principal_type TEXT    NOT NULL CHECK (principal_type IN ('user','group')),
-    principal_id   INTEGER NOT NULL,
-    project_id     INTEGER NOT NULL,   -- cms.db prj_projects(id); no FK possible
-    UNIQUE (principal_type, principal_id, project_id)
+-- Named, reusable permission bundles  [IMPLEMENTED on identity_roles_db_update]
+CREATE TABLE roles (
+    id   INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT    NOT NULL UNIQUE
 );
 
--- Per-area permissions for a membership
-CREATE TABLE project_permissions (
-    member_id      INTEGER NOT NULL,
+-- Per-area permissions for a role  [IMPLEMENTED on identity_roles_db_update]
+-- Replaces an earlier, rejected design where this table was keyed by
+-- member_id (i.e. raw permissions set directly per membership, no reusable
+-- role in between). Revised before any code was built on it, after
+-- comparing against how established tools (e.g. TestRail) actually manage
+-- this at real team sizes: a name you assign and occasionally redefine
+-- beats re-ticking the same boxes for every new membership.
+CREATE TABLE role_permissions (
+    role_id        INTEGER NOT NULL,
     area           TEXT    NOT NULL,   -- 'test_cases', 'milestones', ...
     can_read       BOOLEAN NOT NULL DEFAULT 0,
     can_add_modify BOOLEAN NOT NULL DEFAULT 0,
     can_delete     BOOLEAN NOT NULL DEFAULT 0,
 
-    PRIMARY KEY (member_id, area),
-    FOREIGN KEY (member_id) REFERENCES project_members(id) ON DELETE CASCADE,
+    PRIMARY KEY (role_id, area),
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
 
     -- Invariant from §4.1, enforced at the database level
     CHECK (can_add_modify = 0 OR can_read = 1)
 );
+
+-- Project membership (the access gate) + assigned role
+-- [IMPLEMENTED on identity_roles_db_update]
+CREATE TABLE project_members (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    principal_type TEXT    NOT NULL CHECK (principal_type IN ('user','group')),
+    principal_id   INTEGER NOT NULL,
+    project_id     INTEGER NOT NULL,   -- cms.db prj_projects(id); no FK possible
+    -- NULL = on the project, no role assigned yet (see §4.3) - deliberately
+    -- not required, so onboarding-in-progress is representable rather than
+    -- forcing a placeholder "no access" role into existence.
+    role_id        INTEGER,
+    UNIQUE (principal_type, principal_id, project_id),
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE SET NULL
+);
 ```
 
-### 7.1 Two deliberate design hooks
+### 7.1 Three deliberate design hooks
 
 **`principal_type` / `principal_id` instead of a bare `user_id`.** In v1
 every row is `('user', <id>)`. This costs one column now and means groups can
@@ -340,6 +372,14 @@ any query that reads it*.
 **Areas are rows, not columns.** `area` as a text key means adding
 Milestones, Test Runs and the rest requires no schema change — important
 given only Test Cases exists today (§9).
+
+**Membership and role assignment are separate tables, not one.**
+`project_members` stays "am I on this project at all", `role_permissions`
+stays "what does this role grant" - joined only through a nullable
+`project_members.role_id`. Collapsing them into a single row from the
+start would have made the "member, no role yet" state (§4.3) either
+impossible to represent or dependent on a placeholder role existing,
+neither of which is necessary given they cost nothing extra kept apart.
 
 ### 7.2 Future: groups
 
@@ -368,22 +408,39 @@ effective(user, project, area):
                                    AND (principal_type, principal_id) IN principals
     if not memberships:                    return {}          # no access at all
 
-    rows = project_permissions WHERE member_id IN memberships AND area = area
+    role_ids = {m.role_id for m in memberships if m.role_id is not None}
+    rows = role_permissions WHERE role_id IN role_ids AND area = area
     return union of flags across rows                          # most permissive wins
 ```
 
 Rules, stated explicitly because these are where authorisation bugs live:
 
 1. **Union, most-permissive-wins.** Effective permissions are the union of
-   all matching grants.
+   all matching grants. This explicitly includes the case of a direct
+   membership and a group membership resolving to different roles on the
+   same project: **neither supersedes or caps the other** - a narrower
+   direct role never limits what a broader group role grants, and vice
+   versa. The union happens on the *resolved grid* (each role's
+   `can_read`/`can_add_modify`/`can_delete` per area, OR'd together), not on
+   role names - "Tester ∪ Lead" isn't a third role, it's whatever their two
+   grids combine to. One consequence worth being explicit about: there is
+   **no way to cap a user below what a group they belong to already
+   grants** - the only lever for that is not putting them in the group.
 2. **No negative permissions.** There are no "deny" grants. They make
    effective access genuinely hard to reason about and are the classic source
-   of "why can't this user do X".
+   of "why can't this user do X". This is also why there is no "default
+   role" concept (contrast with tools that apply a site-wide default access
+   level, overridable per project) - a default would mean implicit access
+   nobody explicitly granted, which is the same problem in a different
+   shape.
 3. **`account_status = DISABLED` short-circuits everything**, regardless of
    any grant.
 4. **`is_administrator` implies everything** in v1.
 5. **No membership means no access** — not "membership with empty
-   permissions".
+   permissions". A membership with no role assigned (`role_id IS NULL`) is
+   the same as no matching rows in `role_permissions` - it resolves to no
+   access for that source, same outcome as rule 5 already describes, just
+   reached one step later.
 6. **Cascading operations are authorised against what they destroy, not just
    what they target.** Deleting a container must require the permission for
    every area it cascades into — otherwise a narrow grant becomes a wide one
@@ -575,8 +632,12 @@ rather than two subsystems disagreeing.
 What remains open here is the **project → children** case, which no document
 yet covers.
 
-Related: purging a project must also delete its `project_members` and
-`project_permissions` rows in `identity.db` (no FK will do it).
+Related: purging a project must also delete its `project_members` rows in
+`identity.db` (no FK will do it - `project_id` isn't a real foreign key
+across the database boundary, see §7). `role_permissions` rows are *not*
+project-scoped and don't need cleaning up this way - a role is a reusable
+definition, not tied to any one project, and deleting a membership row
+doesn't touch the role it pointed to.
 
 ### 10.5 OPEN: automatic purge vs audit retention
 
@@ -692,6 +753,13 @@ no tables**.
 | Test Reports | — | No |
 | Test Results | — | No |
 
+**Schema status:** `roles`, `role_permissions`, and `project_members`
+(with `role_id`) exist in the database as of `identity_roles_db_update` -
+but nothing reads or writes them yet. No repository, service, route, or
+UI has been built on top of this schema. "Enforceable now" above is about
+CMS having the backing tables for an *area*; it doesn't mean the
+permission system itself is live.
+
 Admin areas (future grid, §5.1):
 
 | Area | Backing | Notes |
@@ -742,3 +810,7 @@ Settled during design discussion:
 | Roles live in `identity.db` | Rides along with existing session validation; no extra hop per request |
 | No negative/deny permissions | Keeps effective access predictable |
 | `project_id` is an explicit parameter, not a nested path segment (§9.2) | Testcase `id`s are already globally unique, so nesting adds a path segment without adding anything needed to identify the resource; matches precedent already in the codebase (`POST /testcases` body, `DELETE /projects/<id>?hard_delete=` query) |
+| Permissions are granted via **named, reusable roles** (§4/§7), not raw checkboxes on each membership | Raw per-membership grants were the original design; revised before any code was built on it, after comparing against how real tools (TestRail) manage this at team scale - editing one role definition beats re-ticking the same boxes on every membership that needs it |
+| `project_members` and role assignment stay **separate tables** (§7.1), joined by a nullable `role_id` | Keeps "am I on this project" distinct from "what can I do", and represents "member, no role assigned yet" as a natural state rather than requiring a placeholder role |
+| No site-wide default/fallback role | Would mean implicit access nobody explicitly granted - the same problem as a deny-permission in a different shape (§8 rule 2), just inverted |
+| Group and direct role grants are strictly additive - **neither supersedes the other** (§8 rule 1) | Consistent with "no negative permissions" - allowing one grant to cap another requires a deny concept, which was already rejected for making effective access hard to reason about |
