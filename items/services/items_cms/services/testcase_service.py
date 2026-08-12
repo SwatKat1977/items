@@ -95,15 +95,23 @@ class TestcaseService:
 
         return TestcaseResult(success=True, data=data)
 
-    async def get_testcase(self, case_id: int) -> TestcaseResult:
+    async def get_testcase(self, case_id: int,
+                           project_id: Optional[int] = None) -> TestcaseResult:
         """Retrieve full details for a single test case.
 
         Args:
             case_id: ID of the test case to retrieve.
+            project_id: If supplied, the test case must belong to this
+                project - a mismatch is reported identically to the test
+                case not existing at all (see below), rather than as a
+                distinct error. Callers that don't need this check (direct
+                CMS callers, existing tests) can omit it and get the
+                previous behaviour unchanged.
 
         Returns:
             TestcaseResult with data set to the test case dict on success,
-            or an appropriate error result if not found or a DB failure
+            or an appropriate error result if not found, owned by a
+            different project than the one supplied, or a DB failure
             occurs.
         """
         if not self._state.is_available():
@@ -121,7 +129,15 @@ class TestcaseService:
                                   error_msg="Internal error in CMS",
                                   is_internal=True)
 
-        if testcase is None:
+        # Deliberately the same "not found" outcome as a missing row. This
+        # is a data-integrity check, not an authorisation decision - CMS
+        # stays permission-agnostic (see user_roles_design.md §9.1) - but a
+        # test case that exists under a different project than the one the
+        # caller stated isn't "the test case the caller asked for" either
+        # way, so there's no useful distinct response to give here.
+        if testcase is None or (
+                project_id is not None
+                and testcase["project_id"] != project_id):
             return TestcaseResult(success=False,
                                   error_msg="Test case not found",
                                   not_found=True)

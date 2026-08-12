@@ -166,7 +166,8 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
 
     async def test_get_testcase_route_is_reachable(self):
         async with self.client as c:
-            response = await c.get("/web/testcases/1", headers=_AUTH_HEADERS)
+            response = await c.get("/web/testcases/1?project_id=1",
+                                   headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
     # ------------------------------------------------------------------

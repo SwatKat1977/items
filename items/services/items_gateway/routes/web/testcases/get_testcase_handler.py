@@ -17,7 +17,7 @@ limitations under the License.
 from http import HTTPStatus
 import json
 import logging
-from quart import Response
+from quart import request, Response
 from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.rest_client import RestClient
@@ -51,10 +51,12 @@ class GetTestcaseHandler(BaseApiRoute):
     async def get_testcase(self, case_id: int) -> Response:
         """Retrieve the details of a single testcase.
 
-        The request is forwarded to the CMS service. A successful response is
-        returned directly to the client. If the testcase cannot be found, a
-        404 response is returned. Any other CMS error is treated as an internal
-        server error.
+        Requires a ``project_id`` query parameter - unlike CMS's own route,
+        which treats it as optional, the gateway needs it to authorise the
+        request (see ``user_roles_design.md`` §9.2) and has no other source
+        for it, so it can't be inferred or skipped here. The request is
+        forwarded to CMS, which enforces that the testcase actually belongs
+        to the stated project.
 
         Args:
             case_id: Unique identifier of the testcase to retrieve.
@@ -62,10 +64,31 @@ class GetTestcaseHandler(BaseApiRoute):
         Returns:
             Response: A JSON response containing the testcase details or an
             error message.
+
+            400 if ``project_id`` is missing or not a valid integer.
+            404 if the testcase doesn't exist, or exists under a different
+            project than the one supplied.
+            500 on an unexpected CMS error.
         """
+        raw_project_id = request.args.get("project_id")
+        if raw_project_id is None:
+            response_json = {"error": "project_id query parameter is required"}
+            return Response(json.dumps(response_json),
+                            status=HTTPStatus.BAD_REQUEST,
+                            content_type="application/json")
+
+        try:
+            project_id = int(raw_project_id)
+        except ValueError:
+            response_json = {"error": "project_id must be an integer"}
+            return Response(json.dumps(response_json),
+                            status=HTTPStatus.BAD_REQUEST,
+                            content_type="application/json")
+
         cms_svc: str = self._config.apis_cms_svc
 
-        details_url: str = f"{cms_svc}testcases/{case_id}"
+        details_url: str = (
+            f"{cms_svc}testcases/{case_id}?project_id={project_id}")
 
         api_response: ApiResponse = await self._rest_client.get(details_url)
 

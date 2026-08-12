@@ -180,14 +180,14 @@ class TestcaseRepository:
             case_id: Primary key of the test case.
 
         Returns:
-            A dict with ``id``, ``folder_id``, ``name``, and
+            A dict with ``id``, ``project_id``, ``folder_id``, ``name``, and
             ``description`` if found, or None if no row matches.
 
         Raises:
             SqliteInterfaceException: If the database query fails.
         """
         query = (
-            f"SELECT id, folder_id, name, description "
+            f"SELECT id, project_id, folder_id, name, description "
             f"FROM {cms_tables.TC_TEST_CASES} WHERE id = ?"
         )
         row = await self._db.run_query(query, (case_id,), fetch_one=True)
@@ -195,9 +195,10 @@ class TestcaseRepository:
         if not row:
             return None
 
-        test_id, folder_id, name, description = row
+        test_id, project_id, folder_id, name, description = row
         return {
             'id': test_id,
+            'project_id': project_id,
             'folder_id': folder_id,
             'name': name,
             'description': description
