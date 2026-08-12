@@ -208,26 +208,39 @@ and pass `email_service=None` instead. The invite handlers already treat
 call sites need no changes - this is purely a startup-wiring change plus a
 config flag.
 
-## Identity: no soft-delete for users (admin)
+## Identity: no erasure path for users (deferred, not a gap)
 
-**Where:** `items_identity` has no delete path for users at all today -
-only create, list/get, modify, reset/change password
-(`services/user_management_service.py`, `routes/users/`). Projects already
-have a soft-delete-plus-background-purge convention
-(`is_deleted`/background expiry task); users have no equivalent.
+**Where:** `items_identity` has no delete or anonymise path for users
+today - only create, list/get, modify, reset/change password
+(`services/user_management_service.py`, `routes/users/`).
+
+**This entry originally proposed a soft-delete column for users, mirroring
+the project/invite `is_deleted`/`is_expired` pattern.** That turned out to
+be the wrong shape: `user_roles_design.md` §10.6 ("User accounts are
+deactivated, never deleted") already made a considered decision against
+any delete-like concept for users, for reasons that still hold - every
+reference to a user outside `identity.db` is cross-database and
+unenforced (no foreign key), so removing a row wouldn't remove the
+references, it would just make them dangle silently. Deactivation
+(`account_status = DISABLED`) already covers "this person shouldn't have
+access any more" end to end (Identity, Gateway, and the Portal toggle in
+`portal_admin_access_tab`), and was never a placeholder waiting for a
+real delete to arrive later.
 
 **Problem:** an administrator who invites/creates the wrong person, or
 needs to offboard someone, has no way to remove their account short of
 direct database access. Given the existing soft-delete convention
 elsewhere in the codebase, a hard delete would also be inconsistent with
-how the rest of the system handles removal.
+how the rest of the system handles removal
 
-**Fix:** add a soft-delete column to the user table (mirroring the
-project/invite `is_deleted`/`is_expired` pattern), a repository method,
-a service method enforcing whatever business rules apply (e.g. can an
-administrator delete themselves? the last remaining administrator?), a
-Gateway route, and an admin-page action on Users & Roles. Sizeable enough
-to be its own small PR rather than a squeeze-in - candidate for 0.3.0.
+**If a genuine need appears** - a right-to-erasure request being the
+likely trigger - the design doc's answer is **anonymise in place**: keep
+the `id`, overwrite the personal data (email becomes
+`deleted-user-<id>@invalid`, names become "Deleted User"), revoke
+credentials. That preserves referential integrity automatically (the `id`
+never disappears) and keeps history attributable, unlike a shared
+tombstone account. Not scoped further than that - deliberately deferred,
+no timeline.
 
 ## Gateway: deactivating a user does not touch their existing session
 

@@ -438,7 +438,7 @@ at the gateway, but CMS needs to know *who* acted in order to record it —
 required by the audit concerns in §10.5 (who purged what, and when). That is
 a distinct concern from enforcement and should not be conflated with it.
 
-### 9.2 Project scope must be in the route
+### 9.2 Project scope must be in the request
 
 For the gateway to authorise a project-scoped permission, it must know which
 project the target entity belongs to — **without asking CMS**. Otherwise
@@ -447,17 +447,42 @@ downstream of a data lookup.
 
 Current route shapes are inconsistent on this point:
 
-| Route | Project scope in path? | Gateway can authorise? |
-| ----- | ---------------------- | ---------------------- |
-| `/<int:project_id>/testcases` | Yes | Yes, from the path |
+| Route | Project scope in the request? | Gateway can authorise? |
+| ----- | ------------------------------ | ---------------------- |
+| `/<int:project_id>/testcases` | Yes, in the path | Yes |
 | `/testcases/<int:case_id>` | **No** | **No** — owning project unknown |
 | `/testcase_custom_fields/<int:field_id>` | N/A (instance-level) | Yes, admin flag only |
 
-**Decision needed:** entity routes that are project-scoped should carry the
-project in the path, e.g. `/projects/<project_id>/testcases/<case_id>`. The
-gateway then authorises from the path alone, and CMS verifies only that the
-entity genuinely belongs to that project — an integrity check, not an
-authorisation decision.
+**Decision: `project_id` travels as an explicit parameter on entity routes,
+not nested in the path.** `GET /testcases/<case_id>?project_id=<id>` for
+reads; a `project_id` body field for writes (`PATCH`/`DELETE`). The gateway
+authorises from that parameter directly - no extra hop - and CMS verifies
+only that the entity genuinely belongs to the stated project (an integrity
+check, not an authorisation decision), 404ing on a mismatch rather than
+trusting the caller's claim.
+
+**Nested path (`/projects/<project_id>/testcases/<case_id>`) was
+considered and rejected.** Nesting is the right call when a child's ID
+isn't meaningful without its parent (GitHub issue numbers restart at 1 per
+repo, so the repo *must* be in the path to identify one). It's not the
+right call here: a testcase `id` is a single globally-unique primary key
+across `tc_test_cases`, not scoped per project, so nesting would add a path
+segment without adding anything needed to identify the resource. The
+existing route shapes already draw this line correctly without anyone
+having decided it on purpose - `/<project_id>/testcases` (a list, genuinely
+scoped to its parent) is nested, `/testcases/<case_id>` (a single entity,
+already globally identified) is flat. The explicit-parameter approach
+extends that same line to authorisation instead of abandoning it.
+
+This also matches precedent already in the codebase rather than
+introducing a new mechanism: `POST /testcases` already requires
+`project_id` in its body (`add_testcase_handler.py`), and
+`DELETE /web/projects/<id>?hard_delete=true` already puts a meaningful
+parameter on a `DELETE` request as a query string, not a body field.
+
+`testcase_custom_fields` needs no change - those are instance-wide
+definitions, not per-project, so "N/A" in the table above is correct as
+is, not a gap to close.
 
 This is cheap to change now and a breaking API change once clients depend on
 the current shapes, so it is worth settling before further routes are added.
@@ -716,3 +741,4 @@ Settled during design discussion:
 | v1 is **users-only** | Groups are a scale convenience, not a capability requirement; hooks in place so they are additive |
 | Roles live in `identity.db` | Rides along with existing session validation; no extra hop per request |
 | No negative/deny permissions | Keeps effective access predictable |
+| `project_id` is an explicit parameter, not a nested path segment (§9.2) | Testcase `id`s are already globally unique, so nesting adds a path segment without adding anything needed to identify the resource; matches precedent already in the codebase (`POST /testcases` body, `DELETE /projects/<id>?hard_delete=` query) |
