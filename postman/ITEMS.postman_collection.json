@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "9c53508b-17ba-44e7-bad7-12a1337904b4",
+    "_postman_id": "62cabf3b-20e5-4466-95cb-32be1b26c5c6",
     "name": "ITEMS",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "10935426"
@@ -963,6 +963,117 @@
                     "users",
                     "{{USER_UUID}}",
                     "password"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Roles",
+          "item": [
+            {
+              "name": "List Roles",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/roles",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "roles"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Role",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/roles/{{ROLE_ID}}",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "roles",
+                    "{{ROLE_ID}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Role",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Tester\",\n    \"permissions\": [\n        {\n            \"area\": \"test_cases\",\n            \"can_read\": true,\n            \"can_add_modify\": true,\n            \"can_delete\": true\n        },\n        {\n            \"area\": \"milestones\",\n            \"can_read\": true,\n            \"can_add_modify\": true,\n            \"can_delete\": true\n        },\n        {\n            \"area\": \"test_runs\",\n            \"can_read\": true,\n            \"can_add_modify\": true,\n            \"can_delete\": true\n        },\n        {\n            \"area\": \"test_plans\",\n            \"can_read\": true,\n            \"can_add_modify\": true,\n            \"can_delete\": true\n        },\n        {\n            \"area\": \"test_reports\",\n            \"can_read\": true,\n            \"can_add_modify\": true,\n            \"can_delete\": true\n        },\n        {\n            \"area\": \"test_results\",\n            \"can_read\": true,\n            \"can_add_modify\": true,\n            \"can_delete\": true\n        }\n    ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/roles",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "roles"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Role",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Senior Tester\",\n    \"permissions\": [\n        {\n            \"area\": \"test_cases\",\n            \"can_read\": true,\n            \"can_add_modify\": true,\n            \"can_delete\": true\n        }\n    ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/roles/{{ROLE_ID}}",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "roles",
+                    "{{ROLE_ID}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Role",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/roles/{{ROLE_ID}}",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "roles",
+                    "{{ROLE_ID}}"
                   ]
                 }
               },

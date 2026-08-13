@@ -7,6 +7,7 @@ from quart import Response
 from routes import create_routes
 from routes.auth import create_auth_routes
 from routes.invites import create_invite_routes
+from routes.roles import create_roles_routes
 from routes.system import create_system_routes
 from routes.users import create_users_routes
 
@@ -332,6 +333,162 @@ class TestCreateUsersRoutes(unittest.IsolatedAsyncioTestCase):
         mock_handler.change_password.assert_called_once()
 
 
+class TestCreateRolesRoutes(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.mock_logger = MagicMock(spec=logging.Logger)
+        self.mock_state = MagicMock()
+        self.mock_config = MagicMock()
+
+    def _ok_response(self, body=None, status=200):
+        return Response(
+            json.dumps(body or {"status": "ok"}),
+            status=status,
+            content_type="application/json")
+
+    @patch("routes.roles.DeleteRoleHandler")
+    @patch("routes.roles.ModifyRoleHandler")
+    @patch("routes.roles.CreateRoleHandler")
+    @patch("routes.roles.GetRoleHandler")
+    @patch("routes.roles.ListRolesHandler")
+    async def test_returns_blueprint_with_correct_name(self, *_mocks):
+        bp = create_roles_routes(self.mock_logger, self.mock_state,
+                                 self.mock_config)
+        self.assertIsInstance(bp, quart.Blueprint)
+        self.assertEqual(bp.name, "roles_routes")
+
+    @patch("routes.roles.DeleteRoleHandler")
+    @patch("routes.roles.ModifyRoleHandler")
+    @patch("routes.roles.CreateRoleHandler")
+    @patch("routes.roles.GetRoleHandler")
+    @patch("routes.roles.ListRolesHandler")
+    async def test_initialises_all_handlers_with_correct_args(
+            self, mock_list, mock_get, mock_create, mock_modify, mock_delete):
+        create_roles_routes(self.mock_logger, self.mock_state, self.mock_config)
+        for mock_cls in (mock_list, mock_get, mock_create, mock_modify,
+                         mock_delete):
+            mock_cls.assert_called_once_with(
+                self.mock_logger, self.mock_state, self.mock_config)
+
+    @patch("routes.roles.DeleteRoleHandler")
+    @patch("routes.roles.ModifyRoleHandler")
+    @patch("routes.roles.CreateRoleHandler")
+    @patch("routes.roles.GetRoleHandler")
+    @patch("routes.roles.ListRolesHandler")
+    async def test_logs_route_registration(self, *_mocks):
+        create_roles_routes(self.mock_logger, self.mock_state, self.mock_config)
+        self.mock_logger.debug.assert_called()
+
+    @patch("routes.roles.DeleteRoleHandler")
+    @patch("routes.roles.ModifyRoleHandler")
+    @patch("routes.roles.CreateRoleHandler")
+    @patch("routes.roles.GetRoleHandler")
+    @patch("routes.roles.ListRolesHandler")
+    async def test_route_handler_calls_list_roles(
+            self, mock_list_cls, *_rest):
+        mock_handler = MagicMock()
+        mock_handler.list_roles = AsyncMock(
+            return_value=self._ok_response({"roles": []}))
+        mock_list_cls.return_value = mock_handler
+
+        app = quart.Quart(__name__)
+        bp = create_roles_routes(self.mock_logger, self.mock_state,
+                                 self.mock_config)
+        app.register_blueprint(bp)
+
+        async with app.test_client() as client:
+            await client.get("/roles")
+
+        mock_handler.list_roles.assert_called_once()
+
+    @patch("routes.roles.DeleteRoleHandler")
+    @patch("routes.roles.ModifyRoleHandler")
+    @patch("routes.roles.CreateRoleHandler")
+    @patch("routes.roles.GetRoleHandler")
+    @patch("routes.roles.ListRolesHandler")
+    async def test_route_handler_calls_get_role(
+            self, _list, mock_get_cls, *_rest):
+        mock_handler = MagicMock()
+        mock_handler.get_role = AsyncMock(
+            return_value=self._ok_response({"id": 1, "name": "Tester"}))
+        mock_get_cls.return_value = mock_handler
+
+        app = quart.Quart(__name__)
+        bp = create_roles_routes(self.mock_logger, self.mock_state,
+                                 self.mock_config)
+        app.register_blueprint(bp)
+
+        async with app.test_client() as client:
+            await client.get("/roles/1")
+
+        mock_handler.get_role.assert_called_once()
+
+    @patch("routes.roles.DeleteRoleHandler")
+    @patch("routes.roles.ModifyRoleHandler")
+    @patch("routes.roles.CreateRoleHandler")
+    @patch("routes.roles.GetRoleHandler")
+    @patch("routes.roles.ListRolesHandler")
+    async def test_route_handler_calls_create_role(
+            self, _list, _get, mock_create_cls, *_rest):
+        mock_handler = MagicMock()
+        mock_handler.create_role = AsyncMock(
+            return_value=self._ok_response({"id": 1}, status=201))
+        mock_create_cls.return_value = mock_handler
+
+        app = quart.Quart(__name__)
+        bp = create_roles_routes(self.mock_logger, self.mock_state,
+                                 self.mock_config)
+        app.register_blueprint(bp)
+
+        async with app.test_client() as client:
+            await client.post("/roles", json={"name": "Tester"})
+
+        mock_handler.create_role.assert_called_once()
+
+    @patch("routes.roles.DeleteRoleHandler")
+    @patch("routes.roles.ModifyRoleHandler")
+    @patch("routes.roles.CreateRoleHandler")
+    @patch("routes.roles.GetRoleHandler")
+    @patch("routes.roles.ListRolesHandler")
+    async def test_route_handler_calls_modify_role(
+            self, _list, _get, _create, mock_modify_cls, *_rest):
+        mock_handler = MagicMock()
+        mock_handler.modify_role = AsyncMock(
+            return_value=self._ok_response())
+        mock_modify_cls.return_value = mock_handler
+
+        app = quart.Quart(__name__)
+        bp = create_roles_routes(self.mock_logger, self.mock_state,
+                                 self.mock_config)
+        app.register_blueprint(bp)
+
+        async with app.test_client() as client:
+            await client.patch("/roles/1", json={"name": "New Name"})
+
+        mock_handler.modify_role.assert_called_once()
+
+    @patch("routes.roles.DeleteRoleHandler")
+    @patch("routes.roles.ModifyRoleHandler")
+    @patch("routes.roles.CreateRoleHandler")
+    @patch("routes.roles.GetRoleHandler")
+    @patch("routes.roles.ListRolesHandler")
+    async def test_route_handler_calls_delete_role(
+            self, _list, _get, _create, _modify, mock_delete_cls):
+        mock_handler = MagicMock()
+        mock_handler.delete_role = AsyncMock(
+            return_value=self._ok_response())
+        mock_delete_cls.return_value = mock_handler
+
+        app = quart.Quart(__name__)
+        bp = create_roles_routes(self.mock_logger, self.mock_state,
+                                 self.mock_config)
+        app.register_blueprint(bp)
+
+        async with app.test_client() as client:
+            await client.delete("/roles/1")
+
+        mock_handler.delete_role.assert_called_once()
+
+
 class TestCreateInviteRoutes(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.mock_logger = MagicMock(spec=logging.Logger)
@@ -488,13 +645,15 @@ class TestCreateRoutes(unittest.IsolatedAsyncioTestCase):
 
     @patch("routes.create_users_routes")
     @patch("routes.create_system_routes")
+    @patch("routes.create_roles_routes")
     @patch("routes.create_invite_routes")
     @patch("routes.create_auth_routes")
     async def test_returns_blueprint_with_correct_name(self, mock_auth,
-                                                       mock_invite, mock_sys,
-                                                       mock_users):
+                                                       mock_invite, mock_roles,
+                                                       mock_sys, mock_users):
         mock_auth.return_value = quart.Blueprint("mock_auth", __name__)
         mock_invite.return_value = quart.Blueprint("mock_invite", __name__)
+        mock_roles.return_value = quart.Blueprint("mock_roles", __name__)
         mock_sys.return_value = quart.Blueprint("mock_sys", __name__)
         mock_users.return_value = quart.Blueprint("mock_users", __name__)
         bp = create_routes(self.mock_logger, self.mock_state, self.mock_config)
@@ -503,18 +662,23 @@ class TestCreateRoutes(unittest.IsolatedAsyncioTestCase):
 
     @patch("routes.create_users_routes")
     @patch("routes.create_system_routes")
+    @patch("routes.create_roles_routes")
     @patch("routes.create_invite_routes")
     @patch("routes.create_auth_routes")
     async def test_registers_all_sub_blueprints(self, mock_auth, mock_invite,
-                                                mock_sys, mock_users):
+                                                mock_roles, mock_sys,
+                                                mock_users):
         mock_auth.return_value = quart.Blueprint("mock_auth", __name__)
         mock_invite.return_value = quart.Blueprint("mock_invite", __name__)
+        mock_roles.return_value = quart.Blueprint("mock_roles", __name__)
         mock_sys.return_value = quart.Blueprint("mock_sys", __name__)
         mock_users.return_value = quart.Blueprint("mock_users", __name__)
         create_routes(self.mock_logger, self.mock_state, self.mock_config)
         mock_auth.assert_called_once_with(
             self.mock_logger, self.mock_state, self.mock_config)
         mock_invite.assert_called_once_with(self.mock_logger, self.mock_config)
+        mock_roles.assert_called_once_with(
+            self.mock_logger, self.mock_state, self.mock_config)
         mock_sys.assert_called_once_with(self.mock_logger, self.mock_state)
         mock_users.assert_called_once_with(
             self.mock_logger, self.mock_state, self.mock_config)
