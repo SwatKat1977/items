@@ -25,6 +25,10 @@ from .create_user_handler import CreateUserHandler
 from .modify_user_handler import ModifyUserHandler
 from .reset_password_handler import ResetPasswordHandler
 from .change_password_handler import ChangePasswordHandler
+from .list_user_projects_handler import ListUserProjectsHandler
+from .add_user_project_handler import AddUserProjectHandler
+from .modify_user_project_handler import ModifyUserProjectHandler
+from .remove_user_project_handler import RemoveUserProjectHandler
 
 
 def create_users_routes(logger: logging.Logger,
@@ -43,6 +47,14 @@ def create_users_routes(logger: logging.Logger,
     * ``PATCH /users/<user_id>``       - Update a user's profile fields (UUID).
     * ``POST /users/<user_id>/password`` - Admin password reset (UUID).
     * ``POST /users/me/password``      - Self-service password change.
+    * ``GET  /users/<user_id>/projects`` - List the user's project
+      memberships (UUID).
+    * ``POST /users/<user_id>/projects`` - Add the user to a project
+      (UUID).
+    * ``PATCH /users/<user_id>/projects/<project_id>`` - Change the
+      user's role on a project (UUID).
+    * ``DELETE /users/<user_id>/projects/<project_id>`` - Remove the
+      user's membership of a project (UUID).
 
     Args:
         logger:
@@ -68,6 +80,10 @@ def create_users_routes(logger: logging.Logger,
     handler_modify = ModifyUserHandler(logger, service_state, config)
     handler_reset_password = ResetPasswordHandler(logger, service_state, config)
     handler_change_password = ChangePasswordHandler(logger, service_state, config)
+    handler_list_projects = ListUserProjectsHandler(logger, service_state, config)
+    handler_add_project = AddUserProjectHandler(logger, service_state, config)
+    handler_modify_project = ModifyUserProjectHandler(logger, service_state, config)
+    handler_remove_project = RemoveUserProjectHandler(logger, service_state, config)
 
     logger.debug("Registering Users API routes:")
 
@@ -85,6 +101,14 @@ def create_users_routes(logger: logging.Logger,
                  'Reset password'.ljust(40))
     logger.debug("=> %s POST /users/me/password",
                  'Change own password'.ljust(40))
+    logger.debug("=> %s GET  /users/<user_id>/projects",
+                 'List project memberships'.ljust(40))
+    logger.debug("=> %s POST /users/<user_id>/projects",
+                 'Add project membership'.ljust(40))
+    logger.debug("=> %s PATCH /users/<user_id>/projects/<project_id>",
+                 'Change membership role'.ljust(40))
+    logger.debug("=> %s DELETE /users/<user_id>/projects/<project_id>",
+                 'Remove project membership'.ljust(40))
 
     # pylint: disable=no-value-for-parameter
 
@@ -115,5 +139,27 @@ def create_users_routes(logger: logging.Logger,
     @users_routes.route('/users/me/password', methods=['POST'])
     async def change_password_request():
         return await handler_change_password.change_password()
+
+    @users_routes.route('/users/<string:user_id>/projects', methods=['GET'])
+    async def list_user_projects_request(user_id: str):
+        return await handler_list_projects.list_user_projects(user_id)
+
+    @users_routes.route('/users/<string:user_id>/projects', methods=['POST'])
+    async def add_user_project_request(user_id: str):
+        return await handler_add_project.add_user_project(user_id=user_id)
+
+    @users_routes.route(
+        '/users/<string:user_id>/projects/<int:project_id>',
+        methods=['PATCH'])
+    async def modify_user_project_request(user_id: str, project_id: int):
+        return await handler_modify_project.modify_user_project(
+            user_id=user_id, project_id=project_id)
+
+    @users_routes.route(
+        '/users/<string:user_id>/projects/<int:project_id>',
+        methods=['DELETE'])
+    async def remove_user_project_request(user_id: str, project_id: int):
+        return await handler_remove_project.remove_user_project(
+            user_id=user_id, project_id=project_id)
 
     return users_routes

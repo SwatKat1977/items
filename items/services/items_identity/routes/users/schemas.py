@@ -126,6 +126,48 @@ SCHEMA_RESET_PASSWORD_REQUEST: dict = {
     "required": ["new_password"]
 }
 
+SCHEMA_ADD_USER_PROJECT_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+    {
+        "project_id":
+        {
+            "type": "integer"
+        },
+        "role_id":
+        {
+            # Omitting role_id entirely also means "no role yet" - this
+            # lets a caller be explicit about it instead if they prefer.
+            "type": ["integer", "null"]
+        }
+    },
+    "required": ["project_id"]
+}
+
+SCHEMA_MODIFY_USER_PROJECT_REQUEST: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+
+    "type": "object",
+    "additionalProperties": False,
+
+    "properties":
+    {
+        "role_id":
+        {
+            # null clears the role back to "member, no role assigned"
+            # (§4.3 of user_roles_design.md) rather than being omittable -
+            # this endpoint's only job is changing the role, so leaving
+            # role_id out of the body would be ambiguous about intent.
+            "type": ["integer", "null"]
+        }
+    },
+    "required": ["role_id"]
+}
+
 SCHEMA_CHANGE_PASSWORD_REQUEST: dict = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
 

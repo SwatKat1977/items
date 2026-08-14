@@ -967,6 +967,102 @@
                 }
               },
               "response": []
+            },
+            {
+              "name": "List User Projects",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/users/{{USER_UUID}}/projects",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "users",
+                    "{{USER_UUID}}",
+                    "projects"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add User Project",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"project_id\": 1,\n    \"role_id\": {{ROLE_ID}}\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/users/{{USER_UUID}}/projects",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "users",
+                    "{{USER_UUID}}",
+                    "projects"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Change User Project Role",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"role_id\": {{ROLE_ID}}\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/users/{{USER_UUID}}/projects/1",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "users",
+                    "{{USER_UUID}}",
+                    "projects",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Remove User Project",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/users/{{USER_UUID}}/projects/1",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "users",
+                    "{{USER_UUID}}",
+                    "projects",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         },

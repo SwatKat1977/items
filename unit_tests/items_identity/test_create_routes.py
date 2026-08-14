@@ -98,19 +98,42 @@ class TestCreateSystemRoutes(unittest.IsolatedAsyncioTestCase):
         mock_handler.health.assert_called_once()
 
 
+_USERS_HANDLER_PATCHES = (
+    "routes.users.GetUserProfileHandler",
+    "routes.users.ListUsersHandler",
+    "routes.users.GetUserHandler",
+    "routes.users.CreateUserHandler",
+    "routes.users.ModifyUserHandler",
+    "routes.users.ResetPasswordHandler",
+    "routes.users.ChangePasswordHandler",
+    "routes.users.ListUserProjectsHandler",
+    "routes.users.AddUserProjectHandler",
+    "routes.users.ModifyUserProjectHandler",
+    "routes.users.RemoveUserProjectHandler",
+)
+
+
+def _patch_all_users_handlers(func):
+    """Apply every users-blueprint handler patch to a test method.
+
+    Args are supplied to the wrapped test innermost-decorator-first, i.e.
+    in the same order as ``_USERS_HANDLER_PATCHES`` reversed - the same
+    order used throughout this class already (profile, list, get, create,
+    modify, reset, change, list_projects, add_project, modify_project,
+    remove_project).
+    """
+    for target in _USERS_HANDLER_PATCHES:
+        func = patch(target)(func)
+    return func
+
+
 class TestCreateUsersRoutes(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.mock_logger = MagicMock(spec=logging.Logger)
         self.mock_state = MagicMock()
         self.mock_config = MagicMock()
 
-    @patch("routes.users.ChangePasswordHandler")
-    @patch("routes.users.ResetPasswordHandler")
-    @patch("routes.users.ModifyUserHandler")
-    @patch("routes.users.CreateUserHandler")
-    @patch("routes.users.GetUserHandler")
-    @patch("routes.users.ListUsersHandler")
-    @patch("routes.users.GetUserProfileHandler")
+    @_patch_all_users_handlers
     async def test_returns_blueprint_with_correct_name(
             self, *_mocks):
         bp = create_users_routes(self.mock_logger, self.mock_state,
@@ -118,46 +141,31 @@ class TestCreateUsersRoutes(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(bp, quart.Blueprint)
         self.assertEqual(bp.name, "users_routes")
 
-    @patch("routes.users.ChangePasswordHandler")
-    @patch("routes.users.ResetPasswordHandler")
-    @patch("routes.users.ModifyUserHandler")
-    @patch("routes.users.CreateUserHandler")
-    @patch("routes.users.GetUserHandler")
-    @patch("routes.users.ListUsersHandler")
-    @patch("routes.users.GetUserProfileHandler")
+    @_patch_all_users_handlers
     async def test_initialises_all_handlers_with_correct_args(
             self, mock_profile, mock_list, mock_get, mock_create,
-            mock_modify, mock_reset, mock_change):
+            mock_modify, mock_reset, mock_change, mock_list_projects,
+            mock_add_project, mock_modify_project, mock_remove_project):
         create_users_routes(self.mock_logger, self.mock_state, self.mock_config)
         for mock_cls in (mock_profile, mock_list, mock_get, mock_create,
-                         mock_modify, mock_reset, mock_change):
+                         mock_modify, mock_reset, mock_change,
+                         mock_list_projects, mock_add_project,
+                         mock_modify_project, mock_remove_project):
             mock_cls.assert_called_once_with(
                 self.mock_logger, self.mock_state, self.mock_config)
 
-    @patch("routes.users.ChangePasswordHandler")
-    @patch("routes.users.ResetPasswordHandler")
-    @patch("routes.users.ModifyUserHandler")
-    @patch("routes.users.CreateUserHandler")
-    @patch("routes.users.GetUserHandler")
-    @patch("routes.users.ListUsersHandler")
-    @patch("routes.users.GetUserProfileHandler")
+    @_patch_all_users_handlers
     async def test_logs_route_registration(self, *_mocks):
         create_users_routes(self.mock_logger, self.mock_state, self.mock_config)
         self.mock_logger.debug.assert_called()
 
-    def _ok_response(self, body=None):
+    def _ok_response(self, body=None, status=200):
         return Response(
             json.dumps(body or {"status": "ok"}),
-            status=200,
+            status=status,
             content_type="application/json")
 
-    @patch("routes.users.ChangePasswordHandler")
-    @patch("routes.users.ResetPasswordHandler")
-    @patch("routes.users.ModifyUserHandler")
-    @patch("routes.users.CreateUserHandler")
-    @patch("routes.users.GetUserHandler")
-    @patch("routes.users.ListUsersHandler")
-    @patch("routes.users.GetUserProfileHandler")
+    @_patch_all_users_handlers
     async def test_route_handler_calls_get_user_profile(
             self, mock_profile_cls, *_rest):
         mock_handler = MagicMock()
@@ -176,13 +184,7 @@ class TestCreateUsersRoutes(unittest.IsolatedAsyncioTestCase):
 
         mock_handler.get_user_profile.assert_called_once()
 
-    @patch("routes.users.ChangePasswordHandler")
-    @patch("routes.users.ResetPasswordHandler")
-    @patch("routes.users.ModifyUserHandler")
-    @patch("routes.users.CreateUserHandler")
-    @patch("routes.users.GetUserHandler")
-    @patch("routes.users.ListUsersHandler")
-    @patch("routes.users.GetUserProfileHandler")
+    @_patch_all_users_handlers
     async def test_route_handler_calls_list_users(
             self, _profile, mock_list_cls, *_rest):
         mock_handler = MagicMock()
@@ -200,13 +202,7 @@ class TestCreateUsersRoutes(unittest.IsolatedAsyncioTestCase):
 
         mock_handler.list_users.assert_called_once()
 
-    @patch("routes.users.ChangePasswordHandler")
-    @patch("routes.users.ResetPasswordHandler")
-    @patch("routes.users.ModifyUserHandler")
-    @patch("routes.users.CreateUserHandler")
-    @patch("routes.users.GetUserHandler")
-    @patch("routes.users.ListUsersHandler")
-    @patch("routes.users.GetUserProfileHandler")
+    @_patch_all_users_handlers
     async def test_route_handler_calls_create_user(
             self, _profile, _list, _get, mock_create_cls, *_rest):
         mock_handler = MagicMock()
@@ -228,13 +224,7 @@ class TestCreateUsersRoutes(unittest.IsolatedAsyncioTestCase):
 
         mock_handler.create_user.assert_called_once()
 
-    @patch("routes.users.ChangePasswordHandler")
-    @patch("routes.users.ResetPasswordHandler")
-    @patch("routes.users.ModifyUserHandler")
-    @patch("routes.users.CreateUserHandler")
-    @patch("routes.users.GetUserHandler")
-    @patch("routes.users.ListUsersHandler")
-    @patch("routes.users.GetUserProfileHandler")
+    @_patch_all_users_handlers
     async def test_route_handler_calls_get_user(
             self, _profile, _list, mock_get_cls, *_rest):
         mock_handler = MagicMock()
@@ -252,13 +242,7 @@ class TestCreateUsersRoutes(unittest.IsolatedAsyncioTestCase):
 
         mock_handler.get_user.assert_called_once()
 
-    @patch("routes.users.ChangePasswordHandler")
-    @patch("routes.users.ResetPasswordHandler")
-    @patch("routes.users.ModifyUserHandler")
-    @patch("routes.users.CreateUserHandler")
-    @patch("routes.users.GetUserHandler")
-    @patch("routes.users.ListUsersHandler")
-    @patch("routes.users.GetUserProfileHandler")
+    @_patch_all_users_handlers
     async def test_route_handler_calls_modify_user(
             self, _profile, _list, _get, _create, mock_modify_cls, *_rest):
         mock_handler = MagicMock()
@@ -279,16 +263,10 @@ class TestCreateUsersRoutes(unittest.IsolatedAsyncioTestCase):
 
         mock_handler.modify_user.assert_called_once()
 
-    @patch("routes.users.ChangePasswordHandler")
-    @patch("routes.users.ResetPasswordHandler")
-    @patch("routes.users.ModifyUserHandler")
-    @patch("routes.users.CreateUserHandler")
-    @patch("routes.users.GetUserHandler")
-    @patch("routes.users.ListUsersHandler")
-    @patch("routes.users.GetUserProfileHandler")
+    @_patch_all_users_handlers
     async def test_route_handler_calls_reset_password(
             self, _profile, _list, _get, _create, _modify,
-            mock_reset_cls, _change):
+            mock_reset_cls, *_rest):
         mock_handler = MagicMock()
         mock_handler.reset_password = AsyncMock(
             return_value=self._ok_response())
@@ -305,16 +283,10 @@ class TestCreateUsersRoutes(unittest.IsolatedAsyncioTestCase):
 
         mock_handler.reset_password.assert_called_once()
 
-    @patch("routes.users.ChangePasswordHandler")
-    @patch("routes.users.ResetPasswordHandler")
-    @patch("routes.users.ModifyUserHandler")
-    @patch("routes.users.CreateUserHandler")
-    @patch("routes.users.GetUserHandler")
-    @patch("routes.users.ListUsersHandler")
-    @patch("routes.users.GetUserProfileHandler")
+    @_patch_all_users_handlers
     async def test_route_handler_calls_change_password(
             self, _profile, _list, _get, _create, _modify,
-            _reset, mock_change_cls):
+            _reset, mock_change_cls, *_rest):
         mock_handler = MagicMock()
         mock_handler.change_password = AsyncMock(
             return_value=self._ok_response())
@@ -331,6 +303,84 @@ class TestCreateUsersRoutes(unittest.IsolatedAsyncioTestCase):
                 "new_password": "newpass123"})
 
         mock_handler.change_password.assert_called_once()
+
+    @_patch_all_users_handlers
+    async def test_route_handler_calls_list_user_projects(
+            self, _profile, _list, _get, _create, _modify, _reset,
+            _change, mock_list_projects_cls, *_rest):
+        mock_handler = MagicMock()
+        mock_handler.list_user_projects = AsyncMock(
+            return_value=self._ok_response({"memberships": []}))
+        mock_list_projects_cls.return_value = mock_handler
+
+        app = quart.Quart(__name__)
+        bp = create_users_routes(self.mock_logger, self.mock_state,
+                                 self.mock_config)
+        app.register_blueprint(bp)
+
+        async with app.test_client() as client:
+            await client.get("/users/1/projects")
+
+        mock_handler.list_user_projects.assert_called_once()
+
+    @_patch_all_users_handlers
+    async def test_route_handler_calls_add_user_project(
+            self, _profile, _list, _get, _create, _modify, _reset,
+            _change, _list_projects, mock_add_project_cls, *_rest):
+        mock_handler = MagicMock()
+        mock_handler.add_user_project = AsyncMock(
+            return_value=self._ok_response(status=201))
+        mock_add_project_cls.return_value = mock_handler
+
+        app = quart.Quart(__name__)
+        bp = create_users_routes(self.mock_logger, self.mock_state,
+                                 self.mock_config)
+        app.register_blueprint(bp)
+
+        async with app.test_client() as client:
+            await client.post("/users/1/projects", json={"project_id": 5})
+
+        mock_handler.add_user_project.assert_called_once()
+
+    @_patch_all_users_handlers
+    async def test_route_handler_calls_modify_user_project(
+            self, _profile, _list, _get, _create, _modify, _reset,
+            _change, _list_projects, _add_project,
+            mock_modify_project_cls, *_rest):
+        mock_handler = MagicMock()
+        mock_handler.modify_user_project = AsyncMock(
+            return_value=self._ok_response())
+        mock_modify_project_cls.return_value = mock_handler
+
+        app = quart.Quart(__name__)
+        bp = create_users_routes(self.mock_logger, self.mock_state,
+                                 self.mock_config)
+        app.register_blueprint(bp)
+
+        async with app.test_client() as client:
+            await client.patch("/users/1/projects/5", json={"role_id": 2})
+
+        mock_handler.modify_user_project.assert_called_once()
+
+    @_patch_all_users_handlers
+    async def test_route_handler_calls_remove_user_project(
+            self, _profile, _list, _get, _create, _modify, _reset,
+            _change, _list_projects, _add_project, _modify_project,
+            mock_remove_project_cls):
+        mock_handler = MagicMock()
+        mock_handler.remove_user_project = AsyncMock(
+            return_value=self._ok_response())
+        mock_remove_project_cls.return_value = mock_handler
+
+        app = quart.Quart(__name__)
+        bp = create_users_routes(self.mock_logger, self.mock_state,
+                                 self.mock_config)
+        app.register_blueprint(bp)
+
+        async with app.test_client() as client:
+            await client.delete("/users/1/projects/5")
+
+        mock_handler.remove_user_project.assert_called_once()
 
 
 class TestCreateRolesRoutes(unittest.IsolatedAsyncioTestCase):
