@@ -251,6 +251,64 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
                                     headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
+    async def test_list_user_projects_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/web/users/1/projects",
+                                   headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_add_user_project_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/web/users/1/projects",
+                                    json={"project_id": 5},
+                                    headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_modify_user_project_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.patch("/web/users/1/projects/5",
+                                     json={"role_id": 2},
+                                     headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_remove_user_project_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.delete("/web/users/1/projects/5",
+                                      headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
+    # ------------------------------------------------------------------
+    # Roles routes (routes/web/roles/__init__.py)
+    # ------------------------------------------------------------------
+
+    async def test_list_roles_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/web/roles", headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_create_role_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/web/roles", json={"name": "Tester"},
+                                    headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_get_role_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/web/roles/1", headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_modify_role_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.patch("/web/roles/1",
+                                     json={"name": "New Name"},
+                                     headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_delete_role_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.delete("/web/roles/1", headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
     # ------------------------------------------------------------------
     # Invites routes (routes/web/invites/__init__.py)
     # ------------------------------------------------------------------

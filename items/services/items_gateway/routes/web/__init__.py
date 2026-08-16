@@ -20,6 +20,8 @@ from items.services.items_gateway.routes.web.invites import (
     create_invite_routes)
 from items.services.items_gateway.routes.web.projects import (
     create_projects_routes)
+from items.services.items_gateway.routes.web.roles import (
+    create_roles_routes)
 from items.services.items_gateway.routes.web.sessions import (
     create_sessions_routes)
 from items.services.items_gateway.routes.web.testcase_custom_fields import (
@@ -57,6 +59,9 @@ def create_web_routes(injections: RouteInjections) -> quart.Blueprint:
         injections.configuration,
         injections.rest_client,
         injections.sessions))
+
+    # Register role routes.
+    routes_bp.register_blueprint(create_roles_routes(injections))
 
     # Register sessions routes.
     routes_bp.register_blueprint(create_sessions_routes(injections.logger,
