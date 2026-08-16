@@ -68,6 +68,15 @@ _ADMIN_ONLY_ROUTES = [
     ("PATCH", "/web/testcase_custom_fields/1", {"direction": "up"}),
     ("POST", "/web/testcase_custom_fields/", _VALID_FIELD_BODY),
     ("DELETE", "/web/testcase_custom_fields/1", None),
+    ("GET", "/web/roles", None),
+    ("POST", "/web/roles", {"name": "Tester"}),
+    ("GET", "/web/roles/1", None),
+    ("PATCH", "/web/roles/1", {"name": "New Name"}),
+    ("DELETE", "/web/roles/1", None),
+    ("GET", "/web/users/1/projects", None),
+    ("POST", "/web/users/1/projects", {"project_id": 5}),
+    ("PATCH", "/web/users/1/projects/5", {"role_id": 2}),
+    ("DELETE", "/web/users/1/projects/5", None),
 ]
 
 # (method, path, json_body) - routes that need a valid session but not

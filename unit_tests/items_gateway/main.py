@@ -49,6 +49,19 @@ from test_users_handlers import (
     TestResetPasswordHandler,
     TestResetPasswordHandlerEmail,
 )
+from test_roles_handlers import (
+    TestListRolesHandler,
+    TestGetRoleHandler,
+    TestCreateRoleHandler,
+    TestModifyRoleHandler,
+    TestDeleteRoleHandler,
+)
+from test_user_project_handlers import (
+    TestListUserProjectsHandler,
+    TestAddUserProjectHandler,
+    TestModifyUserProjectHandler,
+    TestRemoveUserProjectHandler,
+)
 from test_invite_emails import (
     TestCreateInviteSendsEmail,
     TestResendInviteSendsEmail,

@@ -2268,6 +2268,321 @@
                     }
                   },
                   "response": []
+                },
+                {
+                  "name": "List User Projects",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Items-User",
+                        "value": "{{ITEMS_USER}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "X-Items-Token",
+                        "value": "{{ITEMS_TOKEN}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/users/{{USER_UUID}}/projects",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "users",
+                        "{{USER_UUID}}",
+                        "projects"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Add User Project",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "X-Items-User",
+                        "value": "{{ITEMS_USER}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "X-Items-Token",
+                        "value": "{{ITEMS_TOKEN}}",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"project_id\": 1,\n    \"role_id\": {{ROLE_ID}}\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/users/{{USER_UUID}}/projects",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "users",
+                        "{{USER_UUID}}",
+                        "projects"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Change User Project Role",
+                  "request": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "X-Items-User",
+                        "value": "{{ITEMS_USER}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "X-Items-Token",
+                        "value": "{{ITEMS_TOKEN}}",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"role_id\": {{ROLE_ID}}\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/users/{{USER_UUID}}/projects/1",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "users",
+                        "{{USER_UUID}}",
+                        "projects",
+                        "1"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Remove User Project",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "X-Items-User",
+                        "value": "{{ITEMS_USER}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "X-Items-Token",
+                        "value": "{{ITEMS_TOKEN}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/users/{{USER_UUID}}/projects/1",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "users",
+                        "{{USER_UUID}}",
+                        "projects",
+                        "1"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Roles",
+              "item": [
+                {
+                  "name": "List Roles",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Items-User",
+                        "value": "{{ITEMS_USER}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "X-Items-Token",
+                        "value": "{{ITEMS_TOKEN}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/roles",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "roles"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Get Role",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Items-User",
+                        "value": "{{ITEMS_USER}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "X-Items-Token",
+                        "value": "{{ITEMS_TOKEN}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/roles/{{ROLE_ID}}",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "roles",
+                        "{{ROLE_ID}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Create Role",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "X-Items-User",
+                        "value": "{{ITEMS_USER}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "X-Items-Token",
+                        "value": "{{ITEMS_TOKEN}}",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"name\": \"Tester\",\n    \"permissions\": [\n        {\n            \"area\": \"test_cases\",\n            \"can_read\": true,\n            \"can_add_modify\": true,\n            \"can_delete\": false\n        }\n    ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/roles",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "roles"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Update Role",
+                  "request": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "X-Items-User",
+                        "value": "{{ITEMS_USER}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "X-Items-Token",
+                        "value": "{{ITEMS_TOKEN}}",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"name\": \"Senior Tester\",\n    \"permissions\": [\n        {\n            \"area\": \"test_cases\",\n            \"can_read\": true,\n            \"can_add_modify\": true,\n            \"can_delete\": true\n        }\n    ]\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/roles/{{ROLE_ID}}",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "roles",
+                        "{{ROLE_ID}}"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Delete Role",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "X-Items-User",
+                        "value": "{{ITEMS_USER}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "X-Items-Token",
+                        "value": "{{ITEMS_TOKEN}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/roles/{{ROLE_ID}}",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "roles",
+                        "{{ROLE_ID}}"
+                      ]
+                    }
+                  },
+                  "response": []
                 }
               ]
             }

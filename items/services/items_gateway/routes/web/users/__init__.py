@@ -26,6 +26,14 @@ from items.services.items_gateway.routes.web.users.modify_user_handler import (
     ModifyUserHandler)
 from items.services.items_gateway.routes.web.users.reset_password_handler import (
     ResetPasswordHandler)
+from items.services.items_gateway.routes.web.users.list_user_projects_handler import (
+    ListUserProjectsHandler)
+from items.services.items_gateway.routes.web.users.add_user_project_handler import (
+    AddUserProjectHandler)
+from items.services.items_gateway.routes.web.users.modify_user_project_handler import (
+    ModifyUserProjectHandler)
+from items.services.items_gateway.routes.web.users.remove_user_project_handler import (
+    RemoveUserProjectHandler)
 
 
 def create_users_routes(injections: RouteInjections) -> Blueprint:
@@ -40,6 +48,12 @@ def create_users_routes(injections: RouteInjections) -> Blueprint:
         GET  /users/<user_id>    Get a single user account.
         PATCH /users/<user_id>   Update a user's profile fields (patch-style).
         POST /users/<user_id>/password   Reset a user's password (admin).
+        GET  /users/<user_id>/projects   List the user's project memberships.
+        POST /users/<user_id>/projects   Add the user to a project.
+        PATCH /users/<user_id>/projects/<project_id>   Change the user's
+            role on a project.
+        DELETE /users/<user_id>/projects/<project_id>   Remove the user's
+            membership of a project.
 
     Note:
         ``POST /users/me/password`` (change own password) is not registered
@@ -53,6 +67,7 @@ def create_users_routes(injections: RouteInjections) -> Blueprint:
     Returns:
         A configured Quart Blueprint.
     """
+    # pylint: disable=too-many-locals
     routes = Blueprint('users_routes', __name__)
 
     handler_list = ListUsersHandler(
@@ -66,6 +81,14 @@ def create_users_routes(injections: RouteInjections) -> Blueprint:
     handler_reset_password = ResetPasswordHandler(
         injections.logger, injections.configuration, injections.rest_client,
         injections.email_service)
+    handler_list_projects = ListUserProjectsHandler(
+        injections.logger, injections.configuration, injections.rest_client)
+    handler_add_project = AddUserProjectHandler(
+        injections.logger, injections.configuration, injections.rest_client)
+    handler_modify_project = ModifyUserProjectHandler(
+        injections.logger, injections.configuration, injections.rest_client)
+    handler_remove_project = RemoveUserProjectHandler(
+        injections.logger, injections.configuration, injections.rest_client)
 
     injections.logger.debug(" Users WEB routes:")
 
@@ -108,5 +131,43 @@ def create_users_routes(injections: RouteInjections) -> Blueprint:
     @require_administrator(injections.sessions)
     async def reset_password_request(user_id: str):
         return await handler_reset_password.reset_password(user_id)
+
+    injections.logger.debug("=> %s GET  /web/users/<string:user_id>/projects",
+                            "List project memberships".ljust(40))
+
+    @routes.route('/users/<string:user_id>/projects', methods=['GET'])
+    @require_administrator(injections.sessions)
+    async def list_user_projects_request(user_id: str):
+        return await handler_list_projects.list_user_projects(user_id)
+
+    injections.logger.debug("=> %s POST /web/users/<string:user_id>/projects",
+                            "Add project membership".ljust(40))
+
+    @routes.route('/users/<string:user_id>/projects', methods=['POST'])
+    @require_administrator(injections.sessions)
+    async def add_user_project_request(user_id: str):
+        return await handler_add_project.add_user_project(user_id)
+
+    injections.logger.debug(
+        "=> %s PATCH /web/users/<string:user_id>/projects/<int:project_id>",
+        "Change membership role".ljust(40))
+
+    @routes.route('/users/<string:user_id>/projects/<int:project_id>',
+                  methods=['PATCH'])
+    @require_administrator(injections.sessions)
+    async def modify_user_project_request(user_id: str, project_id: int):
+        return await handler_modify_project.modify_user_project(
+            user_id, project_id)
+
+    injections.logger.debug(
+        "=> %s DELETE /web/users/<string:user_id>/projects/<int:project_id>",
+        "Remove project membership".ljust(40))
+
+    @routes.route('/users/<string:user_id>/projects/<int:project_id>',
+                  methods=['DELETE'])
+    @require_administrator(injections.sessions)
+    async def remove_user_project_request(user_id: str, project_id: int):
+        return await handler_remove_project.remove_user_project(
+            user_id, project_id)
 
     return routes
