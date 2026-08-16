@@ -44,17 +44,17 @@
       <!-- Tab navigation -->
       <ul class="nav nav-tabs users-roles-tabs flex-nowrap" id="usersRolesTabs" role="tablist">
         <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="users-tab" data-bs-toggle="tab"
+          <button class="nav-link{{ ' active' if active_tab == 'users' else '' }}" id="users-tab" data-bs-toggle="tab"
                   data-bs-target="#users-tab-pane" type="button" role="tab"
-                  aria-controls="users-tab-pane" aria-selected="true" title="Users">
+                  aria-controls="users-tab-pane" aria-selected="{{ 'true' if active_tab == 'users' else 'false' }}" title="Users">
             <i class="bi bi-people"></i>
             <span class="tab-label">Users</span>
           </button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="roles-tab" data-bs-toggle="tab"
+          <button class="nav-link{{ ' active' if active_tab == 'roles' else '' }}" id="roles-tab" data-bs-toggle="tab"
                   data-bs-target="#roles-tab-pane" type="button" role="tab"
-                  aria-controls="roles-tab-pane" aria-selected="false" title="Roles">
+                  aria-controls="roles-tab-pane" aria-selected="{{ 'true' if active_tab == 'roles' else 'false' }}" title="Roles">
             <i class="bi bi-person-badge"></i>
             <span class="tab-label">Roles</span>
           </button>
@@ -63,7 +63,7 @@
 
       <!-- Tab content -->
       <div class="tab-content users-roles-tab-content" id="usersRolesTabsContent">
-        <div class="tab-pane fade show active" id="users-tab-pane" role="tabpanel"
+        <div class="tab-pane fade{{ ' show active' if active_tab == 'users' else '' }}" id="users-tab-pane" role="tabpanel"
              aria-labelledby="users-tab">
           <table class="table">
             <thead>
@@ -158,7 +158,7 @@
             </tbody>
           </table>
         </div>
-        <div class="tab-pane fade" id="roles-tab-pane" role="tabpanel"
+        <div class="tab-pane fade{{ ' show active' if active_tab == 'roles' else '' }}" id="roles-tab-pane" role="tabpanel"
              aria-labelledby="roles-tab">
           <table class="table">
             <thead>
