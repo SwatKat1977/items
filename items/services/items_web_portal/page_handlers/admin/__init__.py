@@ -128,6 +128,32 @@ def create_admin_page_handlers(injections: PageHandlerInjections,
     async def admin_users_and_roles_uninvite_request():
         return await handler_users_and_roles.uninvite()
 
+    # Admin page | Add role: POST '/admin/users_roles/roles'
+    injections.logger.debug("=> %s POST /admin/users_roles/roles",
+                            "Admin add role".ljust(40))
+
+    @routes.route('/users_roles/roles', methods=['POST'])
+    async def admin_users_and_roles_role_add_request():
+        return await handler_users_and_roles.role_add()
+
+    # Admin page | Modify role: POST '/admin/users_roles/roles/<id>/modify'
+    injections.logger.debug(
+        "=> %s POST /admin/users_roles/roles/<id>/modify",
+        "Admin modify role".ljust(40))
+
+    @routes.route('/users_roles/roles/<int:role_id>/modify', methods=['POST'])
+    async def admin_users_and_roles_role_modify_request(role_id: int):
+        return await handler_users_and_roles.role_modify(role_id)
+
+    # Admin page | Delete role: POST '/admin/users_roles/roles/<id>/delete'
+    injections.logger.debug(
+        "=> %s POST /admin/users_roles/roles/<id>/delete",
+        "Admin delete role".ljust(40))
+
+    @routes.route('/users_roles/roles/<int:role_id>/delete', methods=['POST'])
+    async def admin_users_and_roles_role_delete_request(role_id: int):
+        return await handler_users_and_roles.role_delete(role_id)
+
     # Admin page | Manage Data (read): '/admin/users_roles'
     injections.logger.debug("=> %s GET /admin/manage_data",
                             "Admin manage data page (read)".ljust(40))

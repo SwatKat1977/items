@@ -156,6 +156,24 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
                 form={"email_address": "a@b.com"})
         self.assertNotEqual(response.status_code, 405)
 
+    async def test_admin_role_add_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/admin/users_roles/roles", form={"name": "Tester"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_role_modify_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/admin/users_roles/roles/1/modify", form={"name": "Tester"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_role_delete_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/admin/users_roles/roles/1/delete", form={"name": "Tester"})
+        self.assertNotEqual(response.status_code, 405)
+
     async def test_admin_manage_data_route_is_reachable(self):
         async with self.client as c:
             response = await c.get("/admin/manage_data")

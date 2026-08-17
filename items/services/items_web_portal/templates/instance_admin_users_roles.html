@@ -17,7 +17,6 @@
 {% block instance_admin_body %}
     <div class="flex-grow-1">
       <h4 class="mb-3">Users & Roles</h4>
-      <hr />
 
       {% if error_msg_str %}
       <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -42,98 +41,169 @@
       </div>
       {% endif %}
 
-      <table class="table">
-        <thead>
-          <tr>
-            <th scope="col">Full Name</th>
-            <th scope="col">Display Name</th>
-            <th scope="col">Email Address</th>
-            <th scope="col">Status</th>
-            <th scope="col">Administrator</th>
-            <th scope="col" class="text-end">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for user in users %}
-        <tr>
-          <td>{{ user.full_name }}</td>
-          <td>{{ user.display_name }}</td>
-          <td>{{ user.email_address }}</td>
-          <td>
-            {% if user.account_status == 1 %}
-              <span class="badge bg-success">Active</span>
-            {% else %}
-              <span class="badge bg-secondary">Inactive</span>
-            {% endif %}
-          </td>
-          <td>
-            {% if user.is_administrator %}
-              <span class="badge bg-primary">Admin</span>
-            {% else %}
-              &mdash;
-            {% endif %}
-          </td>
-          <td class="text-end">
-            <button class="btn btn-link text-primary"
-                    title="Edit user"
-                    onclick="window.location.href='/admin/users_roles/{{ user.id }}/modify'">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button class="btn btn-link text-secondary"
-                    title="Reset password"
-                    onclick="window.location.href='/admin/users_roles/{{ user.id }}/reset_password'">
-              <i class="bi bi-key"></i>
-            </button>
-          </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-      <div class="mt-3 mb-4">
-        <button class="btn btn-primary" onclick="window.location.href='/admin/users_roles/add'">+ Add User</button>
-        <button class="btn btn-outline-primary" type="button"
-                data-bs-toggle="modal" data-bs-target="#inviteUserModal">+ Invite User</button>
-      </div>
+      <!-- Tab navigation -->
+      <ul class="nav nav-tabs users-roles-tabs flex-nowrap" id="usersRolesTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link{{ ' active' if active_tab == 'users' else '' }}" id="users-tab" data-bs-toggle="tab"
+                  data-bs-target="#users-tab-pane" type="button" role="tab"
+                  aria-controls="users-tab-pane" aria-selected="{{ 'true' if active_tab == 'users' else 'false' }}" title="Users">
+            <i class="bi bi-people"></i>
+            <span class="tab-label">Users</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link{{ ' active' if active_tab == 'roles' else '' }}" id="roles-tab" data-bs-toggle="tab"
+                  data-bs-target="#roles-tab-pane" type="button" role="tab"
+                  aria-controls="roles-tab-pane" aria-selected="{{ 'true' if active_tab == 'roles' else 'false' }}" title="Roles">
+            <i class="bi bi-person-badge"></i>
+            <span class="tab-label">Roles</span>
+          </button>
+        </li>
+      </ul>
 
-      <h5 class="mb-3">Pending Invites</h5>
-      <table class="table">
-        <thead>
-          <tr>
-            <th scope="col">Email Address</th>
-            <th scope="col">Invited</th>
-            <th scope="col">Expires</th>
-            <th scope="col" class="text-end">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for invite in invites %}
-        <tr>
-          <td>{{ invite.email_address }}</td>
-          <td>{{ invite.created_display }}</td>
-          <td>{{ invite.expires_display }}</td>
-          <td class="text-end">
-            <form class="d-inline" method="POST" action="/admin/users_roles/invite/resend">
-              <input type="hidden" name="email_address" value="{{ invite.email_address }}">
-              <button type="submit" class="btn btn-link text-primary p-1" title="Resend invite">
-                <i class="bi bi-arrow-repeat"></i>
-              </button>
-            </form>
-            <form class="d-inline" method="POST" action="/admin/users_roles/invite/uninvite"
-                  onsubmit="return confirm('Cancel the invite for {{ invite.email_address }}?');">
-              <input type="hidden" name="email_address" value="{{ invite.email_address }}">
-              <button type="submit" class="btn btn-link text-danger p-1" title="Cancel invite">
-                <i class="bi bi-x-circle"></i>
-              </button>
-            </form>
-          </td>
-        </tr>
-        {% else %}
-        <tr>
-          <td colspan="4" class="text-muted">No pending invites.</td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
+      <!-- Tab content -->
+      <div class="tab-content users-roles-tab-content" id="usersRolesTabsContent">
+        <div class="tab-pane fade{{ ' show active' if active_tab == 'users' else '' }}" id="users-tab-pane" role="tabpanel"
+             aria-labelledby="users-tab">
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Full Name</th>
+                <th scope="col">Display Name</th>
+                <th scope="col">Email Address</th>
+                <th scope="col">Status</th>
+                <th scope="col">Administrator</th>
+                <th scope="col" class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for user in users %}
+            <tr>
+              <td>{{ user.full_name }}</td>
+              <td>{{ user.display_name }}</td>
+              <td>{{ user.email_address }}</td>
+              <td>
+                {% if user.account_status == 1 %}
+                  <span class="badge bg-success">Active</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if user.is_administrator %}
+                  <span class="badge bg-primary">Admin</span>
+                {% else %}
+                  &mdash;
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <button class="btn btn-link text-primary"
+                        title="Edit user"
+                        onclick="window.location.href='/admin/users_roles/{{ user.id }}/modify'">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-link text-secondary"
+                        title="Reset password"
+                        onclick="window.location.href='/admin/users_roles/{{ user.id }}/reset_password'">
+                  <i class="bi bi-key"></i>
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+          <div class="mt-3 mb-4">
+            <button class="btn btn-primary" onclick="window.location.href='/admin/users_roles/add'">+ Add User</button>
+            <button class="btn btn-outline-primary" type="button"
+                    data-bs-toggle="modal" data-bs-target="#inviteUserModal">+ Invite User</button>
+          </div>
+
+          <h5 class="mb-3">Pending Invites</h5>
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Email Address</th>
+                <th scope="col">Invited</th>
+                <th scope="col">Expires</th>
+                <th scope="col" class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for invite in invites %}
+            <tr>
+              <td>{{ invite.email_address }}</td>
+              <td>{{ invite.created_display }}</td>
+              <td>{{ invite.expires_display }}</td>
+              <td class="text-end">
+                <form class="d-inline" method="POST" action="/admin/users_roles/invite/resend">
+                  <input type="hidden" name="email_address" value="{{ invite.email_address }}">
+                  <button type="submit" class="btn btn-link text-primary p-1" title="Resend invite">
+                    <i class="bi bi-arrow-repeat"></i>
+                  </button>
+                </form>
+                <form class="d-inline" method="POST" action="/admin/users_roles/invite/uninvite"
+                      onsubmit="return confirm('Cancel the invite for {{ invite.email_address }}?');">
+                  <input type="hidden" name="email_address" value="{{ invite.email_address }}">
+                  <button type="submit" class="btn btn-link text-danger p-1" title="Cancel invite">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="4" class="text-muted">No pending invites.</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="tab-pane fade{{ ' show active' if active_tab == 'roles' else '' }}" id="roles-tab-pane" role="tabpanel"
+             aria-labelledby="roles-tab">
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col" class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for role in roles %}
+            <tr>
+              <td>{{ role.name }}</td>
+              <td class="text-end">
+                <button type="button" class="btn btn-link text-primary p-1 edit-role-btn"
+                        title="Edit"
+                        data-bs-toggle="modal" data-bs-target="#roleModal"
+                        data-id="{{ role.id }}"
+                        data-name="{{ role.name }}"
+                        data-permissions="{{ role.permissions_json }}">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button type="button" class="btn btn-link text-danger p-1 delete-role-btn"
+                        title="Delete"
+                        data-bs-toggle="modal" data-bs-target="#confirmDeleteRoleModal"
+                        data-id="{{ role.id }}"
+                        data-name="{{ role.name }}">
+                  <i class="bi bi-x-circle"></i>
+                </button>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="2" class="text-muted">No roles defined yet.</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+          <div class="mt-3 mb-4">
+            <button type="button" class="btn btn-primary" id="add-role-btn"
+                    data-bs-toggle="modal" data-bs-target="#roleModal">
+              + Add Role
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
 <!-- Invite User modal -->
@@ -165,4 +235,103 @@
     </div>
   </div>
 </div>
+
+<!-- Add / Edit role modal -->
+<div class="modal fade" id="roleModal" tabindex="-1"
+     aria-labelledby="roleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form id="roleForm" method="POST" action="/admin/users_roles/roles">
+        <div class="modal-header">
+          <h5 class="modal-title" id="roleModalLabel">Add Role</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="role-name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="role-name" name="name"
+                   required placeholder="e.g. Tester, Lead or Guest">
+          </div>
+          <table class="table table-sm role-permissions-table">
+            <thead>
+              <tr>
+                <th scope="col">Permissions</th>
+                <th scope="col" class="text-center">Read</th>
+                <th scope="col" class="text-center">Add/Modify</th>
+                <th scope="col" class="text-center">Delete</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for area_value, area_label in permission_areas.items() %}
+              <tr>
+                <td>{{ area_label }}</td>
+                <td class="text-center">
+                  <input class="form-check-input role-perm-read" type="checkbox"
+                         id="role-perm-{{ area_value }}-read"
+                         name="perm_{{ area_value }}_read"
+                         data-area="{{ area_value }}">
+                </td>
+                <td class="text-center">
+                  <input class="form-check-input role-perm-add-modify" type="checkbox"
+                         id="role-perm-{{ area_value }}-add-modify"
+                         name="perm_{{ area_value }}_add_modify"
+                         data-area="{{ area_value }}">
+                </td>
+                <td class="text-center">
+                  <input class="form-check-input" type="checkbox"
+                         id="role-perm-{{ area_value }}-delete"
+                         name="perm_{{ area_value }}_delete"
+                         data-area="{{ area_value }}">
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+          <div class="form-text">
+            Ticking Add/Modify also grants Read - the two cannot be
+            separated.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete role confirmation modal -->
+<div class="modal fade" id="confirmDeleteRoleModal" tabindex="-1"
+     aria-labelledby="confirmDeleteRoleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmDeleteRoleModalLabel">Confirmation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete the role
+           "<span id="role-delete-name"></span>"? This action cannot be undone.</p>
+        <p class="text-muted">
+          Any user assigned this role on a project keeps their membership -
+          their role there is cleared to "Unassigned" rather than being
+          removed.
+        </p>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="roleConfirmCheckbox">
+          <label class="form-check-label" for="roleConfirmCheckbox">I confirm I want to delete this item.</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="roleConfirmDeleteButton" disabled>OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form id="roleDeleteForm" method="POST" style="display: none;">
+  <input type="hidden" name="name" id="role-delete-form-name">
+</form>
 {% endblock %}
