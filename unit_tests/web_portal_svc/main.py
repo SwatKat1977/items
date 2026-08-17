@@ -43,6 +43,11 @@ from test_admin_users_and_roles_page_handler import (
     TestInviteUser,
     TestResendInvite,
     TestUninvite,
+    TestUsersAndRolesReadRoles,
+    TestRoleAdd,
+    TestRoleModify,
+    TestRoleDelete,
+    TestParsePermissionsFromForm,
     TestFormatEpoch,
 )
 from test_admin_projects_handlers import (
