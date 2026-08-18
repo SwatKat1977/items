@@ -44,6 +44,18 @@
     border-radius: 4px;
 }
 
+#success_msg {
+    color: #155724;
+    font-weight: bold;
+    padding: 1rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 6px;
+    border: 2px solid #28a745;
+    background-color: #e6f4ea;
+    text-align: center;
+}
+
 .cancelButton:hover {
   background-color: #ede9e8 !important;
   border-color: red !important;

@@ -56,6 +56,32 @@ _VALID_MODIFY_FORM = {
     "account_status": "1",
 }
 
+_PROJECTS_OK = ApiResponse(
+    status_code=HTTPStatus.OK,
+    body={"projects": [{"id": 5, "name": "Alpha"}, {"id": 7, "name": "Beta"}]})
+_ROLES_OK = ApiResponse(
+    status_code=HTTPStatus.OK,
+    body={"roles": [{"id": 2, "name": "Tester"}, {"id": 3, "name": "Lead"}]})
+_MEMBERSHIPS_OK = ApiResponse(
+    status_code=HTTPStatus.OK,
+    body={"memberships": [{"project_id": 5, "role_id": 2, "role_name": "Tester"}]})
+_MEMBERSHIPS_EMPTY = ApiResponse(
+    status_code=HTTPStatus.OK, body={"memberships": []})
+_USER_OK = ApiResponse(status_code=HTTPStatus.OK, body=_USER)
+
+
+def _get_side_effect(user=None, memberships=None, roles=None):
+    """Build a get() side_effect list matching _render()'s call order:
+    user (if fetched fresh), then projects, then memberships, then roles.
+    """
+    calls = []
+    if user is not None:
+        calls.append(user)
+    calls.append(_PROJECTS_OK)
+    calls.append(memberships if memberships is not None else _MEMBERSHIPS_EMPTY)
+    calls.append(roles if roles is not None else _ROLES_OK)
+    return calls
+
 
 def _config():
     cfg = MagicMock()
@@ -358,6 +384,301 @@ class TestAdminModifyUserPageHandler(unittest.IsolatedAsyncioTestCase):
         await self._post(_VALID_MODIFY_FORM)
         patch_call = self.mock_rest_client.patch.await_args
         self.assertFalse(patch_call.kwargs["json_data"]["is_administrator"])
+
+    # -- Projects tab rendering ---------------------------------------
+
+    async def test_get_shows_membership_with_joined_project_name(self):
+        self.mock_rest_client.get.side_effect = _get_side_effect(
+            user=_USER_OK, memberships=_MEMBERSHIPS_OK)
+        response = await self._get()
+        text = await response.get_data(as_text=True)
+        self.assertIn("Alpha", text)
+        self.assertIn("Tester", text)
+
+    async def test_get_no_memberships_shows_placeholder(self):
+        self.mock_rest_client.get.side_effect = _get_side_effect(
+            user=_USER_OK, memberships=_MEMBERSHIPS_EMPTY)
+        response = await self._get()
+        text = await response.get_data(as_text=True)
+        self.assertIn("Not a member of any projects", text)
+
+    async def test_get_add_project_excludes_assigned_projects(self):
+        """Alpha (id 5) is already assigned - only Beta should be offered."""
+        self.mock_rest_client.get.side_effect = _get_side_effect(
+            user=_USER_OK, memberships=_MEMBERSHIPS_OK)
+        response = await self._get()
+        text = await response.get_data(as_text=True)
+        add_modal_start = text.index('id="addProjectModal"')
+        add_modal_text = text[add_modal_start:add_modal_start + 2000]
+        self.assertIn("Beta", add_modal_text)
+        self.assertNotIn("Alpha", add_modal_text)
+
+    async def test_get_member_of_every_project_disables_add_button(self):
+        all_assigned = ApiResponse(
+            status_code=HTTPStatus.OK,
+            body={"memberships": [
+                {"project_id": 5, "role_id": 2, "role_name": "Tester"},
+                {"project_id": 7, "role_id": None, "role_name": None}]})
+        self.mock_rest_client.get.side_effect = _get_side_effect(
+            user=_USER_OK, memberships=all_assigned)
+        response = await self._get()
+        text = await response.get_data(as_text=True)
+        self.assertIn("Already a member of every project", text)
+
+    async def test_get_defaults_to_the_user_tab(self):
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        response = await self._get()
+        text = await response.get_data(as_text=True)
+        self.assertIn('nav-link active" data-bs-toggle="tab" href="#tab-user"', text)
+
+    async def test_projects_fetch_failure_is_non_fatal(self):
+        self.mock_rest_client.get.side_effect = [
+            _USER_OK,
+            ApiResponse(status_code=HTTPStatus.SERVICE_UNAVAILABLE, body={}),
+            _MEMBERSHIPS_EMPTY, _ROLES_OK]
+        response = await self._get()
+        self.assertEqual(response.status_code, 200)
+
+    async def test_roles_fetch_exception_is_non_fatal(self):
+        self.mock_rest_client.get.side_effect = [
+            _USER_OK, _PROJECTS_OK, _MEMBERSHIPS_EMPTY, RuntimeError("boom")]
+        response = await self._get()
+        self.assertEqual(response.status_code, 200)
+
+    async def test_projects_fetch_exception_is_non_fatal(self):
+        self.mock_rest_client.get.side_effect = [
+            _USER_OK, RuntimeError("boom"), _MEMBERSHIPS_EMPTY, _ROLES_OK]
+        response = await self._get()
+        self.assertEqual(response.status_code, 200)
+
+    async def test_memberships_fetch_exception_is_non_fatal(self):
+        self.mock_rest_client.get.side_effect = [
+            _USER_OK, _PROJECTS_OK, RuntimeError("boom"), _ROLES_OK]
+        response = await self._get()
+        self.assertEqual(response.status_code, 200)
+
+
+# ---------------------------------------------------------------------------
+# Project membership actions (Projects tab)
+# ---------------------------------------------------------------------------
+
+class TestAddUserProject(unittest.IsolatedAsyncioTestCase):
+    """POST /admin/users_roles/<id>/projects"""
+
+    async def asyncSetUp(self):
+        self.mock_rest_client = AsyncMock()
+        self.mock_rest_client.post.return_value = _SESSION_VALID
+        handler = AdminModifyUserPageHandler(
+            _LOGGER, _config(), self.mock_rest_client, _metadata())
+
+        app = make_app()
+
+        @app.route("/admin/users_roles/<string:user_id>/projects",
+                  methods=["POST"])
+        async def route(user_id: str):
+            return await handler.add_user_project(user_id)
+
+        self.client = app.test_client()
+
+    async def _post(self, form, user_id=_UUID):
+        async with self.client as c:
+            return await c.post(f"/admin/users_roles/{user_id}/projects",
+                                form=form, headers=_AUTH_HEADERS)
+
+    async def test_missing_project_id_renders_error(self):
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        response = await self._post({})
+        self.assertEqual(response.status_code, 200)
+        text = await response.get_data(as_text=True)
+        self.assertIn("Select a project", text)
+        self.mock_rest_client.post.assert_called_once()  # only session check
+
+    async def test_non_integer_project_id_renders_error(self):
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        response = await self._post({"project_id": "abc"})
+        text = await response.get_data(as_text=True)
+        self.assertIn("Invalid project", text)
+
+    async def test_non_integer_role_id_renders_error(self):
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        response = await self._post({"project_id": "5", "role_id": "abc"})
+        text = await response.get_data(as_text=True)
+        self.assertIn("Invalid role", text)
+
+    async def test_success_forwards_project_and_role_to_gateway(self):
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID, ApiResponse(status_code=HTTPStatus.CREATED)]
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        await self._post({"project_id": "5", "role_id": "2"})
+        call = self.mock_rest_client.post.call_args_list[1]
+        self.assertEqual(call[0][0], "http://gateway/web/users/" + _UUID + "/projects")
+        self.assertEqual(call[1]["json_data"], {"project_id": 5, "role_id": 2})
+
+    async def test_no_role_selected_omits_role_id(self):
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID, ApiResponse(status_code=HTTPStatus.CREATED)]
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        await self._post({"project_id": "5"})
+        call = self.mock_rest_client.post.call_args_list[1]
+        self.assertEqual(call[1]["json_data"], {"project_id": 5})
+
+    async def test_gateway_conflict_shows_error(self):
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID,
+            ApiResponse(status_code=HTTPStatus.CONFLICT,
+                       body={"error": "User is already a member of this project"})]
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        response = await self._post({"project_id": "5"})
+        text = await response.get_data(as_text=True)
+        self.assertIn("already a member", text)
+
+    async def test_success_confirms_and_returns_to_projects_tab(self):
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID, ApiResponse(status_code=HTTPStatus.CREATED)]
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        response = await self._post({"project_id": "5"})
+        text = await response.get_data(as_text=True)
+        self.assertIn("Project access added", text)
+        self.assertIn('nav-link active" data-bs-toggle="tab" href="#tab-projects"', text)
+
+    async def test_error_without_body_uses_fallback_message(self):
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID,
+            ApiResponse(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, body={})]
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        response = await self._post({"project_id": "5"})
+        text = await response.get_data(as_text=True)
+        self.assertIn("could not be completed", text)
+
+    async def test_stale_user_fetch_failure_falls_back_to_blank_form(self):
+        """A failed re-fetch of the user's core fields after a successful
+        project write shouldn't fail the whole page - just re-render the
+        User/Access tabs blank."""
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID, ApiResponse(status_code=HTTPStatus.CREATED)]
+        self.mock_rest_client.get.side_effect = [
+            ApiResponse(status_code=HTTPStatus.SERVICE_UNAVAILABLE, body={}),
+            _PROJECTS_OK, _MEMBERSHIPS_EMPTY, _ROLES_OK]
+        response = await self._post({"project_id": "5"})
+        self.assertEqual(response.status_code, 200)
+        text = await response.get_data(as_text=True)
+        self.assertIn("Project access added", text)
+
+
+class TestModifyUserProject(unittest.IsolatedAsyncioTestCase):
+    """POST /admin/users_roles/<id>/projects/<project_id>/modify"""
+
+    async def asyncSetUp(self):
+        self.mock_rest_client = AsyncMock()
+        self.mock_rest_client.post.return_value = _SESSION_VALID
+        handler = AdminModifyUserPageHandler(
+            _LOGGER, _config(), self.mock_rest_client, _metadata())
+
+        app = make_app()
+
+        @app.route(
+            "/admin/users_roles/<string:user_id>/projects/<int:project_id>/modify",
+            methods=["POST"])
+        async def route(user_id: str, project_id: int):
+            return await handler.modify_user_project(user_id, project_id)
+
+        self.client = app.test_client()
+
+    async def _post(self, form, user_id=_UUID, project_id=5):
+        async with self.client as c:
+            return await c.post(
+                f"/admin/users_roles/{user_id}/projects/{project_id}/modify",
+                form=form, headers=_AUTH_HEADERS)
+
+    async def test_success_forwards_role_id_to_gateway(self):
+        self.mock_rest_client.patch.return_value = ApiResponse(status_code=HTTPStatus.OK)
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        await self._post({"role_id": "3"}, project_id=9)
+        self.mock_rest_client.patch.assert_called_once_with(
+            "http://gateway/web/users/" + _UUID + "/projects/9",
+            json_data={"role_id": 3})
+
+    async def test_unassigned_selection_sends_null_role(self):
+        self.mock_rest_client.patch.return_value = ApiResponse(status_code=HTTPStatus.OK)
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        await self._post({"role_id": ""})
+        self.mock_rest_client.patch.assert_called_once_with(
+            "http://gateway/web/users/" + _UUID + "/projects/5",
+            json_data={"role_id": None})
+
+    async def test_non_integer_role_id_renders_error_without_calling_gateway(self):
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        response = await self._post({"role_id": "abc"})
+        text = await response.get_data(as_text=True)
+        self.assertIn("Invalid role", text)
+        self.mock_rest_client.patch.assert_not_called()
+
+    async def test_not_a_member_shows_error(self):
+        self.mock_rest_client.patch.return_value = ApiResponse(
+            status_code=HTTPStatus.NOT_FOUND,
+            body={"error": "User is not a member of this project"})
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        response = await self._post({"role_id": "3"})
+        text = await response.get_data(as_text=True)
+        self.assertIn("not a member", text)
+
+    async def test_success_confirms_and_returns_to_projects_tab(self):
+        self.mock_rest_client.patch.return_value = ApiResponse(status_code=HTTPStatus.OK)
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        response = await self._post({"role_id": "3"})
+        text = await response.get_data(as_text=True)
+        self.assertIn("Role updated", text)
+        self.assertIn('nav-link active" data-bs-toggle="tab" href="#tab-projects"', text)
+
+
+class TestRemoveUserProject(unittest.IsolatedAsyncioTestCase):
+    """POST /admin/users_roles/<id>/projects/<project_id>/delete"""
+
+    async def asyncSetUp(self):
+        self.mock_rest_client = AsyncMock()
+        self.mock_rest_client.post.return_value = _SESSION_VALID
+        handler = AdminModifyUserPageHandler(
+            _LOGGER, _config(), self.mock_rest_client, _metadata())
+
+        app = make_app()
+
+        @app.route(
+            "/admin/users_roles/<string:user_id>/projects/<int:project_id>/delete",
+            methods=["POST"])
+        async def route(user_id: str, project_id: int):
+            return await handler.remove_user_project(user_id, project_id)
+
+        self.client = app.test_client()
+
+    async def _post(self, user_id=_UUID, project_id=5):
+        async with self.client as c:
+            return await c.post(
+                f"/admin/users_roles/{user_id}/projects/{project_id}/delete",
+                headers=_AUTH_HEADERS)
+
+    async def test_success_calls_gateway_delete(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(status_code=HTTPStatus.OK)
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        await self._post(project_id=9)
+        self.mock_rest_client.delete.assert_called_once_with(
+            "http://gateway/web/users/" + _UUID + "/projects/9")
+
+    async def test_not_a_member_shows_error(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.NOT_FOUND,
+            body={"error": "User is not a member of this project"})
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        response = await self._post()
+        text = await response.get_data(as_text=True)
+        self.assertIn("not a member", text)
+
+    async def test_success_confirms_and_returns_to_projects_tab(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(status_code=HTTPStatus.OK)
+        self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
+        response = await self._post()
+        text = await response.get_data(as_text=True)
+        self.assertIn("Project access removed", text)
+        self.assertIn('nav-link active" data-bs-toggle="tab" href="#tab-projects"', text)
 
 
 # ---------------------------------------------------------------------------
