@@ -1619,11 +1619,12 @@
                       }
                     },
                     "url": {
-                      "raw": "{{GATEWAY_SVC_URL}}/sessions",
+                      "raw": "{{GATEWAY_SVC_URL}}/web/sessions",
                       "host": [
                         "{{GATEWAY_SVC_URL}}"
                       ],
                       "path": [
+                        "web",
                         "sessions"
                       ]
                     }
