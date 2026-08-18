@@ -128,9 +128,11 @@ class NewSessionPasswordHandler(BaseApiRoute):
             self._logger.info("User '%s' logged in",
                               email_address)
 
-        # Fetch the user profile so we can store is_administrator against
-        # the session and return it on every subsequent validate call.
+        # Fetch the user profile so we can store is_administrator and the
+        # user's id against the session and return it on every subsequent
+        # validate call.
         is_administrator: bool = False
+        user_id: str = ""
         profile_url: str = (f"{self._configuration.apis_identity_svc}"
                             f"users/profile")
         profile_response: ApiResponse = await self._rest_client.post(
@@ -139,18 +141,68 @@ class NewSessionPasswordHandler(BaseApiRoute):
         if profile_response.status_code == HTTPStatus.OK and profile_response.body:
             is_administrator = bool(
                 profile_response.body.get("is_administrator", False))
+            user_id = profile_response.body.get("id", "")
         else:
             self._logger.warning(
                 "Could not retrieve profile for '%s' (status %s); "
                 "is_administrator will default to False",
                 email_address, profile_response.status_code)
 
+        # Snapshot the user's project memberships too, so read routes can
+        # enforce access without a per-request identity lookup. Same
+        # cached-at-login tradeoff as is_administrator above - see
+        # SessionEntry's docstring.
+        project_ids: frozenset[int] = await self._fetch_member_project_ids(
+            user_id)
+
         await self._sessions.add_session(email_address,
                                          token,
                                          AccountLogonType.BASIC,
-                                         is_administrator)
+                                         is_administrator=is_administrator,
+                                         user_id=user_id,
+                                         project_ids=project_ids)
 
         return Response(
             json.dumps({"status": 1, "token": token}),
             status=HTTPStatus.OK,
             content_type="application/json")
+
+    async def _fetch_member_project_ids(self, user_id: str) -> frozenset[int]:
+        """Fetch the set of project ids the user is a member of.
+
+        A failure here is non-fatal to login: the session is simply
+        cached with no memberships (the safe default - no membership
+        already means no access anywhere else in this system), rather
+        than failing the login entirely over a read that isn't essential
+        to authenticating the user.
+
+        Args:
+            user_id: The user's identity-service UUID. Empty if it could
+                not be resolved from their profile.
+
+        Returns:
+            A frozenset of project ids, or an empty frozenset on any
+            failure (including no user_id being available at all).
+        """
+        if not user_id:
+            return frozenset()
+
+        url = (f"{self._configuration.apis_identity_svc}"
+              f"users/{user_id}/projects")
+        try:
+            response: ApiResponse = await self._rest_client.get(url)
+        except Exception:  # pylint: disable=broad-except
+            self._logger.warning(
+                "Unable to fetch project memberships for user '%s'", user_id)
+            return frozenset()
+
+        if response.status_code != HTTPStatus.OK or not response.body:
+            self._logger.warning(
+                "Unable to fetch project memberships for user '%s' "
+                "(status %s)", user_id, response.status_code)
+            return frozenset()
+
+        memberships = response.body.get("memberships", [])
+        return frozenset(
+            m["project_id"] for m in memberships
+            if m.get("project_id") is not None)

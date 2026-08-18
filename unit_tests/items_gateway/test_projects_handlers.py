@@ -27,6 +27,7 @@ from items.services.items_gateway.routes.web.projects.get_project_handler \
     import GetProjectHandler
 from items.services.items_gateway.routes.web.projects.update_project_handler \
     import UpdateProjectHandler
+from items.services.items_gateway.sessions import SessionEntry
 
 _LOGGER = MagicMock()
 
@@ -35,6 +36,9 @@ _VALID_PROJECT_BODY = {
     "announcement": "",
     "announcement_on_overview": False,
 }
+
+_ADMIN_ENTRY = SessionEntry(is_administrator=True)
+_MEMBER_ENTRY = SessionEntry(is_administrator=False, project_ids=frozenset({1, 3}))
 
 
 def _config():
@@ -166,19 +170,28 @@ class TestGetAllProjectsHandler(unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self):
         self.mock_rest_client = AsyncMock()
-        handler = GetAllProjectsHandler(_LOGGER, _config(), self.mock_rest_client)
+        self.handler = GetAllProjectsHandler(
+            _LOGGER, _config(), self.mock_rest_client)
 
         app = Quart(__name__)
 
+        # session_entry is normally supplied by the require_session_with_entry
+        # decorator - a query param stands in for it here so each test can
+        # choose which caller is asking without needing a real session store.
         @app.route("/projects", methods=["GET"])
         async def list_projects():
-            return await handler.list_all_projects()
+            from quart import request
+            entry = _ADMIN_ENTRY if request.args.get("as") == "admin" \
+                else _MEMBER_ENTRY
+            return await self.handler.list_all_projects(entry)
 
         self.client = app.test_client()
 
-    async def _get(self, qs=""):
+    async def _get(self, qs="", as_admin=False):
+        sep = "&" if qs.startswith("?") else "?"
+        admin_qs = f"{sep}as=admin" if as_admin else ""
         async with self.client as c:
-            return await c.get(f"/projects{qs}")
+            return await c.get(f"/projects{qs}{admin_qs}")
 
     async def test_no_query_params(self):
         self.mock_rest_client.get.return_value = ApiResponse(
@@ -220,6 +233,51 @@ class TestGetAllProjectsHandler(unittest.IsolatedAsyncioTestCase):
         self.mock_rest_client.get.return_value = ApiResponse(status_code=503)
         response = await self._get()
         self.assertEqual(response.status_code, 500)
+
+    async def test_administrator_sees_every_project(self):
+        self.mock_rest_client.get.return_value = ApiResponse(
+            status_code=200, body={"projects": [
+                {"id": 1, "name": "Alpha"},
+                {"id": 2, "name": "Beta"},
+                {"id": 3, "name": "Gamma"}]})
+        response = await self._get(as_admin=True)
+        data = await response.get_json()
+        self.assertEqual(len(data["projects"]), 3)
+
+    async def test_member_only_sees_their_own_projects(self):
+        """_MEMBER_ENTRY belongs to projects 1 and 3, not 2."""
+        self.mock_rest_client.get.return_value = ApiResponse(
+            status_code=200, body={"projects": [
+                {"id": 1, "name": "Alpha"},
+                {"id": 2, "name": "Beta"},
+                {"id": 3, "name": "Gamma"}]})
+        response = await self._get()
+        data = await response.get_json()
+        self.assertEqual(
+            sorted(p["id"] for p in data["projects"]), [1, 3])
+
+    async def test_member_of_nothing_sees_an_empty_list(self):
+        no_projects = SessionEntry(is_administrator=False)
+        app = Quart(__name__)
+
+        @app.route("/projects", methods=["GET"])
+        async def list_projects():
+            return await self.handler.list_all_projects(no_projects)
+
+        self.mock_rest_client.get.return_value = ApiResponse(
+            status_code=200, body={"projects": [{"id": 1, "name": "Alpha"}]})
+        async with app.test_client() as c:
+            response = await c.get("/projects")
+        data = await response.get_json()
+        self.assertEqual(data["projects"], [])
+
+    async def test_filtering_preserves_other_body_fields(self):
+        self.mock_rest_client.get.return_value = ApiResponse(
+            status_code=200,
+            body={"projects": [{"id": 1, "name": "Alpha"}], "total": 5})
+        response = await self._get()
+        data = await response.get_json()
+        self.assertEqual(data["total"], 5)
 
 
 # ------------------------------------------------------------------

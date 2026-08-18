@@ -18,7 +18,7 @@ import logging
 from quart import Blueprint
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.auth_decorators import (
-    require_administrator, require_session)
+    require_administrator, require_project_member, require_session_with_entry)
 from items.services.items_gateway.gateway_configuration import (
     GatewayConfiguration)
 from items.services.items_gateway.sessions import Sessions
@@ -44,12 +44,12 @@ def create_projects_routes(logger: logging.Logger,
     gateway endpoints. Each route delegates request handling to a dedicated
     handler class responsible for communicating with the CMS service.
 
-    The two read routes require only a valid session (``@require_session``)
-    - they are called by both the regular dashboard/project-overview pages
-    and the admin projects page, so they can't require administrator
-    rights. The three write routes are admin-only
-    (``@require_administrator``) - only the admin add/modify/delete project
-    pages call them.
+    The two read routes require a valid session and project membership
+    (``@require_project_member`` / ``@require_session_with_entry``) -
+    administrators see and reach every project regardless of membership,
+    matching every other admin-gated view. The three write routes are
+    admin-only (``@require_administrator``) - only the admin
+    add/modify/delete project pages call them.
 
     The following endpoints are registered:
 
@@ -99,7 +99,7 @@ def create_projects_routes(logger: logging.Logger,
                  "Get project details".ljust(40))
 
     @projects_routes.route('/projects/<int:project_id>', methods=['GET'])
-    @require_session(sessions)
+    @require_project_member(sessions)
     async def get_project(project_id: int):
         return await handler_get_project.get_project(project_id)
 
@@ -108,9 +108,9 @@ def create_projects_routes(logger: logging.Logger,
                  "List accessible projects".ljust(40))
 
     @projects_routes.route('/projects', methods=['GET'])
-    @require_session(sessions)
-    async def list_projects():
-        return await handler_get_all_projects.list_all_projects()
+    @require_session_with_entry(sessions)
+    async def list_projects(session_entry):
+        return await handler_get_all_projects.list_all_projects(session_entry)
 
     # Create project
     logger.debug("=> %s POST /projects",
