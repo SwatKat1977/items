@@ -112,8 +112,14 @@ class AdminResetPasswordPageHandler(PortalPageHandler):
                 error_msg_str="Passwords do not match.")
 
         url = f"{self._config.apis_gateway_svc}web/users/{user_id}/password"
+        # A longer timeout than RestClient's 2s default: password hashing
+        # (argon2, in identity's user_management_service) is deliberately
+        # expensive, and this call is chained through the gateway's own
+        # call to identity - either hop's default timeout can otherwise
+        # fire first and surface as a spurious 504 on a legitimate,
+        # still-in-progress reset.
         response: ApiResponse = await self._rest_client.post(
-            url, json_data={"new_password": new_password})
+            url, json_data={"new_password": new_password}, timeout=10)
 
         if response.status_code == http.HTTPStatus.NOT_FOUND:
             return await self._render(

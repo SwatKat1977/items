@@ -57,8 +57,10 @@ class CreateUserHandler(BaseApiRoute):
                 content_type="application/json")
 
         url: str = f"{self._configuration.apis_identity_svc}users"
-        response: ApiResponse = await self._rest_client.post(url,
-                                                              json_data=body)
+        # See reset_password_handler.py - the same argon2 hashing cost
+        # applies to user creation and can exceed RestClient's 2s default.
+        response: ApiResponse = await self._rest_client.post(
+            url, json_data=body, timeout=10)
 
         if response.exception_msg is not None:
             self._logger.error("Connection to identity service failed: %s",

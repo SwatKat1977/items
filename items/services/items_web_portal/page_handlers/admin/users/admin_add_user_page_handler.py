@@ -103,8 +103,11 @@ class AdminAddUserPageHandler(PortalPageHandler):
         }
 
         url = f"{self._config.apis_gateway_svc}web/users"
+        # See admin_reset_password_page_handler.py - the same argon2
+        # hashing cost applies to user creation and can exceed
+        # RestClient's 2s default across this two-hop call chain.
         response: ApiResponse = await self._rest_client.post(
-            url, json_data=gateway_body)
+            url, json_data=gateway_body, timeout=10)
 
         if response.status_code == http.HTTPStatus.CONFLICT:
             return await self._render(
