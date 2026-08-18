@@ -77,6 +77,8 @@ class TestSessions(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(entry.session_expiry, 0)
         self.assertEqual(entry.token, "")
         self.assertFalse(entry.is_administrator)
+        self.assertEqual(entry.user_id, "")
+        self.assertEqual(entry.project_ids, frozenset())
 
     async def test_add_session_stores_is_administrator(self):
         await self.sessions.add_session(
@@ -89,6 +91,26 @@ class TestSessions(unittest.IsolatedAsyncioTestCase):
         await self.sessions.add_session(self.email, self.token, self.auth_type)
         entry = await self.sessions.get_session_entry(self.email, self.token)
         self.assertFalse(entry.is_administrator)
+
+    async def test_add_session_stores_user_id_and_project_ids(self):
+        await self.sessions.add_session(
+            self.email, self.token, self.auth_type,
+            user_id="uuid-123", project_ids=frozenset({1, 2}))
+        entry = await self.sessions.get_session_entry(self.email, self.token)
+        self.assertEqual(entry.user_id, "uuid-123")
+        self.assertEqual(entry.project_ids, frozenset({1, 2}))
+
+    async def test_add_session_user_id_and_project_ids_default(self):
+        await self.sessions.add_session(self.email, self.token, self.auth_type)
+        entry = await self.sessions.get_session_entry(self.email, self.token)
+        self.assertEqual(entry.user_id, "")
+        self.assertEqual(entry.project_ids, frozenset())
+
+    async def test_add_session_project_ids_none_normalises_to_empty(self):
+        await self.sessions.add_session(
+            self.email, self.token, self.auth_type, project_ids=None)
+        entry = await self.sessions.get_session_entry(self.email, self.token)
+        self.assertEqual(entry.project_ids, frozenset())
 
     async def test_get_session_entry_valid_token_returns_entry(self):
         await self.sessions.add_session(self.email, self.token, self.auth_type)
