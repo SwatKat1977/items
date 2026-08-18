@@ -289,6 +289,23 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
                                           "display_name": "Alice"})
         self.assertNotEqual(response.status_code, 405)
 
+    async def test_admin_add_user_project_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/admin/users_roles/1/projects",
+                                    form={"project_id": "5"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_modify_user_project_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/admin/users_roles/1/projects/5/modify",
+                                    form={"role_id": "2"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_admin_remove_user_project_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/admin/users_roles/1/projects/5/delete")
+        self.assertNotEqual(response.status_code, 405)
+
     async def test_admin_reset_password_get_route_is_reachable(self):
         async with self.client as c:
             response = await c.get("/admin/users_roles/1/reset_password")

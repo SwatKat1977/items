@@ -86,6 +86,33 @@ def create_admin_users_page_handlers(injections: PageHandlerInjections) -> Bluep
     async def admin_modify_user_post(user_id: str):
         return await handler_modify_user.modify_user_post(user_id)
 
+    injections.logger.debug("=> %s POST /admin/users_roles/<id>/projects",
+                            "Admin add user project".ljust(40))
+
+    @routes.route('/<string:user_id>/projects', methods=['POST'])
+    async def admin_add_user_project(user_id: str):
+        return await handler_modify_user.add_user_project(user_id)
+
+    injections.logger.debug(
+        "=> %s POST /admin/users_roles/<id>/projects/<id>/modify",
+        "Admin modify user project role".ljust(40))
+
+    @routes.route('/<string:user_id>/projects/<int:project_id>/modify',
+                  methods=['POST'])
+    async def admin_modify_user_project(user_id: str, project_id: int):
+        return await handler_modify_user.modify_user_project(
+            user_id, project_id)
+
+    injections.logger.debug(
+        "=> %s POST /admin/users_roles/<id>/projects/<id>/delete",
+        "Admin remove user project".ljust(40))
+
+    @routes.route('/<string:user_id>/projects/<int:project_id>/delete',
+                  methods=['POST'])
+    async def admin_remove_user_project(user_id: str, project_id: int):
+        return await handler_modify_user.remove_user_project(
+            user_id, project_id)
+
     injections.logger.debug("=> %s GET /admin/users_roles/<id>/reset_password",
                             "Admin reset password page (read)".ljust(40))
 
