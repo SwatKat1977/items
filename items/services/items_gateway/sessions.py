@@ -60,6 +60,7 @@ class Sessions:
         self._sessions: dict[str, SessionEntry] = {}
         self._lock: asyncio.Lock = asyncio.Lock()
 
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     async def add_session(self,
                           email_address: str,
                           token: str,
