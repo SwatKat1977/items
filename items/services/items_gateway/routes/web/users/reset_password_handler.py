@@ -83,8 +83,13 @@ class ResetPasswordHandler(BaseApiRoute):
 
         url: str = (f"{self._configuration.apis_identity_svc}"
                     f"users/{user_id}/password")
-        response: ApiResponse = await self._rest_client.post(url,
-                                                              json_data=body)
+        # A longer timeout than RestClient's 2s default: password hashing
+        # (argon2, in identity's user_management_service) is deliberately
+        # expensive and can exceed 2s under load, which would otherwise
+        # surface here as a spurious 504 on a reset that's still genuinely
+        # in progress rather than actually failed.
+        response: ApiResponse = await self._rest_client.post(
+            url, json_data=body, timeout=10)
 
         if response.exception_msg is not None:
             self._logger.error("Connection to identity service failed: %s",

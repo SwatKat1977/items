@@ -130,6 +130,89 @@ class TestNewSessionPasswordHandler(unittest.IsolatedAsyncioTestCase):
         is_admin = kwargs.get("is_administrator", args[3] if len(args) > 3 else False)
         self.assertFalse(is_admin)
 
+    async def test_success_stores_user_id_from_profile(self):
+        self.mock_sessions.has_session.return_value = False
+        self.mock_rest_client.post.side_effect = [
+            ApiResponse(status_code=200),
+            ApiResponse(status_code=200,
+                       body={"is_administrator": False, "id": "uuid-123"})
+        ]
+        self.mock_rest_client.get.return_value = ApiResponse(
+            status_code=200, body={"memberships": []})
+        await self._post({"email_address": "a@b.com", "password": "password1"})
+        _, kwargs = self.mock_sessions.add_session.call_args
+        self.assertEqual(kwargs["user_id"], "uuid-123")
+
+    async def test_success_stores_project_ids_from_memberships(self):
+        self.mock_sessions.has_session.return_value = False
+        self.mock_rest_client.post.side_effect = [
+            ApiResponse(status_code=200),
+            ApiResponse(status_code=200,
+                       body={"is_administrator": False, "id": "uuid-123"})
+        ]
+        self.mock_rest_client.get.return_value = ApiResponse(
+            status_code=200, body={"memberships": [
+                {"project_id": 5, "role_id": 1},
+                {"project_id": 7, "role_id": None}]})
+        await self._post({"email_address": "a@b.com", "password": "password1"})
+        _, kwargs = self.mock_sessions.add_session.call_args
+        self.assertEqual(kwargs["project_ids"], frozenset({5, 7}))
+
+    async def test_membership_fetch_uses_the_resolved_user_id(self):
+        self.mock_sessions.has_session.return_value = False
+        self.mock_rest_client.post.side_effect = [
+            ApiResponse(status_code=200),
+            ApiResponse(status_code=200,
+                       body={"is_administrator": False, "id": "uuid-123"})
+        ]
+        self.mock_rest_client.get.return_value = ApiResponse(
+            status_code=200, body={"memberships": []})
+        await self._post({"email_address": "a@b.com", "password": "password1"})
+        self.mock_rest_client.get.assert_called_once_with(
+            "http://identity/users/uuid-123/projects")
+
+    async def test_no_user_id_skips_membership_fetch(self):
+        """A failed/empty profile fetch leaves user_id empty - nothing to
+        look memberships up by, so don't bother calling identity again."""
+        self.mock_sessions.has_session.return_value = False
+        self.mock_rest_client.post.side_effect = [
+            ApiResponse(status_code=200),
+            ApiResponse(status_code=503)
+        ]
+        await self._post({"email_address": "a@b.com", "password": "password1"})
+        self.mock_rest_client.get.assert_not_called()
+        _, kwargs = self.mock_sessions.add_session.call_args
+        self.assertEqual(kwargs["project_ids"], frozenset())
+
+    async def test_membership_fetch_failure_defaults_to_no_projects(self):
+        self.mock_sessions.has_session.return_value = False
+        self.mock_rest_client.post.side_effect = [
+            ApiResponse(status_code=200),
+            ApiResponse(status_code=200,
+                       body={"is_administrator": False, "id": "uuid-123"})
+        ]
+        self.mock_rest_client.get.return_value = ApiResponse(
+            status_code=503, body={})
+        response = await self._post(
+            {"email_address": "a@b.com", "password": "password1"})
+        self.assertEqual(response.status_code, 200)
+        _, kwargs = self.mock_sessions.add_session.call_args
+        self.assertEqual(kwargs["project_ids"], frozenset())
+
+    async def test_membership_fetch_exception_defaults_to_no_projects(self):
+        self.mock_sessions.has_session.return_value = False
+        self.mock_rest_client.post.side_effect = [
+            ApiResponse(status_code=200),
+            ApiResponse(status_code=200,
+                       body={"is_administrator": False, "id": "uuid-123"})
+        ]
+        self.mock_rest_client.get.side_effect = RuntimeError("boom")
+        response = await self._post(
+            {"email_address": "a@b.com", "password": "password1"})
+        self.assertEqual(response.status_code, 200)
+        _, kwargs = self.mock_sessions.add_session.call_args
+        self.assertEqual(kwargs["project_ids"], frozenset())
+
 
 # ------------------------------------------------------------------
 # DeleteSessionHandler

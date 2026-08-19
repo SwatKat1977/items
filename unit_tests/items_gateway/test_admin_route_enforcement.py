@@ -44,8 +44,15 @@ _VALID_FIELD_BODY = {
 
 _USER_TOKEN = "a" * 32
 _ADMIN_TOKEN = "b" * 32
+_OUTSIDER_TOKEN = "c" * 32
 _USER_HEADERS = {HEADER_USER: "user@x.com", HEADER_TOKEN: _USER_TOKEN}
 _ADMIN_HEADERS = {HEADER_USER: "admin@x.com", HEADER_TOKEN: _ADMIN_TOKEN}
+# A valid, non-administrator session with no project memberships at all -
+# used to confirm membership is actually enforced, not just "any session
+# passes". _USER_HEADERS above is a member of project 1, matching every
+# project-scoped path in _SESSION_ONLY_ROUTES, so it can't tell the two
+# apart on its own.
+_OUTSIDER_HEADERS = {HEADER_USER: "outsider@x.com", HEADER_TOKEN: _OUTSIDER_TOKEN}
 
 # (method, path, json_body) - every admin-only /web/* route.
 _ADMIN_ONLY_ROUTES = [
@@ -80,12 +87,26 @@ _ADMIN_ONLY_ROUTES = [
 ]
 
 # (method, path, json_body) - routes that need a valid session but not
-# administrator rights.
+# administrator rights. All four also require project membership except
+# the list, which filters rather than gates - _USER_HEADERS' session is a
+# member of project 1, matching every project-scoped path here, so these
+# tables alone exercise "a member reaches their own project", not
+# "membership is actually checked" - see test_member_only_routes_reject_
+# non_member below for the negative case.
 _SESSION_ONLY_ROUTES = [
     ("GET", "/web/projects", None),
     ("GET", "/web/projects/1", None),
     ("GET", "/web/1/testcases", None),
     ("GET", "/web/testcases/1?project_id=1", None),
+]
+
+# (method, path) - the three of the four above that actually gate on
+# membership (unlike the list, which filters its response instead of
+# rejecting the request).
+_MEMBER_ONLY_ROUTES = [
+    ("GET", "/web/projects/1"),
+    ("GET", "/web/1/testcases"),
+    ("GET", "/web/testcases/1?project_id=1"),
 ]
 
 # (method, path, json_body) - routes that must stay reachable with no
@@ -130,10 +151,13 @@ class TestAdminRouteEnforcement(unittest.IsolatedAsyncioTestCase):
         self.sessions = Sessions()
         await self.sessions.add_session(
             "user@x.com", _USER_TOKEN, AccountLogonType.BASIC,
-            is_administrator=False)
+            is_administrator=False, project_ids=frozenset({1}))
         await self.sessions.add_session(
             "admin@x.com", _ADMIN_TOKEN, AccountLogonType.BASIC,
             is_administrator=True)
+        await self.sessions.add_session(
+            "outsider@x.com", _OUTSIDER_TOKEN, AccountLogonType.BASIC,
+            is_administrator=False, project_ids=frozenset())
         configuration = MagicMock()
         configuration.apis_cms_svc = "http://cms/"
         configuration.apis_identity_svc = "http://identity/"
@@ -220,6 +244,38 @@ class TestAdminRouteEnforcement(unittest.IsolatedAsyncioTestCase):
                 self.assertNotIn(
                     response.status_code,
                     (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN))
+
+    async def test_member_only_routes_reject_non_member(self):
+        """A valid session with no membership of project 1 must be
+        rejected by these three - proves membership is actually being
+        checked, not just "any session passes" (which _USER_HEADERS, a
+        member of project 1, can't distinguish on its own)."""
+        for method, path in _MEMBER_ONLY_ROUTES:
+            with self.subTest(method=method, path=path):
+                response = await self._call(
+                    method, path, None, headers=_OUTSIDER_HEADERS)
+                self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+
+    async def test_member_only_routes_accept_administrator(self):
+        """Administrators bypass membership entirely, same as every other
+        admin-gated view - not covered by _SESSION_ONLY_ROUTES' admin
+        check alone, since that uses _ADMIN_HEADERS which never proves
+        the bypass is membership-specific rather than coincidental."""
+        for method, path in _MEMBER_ONLY_ROUTES:
+            with self.subTest(method=method, path=path):
+                response = await self._call(
+                    method, path, None, headers=_ADMIN_HEADERS)
+                self.assertNotIn(
+                    response.status_code,
+                    (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN))
+
+    async def test_project_list_never_rejects_a_non_member_just_filters(self):
+        """Unlike the three above, the list route has nothing to 403 - a
+        member of nothing still gets a 200 with an empty list, not a
+        rejection."""
+        response = await self._call(
+            "GET", "/web/projects", None, headers=_OUTSIDER_HEADERS)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
 
 if __name__ == "__main__":

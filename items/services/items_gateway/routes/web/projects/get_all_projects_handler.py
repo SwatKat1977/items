@@ -22,6 +22,7 @@ from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
+from items.services.items_gateway.sessions import SessionEntry
 
 
 class GetAllProjectsHandler(BaseApiRoute):
@@ -51,12 +52,23 @@ class GetAllProjectsHandler(BaseApiRoute):
         self._config: GatewayConfiguration = config
         self._rest_client: RestClient = rest_client
 
-    async def list_all_projects(self):
-        """Retrieve the list of accessible projects.
+    async def list_all_projects(self, session_entry: SessionEntry):
+        """Retrieve the list of projects accessible to the caller.
 
         Forwards the request to the CMS service. If present, the
         ``value_fields`` and ``count_fields`` query parameters are passed
         through to control the fields included in the response.
+
+        Administrators see every project, matching every other admin-gated
+        view in this codebase. Everyone else sees only the projects they
+        are a member of, per ``session_entry.project_ids`` - filtered here
+        rather than pushed down to CMS, since CMS has no concept of the
+        caller's identity and this keeps that boundary unchanged.
+
+        Args:
+            session_entry: The caller's resolved session, supplied by the
+                ``require_session_with_entry`` decorator wrapping this
+                route.
 
         Returns:
             A Quart ``Response`` containing the list of projects if the
@@ -96,6 +108,13 @@ class GetAllProjectsHandler(BaseApiRoute):
                 status=HTTPStatus.INTERNAL_SERVER_ERROR,
                 content_type="application/json")
 
-        return Response(json.dumps(response.body),
+        body = response.body
+        if not session_entry.is_administrator:
+            projects = body.get("projects", [])
+            visible = [p for p in projects
+                      if p.get("id") in session_entry.project_ids]
+            body = dict(body, projects=visible)
+
+        return Response(json.dumps(body),
                         status=HTTPStatus.OK,
                         content_type="application/json")

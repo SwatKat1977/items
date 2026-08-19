@@ -30,12 +30,21 @@ class SessionEntry:
         session_expiry (int): The session expiration timestamp (Unix time).
         token (str): The unique token identifying the session.
         is_administrator (bool): Whether the user has administrator privileges.
+        user_id (str): The user's identity-service UUID. Empty if it could
+            not be resolved at login (treated the same as no memberships).
+        project_ids (frozenset[int]): The project ids this user was a member
+            of at login/refresh time. Snapshotted, not re-checked per
+            request - same staleness tradeoff already accepted for
+            ``is_administrator`` (see the "deactivating a user does not
+            touch their existing session" item in future.md).
     """
     email_address: str = ""
     authentication_type: AccountLogonType = AccountLogonType.BASIC
     session_expiry: int = 0
     token: str = ""
     is_administrator: bool = False
+    user_id: str = ""
+    project_ids: frozenset[int] = frozenset()
 
 
 class Sessions:
@@ -51,11 +60,14 @@ class Sessions:
         self._sessions: dict[str, SessionEntry] = {}
         self._lock: asyncio.Lock = asyncio.Lock()
 
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     async def add_session(self,
                           email_address: str,
                           token: str,
                           auth_type: AccountLogonType,
-                          is_administrator: bool = False) -> None:
+                          is_administrator: bool = False,
+                          user_id: str = "",
+                          project_ids: frozenset[int] | None = None) -> None:
         """
         Add an authentication session. Any existing session for the same email
         address is invalidated and replaced.
@@ -66,6 +78,11 @@ class Sessions:
             auth_type (AccountLogonType): Type of authentication used.
             is_administrator (bool): Whether the user has administrator
                 privileges. Defaults to False.
+            user_id (str): The user's identity-service UUID, if resolved.
+            project_ids (frozenset[int] | None): The project ids the user
+                was a member of at login/refresh time. Defaults to an
+                empty set - "no memberships" is the safe default, matching
+                the existing "no membership = no access" rule elsewhere.
         """
         async with self._lock:
             entry: SessionEntry = SessionEntry()
@@ -73,6 +90,9 @@ class Sessions:
             entry.token = token
             entry.authentication_type = auth_type
             entry.is_administrator = is_administrator
+            entry.user_id = user_id
+            entry.project_ids = project_ids if project_ids is not None \
+                else frozenset()
 
             # If you logon a second time it will invalid any previous session.
             self._sessions.pop(email_address, None)

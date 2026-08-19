@@ -83,7 +83,12 @@ from test_email_service import (
     TestSmtpEmailServiceSend,
 )
 from test_webhook_handler import TestGetMetadataHandler
-from test_auth_decorators import TestRequireSession, TestRequireAdministrator
+from test_auth_decorators import (
+    TestRequireSession,
+    TestRequireAdministrator,
+    TestRequireProjectMember,
+    TestRequireSessionWithEntry,
+)
 from test_admin_route_enforcement import TestAdminRouteEnforcement
 
 if __name__ == "__main__":
