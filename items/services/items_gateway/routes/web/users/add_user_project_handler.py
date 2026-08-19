@@ -21,6 +21,7 @@ from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
+from items.services.items_gateway.sessions import Sessions
 
 
 class AddUserProjectHandler(BaseApiRoute):
@@ -47,13 +48,20 @@ class AddUserProjectHandler(BaseApiRoute):
     def __init__(self,
                  logger: logging.Logger,
                  configuration: GatewayConfiguration,
-                 rest_client: RestClient) -> None:
+                 rest_client: RestClient,
+                 sessions: Sessions) -> None:
         self._logger = logger.getChild(type(self).__name__)
         self._configuration = configuration
         self._rest_client = rest_client
+        self._sessions = sessions
 
     async def add_user_project(self, user_id: str) -> Response:
         """Add a user to a project, optionally assigning a role.
+
+        On success, live-patches the new project id into the user's
+        already-open session (if any) - see
+        ``Sessions.add_project_id_for_user`` - so a newly granted project
+        is usable immediately rather than only after their next login.
 
         Args:
             user_id: The user's UUID (from the URL).
@@ -92,6 +100,10 @@ class AddUserProjectHandler(BaseApiRoute):
                 json.dumps({"error": "Identity service unavailable"}),
                 status=HTTPStatus.INTERNAL_SERVER_ERROR,
                 content_type="application/json")
+
+        if response.status_code == HTTPStatus.CREATED \
+                and isinstance(project_id, int):
+            await self._sessions.add_project_id_for_user(user_id, project_id)
 
         return Response(json.dumps(response.body),
                         status=response.status_code,
