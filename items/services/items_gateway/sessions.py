@@ -206,3 +206,57 @@ class Sessions:
                 if entry.user_id == user_id:
                     entry.project_ids = entry.project_ids - {project_id}
                     break
+
+    async def set_is_administrator_for_user(self, user_id: str,
+                                            is_administrator: bool) -> None:
+        """
+        Live-patch a user's already-open session to reflect a changed
+        ``is_administrator`` flag, if they have one.
+
+        Called after a successful ``PATCH /users/<id>`` that changes this
+        flag, so admin rights granted or revoked take effect immediately
+        rather than only at the user's next login - same reasoning as
+        :meth:`add_project_id_for_user`, and the same "no-op, not an
+        error, if there's no active session right now" behaviour.
+        Deliberately a patch, not a forced logout, in either direction:
+        revoking admin rights takes effect at the next admin-gated
+        request regardless (``require_administrator`` reads this same
+        field), so there's nothing a forced re-login would add.
+
+        Args:
+            user_id: The user's identity-service UUID.
+            is_administrator: The new value of the flag.
+        """
+        async with self._lock:
+            for entry in self._sessions.values():
+                if entry.user_id == user_id:
+                    entry.is_administrator = is_administrator
+                    break
+
+    async def delete_session_for_user(self, user_id: str) -> None:
+        """
+        Delete a user's already-open session, if any, looked up by user id.
+
+        Called after a user is deactivated (``account_status`` set to 0
+        via ``PATCH /users/<id>``) - unlike a project-access or
+        admin-rights change, deactivation disables the whole account, so
+        forcing a re-login (which will then correctly fail) is the right
+        outcome here, not a live patch. A no-op if the user has no active
+        session right now.
+
+        Supersedes the original design for this fix (predating ``user_id``
+        being cached on ``SessionEntry``), which proposed threading
+        ``email_address`` through identity's response as a companion
+        change there. Looking sessions up by ``user_id`` - the same
+        mechanism ``add_project_id_for_user`` already uses - makes that
+        unnecessary: this is a pure Gateway-side change.
+
+        Args:
+            user_id: The user's identity-service UUID.
+        """
+        async with self._lock:
+            matching_email = next(
+                (email for email, entry in self._sessions.items()
+                 if entry.user_id == user_id), None)
+            if matching_email is not None:
+                del self._sessions[matching_email]
