@@ -3,6 +3,41 @@
 Running list of known, deliberately-deferred items — not urgent, but worth
 tracking so they don't get lost.
 
+## Web Portal: project pages dead-end into raw JSON on 403/404
+
+**Where:** `GetProjectTestcasesPageHandler.test_cases` and
+`GetProjectOverviewPageHandler.project_overview` (both in
+`items_web_portal/page_handlers/`). Both treat *any* non-200 from Gateway
+identically - `GetProjectOverviewPageHandler` gives 404 its own JSON body
+but the same raw treatment; `GetProjectTestcasesPageHandler` doesn't even
+distinguish 404, everything non-200 falls into one generic
+`{"status": 0, "error": "Internal error!"}`, HTTP 500 response - unstyled
+JSON, no Portal chrome, not routed through `_render_page` at all.
+
+**Problem:** found by hitting it directly - remove a user's own project
+membership, then click through to that project's Test Cases (or Overview)
+page, and you land on a raw JSON blob instead of anything resembling the
+rest of the app. Pre-existing gap in both handlers, not introduced by
+`gateway_membership_enforcement` - it just wasn't reachable before that
+branch existed, since nothing produced a 403 here previously. Now a
+realistic path: removing project access is an ordinary admin action, and
+an affected user still holding a link/bookmark to that project will hit
+this immediately.
+
+**Fix:** in both handlers, redirect to the Dashboard (`/`) on
+`HTTPStatus.FORBIDDEN` and `HTTPStatus.NOT_FOUND` - "you can't see this
+project" (for either reason) is a normal, expected state that should send
+the user somewhere sensible, not an error page. Use the existing
+`_generate_redirect`/`make_response` pattern already used elsewhere in the
+Portal rather than inventing a new one. Leave the raw-JSON fallback in
+place only for genuinely unexpected failures (connection errors, actual
+5xx from Gateway) - those two are the ones worth distinguishing as
+different from "can't see this project."
+
+Small, well-scoped, Portal-only - deliberately not folded into
+`gateway_membership_session_sync` (Gateway-only) or done under time
+pressure while that branch is still open. Wants its own tiny branch.
+
 ## CMS: `linked_projects` encoding is ambiguous
 
 **Where:** `items_cms.repositories.testcase_custom_fields_repository`'s
