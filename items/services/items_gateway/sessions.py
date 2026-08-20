@@ -156,3 +156,53 @@ class Sessions:
         """
         async with self._lock:
             return email_address in self._sessions
+
+    async def add_project_id_for_user(self, user_id: str,
+                                      project_id: int) -> None:
+        """
+        Live-patch a project id into a user's already-open session, if any.
+
+        Called after a membership is successfully created, so a granted
+        project shows up immediately rather than only after the user's
+        next login - unlike deactivation, granting access has no reason to
+        force a re-login. A no-op, not an error, if the user has no active
+        session right now (nothing to patch) - the new membership is still
+        picked up normally the next time they do log in.
+
+        ``Sessions`` is keyed by email address, not user id, so this scans
+        every entry for a matching ``user_id`` rather than doing a direct
+        lookup. Cheap in practice - this is an in-memory dict of active
+        sessions, not a database table - and avoids needing an email
+        address the caller (a membership handler working from a URL-supplied
+        UUID) doesn't have.
+
+        Args:
+            user_id: The user's identity-service UUID.
+            project_id: The project id just added to their membership.
+        """
+        async with self._lock:
+            for entry in self._sessions.values():
+                if entry.user_id == user_id:
+                    entry.project_ids = entry.project_ids | {project_id}
+                    break
+
+    async def remove_project_id_for_user(self, user_id: str,
+                                         project_id: int) -> None:
+        """
+        Live-patch a project id out of a user's already-open session, if any.
+
+        See :meth:`add_project_id_for_user` - same reasoning, same
+        no-op-if-no-active-session behaviour, opposite direction: called
+        after a membership is successfully removed, so the project stops
+        being visible/reachable immediately rather than only after the
+        user's next login.
+
+        Args:
+            user_id: The user's identity-service UUID.
+            project_id: The project id just removed from their membership.
+        """
+        async with self._lock:
+            for entry in self._sessions.values():
+                if entry.user_id == user_id:
+                    entry.project_ids = entry.project_ids - {project_id}
+                    break

@@ -127,6 +127,54 @@ class TestSessions(unittest.IsolatedAsyncioTestCase):
         entry = await self.sessions.get_session_entry(self.email, self.token)
         self.assertIsNone(entry)
 
+    async def test_add_project_id_for_user_patches_the_matching_session(self):
+        await self.sessions.add_session(
+            self.email, self.token, self.auth_type,
+            user_id="uuid-123", project_ids=frozenset({1}))
+        await self.sessions.add_project_id_for_user("uuid-123", 2)
+        entry = await self.sessions.get_session_entry(self.email, self.token)
+        self.assertEqual(entry.project_ids, frozenset({1, 2}))
+
+    async def test_add_project_id_for_user_no_matching_session_is_a_noop(self):
+        await self.sessions.add_session(
+            self.email, self.token, self.auth_type,
+            user_id="uuid-123", project_ids=frozenset({1}))
+        await self.sessions.add_project_id_for_user("uuid-other", 2)
+        entry = await self.sessions.get_session_entry(self.email, self.token)
+        self.assertEqual(entry.project_ids, frozenset({1}))
+
+    async def test_add_project_id_for_user_already_present_is_idempotent(self):
+        await self.sessions.add_session(
+            self.email, self.token, self.auth_type,
+            user_id="uuid-123", project_ids=frozenset({1, 2}))
+        await self.sessions.add_project_id_for_user("uuid-123", 2)
+        entry = await self.sessions.get_session_entry(self.email, self.token)
+        self.assertEqual(entry.project_ids, frozenset({1, 2}))
+
+    async def test_remove_project_id_for_user_patches_the_matching_session(self):
+        await self.sessions.add_session(
+            self.email, self.token, self.auth_type,
+            user_id="uuid-123", project_ids=frozenset({1, 2}))
+        await self.sessions.remove_project_id_for_user("uuid-123", 2)
+        entry = await self.sessions.get_session_entry(self.email, self.token)
+        self.assertEqual(entry.project_ids, frozenset({1}))
+
+    async def test_remove_project_id_for_user_no_matching_session_is_a_noop(self):
+        await self.sessions.add_session(
+            self.email, self.token, self.auth_type,
+            user_id="uuid-123", project_ids=frozenset({1, 2}))
+        await self.sessions.remove_project_id_for_user("uuid-other", 2)
+        entry = await self.sessions.get_session_entry(self.email, self.token)
+        self.assertEqual(entry.project_ids, frozenset({1, 2}))
+
+    async def test_remove_project_id_for_user_not_present_is_a_noop(self):
+        await self.sessions.add_session(
+            self.email, self.token, self.auth_type,
+            user_id="uuid-123", project_ids=frozenset({1}))
+        await self.sessions.remove_project_id_for_user("uuid-123", 999)
+        entry = await self.sessions.get_session_entry(self.email, self.token)
+        self.assertEqual(entry.project_ids, frozenset({1}))
+
 
 if __name__ == "__main__":
     unittest.main()

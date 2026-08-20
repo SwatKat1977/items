@@ -3,6 +3,41 @@
 Running list of known, deliberately-deferred items — not urgent, but worth
 tracking so they don't get lost.
 
+## Web Portal: project pages dead-end into raw JSON on 403/404
+
+**Where:** `GetProjectTestcasesPageHandler.test_cases` and
+`GetProjectOverviewPageHandler.project_overview` (both in
+`items_web_portal/page_handlers/`). Both treat *any* non-200 from Gateway
+identically - `GetProjectOverviewPageHandler` gives 404 its own JSON body
+but the same raw treatment; `GetProjectTestcasesPageHandler` doesn't even
+distinguish 404, everything non-200 falls into one generic
+`{"status": 0, "error": "Internal error!"}`, HTTP 500 response - unstyled
+JSON, no Portal chrome, not routed through `_render_page` at all.
+
+**Problem:** found by hitting it directly - remove a user's own project
+membership, then click through to that project's Test Cases (or Overview)
+page, and you land on a raw JSON blob instead of anything resembling the
+rest of the app. Pre-existing gap in both handlers, not introduced by
+`gateway_membership_enforcement` - it just wasn't reachable before that
+branch existed, since nothing produced a 403 here previously. Now a
+realistic path: removing project access is an ordinary admin action, and
+an affected user still holding a link/bookmark to that project will hit
+this immediately.
+
+**Fix:** in both handlers, redirect to the Dashboard (`/`) on
+`HTTPStatus.FORBIDDEN` and `HTTPStatus.NOT_FOUND` - "you can't see this
+project" (for either reason) is a normal, expected state that should send
+the user somewhere sensible, not an error page. Use the existing
+`_generate_redirect`/`make_response` pattern already used elsewhere in the
+Portal rather than inventing a new one. Leave the raw-JSON fallback in
+place only for genuinely unexpected failures (connection errors, actual
+5xx from Gateway) - those two are the ones worth distinguishing as
+different from "can't see this project."
+
+Small, well-scoped, Portal-only - deliberately not folded into
+`gateway_membership_session_sync` (Gateway-only) or done under time
+pressure while that branch is still open. Wants its own tiny branch.
+
 ## CMS: `linked_projects` encoding is ambiguous
 
 **Where:** `items_cms.repositories.testcase_custom_fields_repository`'s
@@ -271,3 +306,96 @@ lost. Needs its own focused pass to turn "possibly massive" into an actual
 list before any code changes. Do this before making `Secure` conditional
 on an environment flag (above) - guessing at the environment-detection
 shape now risks redoing it once the real migration is scoped.
+
+## Gateway: project membership/role changes don't reach an existing session either
+
+**Where:** `Sessions`/`SessionEntry` (`items_gateway/sessions.py`) now
+caches `project_ids` (and `is_administrator`) at login only - see
+`gateway_membership_enforcement`. Same root cause as "deactivating a user
+does not touch their existing session" above: nothing proactively updates
+or clears a live session when an admin changes something that session's
+cached data claims about the user.
+
+**Problem:** an admin adding/removing a user's project membership,
+changing the role on a membership, or editing a role's own permission
+grid, has no effect on anyone already logged in until they happen to log
+out and back in. Seen firsthand while manually verifying
+`gateway_membership_enforcement` - a project granted via the Portal
+didn't show up for the affected user until a fresh login, which is
+correct-per-design but easy to mistake for a bug (and did, mid-session).
+
+**Fix:** same shape as the deactivation fix already designed above -
+proactive update on the write, not a per-request check (same "don't add
+a permanent round trip to every authenticated request" reasoning
+applies). Two sub-cases:
+
+- **Membership add/remove/role-change** (`AddUserProjectHandler`,
+  `ModifyUserProjectHandler`, `RemoveUserProjectHandler` in
+  `routes/web/users/`) - a 1:1 lookup, same shape as the deactivation
+  fix: the affected user's email is already known to the handler: either
+  delete their session (forces re-login) or live-patch
+  `SessionEntry.project_ids` in place (seamless, no logout needed).
+- **Role permission grid changes / role deletion**
+  (`routes/web/roles/`) - not 1:1. A role's permissions changing (or the
+  role being deleted, clearing affected memberships to "Unassigned")
+  potentially affects every session belonging to a user who holds that
+  role on *any* project. `Sessions` isn't indexed by role, so this means
+  scanning all active sessions rather than a single lookup - trivial
+  cost given it's an in-memory dict, just worth naming as the one part
+  of this fix that isn't a direct lookup.
+
+Roughly sized comparably to or smaller than `gateway_membership_enforcement`
+itself, since `Sessions`/`SessionEntry` already carry the data needed -
+this is about *reacting* to writes that already happen, not adding new
+state.
+
+## Web Portal: Projects tab's per-row Save button is easy to miss
+
+**Where:** `instance_admin_modify_user.html`'s Projects tab - the
+per-membership role `<select>` has its own small `<form>` with a
+`type="submit"` button showing only a checkmark icon
+(`<i class="bi bi-check-lg">`), with a `title="Save role"` hover tooltip
+as the only affordance.
+
+**Problem:** found during manual verification of
+`gateway_membership_enforcement` - a role change appeared not to be
+saving at all, and the actual cause was the icon-only Save button not
+being clicked (attention going to the page's main "Save User" button
+instead, which doesn't touch project/role data). The code was correct
+throughout; the affordance wasn't clear enough. Same page's "Save
+User"/"Cancel" buttons both already pair an icon with visible text -
+this one button doesn't follow that existing convention.
+
+**Fix:** give the row's Save button visible "Save" text too, matching
+the convention already used elsewhere on the same page. Small,
+low-risk, Portal-template-only change - deliberately not bundled into
+the Gateway-only `gateway_membership_enforcement` branch it was found
+on; wants its own tiny branch.
+
+## Identity: password hashing blocks the event loop
+
+**Where:** `user_management_service.py` - `PasswordHasher()` uses
+library defaults (Argon2id), and `self._ph.hash(...)` (lines ~263, 380,
+435 - registration, self-service change, admin reset) is called directly
+inside `async def` methods, not offloaded via `asyncio.to_thread`.
+
+**Problem:** found while diagnosing spurious 504s on password reset/user
+creation during `gateway_membership_enforcement` verification (fixed
+there by widening `RestClient` timeouts on the affected calls - see that
+branch's `changes.md`). The timeout bump treats the symptom; this is the
+actual mechanism: Argon2 is deliberately expensive by design, and running
+it synchronously means it blocks Identity's *entire* event loop for its
+full duration - not just the one request doing the hashing, but every
+other concurrent request Identity is handling at that moment too. On a
+loaded dev machine this is what pushed individual calls past the old 2s
+default timeout in the first place.
+
+**Fix:** wrap each `self._ph.hash(...)` call in `asyncio.to_thread(...)`
+so the hash runs on a worker thread instead of blocking the loop. Doesn't
+make hashing faster (that's a separate question of whether the default
+cost parameters are appropriate for target hardware) - just stops one
+password operation from stalling every other concurrent request while it
+runs. Bigger and more careful than the timeout bump: touches core
+authentication code in three places, wants proper test coverage of the
+threaded path, not something to do under the time pressure that prompted
+the timeout fix instead.

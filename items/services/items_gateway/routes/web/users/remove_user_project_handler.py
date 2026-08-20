@@ -21,6 +21,7 @@ from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
+from items.services.items_gateway.sessions import Sessions
 
 
 class RemoveUserProjectHandler(BaseApiRoute):
@@ -32,14 +33,22 @@ class RemoveUserProjectHandler(BaseApiRoute):
     def __init__(self,
                  logger: logging.Logger,
                  configuration: GatewayConfiguration,
-                 rest_client: RestClient) -> None:
+                 rest_client: RestClient,
+                 sessions: Sessions) -> None:
         self._logger = logger.getChild(type(self).__name__)
         self._configuration = configuration
         self._rest_client = rest_client
+        self._sessions = sessions
 
     async def remove_user_project(self, user_id: str,
                                   project_id: int) -> Response:
         """Remove a user's membership of a project entirely.
+
+        On success, live-patches the project id out of the user's
+        already-open session (if any) - see
+        ``Sessions.remove_project_id_for_user`` - so the project stops
+        being reachable immediately rather than only after their next
+        login.
 
         Args:
             user_id: The user's UUID (from the URL).
@@ -62,6 +71,10 @@ class RemoveUserProjectHandler(BaseApiRoute):
                 json.dumps({"error": "Identity service unavailable"}),
                 status=HTTPStatus.INTERNAL_SERVER_ERROR,
                 content_type="application/json")
+
+        if response.status_code == HTTPStatus.OK:
+            await self._sessions.remove_project_id_for_user(
+                user_id, project_id)
 
         return Response(json.dumps(response.body),
                         status=response.status_code,

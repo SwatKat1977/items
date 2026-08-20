@@ -103,7 +103,9 @@ class TestAddUserProjectHandler(unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self):
         self.mock_rc = AsyncMock()
-        handler = AddUserProjectHandler(_LOGGER, _config(), self.mock_rc)
+        self.mock_sessions = AsyncMock()
+        handler = AddUserProjectHandler(
+            _LOGGER, _config(), self.mock_rc, self.mock_sessions)
         app = Quart(__name__)
 
         @app.route("/users/<string:user_id>/projects", methods=["POST"])
@@ -210,6 +212,21 @@ class TestAddUserProjectHandler(unittest.IsolatedAsyncioTestCase):
         resp = await self._post({"project_id": 5})
         self.assertEqual(resp.content_type, "application/json")
 
+    async def test_success_live_patches_the_session(self):
+        self.mock_rc.get.return_value = _ok({"id": 5, "name": "Alpha"})
+        self.mock_rc.post.return_value = ApiResponse(
+            status_code=201, body={"status": "ok"})
+        await self._post({"project_id": 5, "role_id": 2})
+        self.mock_sessions.add_project_id_for_user.assert_called_once_with(
+            _UUID, 5)
+
+    async def test_failure_does_not_patch_the_session(self):
+        self.mock_rc.get.return_value = _ok({"id": 5, "name": "Alpha"})
+        self.mock_rc.post.return_value = _err(
+            {"error": "User is already a member of this project"}, 409)
+        await self._post({"project_id": 5})
+        self.mock_sessions.add_project_id_for_user.assert_not_called()
+
 
 # ---------------------------------------------------------------------------
 # ModifyUserProjectHandler
@@ -298,7 +315,9 @@ class TestRemoveUserProjectHandler(unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self):
         self.mock_rc = AsyncMock()
-        handler = RemoveUserProjectHandler(_LOGGER, _config(), self.mock_rc)
+        self.mock_sessions = AsyncMock()
+        handler = RemoveUserProjectHandler(
+            _LOGGER, _config(), self.mock_rc, self.mock_sessions)
         app = Quart(__name__)
 
         @app.route("/users/<string:user_id>/projects/<int:project_id>",
@@ -338,6 +357,18 @@ class TestRemoveUserProjectHandler(unittest.IsolatedAsyncioTestCase):
         self.mock_rc.delete.return_value = _ok({"status": "ok"})
         resp = await self._delete()
         self.assertEqual(resp.content_type, "application/json")
+
+    async def test_success_live_patches_the_session(self):
+        self.mock_rc.delete.return_value = _ok({"status": "ok"})
+        await self._delete(user_id=_UUID, project_id=9)
+        self.mock_sessions.remove_project_id_for_user.assert_called_once_with(
+            _UUID, 9)
+
+    async def test_failure_does_not_patch_the_session(self):
+        self.mock_rc.delete.return_value = _err(
+            {"error": "User is not a member of this project"}, 404)
+        await self._delete()
+        self.mock_sessions.remove_project_id_for_user.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -57,9 +57,10 @@ def create_users_routes(injections: RouteInjections) -> Blueprint:
 
     Note:
         ``POST /users/me/password`` (change own password) is not registered
-        here. It requires the gateway to resolve the caller's user ID from
-        the session, which needs additional session architecture
-        (``user_id`` stored in ``SessionEntry`` at login).
+        here yet. ``SessionEntry.user_id`` now exists (added for
+        ``gateway_membership_enforcement``) so the gateway can resolve the
+        caller's user ID from their session - the architecture blocker is
+        gone, this route just hasn't been built.
 
     Args:
         injections: Shared application dependencies.
@@ -84,11 +85,13 @@ def create_users_routes(injections: RouteInjections) -> Blueprint:
     handler_list_projects = ListUserProjectsHandler(
         injections.logger, injections.configuration, injections.rest_client)
     handler_add_project = AddUserProjectHandler(
-        injections.logger, injections.configuration, injections.rest_client)
+        injections.logger, injections.configuration, injections.rest_client,
+        injections.sessions)
     handler_modify_project = ModifyUserProjectHandler(
         injections.logger, injections.configuration, injections.rest_client)
     handler_remove_project = RemoveUserProjectHandler(
-        injections.logger, injections.configuration, injections.rest_client)
+        injections.logger, injections.configuration, injections.rest_client,
+        injections.sessions)
 
     injections.logger.debug(" Users WEB routes:")
 
