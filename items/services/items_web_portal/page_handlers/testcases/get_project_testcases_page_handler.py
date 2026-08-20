@@ -17,7 +17,7 @@ limitations under the License.
 from http import HTTPStatus
 import json
 import logging
-from quart import Response
+from quart import make_response, Response
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_web_portal.configuration import Configuration
 from items.services.items_web_portal.decorators import require_session
@@ -67,8 +67,12 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
         gateway service, transforms the flat API response into a hierarchical
         structure suitable for display, and renders the test cases page.
 
-        If the gateway service request fails, an HTTP 500 response containing
-        an error payload is returned.
+        A 403 (not a member of this project) or 404 (project doesn't exist)
+        redirects to the dashboard rather than showing an error - both are
+        normal, expected states (e.g. an admin removed the user's access
+        while they still had the page bookmarked), not failures worth
+        surfacing as one. Any other non-200 is treated as a genuine
+        unexpected failure and returns a JSON error response with HTTP 500.
 
         Args:
             project_id (int):
@@ -76,8 +80,9 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
 
         Returns:
             Response:
-                A rendered HTML page on success, or a JSON error response with
-                HTTP 500 status if the gateway request fails.
+                A rendered HTML page on success, a redirect to the
+                dashboard on 403/404, or a JSON error response with HTTP
+                500 for any other gateway failure.
         """
         gateway_svc: str = self._config.apis_gateway_svc
 
@@ -91,6 +96,9 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
 
         url: str = f"{gateway_svc}web/{project_id}/testcases"
         response = await self._rest_client.get(url)
+
+        if response.status_code in (HTTPStatus.FORBIDDEN, HTTPStatus.NOT_FOUND):
+            return await make_response(self._generate_redirect('/'))
 
         if response.status_code != HTTPStatus.OK:
             self._logger.critical("Gateway svc request invalid - Reason: %s",

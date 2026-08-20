@@ -17,7 +17,7 @@ limitations under the License.
 from http import HTTPStatus
 import json
 import logging
-from quart import Response
+from quart import make_response, Response
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_web_portal.configuration import Configuration
 from items.services.items_web_portal.decorators import require_session
@@ -55,26 +55,28 @@ class GetProjectOverviewPageHandler(PortalPageHandler):
         """Render the overview page for a project.
 
         Fetches project details from the gateway service and renders the
-        overview page. Returns an internal server error response if the
-        project cannot be retrieved.
+        overview page. A 403 (not a member of this project) or 404
+        (project doesn't exist) redirects to the dashboard rather than
+        showing an error - both are normal, expected states (e.g. an
+        admin removed the user's access while they still had the page
+        bookmarked), not failures worth surfacing as one. Any other
+        non-200 is treated as a genuine unexpected failure.
 
         Args:
             project_id: Identifier of the project to display.
 
         Returns:
-            The rendered project overview page, or a JSON error response with
-            HTTP 500 status if the gateway request fails.
+            The rendered project overview page, a redirect to the
+            dashboard on 403/404, or a JSON error response with HTTP 500
+            for any other gateway failure.
         """
         gateway_svc: str = self._config.apis_gateway_svc
         url: str = f"{gateway_svc}web/projects/{project_id}"
 
         response = await self._rest_client.get(url)
 
-        if response.status_code == HTTPStatus.NOT_FOUND:
-            response_json = {"status": 0, "error": "Project not found"}
-            return Response(json.dumps(response_json),
-                            status=HTTPStatus.NOT_FOUND,
-                            content_type="application/json")
+        if response.status_code in (HTTPStatus.FORBIDDEN, HTTPStatus.NOT_FOUND):
+            return await make_response(self._generate_redirect('/'))
 
         if response.status_code != HTTPStatus.OK:
             self._logger.critical(
