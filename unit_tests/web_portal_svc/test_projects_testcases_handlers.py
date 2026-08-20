@@ -72,10 +72,21 @@ class TestGetProjectOverviewPageHandler(unittest.IsolatedAsyncioTestCase):
         text = await response.get_data(as_text=True)
         self.assertIn("login", text)
 
-    async def test_not_found_returns_404(self):
+    async def test_not_found_redirects_to_dashboard(self):
         self.mock_rest_client.get.return_value = ApiResponse(status_code=404)
         response = await self._get()
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
+        text = await response.get_data(as_text=True)
+        self.assertIn("Refresh", text)
+
+    async def test_forbidden_redirects_to_dashboard(self):
+        """Not a member of this project any more - same treatment as 404,
+        not an error worth showing."""
+        self.mock_rest_client.get.return_value = ApiResponse(status_code=403)
+        response = await self._get()
+        self.assertEqual(response.status_code, 200)
+        text = await response.get_data(as_text=True)
+        self.assertIn("Refresh", text)
 
     async def test_other_error_returns_500(self):
         self.mock_rest_client.get.return_value = ApiResponse(status_code=503)
@@ -133,6 +144,28 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
         ]
         response = await self._get()
         self.assertEqual(response.status_code, 500)
+
+    async def test_not_found_redirects_to_dashboard(self):
+        self.mock_rest_client.get.side_effect = [
+            ApiResponse(status_code=HTTPStatus.OK, body={"name": "Proj"}),
+            ApiResponse(status_code=404),
+        ]
+        response = await self._get()
+        self.assertEqual(response.status_code, 200)
+        text = await response.get_data(as_text=True)
+        self.assertIn("Refresh", text)
+
+    async def test_forbidden_redirects_to_dashboard(self):
+        """Not a member of this project any more - same treatment as 404,
+        not an error worth showing."""
+        self.mock_rest_client.get.side_effect = [
+            ApiResponse(status_code=HTTPStatus.OK, body={"name": "Proj"}),
+            ApiResponse(status_code=403),
+        ]
+        response = await self._get()
+        self.assertEqual(response.status_code, 200)
+        text = await response.get_data(as_text=True)
+        self.assertIn("Refresh", text)
 
     async def test_project_name_lookup_failure_falls_back_to_unknown(self):
         self.mock_rest_client.get.side_effect = [
