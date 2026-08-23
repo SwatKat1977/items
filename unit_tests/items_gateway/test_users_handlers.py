@@ -254,7 +254,9 @@ class TestModifyUserHandler(unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self):
         self.mock_rc = AsyncMock()
-        handler = ModifyUserHandler(_LOGGER, _config(), self.mock_rc)
+        self.mock_sessions = AsyncMock()
+        handler = ModifyUserHandler(
+            _LOGGER, _config(), self.mock_rc, self.mock_sessions)
         app = Quart(__name__)
 
         @app.route("/users/<string:user_id>", methods=["PATCH"])
@@ -307,6 +309,52 @@ class TestModifyUserHandler(unittest.IsolatedAsyncioTestCase):
         self.mock_rc.patch.return_value = _ok({"status": "ok"})
         resp = await self._patch()
         self.assertEqual(resp.content_type, "application/json")
+
+    async def test_success_live_patches_is_administrator_true(self):
+        self.mock_rc.patch.return_value = _ok({"status": "ok"})
+        await self._patch(body={"is_administrator": True})
+        self.mock_sessions.set_is_administrator_for_user.assert_called_once_with(
+            _UUID, True)
+        self.mock_sessions.delete_session_for_user.assert_not_called()
+
+    async def test_success_live_patches_is_administrator_false(self):
+        self.mock_rc.patch.return_value = _ok({"status": "ok"})
+        await self._patch(body={"is_administrator": False})
+        self.mock_sessions.set_is_administrator_for_user.assert_called_once_with(
+            _UUID, False)
+
+    async def test_is_administrator_absent_does_not_patch(self):
+        self.mock_rc.patch.return_value = _ok({"status": "ok"})
+        await self._patch(body={"display_name": "New"})
+        self.mock_sessions.set_is_administrator_for_user.assert_not_called()
+
+    async def test_deactivation_deletes_the_session(self):
+        self.mock_rc.patch.return_value = _ok({"status": "ok"})
+        await self._patch(body={"account_status": 0})
+        self.mock_sessions.delete_session_for_user.assert_called_once_with(
+            _UUID)
+
+    async def test_deactivation_takes_priority_over_is_administrator_patch(self):
+        """Deleting the session makes patching is_administrator on it
+        pointless - deactivation should win when both are set together."""
+        self.mock_rc.patch.return_value = _ok({"status": "ok"})
+        await self._patch(
+            body={"account_status": 0, "is_administrator": False})
+        self.mock_sessions.delete_session_for_user.assert_called_once_with(
+            _UUID)
+        self.mock_sessions.set_is_administrator_for_user.assert_not_called()
+
+    async def test_reactivation_does_not_delete_the_session(self):
+        self.mock_rc.patch.return_value = _ok({"status": "ok"})
+        await self._patch(body={"account_status": 1})
+        self.mock_sessions.delete_session_for_user.assert_not_called()
+
+    async def test_failure_does_not_touch_sessions(self):
+        self.mock_rc.patch.return_value = _err(
+            {"error": "Cannot remove the last active administrator"}, 403)
+        await self._patch(body={"is_administrator": False})
+        self.mock_sessions.set_is_administrator_for_user.assert_not_called()
+        self.mock_sessions.delete_session_for_user.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
