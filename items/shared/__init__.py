@@ -21,16 +21,43 @@ MINOR = 3
 PATCH = 0
 
 # e.g. "alpha", "beta", "rc1", or None
-PRE_RELEASE = ""
+PRE_RELEASE = None
 
 # Version tuple for comparisons
 VERSION = (MAJOR, MINOR, PATCH, PRE_RELEASE)
 
-# Construct the string representation
-__version__ = f"V{MAJOR}.{MINOR}.{PATCH}"
 
-if PRE_RELEASE:
-    __version__ += f"-{PRE_RELEASE}"
+def _build_version_string(major: int, minor: int, patch: int,
+                          pre_release: str | None) -> str:
+    """Build the ``__version__`` string from its components.
+
+    Pulled out as its own function - rather than the equivalent
+    module-level ``if PRE_RELEASE: ...`` - specifically so both branches
+    are actually testable. A module-level conditional on a constant only
+    ever exercises whichever branch that constant currently takes; the
+    other is permanently uncovered regardless of how thorough the rest of
+    the test suite is, and which branch that is flips every time
+    ``PRE_RELEASE`` changes (e.g. cleared to ``None`` for a real release).
+
+    Args:
+        major: Major version component.
+        minor: Minor version component.
+        patch: Patch version component.
+        pre_release: Pre-release label (e.g. ``"alpha"``, ``"rc1"``), or
+            ``None``/empty for a final release.
+
+    Returns:
+        ``"V{major}.{minor}.{patch}"``, with ``"-{pre_release}"``
+        appended if one is set.
+    """
+    version = f"V{major}.{minor}.{patch}"
+    if pre_release:
+        version += f"-{pre_release}"
+    return version
+
+
+# Construct the string representation
+__version__ = _build_version_string(MAJOR, MINOR, PATCH, PRE_RELEASE)
 
 SERVICE_COPYRIGHT_TEXT = "Copyright 2025-2026 Integrated Test Management " + \
                          'Suite development team'
