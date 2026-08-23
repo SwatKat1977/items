@@ -175,6 +175,52 @@ class TestSessions(unittest.IsolatedAsyncioTestCase):
         entry = await self.sessions.get_session_entry(self.email, self.token)
         self.assertEqual(entry.project_ids, frozenset({1}))
 
+    async def test_set_is_administrator_for_user_patches_to_true(self):
+        await self.sessions.add_session(
+            self.email, self.token, self.auth_type,
+            user_id="uuid-123", is_administrator=False)
+        await self.sessions.set_is_administrator_for_user("uuid-123", True)
+        entry = await self.sessions.get_session_entry(self.email, self.token)
+        self.assertTrue(entry.is_administrator)
+
+    async def test_set_is_administrator_for_user_patches_to_false(self):
+        await self.sessions.add_session(
+            self.email, self.token, self.auth_type,
+            user_id="uuid-123", is_administrator=True)
+        await self.sessions.set_is_administrator_for_user("uuid-123", False)
+        entry = await self.sessions.get_session_entry(self.email, self.token)
+        self.assertFalse(entry.is_administrator)
+
+    async def test_set_is_administrator_for_user_no_matching_session_is_a_noop(self):
+        await self.sessions.add_session(
+            self.email, self.token, self.auth_type,
+            user_id="uuid-123", is_administrator=False)
+        await self.sessions.set_is_administrator_for_user("uuid-other", True)
+        entry = await self.sessions.get_session_entry(self.email, self.token)
+        self.assertFalse(entry.is_administrator)
+
+    async def test_delete_session_for_user_removes_the_matching_session(self):
+        await self.sessions.add_session(
+            self.email, self.token, self.auth_type, user_id="uuid-123")
+        await self.sessions.delete_session_for_user("uuid-123")
+        self.assertFalse(await self.sessions.has_session(self.email))
+
+    async def test_delete_session_for_user_no_matching_session_is_a_noop(self):
+        await self.sessions.add_session(
+            self.email, self.token, self.auth_type, user_id="uuid-123")
+        await self.sessions.delete_session_for_user("uuid-other")
+        self.assertTrue(await self.sessions.has_session(self.email))
+
+    async def test_delete_session_for_user_only_removes_the_matching_one(self):
+        await self.sessions.add_session(
+            self.email, self.token, self.auth_type, user_id="uuid-123")
+        other_email = "other@example.com"
+        await self.sessions.add_session(
+            other_email, "other_token", self.auth_type, user_id="uuid-other")
+        await self.sessions.delete_session_for_user("uuid-123")
+        self.assertFalse(await self.sessions.has_session(self.email))
+        self.assertTrue(await self.sessions.has_session(other_email))
+
 
 if __name__ == "__main__":
     unittest.main()

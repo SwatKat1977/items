@@ -21,6 +21,7 @@ from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
+from items.services.items_gateway.sessions import Sessions
 
 
 class ModifyUserHandler(BaseApiRoute):
@@ -33,13 +34,24 @@ class ModifyUserHandler(BaseApiRoute):
     def __init__(self,
                  logger: logging.Logger,
                  configuration: GatewayConfiguration,
-                 rest_client: RestClient) -> None:
+                 rest_client: RestClient,
+                 sessions: Sessions) -> None:
         self._logger = logger.getChild(type(self).__name__)
         self._configuration = configuration
         self._rest_client = rest_client
+        self._sessions = sessions
 
     async def modify_user(self, user_id: str) -> Response:
         """Update a user's profile fields.
+
+        On a successful update, keeps the user's already-open session (if
+        any) in sync with what changed:
+          - ``is_administrator``, when present in the body, is live-patched
+            into the session immediately - see
+            ``Sessions.set_is_administrator_for_user``.
+          - ``account_status`` set to ``0`` (deactivation) deletes the
+            session outright, forcing a re-login (which will then
+            correctly fail) - see ``Sessions.delete_session_for_user``.
 
         Args:
             user_id: The user's UUID (from the URL).
@@ -69,6 +81,13 @@ class ModifyUserHandler(BaseApiRoute):
                 json.dumps({"error": "Identity service unavailable"}),
                 status=HTTPStatus.INTERNAL_SERVER_ERROR,
                 content_type="application/json")
+
+        if response.status_code == HTTPStatus.OK:
+            if body.get("account_status") == 0:
+                await self._sessions.delete_session_for_user(user_id)
+            elif "is_administrator" in body:
+                await self._sessions.set_is_administrator_for_user(
+                    user_id, bool(body["is_administrator"]))
 
         return Response(json.dumps(response.body),
                         status=response.status_code,

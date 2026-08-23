@@ -3,6 +3,30 @@
 Running list of known, deliberately-deferred items — not urgent, but worth
 tracking so they don't get lost.
 
+## Portal: no way to manually revoke a user's active session
+
+**Where:** would be a new Gateway route (e.g. `DELETE
+/web/users/<user_id>/session`, admin-only) plus a Portal UI action
+(button on the user's admin page) - neither exists yet. Pure Gateway on
+the API side: `Sessions` is in-memory Gateway state that Identity has no
+knowledge of, so no Identity involvement needed.
+
+**Problem:** raised while scoping the `is_administrator`/deactivation
+session-sync fix - an admin has no way to force-log-out a specific user
+right now (stolen laptop, suspected compromised session, etc.) other than
+the reactive cases already handled automatically (deactivation, losing
+admin rights). A deliberate, on-demand action is a different, genuinely
+useful capability on top of that.
+
+**Fix:** the mechanism this needs (`Sessions.delete_session_for_user`,
+looking a session up by `user_id` rather than email) is being built
+anyway for the deactivation fix - this is a thin layer on top: a Gateway
+route calling it directly, and a Portal button/handler calling that
+route. Small once the mechanism exists, but real surface area across two
+services (new route + new UI), so deliberately kept as its own branch
+rather than folded into the reactive-fix branch that happens to build the
+mechanism it needs.
+
 ## Web Portal: project pages dead-end into raw JSON on 403/404
 
 **Where:** `GetProjectTestcasesPageHandler.test_cases` and
