@@ -55,3 +55,7 @@ TC_CUSTOM_FIELD_TYPE_OPTION_VALUES: str = "tc_custom_field_type_option_values"
 
 # Values for a Test Case field option.
 TC_CUSTOM_FIELD_OPTION_VALUES: str = "tc_custom_field_option_values"
+
+# Test case types (e.g. Functional, Regression, Security) - a case's
+# category, distinct from its custom field values.
+TC_CASE_TYPES: str = "tc_case_types"

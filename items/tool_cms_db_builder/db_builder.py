@@ -90,12 +90,20 @@ async def build_database(logger: logging.Logger,
          tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_TYPE_OPTION_VALUES),
         (cms_db_tables.TC_CUSTOM_FIELD_OPTION_VALUES,
          tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_OPTION_VALUES),
+        (cms_db_tables.TC_CASE_TYPES,
+         tables_test_cases.TABLE_SQL_TC_CASE_TYPES),
     ]
 
     try:
         for table_name, create_sql in tables:
             logger.info("-> Creating '%s' table", table_name)
             await database.create_table(create_sql, table_name)
+
+        logger.info("-> Creating '%s' one-default index",
+                    cms_db_tables.TC_CASE_TYPES)
+        await database.run_query(
+            tables_test_cases.INDEX_SQL_TC_CASE_TYPES_ONE_DEFAULT, (),
+            commit=True)
     except SqliteInterfaceException as ex:
         logger.critical("Unable to create tables: %s", ex)
         return False
@@ -224,7 +232,36 @@ async def add_static_values_test_case_custom_field_option_kind_values(
     return True
 
 
+async def add_static_values_case_types(logger: logging.Logger,
+                                       database: SqliteInterface) -> bool:
+    """Populate the case types table with predefined static values.
+
+    Args:
+        logger:   Logger instance.
+        database: SqliteInterface connected to the target database.
+
+    Returns:
+        True if all rows were inserted successfully, False otherwise.
+    """
+    logger.info("-> Populating case type static values")
+
+    query: str = (f"INSERT INTO {cms_db_tables.TC_CASE_TYPES}(id, name, "
+                  "description, is_default) VALUES(?,?,?,?)")
+
+    try:
+        for type_id, name, description, is_default \
+                in db_static_values.STATIC_VALUES_CASE_TYPES:
+            await database.insert_query(
+                query, (type_id, name, description, is_default))
+    except SqliteInterfaceException as ex:
+        logger.critical("Unable to add case type static value: %s", ex)
+        return False
+
+    return True
+
+
 async def async_main() -> None:
+    # pylint: disable=too-many-return-statements
     """Async entry point for initializing and populating the SQLite database.
 
     Sets up logging, parses command-line arguments, and creates a new database
@@ -268,6 +305,9 @@ async def async_main() -> None:
         return
 
     if not await add_static_values_test_case_custom_field_option_kind_values(logger, db):
+        return
+
+    if not await add_static_values_case_types(logger, db):
         return
 
     logger.info("Database build complete.")
