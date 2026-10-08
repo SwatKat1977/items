@@ -182,13 +182,16 @@ class CaseTypesRepository:
     async def set_default_case_type(self, type_id: int) -> Optional[bool]:
         """Make a case type the default, un-defaulting whichever held it.
 
-        Clear-then-set as two sequential UPDATEs rather than one
-        statement - SQLite has no clean single-statement "swap", and this
-        mirrors how the Roles permission grid already does delete-then-
-        bulk-insert for a "replace" operation in this codebase. Both
-        statements are individually atomic; the brief window between them
-        (zero defaults) is only observable by a concurrent read, same
-        accepted tradeoff as that existing pattern.
+        The clear and the set run as one transaction (BEGIN/COMMIT in a
+        single script), so the table can never be observed - or left, if
+        the process dies part-way - with zero defaults. The clear is
+        guarded by an EXISTS check so a missing ``type_id`` cannot strip
+        the current default. Two statements are needed rather than one
+        UPDATE because the partial unique index is checked row by row,
+        so a single swapping UPDATE would be order-dependent.
+
+        ``type_id`` is coerced with ``int()`` before being formatted into
+        the script (executescript takes no bound parameters).
 
         Args:
             type_id: ID of the case type to make the default.
@@ -209,12 +212,12 @@ class CaseTypesRepository:
         if row[0]:
             return True  # already the default - nothing to do
 
-        await self._db.run_query(
-            f"UPDATE {cms_tables.TC_CASE_TYPES} SET is_default = 0 "
-            "WHERE is_default = 1",
-            (), commit=True)
-        await self._db.run_query(
-            f"UPDATE {cms_tables.TC_CASE_TYPES} SET is_default = 1 "
-            "WHERE id = ?",
-            (type_id,), commit=True)
+        type_id = int(type_id)
+        table = cms_tables.TC_CASE_TYPES
+        await self._db.run_script(
+            "BEGIN IMMEDIATE;"
+            f"UPDATE {table} SET is_default = 0 WHERE is_default = 1 "
+            f"AND EXISTS (SELECT 1 FROM {table} WHERE id = {type_id});"
+            f"UPDATE {table} SET is_default = 1 WHERE id = {type_id};"
+            "COMMIT;")
         return True

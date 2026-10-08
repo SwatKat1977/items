@@ -42,7 +42,7 @@ class GetCaseTypesHandler(BaseApiRoute):
         """Retrieve every case type.
 
         Returns:
-            200 with a list of case type rows on success.
+            200 with a list of case type objects on success.
             500 on an internal database error.
         """
         result = await self._service.get_all_case_types()

@@ -45,7 +45,8 @@ class GetCaseTypeHandler(BaseApiRoute):
             type_id (int): ID of the case type to retrieve.
 
         Returns:
-            200 with the case type row on success.
+            200 with the case type object (id, name, description,
+            is_default) on success.
             404 if no case type exists with the given ID.
             500 on an internal database error.
         """

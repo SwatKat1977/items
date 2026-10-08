@@ -40,8 +40,7 @@ def create_case_types_routes(logger: logging.Logger,
     with a Quart Blueprint.
 
     No delete route yet - deliberately deferred to its own branch, along
-    with wiring a case type onto test cases themselves (see
-    cms_case_types_core's changes.md).
+    with wiring a case type onto test cases themselves.
 
     Args:
         logger:        Parent logger instance.

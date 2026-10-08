@@ -107,6 +107,12 @@ CREATE TABLE tc_custom_field_option_values (
     FOREIGN KEY (field_id) REFERENCES tc_custom_fields(id) ON DELETE CASCADE,
     UNIQUE(test_case_id, field_id)
 );
+CREATE TABLE tc_case_types (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL DEFAULT '',
+    is_default BOOLEAN NOT NULL DEFAULT 0
+);
 INSERT INTO tc_custom_field_types (name, supports_default_value, supports_is_required)
 VALUES
     ('Checkbox', 1, 0), ('Date', 0, 1), ('Dropdown', 1, 1), ('Integer', 1, 1),
@@ -142,6 +148,8 @@ _VALID_FIELD_BODY = {
     "default_value": "",
     "applies_to_all_projects": True,
 }
+
+_VALID_CASE_TYPE_BODY = {"name": "Wiring Type", "description": ""}
 
 
 class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
@@ -329,6 +337,36 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
     async def test_delete_custom_field_route_is_reachable(self):
         async with self.client as c:
             response = await c.delete("/testcase_custom_fields/999")
+        self.assertNotEqual(response.status_code, 405)
+
+    # ------------------------------------------------------------------
+    # Case-type routes  (routes/case_types/__init__.py)
+    # ------------------------------------------------------------------
+
+    async def test_get_case_types_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/case_types")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_get_case_type_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/case_types/999")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_add_case_type_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/case_types", json=_VALID_CASE_TYPE_BODY)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_update_case_type_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.patch("/case_types/999",
+                                     json=_VALID_CASE_TYPE_BODY)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_set_default_case_type_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/case_types/999/set_default")
         self.assertNotEqual(response.status_code, 405)
 
 

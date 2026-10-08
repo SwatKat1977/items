@@ -34,6 +34,20 @@ class CaseTypeResult(ServiceResult):
     is_conflict: bool = field(default=False)
 
 
+def _row_to_dict(row: tuple) -> dict:
+    """Convert a ``(id, name, description, is_default)`` row to an API dict.
+
+    ``is_default`` is stored as 0/1 in SQLite; it is exposed as a real
+    boolean so API consumers get a strictly typed value.
+    """
+    return {
+        "id": row[0],
+        "name": row[1],
+        "description": row[2],
+        "is_default": bool(row[3]),
+    }
+
+
 class CaseTypesService:
     """
     Business logic for the case types domain.
@@ -63,7 +77,8 @@ class CaseTypesService:
             type_id: ID of the case type to retrieve.
 
         Returns:
-            CaseTypeResult with data set to the type row on success, a
+            CaseTypeResult with data set to the type as a dict (``id``,
+            ``name``, ``description``, boolean ``is_default``) on success, a
             not_found result if no type has that ID, or an internal
             error result on DB failure.
         """
@@ -87,14 +102,15 @@ class CaseTypesService:
                                   error_msg="Case type not found",
                                   not_found=True)
 
-        return CaseTypeResult(success=True, data=row)
+        return CaseTypeResult(success=True, data=_row_to_dict(row))
 
     async def get_all_case_types(self) -> CaseTypeResult:
         """Retrieve every case type.
 
         Returns:
-            CaseTypeResult with data set to a list of type rows on
-            success, or an internal error result on DB failure.
+            CaseTypeResult with data set to a list of type dicts (same
+            shape as get_case_type) on success, or an internal error
+            result on DB failure.
         """
         if not self._state.is_available():
             return CaseTypeResult(success=False,
@@ -111,7 +127,8 @@ class CaseTypesService:
                                   error_msg="Internal error in CMS",
                                   is_internal=True)
 
-        return CaseTypeResult(success=True, data=rows)
+        return CaseTypeResult(
+            success=True, data=[_row_to_dict(row) for row in rows])
 
     # ------------------------------------------------------------------
     # Write operations
@@ -121,7 +138,8 @@ class CaseTypesService:
                             description: str) -> CaseTypeResult:
         """Create a new case type.
 
-        Validates name uniqueness before inserting. Always created as
+        Trims surrounding whitespace from name and description, then
+        validates name uniqueness before inserting. Always created as
         non-default.
 
         Args:
@@ -137,6 +155,12 @@ class CaseTypesService:
             return CaseTypeResult(success=False,
                                   error_msg="Service unavailable",
                                   is_internal=True)
+
+        name = name.strip()
+        description = description.strip()
+        if not name:
+            return CaseTypeResult(success=False,
+                                  error_msg="Case type name is required")
 
         error = await self._check_name_available(name)
         if error is not None:
@@ -175,6 +199,12 @@ class CaseTypesService:
             return CaseTypeResult(success=False,
                                   error_msg="Service unavailable",
                                   is_internal=True)
+
+        name = name.strip()
+        description = description.strip()
+        if not name:
+            return CaseTypeResult(success=False,
+                                  error_msg="Case type name is required")
 
         error = await self._check_name_available(name, exclude_id=type_id)
         if error is not None:

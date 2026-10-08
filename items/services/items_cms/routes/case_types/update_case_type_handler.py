@@ -32,7 +32,10 @@ SCHEMA_UPDATE_CASE_TYPE_REQUEST: dict = {
         "name": {
             "type": "string",
             "minLength": 1,
-            "description": "The display name of the case type."
+            "pattern": r"\S",
+            "description": "The display name of the case type. Must "
+                           "contain a non-whitespace character; "
+                           "surrounding whitespace is trimmed."
         },
         "description": {
             "type": "string",
