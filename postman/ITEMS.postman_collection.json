@@ -561,6 +561,124 @@
           ]
         },
         {
+          "name": "Case Types",
+          "item": [
+            {
+              "name": "List Case Types",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/case_types",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "case_types"
+                  ]
+                },
+                "description": "200: array of {id, name, description, is_default (boolean)}, ordered by name."
+              },
+              "response": []
+            },
+            {
+              "name": "Get Case Type",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/case_types/1",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "case_types",
+                    "1"
+                  ]
+                },
+                "description": "200: {id, name, description, is_default (boolean)}. 404 if not found."
+              },
+              "response": []
+            },
+            {
+              "name": "Add Case Type",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/case_types",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "case_types"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Exploratory\",\n    \"description\": \"Unscripted, experience-driven testing\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "name and description required; name unique (case-insensitive), trimmed, not blank. 200: {case_type_id}. 400 invalid, 409 duplicate name. Never created as the default."
+              },
+              "response": []
+            },
+            {
+              "name": "Update Case Type",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/case_types/1",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "case_types",
+                    "1"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Accessibility\",\n    \"description\": \"Accessibility and assistive-technology checks\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Replaces name and description (both required); is_default is not accepted. 200: {}. 400 invalid, 404 not found, 409 name used by another type."
+              },
+              "response": []
+            },
+            {
+              "name": "Set Default Case Type",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/case_types/4/set_default",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "case_types",
+                    "4",
+                    "set_default"
+                  ]
+                },
+                "description": "No body. Atomically makes this type the default. Idempotent. 200: {}. 404 if not found (current default unchanged)."
+              },
+              "response": []
+            }
+          ],
+          "description": "Test case types. Full contract: design_docs/case_types_api.md"
+        },
+        {
           "name": "System",
           "item": [
             {
