@@ -206,26 +206,7 @@ class CaseTypesService:
             return CaseTypeResult(success=False,
                                   error_msg="Case type name is required")
 
-        # Existence is checked before the name conflict, so a missing type
-        # is always a 404 rather than a 409 caused by some other type
-        # already owning the requested name.
-        try:
-            current = await self._repository.get_case_type(type_id)
-        except SqliteInterfaceException as ex:
-            self._logger.exception(
-                "Database failure retrieving case type %d for update: %s",
-                type_id, ex)
-            self._state.mark_database_failed()
-            return CaseTypeResult(success=False,
-                                  error_msg="Internal error in CMS",
-                                  is_internal=True)
-
-        if current is None:
-            return CaseTypeResult(success=False,
-                                  error_msg="Case type not found",
-                                  not_found=True)
-
-        error = await self._check_name_available(name, exclude_id=type_id)
+        error = await self._check_can_update(type_id, name)
         if error is not None:
             return error
 
@@ -280,6 +261,41 @@ class CaseTypesService:
                                   not_found=True)
 
         return CaseTypeResult(success=True)
+
+    async def _check_can_update(self, type_id: int,
+                                name: str) -> CaseTypeResult | None:
+        """Check a case type exists and may take the requested name.
+
+        Existence is checked before the name conflict, so a missing type
+        is always a 404 rather than a 409 caused by some other type
+        already owning the requested name.
+
+        Args:
+            type_id: ID of the case type being updated.
+            name:    New display name (already trimmed).
+
+        Returns:
+            None if the update may proceed. Otherwise a CaseTypeResult
+            describing the not-found, conflict or internal error to return
+            immediately.
+        """
+        try:
+            current = await self._repository.get_case_type(type_id)
+        except SqliteInterfaceException as ex:
+            self._logger.exception(
+                "Database failure retrieving case type %d for update: %s",
+                type_id, ex)
+            self._state.mark_database_failed()
+            return CaseTypeResult(success=False,
+                                  error_msg="Internal error in CMS",
+                                  is_internal=True)
+
+        if current is None:
+            return CaseTypeResult(success=False,
+                                  error_msg="Case type not found",
+                                  not_found=True)
+
+        return await self._check_name_available(name, exclude_id=type_id)
 
     async def _check_name_available(
             self, name: str,
