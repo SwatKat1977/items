@@ -206,6 +206,25 @@ class CaseTypesService:
             return CaseTypeResult(success=False,
                                   error_msg="Case type name is required")
 
+        # Existence is checked before the name conflict, so a missing type
+        # is always a 404 rather than a 409 caused by some other type
+        # already owning the requested name.
+        try:
+            current = await self._repository.get_case_type(type_id)
+        except SqliteInterfaceException as ex:
+            self._logger.exception(
+                "Database failure retrieving case type %d for update: %s",
+                type_id, ex)
+            self._state.mark_database_failed()
+            return CaseTypeResult(success=False,
+                                  error_msg="Internal error in CMS",
+                                  is_internal=True)
+
+        if current is None:
+            return CaseTypeResult(success=False,
+                                  error_msg="Case type not found",
+                                  not_found=True)
+
         error = await self._check_name_available(name, exclude_id=type_id)
         if error is not None:
             return error

@@ -37,6 +37,7 @@ class TestCaseTypesService(unittest.IsolatedAsyncioTestCase):
         self.mock_state.is_available.return_value = True
         self.mock_repo = AsyncMock(spec=CaseTypesRepository)
         self.mock_repo.case_type_name_exists.return_value = False
+        self.mock_repo.get_case_type.return_value = _ROW
         self.service = CaseTypesService(
             MagicMock(), self.mock_state, self.mock_repo)
 
@@ -155,6 +156,23 @@ class TestCaseTypesService(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result.is_conflict)
         self.mock_repo.case_type_name_exists.assert_awaited_once_with(
             "A", exclude_id=3)
+        self.mock_repo.update_case_type.assert_not_called()
+
+    async def test_update_missing_type_with_clashing_name_is_not_found(self):
+        self.mock_repo.get_case_type.return_value = None
+        self.mock_repo.case_type_name_exists.return_value = True
+        result = await self.service.update_case_type(99, "Smoke", "")
+        self.assertFalse(result.success)
+        self.assertTrue(result.not_found)
+        self.assertFalse(result.is_conflict)
+        self.mock_repo.get_case_type.assert_awaited_once_with(99)
+        self.mock_repo.case_type_name_exists.assert_not_called()
+        self.mock_repo.update_case_type.assert_not_called()
+
+    async def test_update_lookup_db_exception(self):
+        self.mock_repo.get_case_type.side_effect = (
+            SqliteInterfaceException("e"))
+        self._assert_db_failed(await self.service.update_case_type(1, "A", ""))
         self.mock_repo.update_case_type.assert_not_called()
 
     async def test_update_db_exception(self):
