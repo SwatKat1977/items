@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from quart import Blueprint
-from items.services.items_gateway.auth_decorators import require_administrator
+from items.services.items_gateway.auth_decorators import (
+    require_administrator, require_session)
 from items.services.items_gateway.route_injections import RouteInjections
 from items.services.items_gateway.routes.web.case_types.\
     create_case_type_handler import CreateCaseTypeHandler
@@ -31,11 +32,14 @@ from items.services.items_gateway.routes.web.case_types.\
 def create_case_types_routes(injections: RouteInjections) -> Blueprint:
     """Create the Blueprint containing test case type web routes.
 
-    All routes are admin-only, enforced here via ``@require_administrator``
-    rather than trusted to the caller - case types are managed from the
-    administrator-only Customisations page. Reads are deliberately admin-only
-    too for now; they should be relaxed to any session once the testcase
-    forms need to list types for non-administrators.
+    The two read routes need any valid session (``@require_session``): every
+    user who creates or edits a test case needs the list of types, and the
+    default to pre-select, not just administrators. Case types are global
+    rather than project-scoped and carry nothing sensitive, so no project
+    membership is required. The write routes are admin-only
+    (``@require_administrator``) - types are managed from the
+    administrator-only Customisations page. Both are enforced here rather
+    than trusted to the caller.
 
     Registered routes:
         GET    /case_types                         List all case types.
@@ -69,7 +73,7 @@ def create_case_types_routes(injections: RouteInjections) -> Blueprint:
                             "List case types".ljust(40))
 
     @routes.route('/case_types', methods=['GET'])
-    @require_administrator(injections.sessions)
+    @require_session(injections.sessions)
     async def list_case_types_request():
         return await handler_list.list_case_types()
 
@@ -85,7 +89,7 @@ def create_case_types_routes(injections: RouteInjections) -> Blueprint:
                             "Get case type".ljust(40))
 
     @routes.route('/case_types/<int:type_id>', methods=['GET'])
-    @require_administrator(injections.sessions)
+    @require_session(injections.sessions)
     async def get_case_type_request(type_id: int):
         return await handler_get.get_case_type(type_id)
 
