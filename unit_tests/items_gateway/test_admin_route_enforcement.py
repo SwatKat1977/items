@@ -80,6 +80,9 @@ _ADMIN_ONLY_ROUTES = [
     ("GET", "/web/roles/1", None),
     ("PATCH", "/web/roles/1", {"name": "New Name"}),
     ("DELETE", "/web/roles/1", None),
+    ("POST", "/web/case_types", {"name": "Exploratory", "description": ""}),
+    ("PATCH", "/web/case_types/1", {"name": "New", "description": ""}),
+    ("POST", "/web/case_types/1/set_default", None),
     ("GET", "/web/users/1/projects", None),
     ("POST", "/web/users/1/projects", {"project_id": 5}),
     ("PATCH", "/web/users/1/projects/5", {"role_id": 2}),
@@ -87,8 +90,9 @@ _ADMIN_ONLY_ROUTES = [
 ]
 
 # (method, path, json_body) - routes that need a valid session but not
-# administrator rights. All four also require project membership except
-# the list, which filters rather than gates - _USER_HEADERS' session is a
+# administrator rights. The first four also require project membership except
+# the list, which filters rather than gates; the case type reads (listed
+# last) need no membership at all. _USER_HEADERS' session is a
 # member of project 1, matching every project-scoped path here, so these
 # tables alone exercise "a member reaches their own project", not
 # "membership is actually checked" - see test_member_only_routes_reject_
@@ -98,6 +102,11 @@ _SESSION_ONLY_ROUTES = [
     ("GET", "/web/projects/1", None),
     ("GET", "/web/1/testcases", None),
     ("GET", "/web/testcases/1?project_id=1", None),
+    # Case types are global, not project-scoped: any session may read them
+    # (testcase forms need the list and the default); only writes are
+    # admin-only, above.
+    ("GET", "/web/case_types", None),
+    ("GET", "/web/case_types/1", None),
 ]
 
 # (method, path) - the three of the four above that actually gate on
@@ -276,6 +285,19 @@ class TestAdminRouteEnforcement(unittest.IsolatedAsyncioTestCase):
         response = await self._call(
             "GET", "/web/projects", None, headers=_OUTSIDER_HEADERS)
         self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    async def test_case_type_reads_need_no_project_membership(self):
+        """Case types are global, so a session that belongs to no project
+        at all (the _OUTSIDER_HEADERS user) must still be able to read
+        them - any tester creating a test case needs the list. Their
+        writes stay admin-only (covered by _ADMIN_ONLY_ROUTES)."""
+        for path in ("/web/case_types", "/web/case_types/1"):
+            with self.subTest(path=path):
+                response = await self._call(
+                    "GET", path, None, headers=_OUTSIDER_HEADERS)
+                self.assertNotIn(
+                    response.status_code,
+                    (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN))
 
 
 if __name__ == "__main__":

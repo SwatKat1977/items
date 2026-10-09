@@ -76,6 +76,30 @@ class TestGatewayConfiguration(unittest.TestCase):
             ConfigurationConstants.APIS_WEB_PORTAL_SVC)
         self.assertEqual(result, "http://localhost:8080/")
 
+    def test_apis_base_paths_gain_a_missing_trailing_slash(self):
+        for prop in ("apis_identity_svc", "apis_cms_svc",
+                     "apis_web_portal_svc"):
+            with self.subTest(prop=prop):
+                self.config.get_entry.return_value = "http://127.0.0.1:5050"
+                self.assertEqual(getattr(self.config, prop),
+                                 "http://127.0.0.1:5050/")
+
+    def test_apis_base_paths_keep_a_single_trailing_slash(self):
+        for prop in ("apis_identity_svc", "apis_cms_svc",
+                     "apis_web_portal_svc"):
+            with self.subTest(prop=prop):
+                self.config.get_entry.return_value = "http://127.0.0.1:5050/"
+                self.assertEqual(getattr(self.config, prop),
+                                 "http://127.0.0.1:5050/")
+
+    def test_apis_base_paths_collapse_repeated_trailing_slashes(self):
+        for prop in ("apis_identity_svc", "apis_cms_svc",
+                     "apis_web_portal_svc"):
+            with self.subTest(prop=prop):
+                self.config.get_entry.return_value = "http://127.0.0.1:5050//"
+                self.assertEqual(getattr(self.config, prop),
+                                 "http://127.0.0.1:5050/")
+
     def test_smtp_host(self):
         self.config.get_entry.return_value = "smtp.example.com"
         result = self.config.smtp_host
