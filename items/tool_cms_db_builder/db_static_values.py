@@ -70,3 +70,36 @@ STATIC_VALUES_TEST_CASE_CUSTOM_FIELD_OPTION_VALUES: list = [
     (11, 3, '9'),
     (12, 3, '10')
 ]
+
+# Seed case types (id, name, description, is_default). "Other" is the
+# initial default - the fallback for anything project-specific, and the
+# type new/orphaned test cases fall back to.
+STATIC_VALUES_CASE_TYPES: list = [
+    (1, "Accessibility",
+     "Accessibility and assistive-technology checks", False),
+    (2, "Compatibility",
+     "Browser, OS, device, version, environment compatibility", False),
+    (3, "Destructive",
+     "Tests intentionally causing data loss, corruption, failure, or "
+     "disruptive behaviour", False),
+    (4, "Functional", "Core feature/business behaviour", False),
+    (5, "Integration",
+     "Behaviour between services, components, APIs, or external systems",
+     False),
+    (6, "Performance", "Latency, throughput, scalability, load, stress",
+     False),
+    (7, "Regression", "Existing behaviour that must remain working", False),
+    (8, "Security",
+     "Authentication, authorization, vulnerabilities, data protection",
+     False),
+    (9, "Smoke", "Fast high-level build/deployment verification", False),
+    (10, "Sanity", "Narrow verification after a specific change or fix",
+     False),
+    (11, "Usability", "UX and ease-of-use validation", False),
+    (12, "Recovery", "Failover, restart, backup/restore, resilience", False),
+    (13, "Installation / Upgrade",
+     "Installation, migration, upgrade, rollback", False),
+    (14, "Localization",
+     "Language, locale, dates, currencies, time zones", False),
+    (15, "Other", "Escape hatch for anything project-specific", True),
+]

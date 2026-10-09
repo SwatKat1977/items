@@ -158,3 +158,46 @@ CREATE TABLE {cms_db_tables.TC_CUSTOM_FIELD_OPTION_VALUES} (
     UNIQUE(test_case_id, field_id) -- one value per field per test case
 );
 """
+
+"""
+Table: tc_case_types
+
+A test case's category (e.g. Functional, Regression, Security) -
+distinct from a custom field: this is a fixed, admin-managed list rather
+than a per-project custom value.
+
+Columns:
+- id (INTEGER PRIMARY KEY AUTOINCREMENT): Unique ID for the case type.
+- name (TEXT NOT NULL UNIQUE): Display name. Uniqueness is checked
+  case-insensitively at the service layer (LOWER(name) = LOWER(?)),
+  matching tc_custom_fields' field_name/system_name convention - the
+  UNIQUE constraint here is still exact-match, a belt-and-braces
+  backstop rather than the primary enforcement.
+- description (TEXT NOT NULL DEFAULT ''): Optional hint text, e.g. shown
+  as a tooltip wherever a case type is picked.
+- is_default (BOOLEAN NOT NULL DEFAULT 0): Whether this is the fallback
+  type new/orphaned test cases get. See the partial unique index below -
+  exactly one row may have this set at any time. Changing which row is
+  default is a dedicated atomic operation (set_default), not a plain
+  field update - see CaseTypesRepository.set_default_case_type.
+"""
+TABLE_SQL_TC_CASE_TYPES: str = f"""
+CREATE TABLE {cms_db_tables.TC_CASE_TYPES} (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL DEFAULT '',
+    is_default BOOLEAN NOT NULL DEFAULT 0
+);
+"""
+
+# Enforces "at most one default" at the database level, on top of the
+# service-layer validation in set_default_case_type - belt-and-braces,
+# same reasoning as the Roles permission grid's CHECK constraint. A
+# partial index rather than a CHECK constraint because CHECK can't see
+# other rows; this needs a separate DDL statement since
+# SqliteInterface.create_table() only runs one statement per call.
+INDEX_SQL_TC_CASE_TYPES_ONE_DEFAULT: str = f"""
+CREATE UNIQUE INDEX idx_{cms_db_tables.TC_CASE_TYPES}_one_default
+ON {cms_db_tables.TC_CASE_TYPES}(is_default)
+WHERE is_default = 1;
+"""

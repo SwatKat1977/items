@@ -49,6 +49,15 @@ from test_testcase_custom_fields_service import (
 from test_testcase_custom_fields_repository import (
     TestTestcaseCustomFieldsRepository,
 )
+from test_case_types_handlers import (
+    TestGetCaseTypeHandler,
+    TestGetCaseTypesHandler,
+    TestAddCaseTypeHandler,
+    TestUpdateCaseTypeHandler,
+    TestSetDefaultCaseTypeHandler,
+)
+from test_case_types_service import TestCaseTypesService
+from test_case_types_repository import TestCaseTypesRepository
 from test_project_repository import TestProjectRepository
 from test_testcase_repository import TestTestcaseRepository
 from test_route_factories import TestRouteWiring
