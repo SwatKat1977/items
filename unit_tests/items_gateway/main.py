@@ -56,6 +56,13 @@ from test_roles_handlers import (
     TestModifyRoleHandler,
     TestDeleteRoleHandler,
 )
+from test_case_types_handlers import (
+    TestListCaseTypesHandler,
+    TestGetCaseTypeHandler,
+    TestCreateCaseTypeHandler,
+    TestModifyCaseTypeHandler,
+    TestSetDefaultCaseTypeHandler,
+)
 from test_user_project_handlers import (
     TestListUserProjectsHandler,
     TestAddUserProjectHandler,
