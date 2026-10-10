@@ -40,6 +40,7 @@ from test_admin_customisations_page_handler import (
     TestCaseTypesTab,
     TestCaseTypeAdd,
     TestCaseTypeModify,
+    TestCaseTypeDelete,
 )
 from test_admin_users_and_roles_page_handler import (
     TestUsersAndRolesRead,

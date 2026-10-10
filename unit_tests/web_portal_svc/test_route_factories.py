@@ -227,6 +227,12 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
                 form={"name": "Wiring Type", "description": ""})
         self.assertNotEqual(response.status_code, 405)
 
+    async def test_admin_case_type_delete_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/admin/customisations/case_types/1/delete")
+        self.assertNotEqual(response.status_code, 405)
+
     async def test_admin_integrations_route_is_reachable(self):
         async with self.client as c:
             response = await c.get("/admin/integrations")

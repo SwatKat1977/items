@@ -230,6 +230,17 @@ def create_admin_page_handlers(injections: PageHandlerInjections,
     async def admin_customisations_case_type_modify_request(type_id: int):
         return await handler_customisations.case_type_modify(type_id)
 
+    # Admin page | Case type delete:
+    # POST '/admin/customisations/case_types/<id>/delete'
+    injections.logger.debug(
+        "=> %s POST /admin/customisations/case_types/<id>/delete",
+        "Admin delete case type".ljust(40))
+
+    @routes.route('/customisations/case_types/<int:type_id>/delete',
+                  methods=['POST'])
+    async def admin_customisations_case_type_delete_request(type_id: int):
+        return await handler_customisations.case_type_delete(type_id)
+
     # Admin page | Integrations (read): '/admin/integrations'
     injections.logger.debug("=> %s GET /admin/integrations",
                             "Admin integrations page (read)".ljust(40))
