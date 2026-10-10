@@ -369,6 +369,11 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
             response = await c.post("/case_types/999/set_default")
         self.assertNotEqual(response.status_code, 405)
 
+    async def test_delete_case_type_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.delete("/case_types/999")
+        self.assertNotEqual(response.status_code, 405)
+
 
 if __name__ == "__main__":
     unittest.main()

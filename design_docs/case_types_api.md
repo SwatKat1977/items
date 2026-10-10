@@ -3,8 +3,8 @@
 **Service:** CMS (`items_cms`), default port 6050.
 **Status:** Implemented in the CMS, proxied by the Gateway (`/web/case_types`,
 see `gateway_web_api.md`) and used by the Web Portal's Customisations page.
-Test cases carry a case type (section 5); deleting a case type is not yet
-implemented (section 6).
+Test cases carry a case type (section 5), and case types can be deleted
+(section 2.6).
 
 A test case type is a case's category (Functional, Regression, Security, ...).
 It is a fixed, admin-managed list, not a per-project custom field. Exactly one
@@ -66,6 +66,7 @@ All requests and responses are `application/json`. Failures always return
 | `POST` | `/case_types` | Add a case type (never the default) |
 | `PATCH` | `/case_types/<type_id>` | Change name and description |
 | `POST` | `/case_types/<type_id>/set_default` | Make this the default type |
+| `DELETE` | `/case_types/<type_id>` | Delete a type, moving its test cases to the default |
 
 `<type_id>` must be an integer; anything else is a routing 404.
 
@@ -131,6 +132,26 @@ Responses:
 - **404** - no type with that ID. The current default is left unchanged.
 - **500** - internal error.
 
+### 2.6 `DELETE /case_types/<type_id>`
+
+No request body. Deletes the type. Any test cases using it are moved to the
+**current default** type, in the same database transaction as the delete, so a
+test case is never left pointing at a type that no longer exists and a failure
+part-way changes nothing. The default type itself can never be deleted.
+
+Responses:
+
+- **200** - `{}`
+- **404** - no type with that ID.
+- **409** - the type is the default: `{"error": "The default case type cannot be
+  deleted"}`. Nothing is changed. To remove it, first make another type the
+  default with `set_default`.
+- **500** - internal error.
+
+Clients that want to warn the user should say that test cases using the type
+will be moved to the default type; the response does not report how many were
+moved.
+
 ## 3. Error format
 
 ```json
@@ -141,7 +162,7 @@ Responses:
 |---|---|
 | 400 | Invalid request body |
 | 404 | Case type not found |
-| 409 | Name conflict |
+| 409 | Name conflict, or an attempt to delete the default type |
 | 500 | Internal error, or the CMS database is unavailable |
 
 ## 4. Invariants
@@ -151,6 +172,9 @@ Responses:
 - The default can only be changed with `set_default`, never through
   `POST` or `PATCH`.
 - Type names are unique ignoring case.
+- The default type is never deleted.
+- Every test case always has a case type: deleting a type moves its test cases
+  to the default type atomically.
 
 ## 5. Test cases and case types
 
@@ -172,6 +196,5 @@ case types list (section 2.1).
 
 ## 6. Not yet implemented
 
-- **Delete** - its own branch. The default type must never be deletable;
-  deleting any other type will move its test cases to the default type
-  before removing it.
+- Nothing outstanding for the CMS. The Gateway route for delete and the Portal
+  control are separate branches.

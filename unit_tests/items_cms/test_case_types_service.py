@@ -20,6 +20,7 @@ from items.services.items_cms.services.case_types_service import (
     CaseTypesService,
 )
 from items.services.items_cms.repositories.case_types_repository import (
+    CaseTypeDeleteOutcome,
     CaseTypesRepository,
 )
 from items.shared.service_state import ServiceState
@@ -225,3 +226,41 @@ class TestCaseTypesService(unittest.IsolatedAsyncioTestCase):
         self.mock_repo.set_default_case_type.return_value = True
         result = await self.service.set_default_case_type(1)
         self.assertTrue(result.success)
+
+    # ------------------------------------------------------------------
+    # delete_case_type
+    # ------------------------------------------------------------------
+
+    async def test_delete_unavailable(self):
+        self.mock_state.is_available.return_value = False
+        self._assert_internal(await self.service.delete_case_type(1))
+        self.mock_repo.delete_case_type.assert_not_called()
+
+    async def test_delete_db_exception(self):
+        self.mock_repo.delete_case_type.side_effect = (
+            SqliteInterfaceException("e"))
+        self._assert_db_failed(await self.service.delete_case_type(1))
+
+    async def test_delete_not_found(self):
+        self.mock_repo.delete_case_type.return_value = (
+            CaseTypeDeleteOutcome.NOT_FOUND)
+        result = await self.service.delete_case_type(1)
+        self.assertFalse(result.success)
+        self.assertTrue(result.not_found)
+
+    async def test_delete_default_is_a_conflict(self):
+        self.mock_repo.delete_case_type.return_value = (
+            CaseTypeDeleteOutcome.IS_DEFAULT)
+        result = await self.service.delete_case_type(1)
+        self.assertFalse(result.success)
+        self.assertTrue(result.is_conflict)
+        self.assertFalse(result.is_internal)
+        self.assertEqual(result.error_msg,
+                         "The default case type cannot be deleted")
+
+    async def test_delete_success(self):
+        self.mock_repo.delete_case_type.return_value = (
+            CaseTypeDeleteOutcome.DELETED)
+        result = await self.service.delete_case_type(3)
+        self.assertTrue(result.success)
+        self.mock_repo.delete_case_type.assert_awaited_once_with(3)

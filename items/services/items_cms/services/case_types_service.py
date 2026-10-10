@@ -19,6 +19,7 @@ from weaver_framework.database.sqlite_interface import SqliteInterfaceException
 from items.services.items_cms.services.service_result import ServiceResult
 from items.shared.service_state import ServiceState
 from items.services.items_cms.repositories.case_types_repository import (
+    CaseTypeDeleteOutcome,
     CaseTypesRepository,
 )
 
@@ -259,6 +260,47 @@ class CaseTypesService:
             return CaseTypeResult(success=False,
                                   error_msg="Case type not found",
                                   not_found=True)
+
+        return CaseTypeResult(success=True)
+
+    async def delete_case_type(self, type_id: int) -> CaseTypeResult:
+        """Delete a case type, moving its test cases to the default type.
+
+        The default type can never be deleted.
+
+        Args:
+            type_id: ID of the case type to delete.
+
+        Returns:
+            CaseTypeResult indicating success, not_found if no type has
+            that ID, a conflict result if it is the default type, or an
+            internal error result on DB failure.
+        """
+        if not self._state.is_available():
+            return CaseTypeResult(success=False,
+                                  error_msg="Service unavailable",
+                                  is_internal=True)
+
+        try:
+            outcome = await self._repository.delete_case_type(type_id)
+        except SqliteInterfaceException as ex:
+            self._logger.exception(
+                "Database failure deleting case type %d: %s", type_id, ex)
+            self._state.mark_database_failed()
+            return CaseTypeResult(success=False,
+                                  error_msg="Internal error in CMS",
+                                  is_internal=True)
+
+        if outcome is CaseTypeDeleteOutcome.NOT_FOUND:
+            return CaseTypeResult(success=False,
+                                  error_msg="Case type not found",
+                                  not_found=True)
+
+        if outcome is CaseTypeDeleteOutcome.IS_DEFAULT:
+            return CaseTypeResult(
+                success=False,
+                error_msg="The default case type cannot be deleted",
+                is_conflict=True)
 
         return CaseTypeResult(success=True)
 

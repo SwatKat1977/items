@@ -19,6 +19,9 @@ from quart import Quart
 from items.services.items_cms.routes.case_types.add_case_type_handler import (
     AddCaseTypeHandler,
 )
+from items.services.items_cms.routes.case_types.delete_case_type_handler import (
+    DeleteCaseTypeHandler,
+)
 from items.services.items_cms.routes.case_types.get_case_type_handler import (
     GetCaseTypeHandler,
 )
@@ -264,3 +267,46 @@ class TestSetDefaultCaseTypeHandler(unittest.IsolatedAsyncioTestCase):
     async def test_internal(self):
         self.service.set_default_case_type.return_value = _internal()
         self.assertEqual((await self._post()).status_code, 500)
+
+
+class TestDeleteCaseTypeHandler(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.service = AsyncMock(spec=CaseTypesService)
+        handler = DeleteCaseTypeHandler(_LOGGER, self.service)
+        app = Quart(__name__)
+
+        @app.route("/case_types/<int:type_id>", methods=["DELETE"])
+        async def delete(type_id):
+            return await handler.delete_case_type(type_id)
+
+        self.client = app.test_client()
+
+    async def _delete(self, type_id=1):
+        async with self.client as c:
+            return await c.delete(f"/case_types/{type_id}")
+
+    async def test_success(self):
+        self.service.delete_case_type.return_value = _ok()
+        response = await self._delete(4)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(await response.get_json(), {})
+        self.service.delete_case_type.assert_awaited_once_with(4)
+
+    async def test_not_found(self):
+        self.service.delete_case_type.return_value = _not_found()
+        self.assertEqual((await self._delete()).status_code, 404)
+
+    async def test_default_is_a_conflict(self):
+        self.service.delete_case_type.return_value = _conflict()
+        response = await self._delete()
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual((await response.get_json())["error"], "dup")
+
+    async def test_internal(self):
+        self.service.delete_case_type.return_value = _internal()
+        self.assertEqual((await self._delete()).status_code, 500)
+
+    async def test_other_failure_is_a_bad_request(self):
+        self.service.delete_case_type.return_value = _bad_request()
+        self.assertEqual((await self._delete()).status_code, 400)
