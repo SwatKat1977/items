@@ -66,8 +66,8 @@ class TestcaseRepository:
             A dict with two keys:
               - ``folders``: list of ``{id, name, parent_id}`` dicts ordered
                 by parent then id.
-              - ``test_cases``: list of ``{id, folder_id, name,
-                custom_fields}`` dicts ordered by folder then id, where
+              - ``test_cases``: list of ``{id, folder_id, case_type_id,
+                name, custom_fields}`` dicts ordered by folder then id, where
                 ``custom_fields`` is a list of ``{field_id, field_name,
                 field_type, position, value}`` dicts ordered by position.
 
@@ -90,7 +90,7 @@ class TestcaseRepository:
         """
 
         cases_query = (
-            f"SELECT id, folder_id, name "
+            f"SELECT id, folder_id, case_type_id, name "
             f"FROM {cms_tables.TC_TEST_CASES} "
             "WHERE project_id = ? "
             "ORDER BY folder_id, id"
@@ -109,10 +109,12 @@ class TestcaseRepository:
                 {
                     'id': test_id,
                     'folder_id': folder_id,
+                    'case_type_id': case_type_id,
                     'name': name,
                     'custom_fields': values_by_case.get(test_id, []),
                 }
-                for test_id, folder_id, name in (cases_rows or [])
+                for test_id, folder_id, case_type_id, name
+                in (cases_rows or [])
             ]
         }
 
@@ -180,29 +182,47 @@ class TestcaseRepository:
             case_id: Primary key of the test case.
 
         Returns:
-            A dict with ``id``, ``project_id``, ``folder_id``, ``name``, and
-            ``description`` if found, or None if no row matches.
+            A dict with ``id``, ``project_id``, ``folder_id``,
+            ``case_type_id``, ``name``, and ``description`` if found, or None
+            if no row matches.
 
         Raises:
             SqliteInterfaceException: If the database query fails.
         """
         query = (
-            f"SELECT id, project_id, folder_id, name, description "
-            f"FROM {cms_tables.TC_TEST_CASES} WHERE id = ?"
+            f"SELECT id, project_id, folder_id, case_type_id, name, "
+            f"description FROM {cms_tables.TC_TEST_CASES} WHERE id = ?"
         )
         row = await self._db.run_query(query, (case_id,), fetch_one=True)
 
         if not row:
             return None
 
-        test_id, project_id, folder_id, name, description = row
+        test_id, project_id, folder_id, case_type_id, name, description = row
         return {
             'id': test_id,
             'project_id': project_id,
             'folder_id': folder_id,
+            'case_type_id': case_type_id,
             'name': name,
             'description': description
         }
+
+    async def case_type_exists(self, case_type_id: int) -> bool:
+        """Return True if a case type with this ID exists.
+
+        Args:
+            case_type_id: ID of the case type to check.
+
+        Returns:
+            True if the case type exists, False otherwise.
+
+        Raises:
+            SqliteInterfaceException: If the database query fails.
+        """
+        query = f"SELECT id FROM {cms_tables.TC_CASE_TYPES} WHERE id = ?"
+        row = await self._db.run_query(query, (case_type_id,), fetch_one=True)
+        return bool(row)
 
     async def get_folder_project_id(self, folder_id: int) -> Optional[int]:
         """Return the project ID owning a folder, if the folder exists.
@@ -273,14 +293,19 @@ class TestcaseRepository:
                            project_id: int,
                            folder_id: Optional[int],
                            name: str,
-                           description: str) -> int:
+                           description: str,
+                           case_type_id: Optional[int] = None) -> int:
         """Insert a new test case and return its ID.
 
         Args:
-            project_id:  Project the test case belongs to.
-            folder_id:   Folder ID, or None for a root-level test case.
-            name:        Test case name.
-            description: Test case description.
+            project_id:   Project the test case belongs to.
+            folder_id:    Folder ID, or None for a root-level test case.
+            name:         Test case name.
+            description:  Test case description.
+            case_type_id: Case type ID, or None to use the current default
+                          type. The default is resolved inside the insert
+                          itself, so it cannot change between being read and
+                          being used.
 
         Returns:
             The ID of the newly inserted test case row.
@@ -290,32 +315,38 @@ class TestcaseRepository:
         """
         query = (
             f"INSERT INTO {cms_tables.TC_TEST_CASES} "
-            "(project_id, folder_id, name, description) "
-            "VALUES (?, ?, ?, ?)"
+            "(project_id, folder_id, case_type_id, name, description) "
+            "VALUES (?, ?, COALESCE(?, (SELECT id FROM "
+            f"{cms_tables.TC_CASE_TYPES} WHERE is_default = 1)), ?, ?)"
         )
         return await self._db.insert_query(
-            query, (project_id, folder_id, name, description))
+            query,
+            (project_id, folder_id, case_type_id, name, description))
 
     async def update_testcase(self,
                               case_id: int,
                               name: str,
-                              description: str) -> None:
-        """Rename and/or update the description of an existing test case.
+                              description: str,
+                              case_type_id: Optional[int] = None) -> None:
+        """Update the name, description and optionally type of a test case.
 
         Args:
-            case_id:     ID of the test case to update.
-            name:        New test case name.
-            description: New test case description.
+            case_id:      ID of the test case to update.
+            name:         New test case name.
+            description:  New test case description.
+            case_type_id: New case type ID, or None to leave the test case's
+                          type unchanged.
 
         Raises:
             SqliteInterfaceException: If the database update fails.
         """
         query = (
             f"UPDATE {cms_tables.TC_TEST_CASES} "
-            "SET name = ?, description = ? WHERE id = ?"
+            "SET name = ?, description = ?, "
+            "case_type_id = COALESCE(?, case_type_id) WHERE id = ?"
         )
         await self._db.run_query(
-            query, (name, description, case_id), commit=True)
+            query, (name, description, case_type_id, case_id), commit=True)
 
     async def delete_testcase(self, case_id: int) -> None:
         """Permanently delete a test case from the database.

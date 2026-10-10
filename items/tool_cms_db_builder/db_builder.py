@@ -72,6 +72,8 @@ async def build_database(logger: logging.Logger,
          sql_values.TABLE_SQL_PRJ_PROJECTS),
         (cms_db_tables.TC_FOLDERS,
          tables_test_cases.TABLE_SQL_TC_FOLDERS),
+        (cms_db_tables.TC_CASE_TYPES,
+         tables_test_cases.TABLE_SQL_TC_CASE_TYPES),
         (cms_db_tables.TC_TEST_CASES,
          tables_test_cases.TABLE_SQL_TC_TEST_CASES),
         (cms_db_tables.TC_CUSTOM_FIELD_TYPES,
@@ -90,8 +92,6 @@ async def build_database(logger: logging.Logger,
          tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_TYPE_OPTION_VALUES),
         (cms_db_tables.TC_CUSTOM_FIELD_OPTION_VALUES,
          tables_test_cases.TABLE_SQL_TC_CUSTOM_FIELD_OPTION_VALUES),
-        (cms_db_tables.TC_CASE_TYPES,
-         tables_test_cases.TABLE_SQL_TC_CASE_TYPES),
     ]
 
     try:

@@ -1,8 +1,10 @@
 # Test Case Types - CMS API
 
 **Service:** CMS (`items_cms`), default port 6050.
-**Status:** Implemented in the CMS. Not yet proxied by the Gateway or used by
-the Web Portal.
+**Status:** Implemented in the CMS, proxied by the Gateway (`/web/case_types`,
+see `gateway_web_api.md`) and used by the Web Portal's Customisations page.
+Test cases carry a case type (section 5); deleting a case type is not yet
+implemented (section 6).
 
 A test case type is a case's category (Functional, Regression, Security, ...).
 It is a fixed, admin-managed list, not a per-project custom field. Exactly one
@@ -150,10 +152,26 @@ Responses:
   `POST` or `PATCH`.
 - Type names are unique ignoring case.
 
-## 5. Not yet implemented
+## 5. Test cases and case types
 
-- **Delete** - deferred to its own branch. The default type must never be
-  deletable.
-- **Attaching a type to test cases** - deferred, along with the fallback to the
-  default type for orphaned test cases.
-- **Gateway routes and Portal UI** - separate branches.
+Every test case has exactly one case type: `tc_test_cases.case_type_id` is
+`NOT NULL`, with a foreign key to `tc_case_types(id)` and `ON DELETE RESTRICT`,
+so a type that test cases still use cannot be removed by accident.
+
+CMS testcase endpoints:
+
+| Endpoint | Behaviour |
+|---|---|
+| `POST /testcases` | Optional integer `case_type_id` (minimum 1). If omitted, the test case gets the **current default** type, resolved inside the insert itself. If given and no such type exists: **404** `{"error": "Case type id is invalid"}`. |
+| `PATCH /testcases/<id>` | Optional integer `case_type_id`. If omitted, the test case keeps its current type. Unknown type: **404**, as above. A missing test case is reported as 404 before the type is checked. |
+| `GET /testcases/<id>` | Response includes `case_type_id`. |
+| `GET /testcases?project_id=` | Each entry in `test_cases` includes `case_type_id`. |
+
+Only the id is returned, not the type's name; clients resolve names from the
+case types list (section 2.1).
+
+## 6. Not yet implemented
+
+- **Delete** - its own branch. The default type must never be deletable;
+  deleting any other type will move its test cases to the default type
+  before removing it.

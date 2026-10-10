@@ -30,7 +30,8 @@ SCHEMA_ADD_TESTCASE_REQUEST: dict = {
         "project_id": {"type": "integer"},
         "folder_id": {"type": ["integer", "null"]},
         "name": {"type": "string", "minLength": 1},
-        "description": {"type": "string"}
+        "description": {"type": "string"},
+        "case_type_id": {"type": "integer", "minimum": 1}
     },
     "required": ["project_id", "folder_id", "name", "description"]
 }
@@ -62,11 +63,14 @@ class AddTestcaseHandler(BaseApiRoute):
             name (str):              Test case name. Must be unique among
                                      its siblings.
             description (str):       Test case description.
+            case_type_id (int):      Optional. Case type for the test case;
+                                     if omitted, the current default type
+                                     is used.
 
         Returns:
             200 with ``{"testcase_id": <int>}`` on success.
             400 if the request body is invalid.
-            404 if the project or folder does not exist.
+            404 if the project, folder or case type does not exist.
             409 if the name is already taken by a sibling test case.
             500 on an internal database error.
         """
@@ -75,7 +79,8 @@ class AddTestcaseHandler(BaseApiRoute):
             project_id=body["project_id"],
             folder_id=body["folder_id"],
             name=body["name"],
-            description=body["description"])
+            description=body["description"],
+            case_type_id=body.get("case_type_id"))
 
         if not result.success:
             if result.is_internal:

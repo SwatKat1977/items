@@ -55,10 +55,12 @@ CREATE TABLE {cms_db_tables.TC_TEST_CASES} (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL,
     folder_id INTEGER NULL,
+    case_type_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     description TEXT,
     FOREIGN KEY (project_id) REFERENCES {cms_db_tables.PRJ_PROJECTS}(id) ON DELETE CASCADE,
     FOREIGN KEY (folder_id) REFERENCES {cms_db_tables.TC_FOLDERS}(id) ON DELETE CASCADE,
+    FOREIGN KEY (case_type_id) REFERENCES {cms_db_tables.TC_CASE_TYPES}(id) ON DELETE RESTRICT,
     UNIQUE (project_id, folder_id, name)
 );
 """

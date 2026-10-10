@@ -28,7 +28,8 @@ SCHEMA_MODIFY_TESTCASE_REQUEST: dict = {
     "additionalProperties": False,
     "properties": {
         "name": {"type": "string", "minLength": 1},
-        "description": {"type": "string"}
+        "description": {"type": "string"},
+        "case_type_id": {"type": "integer", "minimum": 1}
     },
     "required": ["name", "description"]
 }
@@ -65,11 +66,14 @@ class ModifyTestcaseHandler(BaseApiRoute):
             name (str):        New test case name. Must be unique among
                                siblings.
             description (str): New test case description.
+            case_type_id (int): Optional. New case type; if omitted, the
+                               test case keeps its current type.
 
         Returns:
             200 with ``{"status": 1}`` on success.
             400 if the request body is invalid.
-            404 if no test case exists with the given ID.
+            404 if no test case exists with the given ID, or the case type
+            does not exist.
             409 if the name is already taken by a sibling test case.
             500 on an internal database error.
         """
@@ -79,7 +83,8 @@ class ModifyTestcaseHandler(BaseApiRoute):
         result = await self._service.update_testcase(
             case_id=case_id,
             name=body["name"],
-            description=body["description"])
+            description=body["description"],
+            case_type_id=body.get("case_type_id"))
 
         if not result.success:
             if result.is_internal:

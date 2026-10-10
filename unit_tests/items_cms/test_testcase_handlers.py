@@ -212,7 +212,29 @@ class TestAddTestcaseHandler(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(data["testcase_id"], 7)
         self.mock_service.create_testcase.assert_called_once_with(
             project_id=5, folder_id=None, name="Login",
-            description="Verify login")
+            description="Verify login", case_type_id=None)
+
+    async def test_case_type_id_is_passed_to_the_service(self):
+        self.mock_service.create_testcase.return_value = _ok(data=7)
+        response = await self._post({**_VALID_ADD_BODY, "case_type_id": 3})
+        self.assertEqual(response.status_code, 200)
+        self.mock_service.create_testcase.assert_called_once_with(
+            project_id=5, folder_id=None, name="Login",
+            description="Verify login", case_type_id=3)
+
+    async def test_invalid_case_type_id_returns_400(self):
+        for bad in (0, -1, "3", None, 1.5):
+            with self.subTest(case_type_id=bad):
+                response = await self._post(
+                    {**_VALID_ADD_BODY, "case_type_id": bad})
+                self.assertEqual(response.status_code, 400)
+        self.mock_service.create_testcase.assert_not_called()
+
+    async def test_case_type_not_found_returns_404(self):
+        self.mock_service.create_testcase.return_value = _not_found(
+            "Case type id is invalid")
+        response = await self._post({**_VALID_ADD_BODY, "case_type_id": 999})
+        self.assertEqual(response.status_code, 404)
 
     async def test_missing_field_returns_400(self):
         response = await self._post({"project_id": 5, "name": "Login"})
@@ -271,7 +293,32 @@ class TestModifyTestcaseHandler(unittest.IsolatedAsyncioTestCase):
         data = await response.get_json()
         self.assertEqual(data["status"], 1)
         self.mock_service.update_testcase.assert_called_once_with(
-            case_id=1, name="New", description="New desc")
+            case_id=1, name="New", description="New desc",
+            case_type_id=None)
+
+    async def test_case_type_id_is_passed_to_the_service(self):
+        self.mock_service.update_testcase.return_value = _ok()
+        response = await self._patch(
+            1, {"name": "New", "description": "d", "case_type_id": 3})
+        self.assertEqual(response.status_code, 200)
+        self.mock_service.update_testcase.assert_called_once_with(
+            case_id=1, name="New", description="d", case_type_id=3)
+
+    async def test_invalid_case_type_id_returns_400(self):
+        for bad in (0, -1, "3", None, 1.5):
+            with self.subTest(case_type_id=bad):
+                response = await self._patch(
+                    1, {"name": "New", "description": "d",
+                        "case_type_id": bad})
+                self.assertEqual(response.status_code, 400)
+        self.mock_service.update_testcase.assert_not_called()
+
+    async def test_case_type_not_found_returns_404(self):
+        self.mock_service.update_testcase.return_value = _not_found(
+            "Case type id is invalid")
+        response = await self._patch(
+            1, {"name": "New", "description": "d", "case_type_id": 999})
+        self.assertEqual(response.status_code, 404)
 
     async def test_missing_field_returns_400(self):
         response = await self._patch(1, {"name": "New"})
