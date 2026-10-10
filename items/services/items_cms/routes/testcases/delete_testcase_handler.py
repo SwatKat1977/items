@@ -18,6 +18,8 @@ import logging
 from http import HTTPStatus
 from quart import Response
 from weaver_framework.microservice.base_api_route import BaseApiRoute
+from items.services.items_cms.routes.testcases.project_id_parameter import (
+    read_required_project_id)
 from items.services.items_cms.services.testcase_service import TestcaseService
 
 
@@ -43,14 +45,24 @@ class DeleteTestcaseHandler(BaseApiRoute):
             case_id: ID of the test case to delete, taken from the URL
                      path.
 
+        Query parameters:
+            project_id (int): Required. The project the test case belongs
+                              to; checked against the test case itself.
+
         Returns:
             200 with ``{}`` on success.
-            404 if no test case exists with the given ID.
+            400 if ``project_id`` is missing or not an integer.
+            404 if no test case exists with the given ID, or it belongs to
+            a different project than ``project_id``.
             500 on an internal database error.
         """
         # pylint: disable=duplicate-code
 
-        result = await self._service.delete_testcase(case_id)
+        project_id, error_response = read_required_project_id()
+        if error_response is not None:
+            return error_response
+
+        result = await self._service.delete_testcase(case_id, project_id)
 
         if not result.success:
             status = (HTTPStatus.INTERNAL_SERVER_ERROR
