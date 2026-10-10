@@ -2893,6 +2893,37 @@
                     }
                   },
                   "response": []
+                },
+                {
+                  "name": "Delete Case Type",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "X-Items-User",
+                        "value": "{{ITEMS_USER}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "X-Items-Token",
+                        "value": "{{ITEMS_TOKEN}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/case_types/{{CASE_TYPE_ID}}",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "case_types",
+                        "{{CASE_TYPE_ID}}"
+                      ]
+                    },
+                    "description": "Administrator only. Deletes the type; test cases using it are moved to the current default type. Set CASE_TYPE_ID first (deliberately not a fixed id). 200: {}. 404 if not found. 409 if the type is the default (nothing changed)."
+                  },
+                  "response": []
                 }
               ]
             }

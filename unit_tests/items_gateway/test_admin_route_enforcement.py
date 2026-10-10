@@ -83,6 +83,7 @@ _ADMIN_ONLY_ROUTES = [
     ("POST", "/web/case_types", {"name": "Exploratory", "description": ""}),
     ("PATCH", "/web/case_types/1", {"name": "New", "description": ""}),
     ("POST", "/web/case_types/1/set_default", None),
+    ("DELETE", "/web/case_types/1", None),
     ("GET", "/web/users/1/projects", None),
     ("POST", "/web/users/1/projects", {"project_id": 5}),
     ("PATCH", "/web/users/1/projects/5", {"role_id": 2}),

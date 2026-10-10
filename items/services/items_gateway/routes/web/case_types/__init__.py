@@ -20,6 +20,8 @@ from items.services.items_gateway.route_injections import RouteInjections
 from items.services.items_gateway.routes.web.case_types.\
     create_case_type_handler import CreateCaseTypeHandler
 from items.services.items_gateway.routes.web.case_types.\
+    delete_case_type_handler import DeleteCaseTypeHandler
+from items.services.items_gateway.routes.web.case_types.\
     get_case_type_handler import GetCaseTypeHandler
 from items.services.items_gateway.routes.web.case_types.\
     list_case_types_handler import ListCaseTypesHandler
@@ -46,6 +48,7 @@ def create_case_types_routes(injections: RouteInjections) -> Blueprint:
         POST   /case_types                         Create a case type.
         GET    /case_types/<type_id>               Get a single case type.
         PATCH  /case_types/<type_id>               Change name/description.
+        DELETE /case_types/<type_id>               Delete a case type.
         POST   /case_types/<type_id>/set_default   Make this the default.
 
     Args:
@@ -65,6 +68,8 @@ def create_case_types_routes(injections: RouteInjections) -> Blueprint:
     handler_modify = ModifyCaseTypeHandler(
         injections.logger, injections.configuration, injections.rest_client)
     handler_set_default = SetDefaultCaseTypeHandler(
+        injections.logger, injections.configuration, injections.rest_client)
+    handler_delete = DeleteCaseTypeHandler(
         injections.logger, injections.configuration, injections.rest_client)
 
     injections.logger.debug(" Case Types WEB routes:")
@@ -109,5 +114,13 @@ def create_case_types_routes(injections: RouteInjections) -> Blueprint:
     @require_administrator(injections.sessions)
     async def set_default_case_type_request(type_id: int):
         return await handler_set_default.set_default_case_type(type_id)
+
+    injections.logger.debug("=> %s DELETE /web/case_types/<int:type_id>",
+                            "Delete case type".ljust(40))
+
+    @routes.route('/case_types/<int:type_id>', methods=['DELETE'])
+    @require_administrator(injections.sessions)
+    async def delete_case_type_request(type_id: int):
+        return await handler_delete.delete_case_type(type_id)
 
     return routes
