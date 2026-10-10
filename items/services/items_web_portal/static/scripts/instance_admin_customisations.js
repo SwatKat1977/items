@@ -2,6 +2,7 @@
  * Customisations admin page behaviour:
  *   1. Responsive tab bar (collapse labels to icons when they would overflow).
  *   2. Case Fields add/edit modal population and delete confirmation.
+ *   3. Case Types add/edit modal population.
  */
 (function () {
   /* ----------------------------------------------------------------
@@ -171,6 +172,47 @@
       }
 
       toggleProjects();
+    });
+  }
+
+  /* ----------------------------------------------------------------
+   * Case type add / edit modal
+   * ---------------------------------------------------------------- */
+  const caseTypeModal = document.getElementById('caseTypeModal');
+  const caseTypeForm = document.getElementById('caseTypeForm');
+  const caseTypeTitle = document.getElementById('caseTypeModalLabel');
+  const caseTypeDefaultNote = document.getElementById('ct-default-note');
+
+  const CASE_TYPE_ADD_ACTION = '/admin/customisations/case_types';
+
+  // Populate the shared modal for either "add" or "edit" when it opens.
+  if (caseTypeModal && caseTypeForm) {
+    caseTypeModal.addEventListener('show.bs.modal', function (event) {
+      const trigger = event.relatedTarget;
+      const isEdit = trigger && trigger.classList.contains('edit-case-type-btn');
+
+      if (isEdit) {
+        const isDefault = trigger.getAttribute('data-is-default') === '1';
+        caseTypeTitle.textContent = 'Edit Case Type';
+        caseTypeForm.action = CASE_TYPE_ADD_ACTION + '/'
+          + trigger.getAttribute('data-id') + '/modify';
+        caseTypeForm.elements['name'].value = trigger.getAttribute('data-name') || '';
+        caseTypeForm.elements['description'].value =
+          trigger.getAttribute('data-description') || '';
+
+        // The default can only be moved, never unset, so for the current
+        // default the box is ticked and locked. A disabled checkbox is not
+        // submitted, which is fine: the server then makes no default change.
+        caseTypeForm.elements['is_default'].checked = isDefault;
+        caseTypeForm.elements['is_default'].disabled = isDefault;
+        caseTypeDefaultNote.style.display = isDefault ? 'block' : 'none';
+      } else {
+        caseTypeTitle.textContent = 'Add Case Type';
+        caseTypeForm.action = CASE_TYPE_ADD_ACTION;
+        caseTypeForm.reset();
+        caseTypeForm.elements['is_default'].disabled = false;
+        caseTypeDefaultNote.style.display = 'none';
+      }
     });
   }
 

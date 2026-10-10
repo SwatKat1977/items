@@ -77,3 +77,32 @@
 .customisations-tabs.icons-only .nav-link {
     padding: 10px 14px;
 }
+
+/* Case types table */
+.case-types-table .case-type-name {
+    color: #2a72b5;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.case-types-table .case-type-name:hover {
+    text-decoration: underline;
+}
+
+.case-types-table .case-type-default {
+    color: #198754;
+    font-weight: 600;
+    margin-left: 4px;
+}
+
+.case-types-table .case-type-description {
+    color: #45525f;
+}
+
+.case-types-table .btn-link {
+    text-decoration: none;
+}
+
+.case-types-table .delete-case-type-btn:disabled {
+    opacity: 0.35;
+}
