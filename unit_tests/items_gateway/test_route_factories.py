@@ -337,6 +337,12 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
                                      headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
+    async def test_delete_case_type_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.delete("/web/case_types/1",
+                                      headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
     async def test_set_default_case_type_route_is_reachable(self):
         async with self.client as c:
             response = await c.post("/web/case_types/1/set_default",

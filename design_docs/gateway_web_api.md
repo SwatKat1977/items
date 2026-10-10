@@ -159,6 +159,7 @@ admin-only. Contract, schemas and invariants: `case_types_api.md`.
 | `POST` | `/web/case_types` | Admin | `case_types` | pass-through | Never creates the default. |
 | `PATCH` | `/web/case_types/<type_id>` | Admin | `case_types/<id>` | pass-through | Name and description only; `is_default` is rejected. |
 | `POST` | `/web/case_types/<type_id>/set_default` | Admin | `case_types/<id>/set_default` | pass-through | No body. Atomic and idempotent. |
+| `DELETE` | `/web/case_types/<type_id>` | Admin | `case_types/<id>` | pass-through | Test cases using the type move to the current default. 404 if missing; 409 if it is the default. |
 
 ### 2.8 Testcases
 

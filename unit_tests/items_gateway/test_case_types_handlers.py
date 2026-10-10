@@ -4,6 +4,7 @@ Unit tests for gateway test case type route handlers:
   GET   /case_types/<id>                   - GetCaseTypeHandler
   POST  /case_types                        - CreateCaseTypeHandler
   PATCH /case_types/<id>                   - ModifyCaseTypeHandler
+  DELETE /case_types/<id>                  - DeleteCaseTypeHandler
   POST  /case_types/<id>/set_default       - SetDefaultCaseTypeHandler
 """
 import json
@@ -13,6 +14,8 @@ from quart import Quart
 from weaver_framework.microservice.api_response import ApiResponse
 from items.services.items_gateway.routes.web.case_types.\
     create_case_type_handler import CreateCaseTypeHandler
+from items.services.items_gateway.routes.web.case_types.\
+    delete_case_type_handler import DeleteCaseTypeHandler
 from items.services.items_gateway.routes.web.case_types.\
     get_case_type_handler import GetCaseTypeHandler
 from items.services.items_gateway.routes.web.case_types.\
@@ -322,6 +325,64 @@ class TestSetDefaultCaseTypeHandler(unittest.IsolatedAsyncioTestCase):
     async def test_response_is_json(self):
         self.mock_rc.post.return_value = _ok({})
         resp = await self._post()
+        self.assertEqual(resp.content_type, "application/json")
+
+
+# ---------------------------------------------------------------------------
+# DeleteCaseTypeHandler
+# ---------------------------------------------------------------------------
+
+class TestDeleteCaseTypeHandler(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.mock_rc = AsyncMock()
+        handler = DeleteCaseTypeHandler(_LOGGER, _config(), self.mock_rc)
+        app = Quart(__name__)
+
+        @app.route("/case_types/<int:type_id>", methods=["DELETE"])
+        async def route(type_id: int):
+            return await handler.delete_case_type(type_id)
+
+        self.client = app.test_client()
+
+    async def _delete(self, type_id=1):
+        async with self.client as c:
+            return await c.delete(f"/case_types/{type_id}")
+
+    async def test_success_returns_200(self):
+        self.mock_rc.delete.return_value = _ok({})
+        resp = await self._delete()
+        self.assertEqual(resp.status_code, 200)
+
+    async def test_type_id_included_in_url(self):
+        self.mock_rc.delete.return_value = _ok({})
+        await self._delete(type_id=16)
+        self.mock_rc.delete.assert_called_once_with(
+            "http://cms/case_types/16")
+
+    async def test_cms_404_is_propagated(self):
+        self.mock_rc.delete.return_value = _err(
+            {"error": "Case type not found"}, 404)
+        resp = await self._delete()
+        self.assertEqual(resp.status_code, 404)
+
+    async def test_cms_409_for_the_default_is_propagated_with_its_message(self):
+        self.mock_rc.delete.return_value = _err(
+            {"error": "The default case type cannot be deleted"}, 409)
+        resp = await self._delete()
+        self.assertEqual(resp.status_code, 409)
+        body = json.loads(await resp.get_data())
+        self.assertEqual(body["error"],
+                         "The default case type cannot be deleted")
+
+    async def test_connection_error_returns_500(self):
+        self.mock_rc.delete.return_value = _conn_err()
+        resp = await self._delete()
+        self.assertEqual(resp.status_code, 500)
+
+    async def test_response_is_json(self):
+        self.mock_rc.delete.return_value = _ok({})
+        resp = await self._delete()
         self.assertEqual(resp.content_type, "application/json")
 
 

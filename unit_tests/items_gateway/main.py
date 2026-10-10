@@ -62,6 +62,7 @@ from test_case_types_handlers import (
     TestCreateCaseTypeHandler,
     TestModifyCaseTypeHandler,
     TestSetDefaultCaseTypeHandler,
+    TestDeleteCaseTypeHandler,
 )
 from test_user_project_handlers import (
     TestListUserProjectsHandler,
