@@ -24,6 +24,7 @@ from items.services.items_cms.services.case_types_service import (
     CaseTypesService,
 )
 from .add_case_type_handler import AddCaseTypeHandler
+from .delete_case_type_handler import DeleteCaseTypeHandler
 from .get_case_type_handler import GetCaseTypeHandler
 from .get_case_types_handler import GetCaseTypesHandler
 from .update_case_type_handler import UpdateCaseTypeHandler
@@ -38,9 +39,6 @@ def create_case_types_routes(logger: logging.Logger,
     Instantiates the repository and service once, wires them into
     individual route handlers, and registers all case type endpoints
     with a Quart Blueprint.
-
-    No delete route yet - deliberately deferred to its own branch, along
-    with wiring a case type onto test cases themselves.
 
     Args:
         logger:        Parent logger instance.
@@ -62,6 +60,7 @@ def create_case_types_routes(logger: logging.Logger,
     get_one_handler = GetCaseTypeHandler(logger, service)
     update_handler = UpdateCaseTypeHandler(logger, service)
     set_default_handler = SetDefaultCaseTypeHandler(logger, service)
+    delete_handler = DeleteCaseTypeHandler(logger, service)
 
     logger.debug("--- Registering Case Types API routes ---")
 
@@ -102,5 +101,12 @@ def create_case_types_routes(logger: logging.Logger,
         '/case_types/<int:type_id>/set_default', methods=['POST'])
     async def set_default_case_type(type_id: int):
         return await set_default_handler.set_default_case_type(type_id)
+
+    logger.debug("=> %s DELETE /case_types/<type_id>",
+                 "Delete case type".ljust(40))
+
+    @case_types_routes.route('/case_types/<int:type_id>', methods=['DELETE'])
+    async def delete_case_type(type_id: int):
+        return await delete_handler.delete_case_type(type_id)
 
     return case_types_routes

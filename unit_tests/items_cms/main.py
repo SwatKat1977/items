@@ -55,9 +55,13 @@ from test_case_types_handlers import (
     TestAddCaseTypeHandler,
     TestUpdateCaseTypeHandler,
     TestSetDefaultCaseTypeHandler,
+    TestDeleteCaseTypeHandler,
 )
 from test_case_types_service import TestCaseTypesService
-from test_case_types_repository import TestCaseTypesRepository
+from test_case_types_repository import (
+    TestCaseTypesRepository,
+    TestCaseTypesRepositoryDelete,
+)
 from test_project_repository import TestProjectRepository
 from test_testcase_repository import TestTestcaseRepository
 from test_route_factories import TestRouteWiring

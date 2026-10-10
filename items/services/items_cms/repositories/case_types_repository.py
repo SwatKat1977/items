@@ -14,10 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import logging
+from enum import Enum
 from typing import Optional
 from weaver_framework.database.sqlite_interface import SqliteInterface
 from items.services.items_cms.cms_configuration import CMSConfiguration
 import items.services.items_cms.cms_db_tables as cms_tables
+
+
+class CaseTypeDeleteOutcome(Enum):
+    """Result of a delete attempt, so callers can tell the cases apart."""
+    DELETED = "deleted"
+    NOT_FOUND = "not_found"
+    IS_DEFAULT = "is_default"
 
 
 class CaseTypesRepository:
@@ -221,3 +229,63 @@ class CaseTypesRepository:
             f"UPDATE {table} SET is_default = 1 WHERE id = {type_id};"
             "COMMIT;")
         return True
+
+    async def delete_case_type(self, type_id: int) -> CaseTypeDeleteOutcome:
+        """Delete a case type, moving its test cases to the default type.
+
+        The reassignment and the delete run as one transaction (BEGIN/COMMIT
+        in a single script), so a test case can never be left pointing at a
+        type that no longer exists, and a failure part-way rolls back both
+        (the connection is closed with the transaction still open). Both
+        statements are guarded on the type not being the default, and
+        ``BEGIN IMMEDIATE`` takes the write lock first, so the default
+        cannot change underneath the script.
+
+        The default is looked up before running the script so the caller can
+        be told *why* nothing was deleted. If the type became the default in
+        the gap between that lookup and the script, the guarded statements do
+        nothing and the follow-up check reports it as the default rather
+        than claiming it was deleted.
+
+        ``type_id`` is coerced with ``int()`` before being formatted into
+        the script (executescript takes no bound parameters).
+
+        Args:
+            type_id: ID of the case type to delete.
+
+        Returns:
+            DELETED if the type was removed, NOT_FOUND if no type has that
+            ID, or IS_DEFAULT if it is the default (which is never deleted).
+
+        Raises:
+            SqliteInterfaceException: If any database operation fails.
+        """
+        row = await self._db.run_query(
+            f"SELECT is_default FROM {cms_tables.TC_CASE_TYPES} WHERE id = ?",
+            (type_id,), fetch_one=True)
+        if not row:
+            return CaseTypeDeleteOutcome.NOT_FOUND
+
+        if row[0]:
+            return CaseTypeDeleteOutcome.IS_DEFAULT
+
+        type_id = int(type_id)
+        types = cms_tables.TC_CASE_TYPES
+        cases = cms_tables.TC_TEST_CASES
+        await self._db.run_script(
+            "BEGIN IMMEDIATE;"
+            f"UPDATE {cases} SET case_type_id = "
+            f"(SELECT id FROM {types} WHERE is_default = 1) "
+            f"WHERE case_type_id = {type_id} "
+            f"AND EXISTS (SELECT 1 FROM {types} "
+            f"WHERE id = {type_id} AND is_default = 0);"
+            f"DELETE FROM {types} WHERE id = {type_id} AND is_default = 0;"
+            "COMMIT;")
+
+        still_there = await self._db.run_query(
+            f"SELECT 1 FROM {types} WHERE id = ?",
+            (type_id,), fetch_one=True)
+        if still_there:
+            return CaseTypeDeleteOutcome.IS_DEFAULT
+
+        return CaseTypeDeleteOutcome.DELETED

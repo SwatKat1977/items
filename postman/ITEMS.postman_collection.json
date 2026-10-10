@@ -674,6 +674,25 @@
                 "description": "No body. Atomically makes this type the default. Idempotent. 200: {}. 404 if not found (current default unchanged)."
               },
               "response": []
+            },
+            {
+              "name": "Delete Case Type",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/case_types/{{CASE_TYPE_ID}}",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "case_types",
+                    "{{CASE_TYPE_ID}}"
+                  ]
+                },
+                "description": "No body. Deletes the type; test cases using it are moved to the current default type in the same transaction. Set CASE_TYPE_ID first (deliberately not a fixed id, so a seeded type is never deleted by accident). 200: {}. 404 if not found. 409 if the type is the default (nothing changed)."
+              },
+              "response": []
             }
           ],
           "description": "Test case types. Full contract: design_docs/case_types_api.md"
