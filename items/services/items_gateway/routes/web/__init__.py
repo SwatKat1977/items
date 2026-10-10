@@ -16,6 +16,8 @@ limitations under the License.
 """
 import quart
 from items.services.items_gateway.route_injections import RouteInjections
+from items.services.items_gateway.routes.web.case_types import (
+    create_case_types_routes)
 from items.services.items_gateway.routes.web.invites import (
     create_invite_routes)
 from items.services.items_gateway.routes.web.projects import (
@@ -49,6 +51,9 @@ def create_web_routes(injections: RouteInjections) -> quart.Blueprint:
     routes_bp = quart.Blueprint("api_routes", __name__)
 
     injections.logger.debug("|--- Registering WEB routes ---|")
+
+    # Register case type routes.
+    routes_bp.register_blueprint(create_case_types_routes(injections))
 
     # Register invite routes.
     routes_bp.register_blueprint(create_invite_routes(injections))

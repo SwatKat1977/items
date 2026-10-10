@@ -42,23 +42,30 @@ class GatewayConfiguration(ConfigurationManager):
         return self.get_entry(ConfigurationConstants.SECTION_GENERAL,
                               ConfigurationConstants.GENERAL_API_SIGNING_SECRET)
 
+    def _get_base_url(self, entry: str) -> str:
+        """Return an APIs entry normalised to end in exactly one '/'.
+
+        Handlers build URLs by plain concatenation (``f"{base}roles"``), so a
+        base path configured without its trailing slash would silently
+        produce an unreachable URL such as ``http://host:5050system/health``.
+        """
+        return self.get_entry(ConfigurationConstants.SECTION_APIS,
+                              entry).rstrip("/") + "/"
+
     @property
     def apis_identity_svc(self) -> str:
         """ Configuration property : APIs | Identity Service base path """
-        return self.get_entry(ConfigurationConstants.SECTION_APIS,
-                              ConfigurationConstants.APIS_IDENTITY_SVC)
+        return self._get_base_url(ConfigurationConstants.APIS_IDENTITY_SVC)
 
     @property
     def apis_cms_svc(self) -> str:
         """ Configuration property : APIs | CMS Service base path """
-        return self.get_entry(ConfigurationConstants.SECTION_APIS,
-                              ConfigurationConstants.APIS_CMS_SVC)
+        return self._get_base_url(ConfigurationConstants.APIS_CMS_SVC)
 
     @property
     def apis_web_portal_svc(self) -> str:
         """ Configuration property : APIs | Web Portal Service base path """
-        return self.get_entry(ConfigurationConstants.SECTION_APIS,
-                              ConfigurationConstants.APIS_WEB_PORTAL_SVC)
+        return self._get_base_url(ConfigurationConstants.APIS_WEB_PORTAL_SVC)
 
     @property
     def smtp_host(self) -> str:

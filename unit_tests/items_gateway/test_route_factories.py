@@ -310,6 +310,40 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
         self.assertNotEqual(response.status_code, 405)
 
     # ------------------------------------------------------------------
+    # Case types routes (routes/web/case_types/__init__.py)
+    # ------------------------------------------------------------------
+
+    async def test_list_case_types_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/web/case_types", headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_create_case_type_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/web/case_types",
+                                    json={"name": "A", "description": ""},
+                                    headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_get_case_type_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/web/case_types/1", headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_modify_case_type_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.patch("/web/case_types/1",
+                                     json={"name": "A", "description": ""},
+                                     headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_set_default_case_type_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/web/case_types/1/set_default",
+                                    headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
+    # ------------------------------------------------------------------
     # Invites routes (routes/web/invites/__init__.py)
     # ------------------------------------------------------------------
 
