@@ -102,7 +102,3 @@
 .case-types-table .btn-link {
     text-decoration: none;
 }
-
-.case-types-table .delete-case-type-btn:disabled {
-    opacity: 0.35;
-}

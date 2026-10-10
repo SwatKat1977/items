@@ -62,8 +62,8 @@ class AdminCustomisationsPageHandler(PortalPageHandler):
 
     Renders the customisations admin page and provides create, read, update,
     delete and reorder operations for testcase custom (case) fields via the
-    gateway ``/web/testcase_custom_fields`` API, and add/modify operations
-    for test case types via the gateway ``/web/case_types`` API.
+    gateway ``/web/testcase_custom_fields`` API, and add/modify/delete
+    operations for test case types via the gateway ``/web/case_types`` API.
     """
 
     def __init__(self,
@@ -240,6 +240,36 @@ class AdminCustomisationsPageHandler(PortalPageHandler):
 
         return await self._finish_case_type_write(
             response, type_id, form.get("is_default") == "on", "modify")
+
+    @require_administrator
+    async def case_type_delete(self, type_id: int):
+        """Delete a case type.
+
+        Test cases using the type are moved to the current default type by
+        the CMS, in the same transaction as the delete. The default type
+        itself is never deleted - the gateway reports that as a conflict,
+        which is shown here as an error banner.
+
+        Args:
+            type_id: ID of the case type to delete.
+
+        Returns:
+            The re-rendered customisations page (Case Types tab), showing an
+            error banner if the gateway rejects the request.
+        """
+        base_url: str = self._config.apis_gateway_svc
+        response: ApiResponse = await self._rest_client.delete(
+            f"{base_url}web/case_types/{type_id}")
+
+        error_message: Optional[str] = None
+        if response.status_code != HTTPStatus.OK:
+            error_message = self._extract_error(response)
+            self._logger.warning(
+                "Case type delete failed (status %s): %s",
+                response.status_code, error_message)
+
+        return await self._render_customisations(
+            error_message=error_message, active_tab="case-types")
 
     # ------------------------------------------------------------------
     # Helpers

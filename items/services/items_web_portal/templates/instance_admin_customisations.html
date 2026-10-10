@@ -199,17 +199,15 @@ data-id="{{ case_type.id }}"
                           {{ case_type_edit_attrs(case_type) }}>
                     <i class="bi bi-pencil"></i>
                   </button>
+                  {# The default type never gets a delete control. #}
                   {% if not case_type.is_default %}
-                    {# Delete is not available yet; shown greyed out so its place
-                       is clear. The wrapping span carries the tooltip because
-                       browsers do not show one on a disabled button. The
-                       default type never gets a delete control. #}
-                    <span class="d-inline-block" title="Deleting case types isn't available yet">
-                      <button type="button" class="btn btn-link text-danger p-1 delete-case-type-btn"
-                              disabled style="pointer-events: none;">
-                        <i class="bi bi-x-circle"></i>
-                      </button>
-                    </span>
+                    <button type="button" class="btn btn-link text-danger p-1 delete-case-type-btn"
+                            title="Delete"
+                            data-bs-toggle="modal" data-bs-target="#confirmDeleteCaseTypeModal"
+                            data-id="{{ case_type.id }}"
+                            data-name="{{ case_type.name }}">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
                   {% endif %}
                 </td>
               </tr>
@@ -362,6 +360,36 @@ data-id="{{ case_type.id }}"
     </div>
   </div>
 </div>
+
+<!-- Delete case type confirmation modal -->
+{% set default_case_type = (case_types | selectattr('is_default') | first) if case_types else none %}
+<div class="modal fade" id="confirmDeleteCaseTypeModal" tabindex="-1"
+     aria-labelledby="confirmDeleteCaseTypeModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmDeleteCaseTypeModalLabel">Confirmation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete the case type
+           "<span id="ct-delete-name"></span>"? This action cannot be undone.</p>
+        <p>Any test cases using this type will be moved to the default case type{% if default_case_type %},
+           "<strong>{{ default_case_type.name }}</strong>"{% endif %}.</p>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="ctConfirmCheckbox">
+          <label class="form-check-label" for="ctConfirmCheckbox">I confirm I want to delete this item.</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="ctConfirmDeleteButton" disabled>OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form id="ctDeleteForm" method="POST" style="display: none;"></form>
 
 <!-- Delete confirmation modal -->
 <div class="modal fade" id="confirmDeleteFieldModal" tabindex="-1"

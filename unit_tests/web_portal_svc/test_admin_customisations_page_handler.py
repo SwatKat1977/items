@@ -523,14 +523,31 @@ class TestCaseTypesTab(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(text.count("(Default)"), 1)
 
     async def test_default_type_has_no_delete_control(self):
-        """Only the non-default type gets the (disabled) delete button."""
+        """Only the non-default type gets a delete button."""
         text = await self._get_text(_CASE_TYPES_OK)
         self.assertEqual(text.count("delete-case-type-btn"), 1)
 
-    async def test_delete_control_is_disabled_with_a_tooltip(self):
+    async def test_delete_control_is_a_live_button_for_the_row(self):
         text = await self._get_text(_CASE_TYPES_OK)
-        self.assertIn("Deleting case types isn't available yet", text)
-        self.assertRegex(text, r'delete-case-type-btn"\s+disabled')
+        self.assertRegex(
+            text,
+            r'delete-case-type-btn"[^>]*confirmDeleteCaseTypeModal'
+            r'[^>]*data-id="1"[^>]*data-name="Smoke"')
+        self.assertNotRegex(text, r'delete-case-type-btn"[^>]*disabled')
+        self.assertNotIn("isn't available yet", text)
+
+    async def test_delete_modal_names_the_default_type(self):
+        """The confirm dialog says where test cases will move to."""
+        text = await self._get_text(_CASE_TYPES_OK)
+        self.assertIn('id="confirmDeleteCaseTypeModal"', text)
+        self.assertIn("moved to the default case type", text)
+        self.assertIn("<strong>Other</strong>", text)
+
+    async def test_delete_modal_copes_with_no_case_types_loaded(self):
+        text = await self._get_text(
+            ApiResponse(status_code=HTTPStatus.INTERNAL_SERVER_ERROR))
+        self.assertIn('id="confirmDeleteCaseTypeModal"', text)
+        self.assertNotIn("<strong>Other</strong>", text)
 
     async def test_edit_button_carries_the_row_data(self):
         text = await self._get_text(_CASE_TYPES_OK)
@@ -547,7 +564,9 @@ class TestCaseTypesTab(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(text.count("edit-case-type-btn"), 4)
         # Those four, plus the "+ Add Type" button.
         self.assertEqual(text.count('data-bs-target="#caseTypeModal"'), 5)
-        self.assertEqual(text.count('data-name="Smoke"'), 2)
+        # Smoke also has a delete button carrying its name; the default
+        # ("Other") never does.
+        self.assertEqual(text.count('data-name="Smoke"'), 3)
         self.assertEqual(text.count('data-name="Other"'), 2)
         self.assertRegex(
             text, r'case-type-name edit-case-type-btn"[^>]*>Smoke</button>')
@@ -768,6 +787,81 @@ class TestCaseTypeModify(unittest.IsolatedAsyncioTestCase):
         self._prime(ApiResponse(status_code=HTTPStatus.OK))
         response = await self._post(4, {"name": "New"})
         text = await response.get_data(as_text=True)
+        self.assertRegex(text, r'nav-link active" id="case-types-tab"')
+
+
+class TestCaseTypeDelete(unittest.IsolatedAsyncioTestCase):
+    """Tests for AdminCustomisationsPageHandler.case_type_delete (POST)."""
+
+    async def asyncSetUp(self):
+        self.mock_rest_client = AsyncMock()
+        self.mock_rest_client.post.return_value = _SESSION_VALID
+        handler = AdminCustomisationsPageHandler(
+            _LOGGER, _config(), self.mock_rest_client, _metadata())
+
+        app = make_app()
+
+        @app.route("/admin/customisations/case_types/<int:type_id>/delete",
+                   methods=["POST"])
+        async def post_route(type_id):
+            return await handler.case_type_delete(type_id)
+
+        self.client = app.test_client()
+
+    async def _post(self, type_id=4):
+        async with self.client as c:
+            return await c.post(
+                f"/admin/customisations/case_types/{type_id}/delete",
+                headers=_AUTH_HEADERS)
+
+    def _prime(self, delete_response):
+        self.mock_rest_client.delete.return_value = delete_response
+        self.mock_rest_client.get.side_effect = [
+            _FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
+
+    async def test_deletes_via_the_gateway(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.OK, body={}))
+        await self._post(4)
+        self.mock_rest_client.delete.assert_awaited_once_with(
+            "http://gateway/web/case_types/4")
+
+    async def test_success_rerenders_the_page_without_an_error(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.OK, body={}))
+        response = await self._post()
+        self.assertEqual(response.status_code, 200)
+        text = await response.get_data(as_text=True)
+        self.assertNotIn("alert-danger", text)
+
+    async def test_success_stays_on_the_case_types_tab(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.OK, body={}))
+        text = await (await self._post()).get_data(as_text=True)
+        self.assertRegex(text, r'nav-link active" id="case-types-tab"')
+        self.assertNotRegex(text, r'nav-link active" id="case-fields-tab"')
+
+    async def test_deleting_the_default_shows_the_gateway_message(self):
+        self._prime(ApiResponse(
+            status_code=HTTPStatus.CONFLICT,
+            body={"error": "The default case type cannot be deleted"}))
+        text = await (await self._post()).get_data(as_text=True)
+        self.assertIn("alert-danger", text)
+        self.assertIn("The default case type cannot be deleted", text)
+
+    async def test_missing_type_shows_not_found_message(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.NOT_FOUND,
+                                body={"error": "Case type not found"}))
+        text = await (await self._post(99)).get_data(as_text=True)
+        self.assertIn("Case type not found", text)
+
+    async def test_failure_without_a_message_shows_the_fallback(self):
+        self._prime(ApiResponse(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, body={}))
+        text = await (await self._post()).get_data(as_text=True)
+        self.assertIn("The request could not be completed", text)
+
+    async def test_failure_stays_on_the_case_types_tab(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.CONFLICT,
+                                body={"error": "nope"}))
+        text = await (await self._post()).get_data(as_text=True)
         self.assertRegex(text, r'nav-link active" id="case-types-tab"')
 
 

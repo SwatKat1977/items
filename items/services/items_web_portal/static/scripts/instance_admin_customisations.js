@@ -2,7 +2,7 @@
  * Customisations admin page behaviour:
  *   1. Responsive tab bar (collapse labels to icons when they would overflow).
  *   2. Case Fields add/edit modal population and delete confirmation.
- *   3. Case Types add/edit modal population.
+ *   3. Case Types add/edit modal population and delete confirmation.
  */
 (function () {
   /* ----------------------------------------------------------------
@@ -213,6 +213,43 @@
         caseTypeForm.elements['is_default'].disabled = false;
         caseTypeDefaultNote.style.display = 'none';
       }
+    });
+  }
+
+  /* ----------------------------------------------------------------
+   * Case type delete confirmation
+   * ---------------------------------------------------------------- */
+  const ctDeleteModal = document.getElementById('confirmDeleteCaseTypeModal');
+  const ctDeleteForm = document.getElementById('ctDeleteForm');
+  const ctDeleteName = document.getElementById('ct-delete-name');
+  const ctConfirmCheckbox = document.getElementById('ctConfirmCheckbox');
+  const ctConfirmButton = document.getElementById('ctConfirmDeleteButton');
+
+  if (ctDeleteModal) {
+    ctDeleteModal.addEventListener('show.bs.modal', function (event) {
+      const trigger = event.relatedTarget;
+      ctDeleteName.textContent = trigger.getAttribute('data-name') || '';
+      ctDeleteForm.action = '/admin/customisations/case_types/'
+        + trigger.getAttribute('data-id') + '/delete';
+      ctConfirmCheckbox.checked = false;
+      ctConfirmButton.disabled = true;
+    });
+
+    ctDeleteModal.addEventListener('hidden.bs.modal', function () {
+      ctConfirmCheckbox.checked = false;
+      ctConfirmButton.disabled = true;
+    });
+  }
+
+  if (ctConfirmCheckbox) {
+    ctConfirmCheckbox.addEventListener('change', function () {
+      ctConfirmButton.disabled = !this.checked;
+    });
+  }
+
+  if (ctConfirmButton) {
+    ctConfirmButton.addEventListener('click', function () {
+      ctDeleteForm.submit();
     });
   }
 
