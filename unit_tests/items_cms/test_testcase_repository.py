@@ -18,6 +18,7 @@ import sqlite3
 import tempfile
 import unittest
 from unittest.mock import MagicMock
+from weaver_framework.database.sqlite_interface import SqliteInterfaceException
 from items.services.items_cms.repositories.testcase_repository import TestcaseRepository
 from items.services.items_cms.cms_configuration import CMSConfiguration
 
@@ -39,14 +40,24 @@ CREATE TABLE tc_folders (
     FOREIGN KEY (parent_id) REFERENCES tc_folders(id) ON DELETE CASCADE,
     UNIQUE (project_id, parent_id, name)
 );
+CREATE TABLE tc_case_types (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL DEFAULT '',
+    is_default INTEGER NOT NULL DEFAULT 0
+);
+CREATE UNIQUE INDEX idx_tc_case_types_one_default
+    ON tc_case_types (is_default) WHERE is_default = 1;
 CREATE TABLE tc_test_cases (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL,
     folder_id INTEGER NULL,
+    case_type_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     description TEXT,
     FOREIGN KEY (project_id) REFERENCES prj_projects(id) ON DELETE CASCADE,
     FOREIGN KEY (folder_id) REFERENCES tc_folders(id) ON DELETE CASCADE,
+    FOREIGN KEY (case_type_id) REFERENCES tc_case_types(id) ON DELETE RESTRICT,
     UNIQUE (project_id, folder_id, name)
 );
 CREATE TABLE tc_custom_field_types (
@@ -87,9 +98,14 @@ CREATE TABLE tc_custom_field_option_values (
 );
 INSERT INTO tc_custom_field_types (name, supports_default_value, supports_is_required)
 VALUES ('String', 1, 1);
+INSERT INTO tc_case_types (name, description, is_default) VALUES
+    ('Smoke', '', 0),
+    ('Other', '', 1);
 """
 
 _STRING_TYPE_ID = 1
+_SMOKE_TYPE_ID = 1
+_OTHER_TYPE_ID = 2  # the seeded default
 
 
 class TestTestcaseRepository(unittest.IsolatedAsyncioTestCase):
@@ -134,16 +150,26 @@ class TestTestcaseRepository(unittest.IsolatedAsyncioTestCase):
         conn.close()
         return row_id
 
-    def _insert_testcase(self, project_id, name, folder_id=None, description=""):
+    def _insert_testcase(self, project_id, name, folder_id=None,
+                         description="", case_type_id=_OTHER_TYPE_ID):
         conn = sqlite3.connect(self.db_path)
         cur = conn.execute(
             "INSERT INTO tc_test_cases "
-            "(project_id, folder_id, name, description) VALUES (?, ?, ?, ?)",
-            (project_id, folder_id, name, description))
+            "(project_id, folder_id, case_type_id, name, description) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (project_id, folder_id, case_type_id, name, description))
         row_id = cur.lastrowid
         conn.commit()
         conn.close()
         return row_id
+
+    def _case_type_of(self, case_id):
+        conn = sqlite3.connect(self.db_path)
+        row = conn.execute(
+            "SELECT case_type_id FROM tc_test_cases WHERE id = ?",
+            (case_id,)).fetchone()
+        conn.close()
+        return row[0]
 
     def _insert_field(self, field_name, system_name, position,
                       default_value="", applies_to_all=True):
@@ -228,6 +254,14 @@ class TestTestcaseRepository(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["test_cases"][0]["id"], tc_id)
         self.assertEqual(result["test_cases"][0]["name"], "Login Test")
         self.assertEqual(result["test_cases"][0]["folder_id"], fid)
+
+    async def test_get_testcases_includes_case_type_id(self):
+        pid = self._insert_project("Alpha")
+        self._insert_testcase(pid, "Login Test",
+                              case_type_id=_SMOKE_TYPE_ID)
+        result = await self.repo.get_testcases(pid)
+        self.assertEqual(result["test_cases"][0]["case_type_id"],
+                         _SMOKE_TYPE_ID)
 
     async def test_get_testcases_excludes_other_project_cases(self):
         pid1 = self._insert_project("Alpha")
@@ -315,6 +349,23 @@ class TestTestcaseRepository(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["description"], "Verify login")
         self.assertIsNone(result["folder_id"])
 
+    async def test_get_testcase_includes_case_type_id(self):
+        pid = self._insert_project("Alpha")
+        tc_id = self._insert_testcase(pid, "Login Test",
+                                      case_type_id=_SMOKE_TYPE_ID)
+        result = await self.repo.get_testcase(tc_id)
+        self.assertEqual(result["case_type_id"], _SMOKE_TYPE_ID)
+
+    # ------------------------------------------------------------------
+    # case_type_exists
+    # ------------------------------------------------------------------
+
+    async def test_case_type_exists_returns_true_when_found(self):
+        self.assertTrue(await self.repo.case_type_exists(_SMOKE_TYPE_ID))
+
+    async def test_case_type_exists_returns_false_when_not_found(self):
+        self.assertFalse(await self.repo.case_type_exists(999))
+
     # ------------------------------------------------------------------
     # get_folder_project_id
     # ------------------------------------------------------------------
@@ -382,6 +433,36 @@ class TestTestcaseRepository(unittest.IsolatedAsyncioTestCase):
         conn.close()
         self.assertEqual(row, ("Login Test", "Verify login", None))
 
+    async def test_add_testcase_without_type_uses_the_default(self):
+        pid = self._insert_project("Alpha")
+        result = await self.repo.add_testcase(pid, None, "Login Test", "")
+        self.assertEqual(self._case_type_of(result), _OTHER_TYPE_ID)
+
+    async def test_add_testcase_follows_a_changed_default(self):
+        """The default is resolved at insert time, not cached."""
+        pid = self._insert_project("Alpha")
+        conn = sqlite3.connect(self.db_path)
+        conn.execute("UPDATE tc_case_types SET is_default = 0 "
+                     "WHERE is_default = 1")
+        conn.execute("UPDATE tc_case_types SET is_default = 1 WHERE id = ?",
+                     (_SMOKE_TYPE_ID,))
+        conn.commit()
+        conn.close()
+        result = await self.repo.add_testcase(pid, None, "Login Test", "")
+        self.assertEqual(self._case_type_of(result), _SMOKE_TYPE_ID)
+
+    async def test_add_testcase_with_explicit_type(self):
+        pid = self._insert_project("Alpha")
+        result = await self.repo.add_testcase(
+            pid, None, "Login Test", "", case_type_id=_SMOKE_TYPE_ID)
+        self.assertEqual(self._case_type_of(result), _SMOKE_TYPE_ID)
+
+    async def test_add_testcase_with_unknown_type_is_rejected_by_the_db(self):
+        pid = self._insert_project("Alpha")
+        with self.assertRaises(SqliteInterfaceException):
+            await self.repo.add_testcase(
+                pid, None, "Login Test", "", case_type_id=999)
+
     async def test_add_testcase_with_folder(self):
         pid = self._insert_project("Alpha")
         fid = self._insert_folder(pid, "Suite A")
@@ -408,6 +489,28 @@ class TestTestcaseRepository(unittest.IsolatedAsyncioTestCase):
             (tc_id,)).fetchone()
         conn.close()
         self.assertEqual(row, ("New", "New desc"))
+
+    async def test_update_testcase_without_type_keeps_the_type(self):
+        pid = self._insert_project("Alpha")
+        tc_id = self._insert_testcase(pid, "Old",
+                                      case_type_id=_SMOKE_TYPE_ID)
+        await self.repo.update_testcase(tc_id, "New", "d")
+        self.assertEqual(self._case_type_of(tc_id), _SMOKE_TYPE_ID)
+
+    async def test_update_testcase_with_type_changes_it(self):
+        pid = self._insert_project("Alpha")
+        tc_id = self._insert_testcase(pid, "Old")
+        await self.repo.update_testcase(
+            tc_id, "New", "d", case_type_id=_SMOKE_TYPE_ID)
+        self.assertEqual(self._case_type_of(tc_id), _SMOKE_TYPE_ID)
+
+    async def test_update_testcase_with_unknown_type_is_rejected(self):
+        pid = self._insert_project("Alpha")
+        tc_id = self._insert_testcase(pid, "Old")
+        with self.assertRaises(SqliteInterfaceException):
+            await self.repo.update_testcase(
+                tc_id, "New", "d", case_type_id=999)
+        self.assertEqual(self._case_type_of(tc_id), _OTHER_TYPE_ID)
 
     # ------------------------------------------------------------------
     # delete_testcase

@@ -152,20 +152,24 @@ class TestcaseService:
                               project_id: int,
                               folder_id: Optional[int],
                               name: str,
-                              description: str) -> TestcaseResult:
+                              description: str,
+                              case_type_id: Optional[int] = None
+                              ) -> TestcaseResult:
         """Create a new test case.
 
         Args:
-            project_id:  Project the test case belongs to.
-            folder_id:   Folder ID, or None for a root-level test case.
-            name:        Test case name. Must be unique among siblings.
-            description: Test case description.
+            project_id:   Project the test case belongs to.
+            folder_id:    Folder ID, or None for a root-level test case.
+            name:         Test case name. Must be unique among siblings.
+            description:  Test case description.
+            case_type_id: Case type ID, or None to use the current default
+                          type.
 
         Returns:
             TestcaseResult with data set to the new test case ID on
-            success, a not-found error if the project or folder doesn't
-            exist, a conflict error if the name is taken, or an internal
-            error on DB failure.
+            success, a not-found error if the project, folder or case type
+            doesn't exist, a conflict error if the name is taken, or an
+            internal error on DB failure.
         """
         # pylint: disable=too-many-return-statements
 
@@ -214,6 +218,11 @@ class TestcaseService:
                     error_msg="Folder does not belong to the specified "
                              "project")
 
+        if case_type_id is not None:
+            error = await self._check_case_type_exists(case_type_id)
+            if error is not None:
+                return error
+
         try:
             name_taken = await self._repository.testcase_name_exists(
                 project_id, folder_id, name)
@@ -232,7 +241,7 @@ class TestcaseService:
 
         try:
             new_id = await self._repository.add_testcase(
-                project_id, folder_id, name, description)
+                project_id, folder_id, name, description, case_type_id)
         except SqliteInterfaceException as ex:
             self._logger.exception(
                 "Database failure creating testcase: %s", ex)
@@ -246,18 +255,22 @@ class TestcaseService:
     async def update_testcase(self,
                               case_id: int,
                               name: str,
-                              description: str) -> TestcaseResult:
-        """Rename and/or update the description of an existing test case.
+                              description: str,
+                              case_type_id: Optional[int] = None
+                              ) -> TestcaseResult:
+        """Update a test case's name, description and optionally its type.
 
         Args:
-            case_id:     ID of the test case to update.
-            name:        New test case name. Must be unique among siblings.
-            description: New test case description.
+            case_id:      ID of the test case to update.
+            name:         New test case name. Must be unique among siblings.
+            description:  New test case description.
+            case_type_id: New case type ID, or None to leave the test case's
+                          type unchanged.
 
         Returns:
             TestcaseResult indicating success, a not-found error if the
-            test case doesn't exist, a conflict error if the name is
-            taken by a sibling, or an internal error on DB failure.
+            test case or case type doesn't exist, a conflict error if the
+            name is taken by a sibling, or an internal error on DB failure.
         """
         # pylint: disable=too-many-return-statements
 
@@ -282,6 +295,11 @@ class TestcaseService:
                                   error_msg="Test case not found",
                                   not_found=True)
 
+        if case_type_id is not None:
+            error = await self._check_case_type_exists(case_type_id)
+            if error is not None:
+                return error
+
         if name != existing["name"]:
             try:
                 name_taken = await self._repository.testcase_name_exists(
@@ -303,7 +321,7 @@ class TestcaseService:
 
         try:
             await self._repository.update_testcase(
-                case_id, name, description)
+                case_id, name, description, case_type_id)
         except SqliteInterfaceException as ex:
             self._logger.exception(
                 "Database failure updating testcase %d: %s", case_id, ex)
@@ -356,3 +374,33 @@ class TestcaseService:
                                   is_internal=True)
 
         return TestcaseResult(success=True)
+
+    async def _check_case_type_exists(
+            self, case_type_id: int) -> Optional[TestcaseResult]:
+        """Check that a case type exists.
+
+        Args:
+            case_type_id: ID of the case type to check.
+
+        Returns:
+            None if the case type exists. Otherwise a TestcaseResult
+            describing the not-found or internal error to return
+            immediately.
+        """
+        try:
+            exists = await self._repository.case_type_exists(case_type_id)
+        except SqliteInterfaceException as ex:
+            self._logger.exception(
+                "Database failure validating case type %d: %s",
+                case_type_id, ex)
+            self._state.mark_database_failed()
+            return TestcaseResult(success=False,
+                                  error_msg="Internal error in CMS",
+                                  is_internal=True)
+
+        if not exists:
+            return TestcaseResult(success=False,
+                                  error_msg="Case type id is invalid",
+                                  not_found=True)
+
+        return None

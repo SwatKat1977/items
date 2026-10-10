@@ -22,7 +22,8 @@ from items.services.items_cms.repositories.testcase_repository import (
 )
 from items.shared.service_state import ServiceState
 
-_TESTCASE = {"id": 1, "project_id": 5, "folder_id": None, "name": "Login test",
+_TESTCASE = {"id": 1, "project_id": 5, "folder_id": None,
+             "case_type_id": 2, "name": "Login test",
              "description": "Verify login"}
 
 
@@ -218,6 +219,50 @@ class TestTestcaseService(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.data, 42)
         self.mock_repo.get_folder_project_id.assert_not_called()
 
+    async def test_create_testcase_without_type_uses_default(self):
+        """No case_type_id: no lookup, and None is passed through so the
+        repository applies the current default."""
+        self.mock_repo.is_valid_project_id.return_value = True
+        self.mock_repo.testcase_name_exists.return_value = False
+        self.mock_repo.add_testcase.return_value = 42
+        await self.service.create_testcase(5, None, "Login", "d")
+        self.mock_repo.case_type_exists.assert_not_called()
+        self.mock_repo.add_testcase.assert_called_once_with(
+            5, None, "Login", "d", None)
+
+    async def test_create_testcase_with_valid_type(self):
+        self.mock_repo.is_valid_project_id.return_value = True
+        self.mock_repo.case_type_exists.return_value = True
+        self.mock_repo.testcase_name_exists.return_value = False
+        self.mock_repo.add_testcase.return_value = 42
+        result = await self.service.create_testcase(
+            5, None, "Login", "d", case_type_id=3)
+        self.assertTrue(result.success)
+        self.mock_repo.case_type_exists.assert_called_once_with(3)
+        self.mock_repo.add_testcase.assert_called_once_with(
+            5, None, "Login", "d", 3)
+
+    async def test_create_testcase_invalid_type_is_not_found(self):
+        self.mock_repo.is_valid_project_id.return_value = True
+        self.mock_repo.case_type_exists.return_value = False
+        result = await self.service.create_testcase(
+            5, None, "Login", "", case_type_id=999)
+        self.assertFalse(result.success)
+        self.assertTrue(result.not_found)
+        self.assertEqual(result.error_msg, "Case type id is invalid")
+        self.mock_repo.add_testcase.assert_not_called()
+
+    async def test_create_testcase_type_check_db_exception(self):
+        self.mock_repo.is_valid_project_id.return_value = True
+        self.mock_repo.case_type_exists.side_effect = (
+            SqliteInterfaceException("err"))
+        result = await self.service.create_testcase(
+            5, None, "Login", "", case_type_id=3)
+        self.assertFalse(result.success)
+        self.assertTrue(result.is_internal)
+        self.mock_state.mark_database_failed.assert_called_once()
+        self.mock_repo.add_testcase.assert_not_called()
+
     async def test_create_testcase_success_with_valid_folder(self):
         self.mock_repo.is_valid_project_id.return_value = True
         self.mock_repo.get_folder_project_id.return_value = 5
@@ -286,8 +331,51 @@ class TestTestcaseService(unittest.IsolatedAsyncioTestCase):
         self.mock_repo.testcase_name_exists.return_value = False
         result = await self.service.update_testcase(1, "New", "New desc")
         self.assertTrue(result.success)
+        self.mock_repo.case_type_exists.assert_not_called()
         self.mock_repo.update_testcase.assert_called_once_with(
-            1, "New", "New desc")
+            1, "New", "New desc", None)
+
+    async def test_update_testcase_with_valid_type(self):
+        self.mock_repo.get_testcase.return_value = _TESTCASE
+        self.mock_repo.testcase_name_exists.return_value = False
+        self.mock_repo.case_type_exists.return_value = True
+        result = await self.service.update_testcase(
+            1, "New", "New desc", case_type_id=3)
+        self.assertTrue(result.success)
+        self.mock_repo.case_type_exists.assert_called_once_with(3)
+        self.mock_repo.update_testcase.assert_called_once_with(
+            1, "New", "New desc", 3)
+
+    async def test_update_testcase_invalid_type_is_not_found(self):
+        self.mock_repo.get_testcase.return_value = _TESTCASE
+        self.mock_repo.case_type_exists.return_value = False
+        result = await self.service.update_testcase(
+            1, "New", "New desc", case_type_id=999)
+        self.assertFalse(result.success)
+        self.assertTrue(result.not_found)
+        self.assertEqual(result.error_msg, "Case type id is invalid")
+        self.mock_repo.update_testcase.assert_not_called()
+
+    async def test_update_testcase_type_check_db_exception(self):
+        self.mock_repo.get_testcase.return_value = _TESTCASE
+        self.mock_repo.case_type_exists.side_effect = (
+            SqliteInterfaceException("err"))
+        result = await self.service.update_testcase(
+            1, "New", "New desc", case_type_id=3)
+        self.assertFalse(result.success)
+        self.assertTrue(result.is_internal)
+        self.mock_state.mark_database_failed.assert_called_once()
+        self.mock_repo.update_testcase.assert_not_called()
+
+    async def test_update_testcase_missing_testcase_beats_bad_type(self):
+        """A missing test case is reported as such, without even looking
+        up the case type."""
+        self.mock_repo.get_testcase.return_value = None
+        result = await self.service.update_testcase(
+            99, "New", "New desc", case_type_id=999)
+        self.assertTrue(result.not_found)
+        self.assertEqual(result.error_msg, "Test case not found")
+        self.mock_repo.case_type_exists.assert_not_called()
 
     # ------------------------------------------------------------------
     # delete_testcase
