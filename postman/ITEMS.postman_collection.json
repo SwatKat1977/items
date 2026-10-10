@@ -343,13 +343,20 @@
                   }
                 },
                 "url": {
-                  "raw": "{{CMS_SVC_URL}}/testcases/1",
+                  "raw": "{{CMS_SVC_URL}}/testcases/1?project_id=1",
                   "host": [
                     "{{CMS_SVC_URL}}"
                   ],
                   "path": [
                     "testcases",
                     "1"
+                  ],
+                  "query": [
+                    {
+                      "key": "project_id",
+                      "value": "1",
+                      "description": "Required. The project the test case belongs to; 404 if it belongs to a different one."
+                    }
                   ]
                 }
               },
@@ -361,13 +368,20 @@
                 "method": "DELETE",
                 "header": [],
                 "url": {
-                  "raw": "{{CMS_SVC_URL}}/testcases/1",
+                  "raw": "{{CMS_SVC_URL}}/testcases/1?project_id=1",
                   "host": [
                     "{{CMS_SVC_URL}}"
                   ],
                   "path": [
                     "testcases",
                     "1"
+                  ],
+                  "query": [
+                    {
+                      "key": "project_id",
+                      "value": "1",
+                      "description": "Required. The project the test case belongs to; 404 if it belongs to a different one."
+                    }
                   ]
                 }
               },

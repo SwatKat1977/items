@@ -254,6 +254,7 @@ class TestcaseService:
 
     async def update_testcase(self,
                               case_id: int,
+                              project_id: int,
                               name: str,
                               description: str,
                               case_type_id: Optional[int] = None
@@ -262,6 +263,9 @@ class TestcaseService:
 
         Args:
             case_id:      ID of the test case to update.
+            project_id:   Project the caller states the test case belongs
+                          to. A mismatch is reported identically to the test
+                          case not existing (see ``get_testcase``).
             name:         New test case name. Must be unique among siblings.
             description:  New test case description.
             case_type_id: New case type ID, or None to leave the test case's
@@ -269,8 +273,9 @@ class TestcaseService:
 
         Returns:
             TestcaseResult indicating success, a not-found error if the
-            test case or case type doesn't exist, a conflict error if the
-            name is taken by a sibling, or an internal error on DB failure.
+            test case doesn't exist or belongs to a different project (or
+            the case type doesn't exist), a conflict error if the name is
+            taken by a sibling, or an internal error on DB failure.
         """
         # pylint: disable=too-many-return-statements
 
@@ -290,7 +295,7 @@ class TestcaseService:
                                   error_msg="Internal error in CMS",
                                   is_internal=True)
 
-        if existing is None:
+        if existing is None or existing["project_id"] != project_id:
             return TestcaseResult(success=False,
                                   error_msg="Test case not found",
                                   not_found=True)
@@ -333,15 +338,20 @@ class TestcaseService:
 
         return TestcaseResult(success=True)
 
-    async def delete_testcase(self, case_id: int) -> TestcaseResult:
+    async def delete_testcase(self, case_id: int,
+                              project_id: int) -> TestcaseResult:
         """Delete a test case.
 
         Args:
-            case_id: ID of the test case to delete.
+            case_id:    ID of the test case to delete.
+            project_id: Project the caller states the test case belongs to.
+                        A mismatch is reported identically to the test case
+                        not existing (see ``get_testcase``).
 
         Returns:
             TestcaseResult indicating success, a not-found error if the
-            test case doesn't exist, or an internal error on DB failure.
+            test case doesn't exist or belongs to a different project, or an
+            internal error on DB failure.
         """
         if not self._state.is_available():
             return TestcaseResult(success=False,
@@ -358,7 +368,7 @@ class TestcaseService:
                                   error_msg="Internal error in CMS",
                                   is_internal=True)
 
-        if exists is None:
+        if exists is None or exists["project_id"] != project_id:
             return TestcaseResult(success=False,
                                   error_msg="Test case not found",
                                   not_found=True)

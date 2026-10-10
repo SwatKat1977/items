@@ -512,11 +512,17 @@ Current route shapes are inconsistent on this point:
 
 **Decision: `project_id` travels as an explicit parameter on entity routes,
 not nested in the path.** `GET /testcases/<case_id>?project_id=<id>` for
-reads; a `project_id` body field for writes (`PATCH`/`DELETE`). The gateway
+reads, and the same query parameter on `PATCH`/`DELETE` writes (amended from
+an earlier "body field" plan: the Gateway's membership decorator already reads
+the query string, and a `DELETE` has no natural body). Creating a test case
+carries `project_id` in the request body on the CMS, and in the path
+(`POST /web/<project_id>/testcases`) on the Gateway. The gateway
 authorises from that parameter directly - no extra hop - and CMS verifies
 only that the entity genuinely belongs to the stated project (an integrity
 check, not an authorisation decision), 404ing on a mismatch rather than
-trusting the caller's claim.
+trusting the caller's claim. On the CMS the parameter is **required** for
+`PATCH` and `DELETE` (a 400 if missing or not an integer) so a write can never
+silently skip the check; it stays optional on `GET` for existing callers.
 
 **Nested path (`/projects/<project_id>/testcases/<case_id>`) was
 considered and rejected.** Nesting is the right call when a child's ID

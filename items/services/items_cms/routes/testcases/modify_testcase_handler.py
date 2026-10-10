@@ -20,6 +20,8 @@ from quart import Response
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.microservice_decorators import validate_json
 from weaver_framework.microservice.api_response import ApiResponse
+from items.services.items_cms.routes.testcases.project_id_parameter import (
+    read_required_project_id)
 from items.services.items_cms.services.testcase_service import TestcaseService
 
 SCHEMA_MODIFY_TESTCASE_REQUEST: dict = {
@@ -62,6 +64,10 @@ class ModifyTestcaseHandler(BaseApiRoute):
             case_id: ID of the test case to update, taken from the URL
                      path.
 
+        Query parameters:
+            project_id (int): Required. The project the test case belongs
+                              to; checked against the test case itself.
+
         Request body (JSON):
             name (str):        New test case name. Must be unique among
                                siblings.
@@ -71,17 +77,24 @@ class ModifyTestcaseHandler(BaseApiRoute):
 
         Returns:
             200 with ``{"status": 1}`` on success.
-            400 if the request body is invalid.
-            404 if no test case exists with the given ID, or the case type
-            does not exist.
+            400 if the request body is invalid, or ``project_id`` is
+            missing or not an integer.
+            404 if no test case exists with the given ID, it belongs to a
+            different project than ``project_id``, or the case type does
+            not exist.
             409 if the name is already taken by a sibling test case.
             500 on an internal database error.
         """
         # pylint: disable=duplicate-code
 
+        project_id, error_response = read_required_project_id()
+        if error_response is not None:
+            return error_response
+
         body = request_msg.body
         result = await self._service.update_testcase(
             case_id=case_id,
+            project_id=project_id,
             name=body["name"],
             description=body["description"],
             case_type_id=body.get("case_type_id"))
