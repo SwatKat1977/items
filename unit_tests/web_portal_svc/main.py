@@ -37,6 +37,9 @@ from test_admin_customisations_page_handler import (
     TestCaseFieldDelete,
     TestCaseFieldMove,
     TestRowToField,
+    TestCaseTypesTab,
+    TestCaseTypeAdd,
+    TestCaseTypeModify,
 )
 from test_admin_users_and_roles_page_handler import (
     TestUsersAndRolesRead,

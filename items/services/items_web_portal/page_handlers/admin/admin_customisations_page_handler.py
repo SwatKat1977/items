@@ -62,7 +62,8 @@ class AdminCustomisationsPageHandler(PortalPageHandler):
 
     Renders the customisations admin page and provides create, read, update,
     delete and reorder operations for testcase custom (case) fields via the
-    gateway ``/web/testcase_custom_fields`` API.
+    gateway ``/web/testcase_custom_fields`` API, and add/modify operations
+    for test case types via the gateway ``/web/case_types`` API.
     """
 
     def __init__(self,
@@ -185,8 +186,149 @@ class AdminCustomisationsPageHandler(PortalPageHandler):
         return await self._render_after_write(response, "move")
 
     # ------------------------------------------------------------------
+    # Write: case types
+    # ------------------------------------------------------------------
+
+    @require_administrator
+    async def case_type_add(self):
+        """Create a new case type from the submitted form.
+
+        A new type is never created as the default; if the form's default
+        checkbox is ticked, the new type is then made the default through a
+        second call, so the two gateway endpoints stay separate.
+
+        Returns:
+            The re-rendered customisations page (Case Types tab), showing an
+            error banner if the gateway rejects either call.
+        """
+        form = await request.form
+        payload: dict = self._build_case_type_payload(form)
+
+        base_url: str = self._config.apis_gateway_svc
+        response: ApiResponse = await self._rest_client.post(
+            f"{base_url}web/case_types", json_data=payload)
+
+        type_id = None
+        if response.status_code == HTTPStatus.OK and \
+                isinstance(response.body, dict):
+            type_id = response.body.get("case_type_id")
+
+        return await self._finish_case_type_write(
+            response, type_id, form.get("is_default") == "on", "add")
+
+    @require_administrator
+    async def case_type_modify(self, type_id: int):
+        """Update a case type's name and description from the submitted form.
+
+        If the form's default checkbox is ticked, the type is then made the
+        default (idempotent when it already is). The checkbox is disabled in
+        the form for the current default, so it is simply absent then.
+
+        Args:
+            type_id: ID of the case type to modify.
+
+        Returns:
+            The re-rendered customisations page (Case Types tab), showing an
+            error banner if the gateway rejects either call.
+        """
+        form = await request.form
+        payload: dict = self._build_case_type_payload(form)
+
+        base_url: str = self._config.apis_gateway_svc
+        response: ApiResponse = await self._rest_client.patch(
+            f"{base_url}web/case_types/{type_id}", json_data=payload)
+
+        return await self._finish_case_type_write(
+            response, type_id, form.get("is_default") == "on", "modify")
+
+    # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _build_case_type_payload(form) -> dict:
+        """Build a case-type request body from the submitted form.
+
+        Trimming and the required-name rule are the CMS's job; the portal
+        forwards the values as entered. ``is_default`` is deliberately not
+        part of the payload - the default is changed only via ``set_default``.
+
+        Args:
+            form: The submitted form.
+
+        Returns:
+            A dict matching the gateway add/modify request schema.
+        """
+        return {
+            "name": form.get("name") or "",
+            "description": form.get("description") or "",
+        }
+
+    async def _finish_case_type_write(self, response: ApiResponse,
+                                      type_id: Optional[int],
+                                      make_default: bool,
+                                      action: str):
+        """Complete an add/modify: optionally set the default, then re-render.
+
+        Args:
+            response: The gateway response for the add/modify call.
+            type_id: ID of the written type (None if it could not be learned).
+            make_default: Whether the form asked for the type to be the default.
+            action: Short action name used in log messages ("add", "modify").
+
+        Returns:
+            The re-rendered customisations page on the Case Types tab.
+        """
+        error_message: Optional[str] = None
+
+        if response.status_code != HTTPStatus.OK:
+            error_message = self._extract_error(response)
+            self._logger.warning(
+                "Case type %s failed (status %s): %s",
+                action, response.status_code, error_message)
+
+        elif make_default and type_id is not None:
+            base_url: str = self._config.apis_gateway_svc
+            default_response: ApiResponse = await self._rest_client.post(
+                f"{base_url}web/case_types/{type_id}/set_default")
+
+            if default_response.status_code != HTTPStatus.OK:
+                detail = self._extract_error(default_response)
+                error_message = ("The case type was saved, but could not be "
+                                 f"made the default: {detail}")
+                self._logger.warning(
+                    "Case type %s saved, but set_default failed "
+                    "(status %s): %s",
+                    action, default_response.status_code, detail)
+
+        return await self._render_customisations(
+            error_message=error_message, active_tab="case-types")
+
+    async def _fetch_case_types(self) -> Optional[list[dict]]:
+        """Fetch the case types for the Case Types tab.
+
+        A failure here is non-fatal: the rest of the page still works, and
+        the tab says the types could not be loaded.
+
+        Returns:
+            The list of case type dicts, or None if they could not be loaded.
+        """
+        base_url: str = self._config.apis_gateway_svc
+        try:
+            response: ApiResponse = await self._rest_client.get(
+                f"{base_url}web/case_types")
+        except Exception:  # pylint: disable=broad-except
+            self._logger.warning("Unable to fetch case types")
+            return None
+
+        if response.status_code != HTTPStatus.OK or \
+                not isinstance(response.body, list):
+            self._logger.warning(
+                "Unable to fetch case types (status %s)",
+                response.status_code)
+            return None
+
+        return response.body
 
     async def _build_field_payload(self) -> dict:
         """Build a case-field request body from the submitted form.
@@ -300,11 +442,14 @@ class AdminCustomisationsPageHandler(PortalPageHandler):
         return "The request could not be completed. Please try again."
 
     async def _render_customisations(self,
-                                     error_message: Optional[str] = None):
-        """Fetch case fields and projects, then render the page.
+                                     error_message: Optional[str] = None,
+                                     active_tab: str = "case-fields"):
+        """Fetch case fields, projects and case types, then render the page.
 
         Args:
             error_message: Optional error banner to display on the page.
+            active_tab: Id of the tab to show ("case-fields" or "case-types"),
+                so a write made on one tab does not land back on the first.
 
         Returns:
             The rendered customisations page, or the internal error page if
@@ -331,6 +476,8 @@ class AdminCustomisationsPageHandler(PortalPageHandler):
             case_fields=case_fields,
             case_field_types=CASE_FIELD_TYPES,
             projects=await self._fetch_project_names(),
+            case_types=await self._fetch_case_types(),
+            active_tab=active_tab,
             error_message=error_message)
 
     async def _fetch_project_names(self) -> list[str]:

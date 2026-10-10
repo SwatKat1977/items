@@ -55,6 +55,13 @@ _FIELDS_LIST_OK = ApiResponse(status_code=HTTPStatus.OK, body=[_row()])
 _PROJECTS_OK = ApiResponse(
     status_code=HTTPStatus.OK,
     body={"projects": [{"id": 1, "name": "Alpha"}, {"id": 2, "name": "Beta"}]})
+_CASE_TYPES = [
+    {"id": 1, "name": "Smoke", "description": "Quick sanity checks",
+     "is_default": False},
+    {"id": 2, "name": "Other", "description": "Anything else",
+     "is_default": True},
+]
+_CASE_TYPES_OK = ApiResponse(status_code=HTTPStatus.OK, body=_CASE_TYPES)
 
 
 class TestCustomisationsRead(unittest.IsolatedAsyncioTestCase):
@@ -85,7 +92,7 @@ class TestCustomisationsRead(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Refresh", text)
 
     async def test_success_renders_page_with_fields(self):
-        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK]
+        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
         response = await self._get()
         self.assertEqual(response.status_code, 200)
         text = await response.get_data(as_text=True)
@@ -105,14 +112,16 @@ class TestCustomisationsRead(unittest.IsolatedAsyncioTestCase):
     async def test_projects_fetch_non_200_still_renders_page(self):
         self.mock_rest_client.get.side_effect = [
             _FIELDS_LIST_OK,
-            ApiResponse(status_code=HTTPStatus.INTERNAL_SERVER_ERROR)]
+            ApiResponse(status_code=HTTPStatus.INTERNAL_SERVER_ERROR),
+            _CASE_TYPES_OK]
         response = await self._get()
         self.assertEqual(response.status_code, 200)
         text = await response.get_data(as_text=True)
         self.assertIn("Priority", text)
 
     async def test_projects_fetch_exception_still_renders_page(self):
-        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, RuntimeError("boom")]
+        self.mock_rest_client.get.side_effect = [
+            _FIELDS_LIST_OK, RuntimeError("boom"), _CASE_TYPES_OK]
         response = await self._get()
         self.assertEqual(response.status_code, 200)
         text = await response.get_data(as_text=True)
@@ -143,7 +152,7 @@ class TestCaseFieldAdd(unittest.IsolatedAsyncioTestCase):
     async def test_applies_to_all_true_omits_projects_key(self):
         self.mock_rest_client.post.side_effect = [
             _SESSION_VALID, ApiResponse(status_code=HTTPStatus.OK)]
-        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK]
+        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
 
         await self._post({
             "field_name": "New Field", "system_name": "new_field",
@@ -160,7 +169,7 @@ class TestCaseFieldAdd(unittest.IsolatedAsyncioTestCase):
     async def test_applies_to_all_false_includes_selected_projects(self):
         self.mock_rest_client.post.side_effect = [
             _SESSION_VALID, ApiResponse(status_code=HTTPStatus.OK)]
-        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK]
+        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
 
         async with self.client as c:
             response = await c.post(
@@ -182,7 +191,7 @@ class TestCaseFieldAdd(unittest.IsolatedAsyncioTestCase):
     async def test_success_rerenders_page(self):
         self.mock_rest_client.post.side_effect = [
             _SESSION_VALID, ApiResponse(status_code=HTTPStatus.OK)]
-        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK]
+        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
 
         response = await self._post({
             "field_name": "New Field", "system_name": "new_field",
@@ -196,7 +205,7 @@ class TestCaseFieldAdd(unittest.IsolatedAsyncioTestCase):
             _SESSION_VALID,
             ApiResponse(status_code=HTTPStatus.CONFLICT,
                        body={"error": "already exists"})]
-        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK]
+        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
 
         response = await self._post({
             "field_name": "New Field", "system_name": "new_field",
@@ -209,7 +218,7 @@ class TestCaseFieldAdd(unittest.IsolatedAsyncioTestCase):
         self.mock_rest_client.post.side_effect = [
             _SESSION_VALID,
             ApiResponse(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, body={})]
-        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK]
+        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
 
         response = await self._post({
             "field_name": "New Field", "system_name": "new_field",
@@ -247,7 +256,7 @@ class TestCaseFieldModify(unittest.IsolatedAsyncioTestCase):
         current_row = _row(field_id=1, field_name="Old Name", entry_type="user")
         self.mock_rest_client.get.side_effect = [
             ApiResponse(status_code=HTTPStatus.OK, body=current_row),
-            _FIELDS_LIST_OK, _PROJECTS_OK]
+            _FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
         self.mock_rest_client.put.return_value = ApiResponse(
             status_code=HTTPStatus.OK)
 
@@ -267,7 +276,7 @@ class TestCaseFieldModify(unittest.IsolatedAsyncioTestCase):
                            is_required=1, entry_type="system")
         self.mock_rest_client.get.side_effect = [
             ApiResponse(status_code=HTTPStatus.OK, body=current_row),
-            _FIELDS_LIST_OK, _PROJECTS_OK]
+            _FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
         self.mock_rest_client.put.return_value = ApiResponse(
             status_code=HTTPStatus.BAD_REQUEST,
             body={"error": "System custom fields cannot be modified"})
@@ -290,7 +299,7 @@ class TestCaseFieldModify(unittest.IsolatedAsyncioTestCase):
     async def test_current_fetch_failure_falls_back_to_form_payload(self):
         self.mock_rest_client.get.side_effect = [
             ApiResponse(status_code=HTTPStatus.NOT_FOUND),
-            _FIELDS_LIST_OK, _PROJECTS_OK]
+            _FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
         self.mock_rest_client.put.return_value = ApiResponse(
             status_code=HTTPStatus.NOT_FOUND, body={"error": "not found"})
 
@@ -306,7 +315,7 @@ class TestCaseFieldModify(unittest.IsolatedAsyncioTestCase):
         current_row = _row(field_id=1, entry_type="user")
         self.mock_rest_client.get.side_effect = [
             ApiResponse(status_code=HTTPStatus.OK, body=current_row),
-            _FIELDS_LIST_OK, _PROJECTS_OK]
+            _FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
         self.mock_rest_client.put.return_value = ApiResponse(
             status_code=HTTPStatus.OK)
 
@@ -321,7 +330,7 @@ class TestCaseFieldModify(unittest.IsolatedAsyncioTestCase):
         current_row = _row(field_id=1, entry_type="user")
         self.mock_rest_client.get.side_effect = [
             ApiResponse(status_code=HTTPStatus.OK, body=current_row),
-            _FIELDS_LIST_OK, _PROJECTS_OK]
+            _FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
         self.mock_rest_client.put.return_value = ApiResponse(
             status_code=HTTPStatus.CONFLICT, body={"error": "name taken"})
 
@@ -360,7 +369,7 @@ class TestCaseFieldDelete(unittest.IsolatedAsyncioTestCase):
     async def test_success_rerenders_page(self):
         self.mock_rest_client.delete.return_value = ApiResponse(
             status_code=HTTPStatus.OK)
-        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK]
+        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
 
         response = await self._post(1)
         self.assertEqual(response.status_code, 200)
@@ -371,7 +380,7 @@ class TestCaseFieldDelete(unittest.IsolatedAsyncioTestCase):
         self.mock_rest_client.delete.return_value = ApiResponse(
             status_code=HTTPStatus.BAD_REQUEST,
             body={"error": "System custom fields cannot be deleted"})
-        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK]
+        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
 
         response = await self._post(1)
         self.assertEqual(response.status_code, 200)
@@ -406,7 +415,7 @@ class TestCaseFieldMove(unittest.IsolatedAsyncioTestCase):
     async def test_direction_passed_through_to_gateway(self):
         self.mock_rest_client.patch.return_value = ApiResponse(
             status_code=HTTPStatus.OK)
-        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK]
+        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
 
         response = await self._post(1, "up")
         self.assertEqual(response.status_code, 200)
@@ -418,7 +427,7 @@ class TestCaseFieldMove(unittest.IsolatedAsyncioTestCase):
         self.mock_rest_client.patch.return_value = ApiResponse(
             status_code=HTTPStatus.BAD_REQUEST,
             body={"error": "already at the boundary"})
-        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK]
+        self.mock_rest_client.get.side_effect = [_FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
 
         response = await self._post(1, "up")
         self.assertEqual(response.status_code, 200)
@@ -470,6 +479,296 @@ class TestRowToField(unittest.TestCase):
             _row(linked_projects="1:Acme Inc"))
         self.assertEqual(json.loads(field["linked_projects_json"]),
                          ["Acme Inc"])
+
+
+class TestCaseTypesTab(unittest.IsolatedAsyncioTestCase):
+    """Tests for the Case Types tab rendered by customisations (GET)."""
+
+    async def asyncSetUp(self):
+        self.mock_rest_client = AsyncMock()
+        self.mock_rest_client.post.return_value = _SESSION_VALID
+        handler = AdminCustomisationsPageHandler(
+            _LOGGER, _config(), self.mock_rest_client, _metadata())
+
+        app = make_app()
+
+        @app.route("/admin/customisations", methods=["GET"])
+        async def get_route():
+            return await handler.customisations()
+
+        self.client = app.test_client()
+
+    async def _get_text(self, case_types_response):
+        self.mock_rest_client.get.side_effect = [
+            _FIELDS_LIST_OK, _PROJECTS_OK, case_types_response]
+        async with self.client as c:
+            response = await c.get("/admin/customisations",
+                                   headers=_AUTH_HEADERS)
+        self.assertEqual(response.status_code, 200)
+        return await response.get_data(as_text=True)
+
+    async def test_case_types_are_listed_with_descriptions(self):
+        text = await self._get_text(_CASE_TYPES_OK)
+        self.assertIn("Smoke", text)
+        self.assertIn("Quick sanity checks", text)
+        self.assertIn("Other", text)
+
+    async def test_gateway_url_for_case_types(self):
+        await self._get_text(_CASE_TYPES_OK)
+        self.mock_rest_client.get.assert_any_call(
+            "http://gateway/web/case_types")
+
+    async def test_only_the_default_is_marked_default(self):
+        text = await self._get_text(_CASE_TYPES_OK)
+        self.assertEqual(text.count("(Default)"), 1)
+
+    async def test_default_type_has_no_delete_control(self):
+        """Only the non-default type gets the (disabled) delete button."""
+        text = await self._get_text(_CASE_TYPES_OK)
+        self.assertEqual(text.count("delete-case-type-btn"), 1)
+
+    async def test_delete_control_is_disabled_with_a_tooltip(self):
+        text = await self._get_text(_CASE_TYPES_OK)
+        self.assertIn("Deleting case types isn't available yet", text)
+        self.assertRegex(text, r'delete-case-type-btn"\s+disabled')
+
+    async def test_edit_button_carries_the_row_data(self):
+        text = await self._get_text(_CASE_TYPES_OK)
+        self.assertIn('data-id="2"', text)
+        self.assertIn('data-name="Other"', text)
+        self.assertIn('data-is-default="1"', text)
+        self.assertIn('data-is-default="0"', text)
+
+    async def test_name_and_pencil_both_open_the_edit_modal(self):
+        """Each row has two edit entry points: the name link and the
+        pencil. Both must target the modal and carry the row's data."""
+        text = await self._get_text(_CASE_TYPES_OK)
+        # Two rows x (name link + pencil).
+        self.assertEqual(text.count("edit-case-type-btn"), 4)
+        # Those four, plus the "+ Add Type" button.
+        self.assertEqual(text.count('data-bs-target="#caseTypeModal"'), 5)
+        self.assertEqual(text.count('data-name="Smoke"'), 2)
+        self.assertEqual(text.count('data-name="Other"'), 2)
+        self.assertRegex(
+            text, r'case-type-name edit-case-type-btn"[^>]*>Smoke</button>')
+
+    async def test_empty_list_shows_message(self):
+        text = await self._get_text(
+            ApiResponse(status_code=HTTPStatus.OK, body=[]))
+        self.assertIn("No case types defined yet.", text)
+
+    async def test_fetch_non_200_shows_could_not_load(self):
+        text = await self._get_text(
+            ApiResponse(status_code=HTTPStatus.INTERNAL_SERVER_ERROR))
+        self.assertIn("Case types could not be loaded", text)
+        # The rest of the page still renders.
+        self.assertIn("Priority", text)
+
+    async def test_fetch_non_list_body_shows_could_not_load(self):
+        text = await self._get_text(
+            ApiResponse(status_code=HTTPStatus.OK, body={"unexpected": 1}))
+        self.assertIn("Case types could not be loaded", text)
+
+    async def test_fetch_exception_shows_could_not_load(self):
+        text = await self._get_text(RuntimeError("boom"))
+        self.assertIn("Case types could not be loaded", text)
+        self.assertIn("Priority", text)
+
+    async def test_case_fields_tab_is_active_by_default(self):
+        text = await self._get_text(_CASE_TYPES_OK)
+        self.assertRegex(text, r'nav-link active" id="case-fields-tab"')
+        self.assertNotRegex(text, r'nav-link active" id="case-types-tab"')
+
+
+class TestCaseTypeAdd(unittest.IsolatedAsyncioTestCase):
+    """Tests for AdminCustomisationsPageHandler.case_type_add (POST)."""
+
+    async def asyncSetUp(self):
+        self.mock_rest_client = AsyncMock()
+        handler = AdminCustomisationsPageHandler(
+            _LOGGER, _config(), self.mock_rest_client, _metadata())
+
+        app = make_app()
+
+        @app.route("/admin/customisations/case_types", methods=["POST"])
+        async def post_route():
+            return await handler.case_type_add()
+
+        self.client = app.test_client()
+
+    async def _post(self, form):
+        async with self.client as c:
+            return await c.post("/admin/customisations/case_types",
+                                form=form, headers=_AUTH_HEADERS)
+
+    def _prime(self, add_response, *extra_posts):
+        """Session check first, then the add call, then any later posts."""
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID, add_response, *extra_posts]
+        self.mock_rest_client.get.side_effect = [
+            _FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
+
+    async def test_posts_name_and_description_to_gateway(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.OK,
+                                body={"case_type_id": 9}))
+        await self._post({"name": "Exploratory",
+                          "description": "Unscripted"})
+        call = self.mock_rest_client.post.call_args_list[1]
+        self.assertEqual(call.args[0], "http://gateway/web/case_types")
+        self.assertEqual(call.kwargs["json_data"],
+                         {"name": "Exploratory",
+                          "description": "Unscripted"})
+
+    async def test_is_default_is_never_sent_in_the_payload(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.OK,
+                                body={"case_type_id": 9}),
+                    ApiResponse(status_code=HTTPStatus.OK))
+        await self._post({"name": "Exploratory", "is_default": "on"})
+        payload = self.mock_rest_client.post.call_args_list[1].kwargs[
+            "json_data"]
+        self.assertNotIn("is_default", payload)
+
+    async def test_default_unticked_makes_no_set_default_call(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.OK,
+                                body={"case_type_id": 9}))
+        await self._post({"name": "Exploratory"})
+        # session check + add only
+        self.assertEqual(self.mock_rest_client.post.call_count, 2)
+
+    async def test_default_ticked_calls_set_default_with_new_id(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.OK,
+                                body={"case_type_id": 9}),
+                    ApiResponse(status_code=HTTPStatus.OK))
+        await self._post({"name": "Exploratory", "is_default": "on"})
+        self.assertEqual(self.mock_rest_client.post.call_count, 3)
+        self.assertEqual(
+            self.mock_rest_client.post.call_args_list[2].args[0],
+            "http://gateway/web/case_types/9/set_default")
+
+    async def test_default_ticked_but_no_id_returned_skips_set_default(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.OK, body={}))
+        response = await self._post({"name": "Exploratory",
+                                     "is_default": "on"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.mock_rest_client.post.call_count, 2)
+
+    async def test_failed_add_does_not_call_set_default(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.CONFLICT,
+                                body={"error": "already exists"}))
+        response = await self._post({"name": "Smoke", "is_default": "on"})
+        text = await response.get_data(as_text=True)
+        self.assertIn("already exists", text)
+        self.assertEqual(self.mock_rest_client.post.call_count, 2)
+
+    async def test_set_default_failure_reports_partial_success(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.OK,
+                                body={"case_type_id": 9}),
+                    ApiResponse(status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                                body={"error": "boom"}))
+        response = await self._post({"name": "Exploratory",
+                                     "is_default": "on"})
+        text = await response.get_data(as_text=True)
+        self.assertIn("saved, but could not be made the default", text)
+        self.assertIn("boom", text)
+
+    async def test_result_page_stays_on_the_case_types_tab(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.OK,
+                                body={"case_type_id": 9}))
+        response = await self._post({"name": "Exploratory"})
+        text = await response.get_data(as_text=True)
+        self.assertRegex(text, r'nav-link active" id="case-types-tab"')
+        self.assertNotRegex(text, r'nav-link active" id="case-fields-tab"')
+
+    async def test_validation_failure_shows_error_banner(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.BAD_REQUEST,
+                                body={"error": "name is required"}))
+        response = await self._post({"name": "   "})
+        text = await response.get_data(as_text=True)
+        self.assertIn("name is required", text)
+
+
+class TestCaseTypeModify(unittest.IsolatedAsyncioTestCase):
+    """Tests for AdminCustomisationsPageHandler.case_type_modify (POST)."""
+
+    async def asyncSetUp(self):
+        self.mock_rest_client = AsyncMock()
+        handler = AdminCustomisationsPageHandler(
+            _LOGGER, _config(), self.mock_rest_client, _metadata())
+
+        app = make_app()
+
+        @app.route("/admin/customisations/case_types/<int:type_id>/modify",
+                   methods=["POST"])
+        async def post_route(type_id):
+            return await handler.case_type_modify(type_id)
+
+        self.client = app.test_client()
+
+    async def _post(self, type_id, form):
+        async with self.client as c:
+            return await c.post(
+                f"/admin/customisations/case_types/{type_id}/modify",
+                form=form, headers=_AUTH_HEADERS)
+
+    def _prime(self, patch_response, *extra_posts):
+        # Session check is the first POST; set_default (if any) follows it.
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID, *extra_posts]
+        self.mock_rest_client.patch.return_value = patch_response
+        self.mock_rest_client.get.side_effect = [
+            _FIELDS_LIST_OK, _PROJECTS_OK, _CASE_TYPES_OK]
+
+    async def test_patches_name_and_description_to_gateway(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.OK))
+        await self._post(4, {"name": "New", "description": "d"})
+        self.mock_rest_client.patch.assert_awaited_once_with(
+            "http://gateway/web/case_types/4",
+            json_data={"name": "New", "description": "d"})
+
+    async def test_default_unticked_makes_no_set_default_call(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.OK))
+        await self._post(4, {"name": "New"})
+        # Only the session-validation POST.
+        self.assertEqual(self.mock_rest_client.post.call_count, 1)
+
+    async def test_default_ticked_calls_set_default_after_patch(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.OK),
+                    ApiResponse(status_code=HTTPStatus.OK))
+        await self._post(4, {"name": "New", "is_default": "on"})
+        self.assertEqual(self.mock_rest_client.post.call_count, 2)
+        self.assertEqual(
+            self.mock_rest_client.post.call_args_list[1].args[0],
+            "http://gateway/web/case_types/4/set_default")
+
+    async def test_failed_patch_does_not_call_set_default(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.CONFLICT,
+                                body={"error": "already exists"}))
+        response = await self._post(4, {"name": "Smoke",
+                                        "is_default": "on"})
+        text = await response.get_data(as_text=True)
+        self.assertIn("already exists", text)
+        self.assertEqual(self.mock_rest_client.post.call_count, 1)
+
+    async def test_missing_type_shows_not_found_message(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.NOT_FOUND,
+                                body={"error": "Case type not found"}))
+        response = await self._post(99, {"name": "New"})
+        text = await response.get_data(as_text=True)
+        self.assertIn("Case type not found", text)
+
+    async def test_set_default_failure_reports_partial_success(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.OK),
+                    ApiResponse(status_code=HTTPStatus.NOT_FOUND,
+                                body={"error": "Case type not found"}))
+        response = await self._post(4, {"name": "New", "is_default": "on"})
+        text = await response.get_data(as_text=True)
+        self.assertIn("saved, but could not be made the default", text)
+
+    async def test_result_page_stays_on_the_case_types_tab(self):
+        self._prime(ApiResponse(status_code=HTTPStatus.OK))
+        response = await self._post(4, {"name": "New"})
+        text = await response.get_data(as_text=True)
+        self.assertRegex(text, r'nav-link active" id="case-types-tab"')
 
 
 if __name__ == "__main__":
