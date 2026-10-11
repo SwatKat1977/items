@@ -281,9 +281,9 @@ class TestModifyTestcaseHandler(unittest.IsolatedAsyncioTestCase):
 
         self.client = app.test_client()
 
-    async def _patch(self, case_id, body):
+    async def _patch(self, case_id, body, query="?project_id=5"):
         async with self.client as c:
-            return await c.patch(f"/testcases/{case_id}", json=body)
+            return await c.patch(f"/testcases/{case_id}{query}", json=body)
 
     async def test_success_returns_200(self):
         self.mock_service.update_testcase.return_value = _ok()
@@ -293,7 +293,7 @@ class TestModifyTestcaseHandler(unittest.IsolatedAsyncioTestCase):
         data = await response.get_json()
         self.assertEqual(data["status"], 1)
         self.mock_service.update_testcase.assert_called_once_with(
-            case_id=1, name="New", description="New desc",
+            case_id=1, project_id=5, name="New", description="New desc",
             case_type_id=None)
 
     async def test_case_type_id_is_passed_to_the_service(self):
@@ -302,7 +302,7 @@ class TestModifyTestcaseHandler(unittest.IsolatedAsyncioTestCase):
             1, {"name": "New", "description": "d", "case_type_id": 3})
         self.assertEqual(response.status_code, 200)
         self.mock_service.update_testcase.assert_called_once_with(
-            case_id=1, name="New", description="d", case_type_id=3)
+            case_id=1, project_id=5, name="New", description="d", case_type_id=3)
 
     async def test_invalid_case_type_id_returns_400(self):
         for bad in (0, -1, "3", None, 1.5):
@@ -319,6 +319,30 @@ class TestModifyTestcaseHandler(unittest.IsolatedAsyncioTestCase):
         response = await self._patch(
             1, {"name": "New", "description": "d", "case_type_id": 999})
         self.assertEqual(response.status_code, 404)
+
+    async def test_missing_project_id_returns_400(self):
+        response = await self._patch(
+            1, {"name": "New", "description": "d"}, query="")
+        self.assertEqual(response.status_code, 400)
+        data = await response.get_json()
+        self.assertEqual(data["error"], "project_id is required")
+        self.mock_service.update_testcase.assert_not_called()
+
+    async def test_non_integer_project_id_returns_400(self):
+        response = await self._patch(
+            1, {"name": "New", "description": "d"}, query="?project_id=abc")
+        self.assertEqual(response.status_code, 400)
+        data = await response.get_json()
+        self.assertEqual(data["error"], "project_id must be an integer")
+        self.mock_service.update_testcase.assert_not_called()
+
+    async def test_project_id_is_passed_to_the_service(self):
+        self.mock_service.update_testcase.return_value = _ok()
+        await self._patch(1, {"name": "New", "description": "d"},
+                          query="?project_id=7")
+        self.mock_service.update_testcase.assert_called_once_with(
+            case_id=1, project_id=7, name="New", description="d",
+            case_type_id=None)
 
     async def test_missing_field_returns_400(self):
         response = await self._patch(1, {"name": "New"})
@@ -371,19 +395,41 @@ class TestDeleteTestcaseHandler(unittest.IsolatedAsyncioTestCase):
     async def test_success_returns_200(self):
         self.mock_service.delete_testcase.return_value = _ok()
         async with self.client as c:
-            response = await c.delete("/testcases/1")
+            response = await c.delete("/testcases/1?project_id=5")
         self.assertEqual(response.status_code, 200)
+
+    async def test_project_id_is_passed_to_the_service(self):
+        self.mock_service.delete_testcase.return_value = _ok()
+        async with self.client as c:
+            await c.delete("/testcases/3?project_id=7")
+        self.mock_service.delete_testcase.assert_called_once_with(3, 7)
+
+    async def test_missing_project_id_returns_400(self):
+        async with self.client as c:
+            response = await c.delete("/testcases/1")
+        self.assertEqual(response.status_code, 400)
+        data = await response.get_json()
+        self.assertEqual(data["error"], "project_id is required")
+        self.mock_service.delete_testcase.assert_not_called()
+
+    async def test_non_integer_project_id_returns_400(self):
+        async with self.client as c:
+            response = await c.delete("/testcases/1?project_id=abc")
+        self.assertEqual(response.status_code, 400)
+        data = await response.get_json()
+        self.assertEqual(data["error"], "project_id must be an integer")
+        self.mock_service.delete_testcase.assert_not_called()
 
     async def test_not_found_returns_404(self):
         self.mock_service.delete_testcase.return_value = _not_found()
         async with self.client as c:
-            response = await c.delete("/testcases/99")
+            response = await c.delete("/testcases/99?project_id=5")
         self.assertEqual(response.status_code, 404)
 
     async def test_internal_error_returns_500(self):
         self.mock_service.delete_testcase.return_value = _internal()
         async with self.client as c:
-            response = await c.delete("/testcases/1")
+            response = await c.delete("/testcases/1?project_id=5")
         self.assertEqual(response.status_code, 500)
 
 
