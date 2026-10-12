@@ -27,6 +27,11 @@ from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
 
 
+# Shown in the Type column when a test case's type cannot be resolved (the
+# case types could not be loaded, or the id is not in the list).
+UNKNOWN_CASE_TYPE_NAME: str = "Unknown"
+
+
 class GetProjectTestcasesPageHandler(PortalPageHandler):
     """Handles requests for the project test cases page.
 
@@ -111,16 +116,54 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
                             status=HTTPStatus.INTERNAL_SERVER_ERROR,
                             content_type="application/json")
 
+        case_type_names = await self._fetch_case_type_names()
+        for test_case in response.body['test_cases']:
+            test_case['case_type_name'] = case_type_names.get(
+                test_case.get('case_type_id'), UNKNOWN_CASE_TYPE_NAME)
+
         details = self._transform_tests_details_data(response.body)
+        root_test_cases = [test_case for test_case
+                           in response.body['test_cases']
+                           if test_case['folder_id'] is None]
 
         return await self._render_page(
             pages.TEMPLATE_TEST_DEFINITIONS_PAGE,
             data=details,
+            root_test_cases=root_test_cases,
             active_page="test-cases",
-            has_testcases=len(details) > 0,
+            has_testcases=len(details) > 0 or len(root_test_cases) > 0,
             project_id=project_id,
             project_name=project_name,
             instance_name=self._metadata_settings.instance_name)
+
+    async def _fetch_case_type_names(self) -> dict[int, str]:
+        """Fetch the case types as an ``{id: name}`` lookup.
+
+        The test case list carries only each test case's ``case_type_id``, so
+        names come from the case types list. A failure here is non-fatal: the
+        page still renders and shows the placeholder name for every type.
+
+        Returns:
+            A dict mapping case type id to name, empty if they could not be
+            loaded.
+        """
+        gateway_svc: str = self._config.apis_gateway_svc
+        try:
+            response = await self._rest_client.get(
+                f"{gateway_svc}web/case_types")
+        except Exception:  # pylint: disable=broad-except
+            self._logger.warning("Unable to fetch case types")
+            return {}
+
+        if response.status_code != HTTPStatus.OK or \
+                not isinstance(response.body, list):
+            self._logger.warning(
+                "Unable to fetch case types (status %s)",
+                response.status_code)
+            return {}
+
+        return {case_type['id']: case_type['name']
+                for case_type in response.body}
 
     def _transform_tests_details_data(self, data):
         """Converts flat folder and test case data into a hierarchical tree.
