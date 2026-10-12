@@ -4,6 +4,29 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/project_testcases.css') }}">
 {% endblock %}
 
+{# One table of test cases: used for a folder's cases and for the project's
+   root-level cases (those with no folder). #}
+{% macro render_test_cases(test_cases, level=0) %}
+    <table class="file-table table" style="margin-left: {{ level * 20 }}px;">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Type</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for test_case in test_cases %}
+                <tr>
+                    <td>{{ test_case.id }}</td>
+                    <td>{{ test_case.name }}</td>
+                    <td>{{ test_case.case_type_name }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endmacro %}
+
 {% macro render_folder(folders, level=0) %}
     {% for folder in folders %}
         <div class="folder" style="margin-left: {{ level * 20 }}px;">
@@ -11,22 +34,7 @@
         </div>
 
         {% if folder.test_cases %}
-            <table class="file-table table" style="margin-left: {{ level * 20 }}px;">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for test_case in folder.test_cases %}
-                        <tr>
-                            <td>{{ test_case.id }}</td>
-                            <td>{{ test_case.name }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            {{ render_test_cases(folder.test_cases, level) }}
         {% endif %}
 
         {% if folder.subfolders %}
@@ -44,6 +52,10 @@
     <div class="p-3">
         {% if has_testcases == True %}
             <div id="folder-structure">
+                {# Test cases that are not in any folder, then the folders. #}
+                {% if root_test_cases %}
+                    {{ render_test_cases(root_test_cases) }}
+                {% endif %}
                 {{ render_folder(data) }}
             </div>
         {% else %}
@@ -55,17 +67,6 @@
                         </div>
                         <div class="col">
                             <p class="fw-bold mb-1">There aren't any test cases, yet.</p>
-                            <p class="mb-2">There aren't any sections or test cases. Use the following buttons to create the first test case and section.</p>
-                            <p>
-                                <button type="button" class="btn btn-sm btn-header me-1" data-bs-toggle="modal"
-                                        data-bs-target="#addSectionModal">
-                                    <strong>+</strong> Add Section
-                                </button>
-                                <button type="button" class="btn btn-sm btn-header" data-bs-toggle="modal"
-                                        data-bs-target="#addTestCaseModal">
-                                    <strong>+</strong> Add Test Case
-                                </button>
-                            </p>
                         </div>
                     </div>
                 </div>

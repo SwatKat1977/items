@@ -25,6 +25,11 @@ from items.services.items_web_portal.page_handlers.testcases.\
 
 _LOGGER = MagicMock()
 _AUTH_HEADERS = {"Cookie": "items_token=abc; items_user=bob"}
+_PROJECT_OK = ApiResponse(status_code=HTTPStatus.OK, body={"name": "Proj"})
+_CASE_TYPES_OK = ApiResponse(status_code=HTTPStatus.OK, body=[
+    {"id": 9, "name": "Smoke", "description": "", "is_default": False},
+    {"id": 15, "name": "Other", "description": "", "is_default": True},
+])
 
 
 def _config():
@@ -172,6 +177,7 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
             ApiResponse(status_code=503),
             ApiResponse(status_code=HTTPStatus.OK,
                        body={"folders": [], "test_cases": []}),
+            _CASE_TYPES_OK,
         ]
         response = await self._get()
         self.assertEqual(response.status_code, 200)
@@ -188,10 +194,13 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
                     {"id": 3, "parent_id": 999, "name": "OrphanParentMissing"},
                 ],
                 "test_cases": [
-                    {"id": 10, "folder_id": 1, "name": "TC-1"},
-                    {"id": 11, "folder_id": 999, "name": "OrphanTestcase"},
+                    {"id": 10, "folder_id": 1, "case_type_id": 9,
+                     "name": "TC-1"},
+                    {"id": 11, "folder_id": 999, "case_type_id": 9,
+                     "name": "OrphanTestcase"},
                 ]
             }),
+            _CASE_TYPES_OK,
         ]
         response = await self._get()
         self.assertEqual(response.status_code, 200)
@@ -203,9 +212,125 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
             ApiResponse(status_code=HTTPStatus.OK, body={"name": "Proj"}),
             ApiResponse(status_code=HTTPStatus.OK,
                        body={"folders": [], "test_cases": []}),
+            _CASE_TYPES_OK,
         ]
         response = await self._get()
         self.assertEqual(response.status_code, 200)
+
+    # ------------------------------------------------------------------
+    # Root-level test cases (no folder) and the Type column
+    # ------------------------------------------------------------------
+
+    def _page_with(self, folders, test_cases, case_types=_CASE_TYPES_OK):
+        self.mock_rest_client.get.side_effect = [
+            _PROJECT_OK,
+            ApiResponse(status_code=HTTPStatus.OK, body={
+                "folders": folders, "test_cases": test_cases}),
+            case_types,
+        ]
+
+    async def _page_text(self):
+        response = await self._get()
+        self.assertEqual(response.status_code, 200)
+        return await response.get_data(as_text=True)
+
+    async def test_empty_project_shows_the_no_test_cases_message(self):
+        self._page_with([], [])
+        text = await self._page_text()
+        self.assertIn("There aren't any test cases, yet.", text)
+        self.assertNotIn('id="folder-structure"', text)
+
+    async def test_empty_message_has_no_dead_buttons(self):
+        self._page_with([], [])
+        text = await self._page_text()
+        self.assertNotIn("addSectionModal", text)
+        self.assertNotIn("addTestCaseModal", text)
+        self.assertNotIn("Add Section", text)
+
+    async def test_root_level_test_case_is_shown_without_any_folder(self):
+        """A test case with no folder used to be dropped, and with no
+        folders the page claimed there were no test cases at all."""
+        self._page_with([], [
+            {"id": 3, "folder_id": None, "case_type_id": 15,
+             "name": "Login with wonky nonkey"}])
+        text = await self._page_text()
+        self.assertIn("Login with wonky nonkey", text)
+        self.assertIn('id="folder-structure"', text)
+        self.assertNotIn("There aren't any test cases, yet.", text)
+
+    async def test_root_and_folder_test_cases_are_both_shown(self):
+        self._page_with(
+            [{"id": 1, "parent_id": None, "name": "AlphaFolder"}],
+            [{"id": 3, "folder_id": None, "case_type_id": 15,
+              "name": "RootCase"},
+             {"id": 4, "folder_id": 1, "case_type_id": 9,
+              "name": "FolderCase"}])
+        text = await self._page_text()
+        self.assertIn("RootCase", text)
+        self.assertIn("FolderCase", text)
+        self.assertIn("AlphaFolder", text)
+
+    async def test_root_test_cases_come_before_the_folders(self):
+        self._page_with(
+            [{"id": 1, "parent_id": None, "name": "AlphaFolder"}],
+            [{"id": 3, "folder_id": None, "case_type_id": 15,
+              "name": "RootCase"}])
+        text = await self._page_text()
+        self.assertLess(text.index("RootCase"), text.index("AlphaFolder"))
+
+    async def test_folder_with_no_test_cases_is_shown_not_the_empty_message(
+            self):
+        self._page_with(
+            [{"id": 1, "parent_id": None, "name": "AlphaFolder"}], [])
+        text = await self._page_text()
+        self.assertIn("AlphaFolder", text)
+        self.assertNotIn("There aren't any test cases, yet.", text)
+
+    async def test_type_column_shows_the_case_type_name(self):
+        self._page_with([], [
+            {"id": 3, "folder_id": None, "case_type_id": 15, "name": "A"},
+            {"id": 4, "folder_id": None, "case_type_id": 9, "name": "B"}])
+        text = await self._page_text()
+        self.assertIn("<th>Type</th>", text)
+        self.assertIn("<td>Other</td>", text)
+        self.assertIn("<td>Smoke</td>", text)
+
+    async def test_case_types_are_fetched_from_the_gateway(self):
+        self._page_with([], [])
+        await self._page_text()
+        self.mock_rest_client.get.assert_any_call(
+            "http://gateway/web/case_types")
+
+    async def test_unknown_case_type_id_shows_the_placeholder(self):
+        self._page_with([], [
+            {"id": 3, "folder_id": None, "case_type_id": 777, "name": "A"}])
+        text = await self._page_text()
+        self.assertIn("<td>Unknown</td>", text)
+
+    async def test_case_types_failure_still_renders_with_placeholder(self):
+        self._page_with(
+            [], [{"id": 3, "folder_id": None, "case_type_id": 15,
+                  "name": "A"}],
+            case_types=ApiResponse(status_code=HTTPStatus.INTERNAL_SERVER_ERROR))
+        text = await self._page_text()
+        self.assertIn("<td>A</td>", text)
+        self.assertIn("<td>Unknown</td>", text)
+
+    async def test_case_types_non_list_body_still_renders(self):
+        self._page_with(
+            [], [{"id": 3, "folder_id": None, "case_type_id": 15,
+                  "name": "A"}],
+            case_types=ApiResponse(status_code=HTTPStatus.OK,
+                                   body={"unexpected": 1}))
+        text = await self._page_text()
+        self.assertIn("<td>Unknown</td>", text)
+
+    async def test_case_types_exception_still_renders(self):
+        self._page_with(
+            [], [{"id": 3, "folder_id": None, "case_type_id": 15,
+                  "name": "A"}], case_types=RuntimeError("boom"))
+        text = await self._page_text()
+        self.assertIn("<td>Unknown</td>", text)
 
 
 if __name__ == "__main__":
