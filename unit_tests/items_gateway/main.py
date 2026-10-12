@@ -33,6 +33,11 @@ from test_testcases_handlers import (
     TestGetTestcaseHandler,
     TestGetTestcasesHandler,
 )
+from test_testcase_write_handlers import (
+    TestCreateTestcaseHandler,
+    TestModifyTestcaseHandler,
+    TestDeleteTestcaseHandler,
+)
 from test_testcase_custom_fields_handlers import (
     TestGetAllCustomFieldsHandler,
     TestGetCustomFieldHandler,

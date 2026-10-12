@@ -167,6 +167,15 @@ admin-only. Contract, schemas and invariants: `case_types_api.md`.
 |---|---|---|---|---|---|
 | `GET` | `/web/<project_id>/testcases` | Member | CMS `testcases?project_id=` | mixed | |
 | `GET` | `/web/testcases/<case_id>?project_id=` | Member | CMS `testcases/<id>?project_id=` | mixed | `project_id` query parameter is required. |
+| `POST` | `/web/<project_id>/testcases` | Member | CMS `testcases` | pass-through | Body: `folder_id` (int or null), `name`, `description`, optional `case_type_id` (omitted = the current default type). The project comes from the path only: the body must not contain a `project_id` (400). 200 `{"testcase_id": n}`; 404 unknown project, folder or case type; 409 duplicate sibling name. |
+| `PATCH` | `/web/testcases/<case_id>?project_id=` | Member | CMS `testcases/<id>?project_id=` | pass-through | Body: `name`, `description`, optional `case_type_id` (omitted = unchanged). `project_id` is required (400 if missing); 404 if the test case is in another project, or the type is unknown; 409 duplicate sibling name. |
+| `DELETE` | `/web/testcases/<case_id>?project_id=` | Member | CMS `testcases/<id>?project_id=` | pass-through | `project_id` is required (400 if missing); 404 if the test case is in another project. |
+
+Writes are authorised by project membership only. The per-area role grid
+(Test Cases: read / add-modify / delete, see `user_roles_design.md`) is not
+enforced yet, so a member whose role is read-only can still write. The member
+decorator skips its check when `project_id` is missing or not an integer, so
+the write handlers reject that with a 400 themselves.
 
 ### 2.9 Testcase custom fields
 

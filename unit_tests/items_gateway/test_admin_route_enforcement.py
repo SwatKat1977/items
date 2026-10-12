@@ -119,6 +119,25 @@ _MEMBER_ONLY_ROUTES = [
     ("GET", "/web/testcases/1?project_id=1"),
 ]
 
+# (method, path, json_body) - the test case write routes. Authorised by
+# membership of project 1 alone for now (the per-area role grid is not
+# enforced anywhere yet); administrators bypass the check.
+_MEMBER_WRITE_ROUTES = [
+    ("POST", "/web/1/testcases",
+     {"folder_id": None, "name": "T", "description": ""}),
+    ("PATCH", "/web/testcases/1?project_id=1",
+     {"name": "T", "description": ""}),
+    ("DELETE", "/web/testcases/1?project_id=1", None),
+]
+
+# The same writes without the project_id query parameter. The membership
+# decorator skips its check when it cannot find a project, so the handlers
+# must refuse these themselves (see read_required_project_id).
+_WRITE_ROUTES_MISSING_PROJECT_ID = [
+    ("PATCH", "/web/testcases/1", {"name": "T", "description": ""}),
+    ("DELETE", "/web/testcases/1", None),
+]
+
 # (method, path, json_body) - routes that must stay reachable with no
 # X-Items-* session at all, each for its own documented reason (see the
 # individual blueprint docstrings).
@@ -286,6 +305,52 @@ class TestAdminRouteEnforcement(unittest.IsolatedAsyncioTestCase):
         response = await self._call(
             "GET", "/web/projects", None, headers=_OUTSIDER_HEADERS)
         self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    async def test_testcase_writes_reject_no_session(self):
+        for method, path, body in _MEMBER_WRITE_ROUTES:
+            with self.subTest(method=method, path=path):
+                response = await self._call(method, path, body)
+                self.assertEqual(response.status_code,
+                                 HTTPStatus.UNAUTHORIZED)
+
+    async def test_testcase_writes_reject_a_non_member(self):
+        """A valid session with no membership of project 1 may not write
+        to it - proves membership is checked, not just "any session"."""
+        for method, path, body in _MEMBER_WRITE_ROUTES:
+            with self.subTest(method=method, path=path):
+                response = await self._call(
+                    method, path, body, headers=_OUTSIDER_HEADERS)
+                self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+
+    async def test_testcase_writes_accept_a_member(self):
+        for method, path, body in _MEMBER_WRITE_ROUTES:
+            with self.subTest(method=method, path=path):
+                response = await self._call(
+                    method, path, body, headers=_USER_HEADERS)
+                self.assertNotIn(
+                    response.status_code,
+                    (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN))
+
+    async def test_testcase_writes_accept_an_administrator(self):
+        for method, path, body in _MEMBER_WRITE_ROUTES:
+            with self.subTest(method=method, path=path):
+                response = await self._call(
+                    method, path, body, headers=_ADMIN_HEADERS)
+                self.assertNotIn(
+                    response.status_code,
+                    (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN))
+
+    async def test_testcase_writes_without_project_id_are_refused(self):
+        """A write that names no project must not slip past the membership
+        check: the outsider is not rejected by the decorator (it has nothing
+        to check), so the handler's own 400 is what stops it."""
+        for headers in (_OUTSIDER_HEADERS, _USER_HEADERS, _ADMIN_HEADERS):
+            for method, path, body in _WRITE_ROUTES_MISSING_PROJECT_ID:
+                with self.subTest(method=method, path=path):
+                    response = await self._call(
+                        method, path, body, headers=headers)
+                    self.assertEqual(response.status_code,
+                                     HTTPStatus.BAD_REQUEST)
 
     async def test_case_type_reads_need_no_project_membership(self):
         """Case types are global, so a session that belongs to no project

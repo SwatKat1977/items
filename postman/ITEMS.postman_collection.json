@@ -1671,6 +1671,131 @@
                     }
                   },
                   "response": []
+                },
+                {
+                  "name": "Create a test case",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "X-Items-User",
+                        "value": "{{ITEMS_USER}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "X-Items-Token",
+                        "value": "{{ITEMS_TOKEN}}",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"folder_id\": null,\n    \"name\": \"Login with valid credentials\",\n    \"description\": \"Verify a user can log in with valid credentials\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/1/testcases",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "1",
+                        "testcases"
+                      ]
+                    },
+                    "description": "Project member (or administrator). The project is the number in the path only; the body must not contain a project_id (400). Optional case_type_id in the body; omitted means the current default type. 200 {testcase_id}. 404 unknown project, folder or case type. 409 name already used by a sibling."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Modify a test case",
+                  "request": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "X-Items-User",
+                        "value": "{{ITEMS_USER}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "X-Items-Token",
+                        "value": "{{ITEMS_TOKEN}}",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"name\": \"Login with valid credentials (renamed)\",\n    \"description\": \"Updated description\",\n    \"case_type_id\": 9\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/testcases/1?project_id=1",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "testcases",
+                        "1"
+                      ],
+                      "query": [
+                        {
+                          "key": "project_id",
+                          "value": "1",
+                          "description": "Required. Membership is checked against it, and the CMS confirms the test case belongs to it (404 otherwise)."
+                        }
+                      ]
+                    },
+                    "description": "Project member (or administrator). case_type_id is optional; omitted means the type is unchanged. 400 if project_id is missing. 404 wrong project, unknown test case or case type. 409 name already used by a sibling."
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Delete a test case",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "X-Items-User",
+                        "value": "{{ITEMS_USER}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "X-Items-Token",
+                        "value": "{{ITEMS_TOKEN}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/testcases/1?project_id=1",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "testcases",
+                        "1"
+                      ],
+                      "query": [
+                        {
+                          "key": "project_id",
+                          "value": "1",
+                          "description": "Required. Membership is checked against it, and the CMS confirms the test case belongs to it (404 otherwise)."
+                        }
+                      ]
+                    },
+                    "description": "Project member (or administrator). 400 if project_id is missing. 404 wrong project or unknown test case."
+                  },
+                  "response": []
                 }
               ]
             },
