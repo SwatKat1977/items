@@ -1,0 +1,25 @@
+/* View / Add / Edit test case pages */
+
+/* Full width, so the card lines up with the title bar above it. */
+.testcase-form-card {
+    background-color: #ffffff;
+    border: 1px solid #a8d0f0;
+    border-radius: 6px;
+    padding: 20px;
+}
+
+/* Keep the line breaks the author typed in a description. */
+.testcase-description {
+    white-space: pre-wrap;
+}
+
+/* The buttons belong to the card, separated from the fields by a rule. */
+.testcase-form-actions {
+    border-top: 1px solid #e3ebf3;
+    margin-top: 20px;
+    padding-top: 16px;
+}
+
+.testcase-form-actions .btn + .btn {
+    margin-left: 6px;
+}

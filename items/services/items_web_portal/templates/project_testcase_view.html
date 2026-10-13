@@ -1,0 +1,41 @@
+{% extends "project_page_template.html" %}
+{% block title %}Integrated Test Management Suite | Test Case{% endblock %}
+{% block head %}{{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/project_testcases.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/project_testcase_form.css') }}">
+{% endblock %}
+
+{# Mirrors project_testcase_form.html: the same title bar, card, field order,
+   labels and button row, with the values shown instead of editable. #}
+{% block project_content %}
+<div id="content">
+    <div id="testcases-title-bar">
+        <h5 class="mb-0" id="testcase-view-title">Test Case #{{ testcase.id }}</h5>
+    </div>
+
+    <div class="p-3">
+        <div class="testcase-form-card">
+            <div class="mb-3">
+                <label class="form-label">Name</label>
+                <div class="form-control-plaintext" id="testcase-view-name">{{ testcase.name }}</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <div class="form-control-plaintext testcase-description" id="testcase-view-description">{% if testcase.description %}{{ testcase.description }}{% else %}<span class="text-muted">No description</span>{% endif %}</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Type</label>
+                <div class="form-control-plaintext" id="testcase-view-type">{{ case_type_name }}</div>
+            </div>
+
+            <div class="testcase-form-actions">
+                <a href="/{{ project_id }}/testcases/{{ testcase.id }}/edit"
+                   class="btn btn-header" id="edit-testcase-btn"><i class="bi bi-pencil"></i> Edit</a>
+                <a href="/{{ project_id }}/testcases" class="btn btn-header-outline">Back to Test Cases</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

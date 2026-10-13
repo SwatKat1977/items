@@ -352,6 +352,33 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
             response = await c.get("/1/testcases")
         self.assertNotEqual(response.status_code, 405)
 
+    async def test_view_testcase_page_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/1/testcases/1")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_add_testcase_page_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/1/testcases/add")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_add_testcase_submit_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/1/testcases/add",
+                                    form={"name": "T"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_edit_testcase_page_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.get("/1/testcases/1/edit")
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_edit_testcase_submit_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/1/testcases/1/edit",
+                                    form={"name": "T"})
+        self.assertNotEqual(response.status_code, 405)
+
 
 if __name__ == "__main__":
     unittest.main()
