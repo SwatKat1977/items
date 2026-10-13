@@ -65,6 +65,15 @@ def create_testcases_page_handlers(injections: PageHandlerInjections) \
     async def test_definitions_page_request(project_id: int):
         return await handler_get_testcase.test_cases(project_id)
 
+    injections.logger.debug("=> %s POST /<project_id>/testcases/<id>/delete",
+                            "Delete test case".ljust(40))
+
+    @routes.route('/<int:project_id>/testcases/<int:case_id>/delete',
+                  methods=['POST'])
+    async def delete_testcase_request(project_id: int, case_id: int):
+        return await handler_get_testcase.delete_test_case(
+            project_id, case_id)
+
     injections.logger.debug("=> %s GET /<project_id>/testcases/<id>",
                             "View test case page".ljust(40))
 

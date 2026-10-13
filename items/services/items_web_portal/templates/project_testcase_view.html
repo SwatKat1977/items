@@ -34,8 +34,20 @@
                 <a href="/{{ project_id }}/testcases/{{ testcase.id }}/edit"
                    class="btn btn-header" id="edit-testcase-btn"><i class="bi bi-pencil"></i> Edit</a>
                 <a href="/{{ project_id }}/testcases" class="btn btn-header-outline">Back to Test Cases</a>
+                <button type="button" class="btn btn-outline-danger float-end" id="delete-testcase-btn"
+                        data-bs-toggle="modal" data-bs-target="#confirmDeleteTestcaseModal"
+                        data-id="{{ testcase.id }}"
+                        data-name="{{ testcase.name }}"><i class="bi bi-trash"></i> Delete</button>
             </div>
         </div>
     </div>
+
+    {% include "_testcase_delete_modal.html" %}
 </div>
+{% endblock %}
+
+{% block postBody %}{{ super() }}
+<script type="text/javascript"
+        src="{{ url_for('static', filename='scripts/project_testcases.js') }}">
+</script>
 {% endblock %}

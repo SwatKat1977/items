@@ -1,0 +1,29 @@
+{# Confirmation pop-up for deleting a test case. Shared by the list and view
+   pages; project_testcases.js fills in the name and the form's action from
+   the button that opened it (data-id, data-name). #}
+<div class="modal fade" id="confirmDeleteTestcaseModal" tabindex="-1"
+     aria-labelledby="confirmDeleteTestcaseModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmDeleteTestcaseModalLabel">Confirmation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete the test case
+           "<span id="tc-delete-name"></span>"? This action cannot be undone.</p>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="tcConfirmCheckbox">
+          <label class="form-check-label" for="tcConfirmCheckbox">I confirm I want to delete this item.</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-header-outline" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="tcConfirmDeleteButton" disabled>OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form id="tcDeleteForm" method="POST" style="display: none;"
+      data-action-template="/{{ project_id }}/testcases/__ID__/delete"></form>
