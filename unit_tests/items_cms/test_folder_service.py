@@ -33,6 +33,8 @@ class TestFolderService(unittest.IsolatedAsyncioTestCase):
         self.mock_state = MagicMock(spec=ServiceState)
         self.mock_state.is_available.return_value = True
         self.mock_repo = AsyncMock(spec=FolderRepository)
+        # By default a delete is not blocked by any test cases.
+        self.mock_repo.delete_folder.return_value = 0
         self.service = FolderService(
             self.mock_logger, self.mock_state, self.mock_repo)
 
@@ -302,6 +304,29 @@ class TestFolderService(unittest.IsolatedAsyncioTestCase):
         result = await self.service.delete_folder(1, 5)
         self.assertFalse(result.success)
         self.assertTrue(result.is_internal)
+
+    async def test_delete_folder_blocked_by_test_cases_is_a_conflict(self):
+        self.mock_repo.get_folder.return_value = _FOLDER
+        self.mock_repo.delete_folder.return_value = 12
+        result = await self.service.delete_folder(1, 5)
+        self.assertFalse(result.success)
+        self.assertTrue(result.is_conflict)
+        self.assertFalse(result.is_internal)
+        self.assertFalse(result.not_found)
+        self.assertEqual(result.data, {"testcase_count": 12})
+        self.assertIn("12 test case(s)", result.error_msg)
+        self.assertIn("cascade=true", result.error_msg)
+
+    async def test_delete_folder_does_not_cascade_by_default(self):
+        self.mock_repo.get_folder.return_value = _FOLDER
+        await self.service.delete_folder(1, 5)
+        self.mock_repo.delete_folder.assert_awaited_once_with(1, False)
+
+    async def test_delete_folder_passes_cascade_to_the_repository(self):
+        self.mock_repo.get_folder.return_value = _FOLDER
+        result = await self.service.delete_folder(1, 5, cascade=True)
+        self.assertTrue(result.success)
+        self.mock_repo.delete_folder.assert_awaited_once_with(1, True)
 
     async def test_delete_folder_success(self):
         self.mock_repo.get_folder.return_value = _FOLDER

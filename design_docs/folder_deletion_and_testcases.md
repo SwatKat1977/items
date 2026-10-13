@@ -1,7 +1,31 @@
 # Folder deletion vs. test case deletion
 
-**Status:** Design note — not yet implemented. Revisit when test case CRUD
-work begins.
+**Status:** The folder-delete safety is **implemented** in the CMS (see
+"What was built" below). The soft-delete decision for test cases is still
+open: the user currently prefers to keep test cases as hard delete.
+
+## What was built
+
+- `DELETE /folders/<id>?project_id=<id>` **refuses by default** if the folder
+  or any descendant contains test cases: `409` with
+  `{"error": "...", "testcase_count": <n>}`, and nothing is deleted. The count
+  covers the whole subtree.
+- `DELETE /folders/<id>?project_id=<id>&cascade=true` deletes the folder, its
+  descendants and every test case beneath them. `cascade` must be `true` or
+  `false` (any letter case); anything else is a `400` rather than being read as
+  false, so a typo can't change what a delete means.
+- An empty folder (no test cases anywhere beneath it) deletes with no flag.
+- The refusal is **part of the delete, not a count followed by a delete**: the
+  delete runs as one `BEGIN IMMEDIATE` transaction guarded on there being no
+  test cases in the subtree. A test case added after the count therefore cannot
+  be wiped out by a delete that was approved without it; the caller is told it
+  was blocked instead.
+- **No separate count endpoint was built.** The Portal learns the number from
+  the `409` itself: it asks "delete section X?", and if the CMS answers 409 with
+  a count it shows a second prompt naming the number before retrying with
+  `cascade=true`. That avoids the count-then-delete race the original note
+  worried about, with one fewer route.
+- Test cases remain **hard delete**; the soft-delete idea below was not built.
 
 ## Context
 
