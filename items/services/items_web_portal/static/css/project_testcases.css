@@ -48,3 +48,25 @@
 .file-table th, .file-table td {
     border: 1px solid lightblue; /* Thin light blue border for cells */
 }
+.testcase-name-link {
+    color: #2a72b5;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.testcase-name-link:hover {
+    text-decoration: underline;
+}
+
+/* Secondary action in the same navy family as .btn-header (Cancel, Back). */
+.btn-header-outline {
+    background-color: #ffffff;
+    color: #294665;
+    border: 1px solid #294665;
+}
+
+.btn-header-outline:hover {
+    background-color: #e3ebf3;
+    border-color: #1e3550;
+    color: #1e3550;
+}

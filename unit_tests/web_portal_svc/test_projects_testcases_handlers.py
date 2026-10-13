@@ -313,8 +313,36 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
                   "name": "A"}],
             case_types=ApiResponse(status_code=HTTPStatus.INTERNAL_SERVER_ERROR))
         text = await self._page_text()
-        self.assertIn("<td>A</td>", text)
+        self.assertIn(">A</a>", text)
         self.assertIn("<td>Unknown</td>", text)
+
+    async def test_add_test_case_button_links_to_the_add_page(self):
+        self._page_with([], [])
+        text = await self._page_text()
+        self.assertIn('href="/1/testcases/add"', text)
+        self.assertIn("Add Test Case", text)
+
+    async def test_name_opens_the_view_and_pencil_opens_the_editor(self):
+        """The name opens the read-only view (which has its own Edit
+        button); the pencil is the one-step shortcut to editing."""
+        self._page_with(
+            [{"id": 1, "parent_id": None, "name": "AlphaFolder"}],
+            [{"id": 3, "folder_id": None, "case_type_id": 15,
+              "name": "RootCase"},
+             {"id": 4, "folder_id": 1, "case_type_id": 9,
+              "name": "FolderCase"}])
+        text = await self._page_text()
+        self.assertEqual(text.count('href="/1/testcases/3/edit"'), 1)
+        self.assertEqual(text.count('href="/1/testcases/4/edit"'), 1)
+        self.assertRegex(
+            text, r'testcase-name-link"\s+href="/1/testcases/3">'
+                  r'RootCase</a>')
+        self.assertRegex(
+            text, r'testcase-name-link"\s+href="/1/testcases/4">'
+                  r'FolderCase</a>')
+        self.assertRegex(
+            text, r'edit-testcase-btn"\s+title="Edit"\s+'
+                  r'href="/1/testcases/3/edit"')
 
     async def test_case_types_non_list_body_still_renders(self):
         self._page_with(

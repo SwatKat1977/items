@@ -71,6 +71,13 @@ from test_projects_testcases_handlers import (
     TestGetProjectOverviewPageHandler,
     TestGetProjectTestcasesPageHandler,
 )
+from test_testcase_form_page_handler import (
+    TestViewTestcasePage,
+    TestAddTestcaseForm,
+    TestAddTestcaseSubmit,
+    TestEditTestcaseForm,
+    TestEditTestcaseSubmit,
+)
 
 if __name__ == "__main__":
     unittest.main()

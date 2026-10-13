@@ -1,0 +1,62 @@
+{% extends "project_page_template.html" %}
+{% block title %}Integrated Test Management Suite | {% if case_id %}Edit Test Case{% else %}Add Test Case{% endif %}{% endblock %}
+{% block head %}{{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/project_testcases.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/project_testcase_form.css') }}">
+{% endblock %}
+
+{% block project_content %}
+<div id="content">
+    <div id="testcases-title-bar">
+        <h5 class="mb-0">{% if case_id %}Edit Test Case #{{ case_id }}{% else %}Add Test Case{% endif %}</h5>
+    </div>
+
+    <div class="p-3">
+        {% if error_message %}
+        <div class="alert alert-danger" role="alert" id="testcase-form-error">{{ error_message }}</div>
+        {% endif %}
+
+        <form id="testcaseForm" method="post"
+              action="{% if case_id %}/{{ project_id }}/testcases/{{ case_id }}/edit{% else %}/{{ project_id }}/testcases/add{% endif %}">
+            <div class="testcase-form-card">
+                <div class="mb-3">
+                    <label for="tc-name" class="form-label">Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="tc-name" name="name"
+                           required pattern=".*\S.*" title="The name cannot be blank"
+                           value="{{ form_data.name }}">
+                </div>
+
+                <div class="mb-3">
+                    <label for="tc-description" class="form-label">Description</label>
+                    <textarea class="form-control" id="tc-description" name="description"
+                              rows="6">{{ form_data.description }}</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="tc-case-type" class="form-label">Type</label>
+                    {% if case_types %}
+                    <select class="form-select" id="tc-case-type" name="case_type_id">
+                        {% for case_type in case_types %}
+                        <option value="{{ case_type.id }}"
+                                {% if case_type.id|string == form_data.case_type_id|string %}selected{% endif %}>
+                            {{ case_type.name }}{% if case_type.is_default %} (Default){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <p class="form-text mb-0" id="tc-case-type-unavailable">
+                        The case types could not be loaded.
+                        {% if case_id %}The type will be left unchanged.{% else %}The default type will be used.{% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <div class="testcase-form-actions">
+                    <button type="submit" class="btn btn-header">{% if case_id %}Save Test Case{% else %}Add Test Case{% endif %}</button>
+                    <a href="/{{ project_id }}/testcases" class="btn btn-header-outline">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

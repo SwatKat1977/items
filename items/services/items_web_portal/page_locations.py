@@ -27,6 +27,12 @@ TEMPLATE_DASHBOARD_PAGE: str = "dashboard.html"
 # Test definitions page template
 TEMPLATE_TEST_DEFINITIONS_PAGE: str = "project_testcases.html"
 
+# Add / edit test case page template
+TEMPLATE_TESTCASE_FORM_PAGE: str = "project_testcase_form.html"
+
+# Read-only test case page template
+TEMPLATE_TESTCASE_VIEW_PAGE: str = "project_testcase_view.html"
+
 # Internal error page template
 TEMPLATE_INTERNAL_ERROR_PAGE: str = "internal_server_error.html"
 

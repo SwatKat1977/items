@@ -13,14 +13,23 @@
                 <th>ID</th>
                 <th>Name</th>
                 <th>Type</th>
+                <th class="text-end">Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for test_case in test_cases %}
                 <tr>
                     <td>{{ test_case.id }}</td>
-                    <td>{{ test_case.name }}</td>
+                    <td>
+                        <a class="testcase-name-link"
+                           href="/{{ project_id }}/testcases/{{ test_case.id }}">{{ test_case.name }}</a>
+                    </td>
                     <td>{{ test_case.case_type_name }}</td>
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-link text-primary p-1 edit-testcase-btn"
+                           title="Edit"
+                           href="/{{ project_id }}/testcases/{{ test_case.id }}/edit"><i class="bi bi-pencil"></i></a>
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>
@@ -45,8 +54,10 @@
 
 {% block project_content %}
 <div id="content">
-    <div id="testcases-title-bar">
+    <div id="testcases-title-bar" class="d-flex align-items-center justify-content-between">
         <h5 class="mb-0">Test Cases</h5>
+        <a href="/{{ project_id }}/testcases/add" class="btn btn-sm btn-header"
+           id="add-testcase-btn"><strong>+</strong> Add Test Case</a>
     </div>
 
     <div class="p-3">
