@@ -70,6 +70,7 @@ from test_admin_users_handlers import (
 from test_projects_testcases_handlers import (
     TestGetProjectOverviewPageHandler,
     TestGetProjectTestcasesPageHandler,
+    TestDeleteTestcaseFromList,
 )
 from test_testcase_form_page_handler import (
     TestViewTestcasePage,

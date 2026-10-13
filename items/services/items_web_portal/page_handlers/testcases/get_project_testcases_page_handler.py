@@ -17,7 +17,9 @@ limitations under the License.
 from http import HTTPStatus
 import json
 import logging
+from typing import Optional
 from quart import make_response, Response
+from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_web_portal.configuration import Configuration
 from items.services.items_web_portal.decorators import require_session
@@ -30,6 +32,9 @@ from items.services.items_web_portal.portal_page_handler import (
 # Shown in the Type column when a test case's type cannot be resolved (the
 # case types could not be loaded, or the id is not in the list).
 UNKNOWN_CASE_TYPE_NAME: str = "Unknown"
+
+# Shown instead of a gateway message when it did not supply one.
+_FALLBACK_ERROR: str = "The request could not be completed. Please try again."
 
 
 class GetProjectTestcasesPageHandler(PortalPageHandler):
@@ -89,6 +94,58 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
                 dashboard on 403/404, or a JSON error response with HTTP
                 500 for any other gateway failure.
         """
+        return await self._render_list(project_id)
+
+    @require_session
+    async def delete_test_case(self, project_id: int, case_id: int):
+        """Delete a test case, then show the project's test case list.
+
+        Args:
+            project_id (int):
+                Unique identifier of the project the test case belongs to.
+            case_id (int):
+                Unique identifier of the test case to delete.
+
+        Returns:
+            Response:
+                A redirect to the list on success, or if the test case is
+                already gone (404); a redirect to the dashboard if the user
+                may not use this project (403); otherwise the list page again
+                with an error banner.
+        """
+        gateway_svc: str = self._config.apis_gateway_svc
+        response: ApiResponse = await self._rest_client.delete(
+            f"{gateway_svc}web/testcases/{case_id}?project_id={project_id}")
+
+        if response.status_code in (HTTPStatus.OK, HTTPStatus.NOT_FOUND):
+            return await make_response(
+                self._generate_redirect(f"{project_id}/testcases"))
+
+        if response.status_code == HTTPStatus.FORBIDDEN:
+            return await make_response(self._generate_redirect('/'))
+
+        error_message = self._extract_error(response)
+        self._logger.warning("Test case delete failed (status %s): %s",
+                             response.status_code, error_message)
+        return await self._render_list(project_id,
+                                       error_message=error_message)
+
+    async def _render_list(self, project_id: int,
+                           error_message: Optional[str] = None):
+        """Fetch the project's test cases and render the list page.
+
+        Args:
+            project_id (int):
+                Unique identifier of the project.
+            error_message (Optional[str]):
+                Optional error banner text to show above the list.
+
+        Returns:
+            Response:
+                The rendered page, a redirect to the dashboard on 403/404,
+                or a JSON error response with HTTP 500 for any other gateway
+                failure.
+        """
         gateway_svc: str = self._config.apis_gateway_svc
 
         # Fetch project details to get the project name for the sidebar.
@@ -134,7 +191,15 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
             has_testcases=len(details) > 0 or len(root_test_cases) > 0,
             project_id=project_id,
             project_name=project_name,
-            instance_name=self._metadata_settings.instance_name)
+            instance_name=self._metadata_settings.instance_name,
+            error_message=error_message)
+
+    @staticmethod
+    def _extract_error(response: ApiResponse) -> str:
+        """Extract a human-readable error message from a gateway response."""
+        if isinstance(response.body, dict) and response.body.get("error"):
+            return str(response.body["error"])
+        return _FALLBACK_ERROR
 
     async def _fetch_case_type_names(self) -> dict[int, str]:
         """Fetch the case types as an ``{id: name}`` lookup.

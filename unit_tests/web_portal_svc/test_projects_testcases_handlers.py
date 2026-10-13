@@ -344,6 +344,38 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
             text, r'edit-testcase-btn"\s+title="Edit"\s+'
                   r'href="/1/testcases/3/edit"')
 
+    async def test_every_test_case_has_a_delete_button(self):
+        self._page_with(
+            [{"id": 1, "parent_id": None, "name": "AlphaFolder"}],
+            [{"id": 3, "folder_id": None, "case_type_id": 15,
+              "name": "RootCase"},
+             {"id": 4, "folder_id": 1, "case_type_id": 9,
+              "name": "FolderCase"}])
+        text = await self._page_text()
+        self.assertEqual(text.count("delete-testcase-btn"), 2)
+        self.assertRegex(
+            text, r'delete-testcase-btn"\s+title="Delete"\s+'
+                  r'data-bs-toggle="modal"\s+'
+                  r'data-bs-target="#confirmDeleteTestcaseModal"\s+'
+                  r'data-id="3"\s+data-name="RootCase"')
+        self.assertIn('data-id="4"', text)
+
+    async def test_list_has_the_confirm_modal_form_and_script(self):
+        self._page_with([], [
+            {"id": 3, "folder_id": None, "case_type_id": 15, "name": "A"}])
+        text = await self._page_text()
+        self.assertIn('id="confirmDeleteTestcaseModal"', text)
+        self.assertIn('id="tcDeleteForm"', text)
+        self.assertIn('data-action-template="/1/testcases/__ID__/delete"',
+                      text)
+        self.assertIn("scripts/project_testcases.js", text)
+
+    async def test_no_error_banner_on_a_normal_page(self):
+        self._page_with([], [
+            {"id": 3, "folder_id": None, "case_type_id": 15, "name": "A"}])
+        text = await self._page_text()
+        self.assertNotIn('id="testcases-error"', text)
+
     async def test_case_types_non_list_body_still_renders(self):
         self._page_with(
             [], [{"id": 3, "folder_id": None, "case_type_id": 15,
@@ -359,6 +391,91 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
                   "name": "A"}], case_types=RuntimeError("boom"))
         text = await self._page_text()
         self.assertIn("<td>Unknown</td>", text)
+
+
+class TestDeleteTestcaseFromList(unittest.IsolatedAsyncioTestCase):
+    """POST /<project_id>/testcases/<id>/delete."""
+
+    _DELETE_URL = "http://gateway/web/testcases/7?project_id=1"
+
+    async def asyncSetUp(self):
+        self.mock_rest_client = AsyncMock()
+        self.mock_rest_client.post.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body={"status": "VALID"})
+        handler = GetProjectTestcasesPageHandler(
+            _LOGGER, _config(), self.mock_rest_client, _metadata())
+
+        app = make_app()
+
+        @app.route("/<int:project_id>/testcases/<int:case_id>/delete",
+                   methods=["POST"])
+        async def route(project_id, case_id):
+            return await handler.delete_test_case(project_id, case_id)
+
+        self.client = app.test_client()
+
+    async def _post(self):
+        async with self.client as c:
+            return await c.post("/1/testcases/7/delete",
+                                headers=_AUTH_HEADERS)
+
+    def _list_page_responses(self):
+        """What re-showing the list needs: project, test cases, types."""
+        self.mock_rest_client.get.side_effect = [
+            _PROJECT_OK,
+            ApiResponse(status_code=HTTPStatus.OK, body={
+                "folders": [], "test_cases": [
+                    {"id": 7, "folder_id": None, "case_type_id": 15,
+                     "name": "StillHere"}]}),
+            _CASE_TYPES_OK,
+        ]
+
+    async def test_deletes_via_the_gateway_with_the_project(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body={})
+        await self._post()
+        self.mock_rest_client.delete.assert_awaited_once_with(
+            self._DELETE_URL)
+
+    async def test_success_returns_to_the_list(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body={})
+        response = await self._post()
+        text = await response.get_data(as_text=True)
+        self.assertIn("url='http://localhost/1/testcases'", text)
+
+    async def test_already_deleted_also_returns_to_the_list(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.NOT_FOUND,
+            body={"error": "Test case not found"})
+        text = await (await self._post()).get_data(as_text=True)
+        self.assertIn("url='http://localhost/1/testcases'", text)
+
+    async def test_not_a_member_goes_to_the_dashboard(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.FORBIDDEN, body={"error": "Forbidden"})
+        text = await (await self._post()).get_data(as_text=True)
+        self.assertIn("url='http://localhost//'", text)
+
+    async def test_failure_shows_the_list_with_the_gateway_message(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            body={"error": "CMS service unavailable"})
+        self._list_page_responses()
+        response = await self._post()
+        self.assertEqual(response.status_code, 200)
+        text = await response.get_data(as_text=True)
+        self.assertIn('id="testcases-error"', text)
+        self.assertIn("CMS service unavailable", text)
+        # The list is shown again, with the test case still there.
+        self.assertIn("StillHere", text)
+
+    async def test_failure_without_a_message_shows_the_fallback(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, body={})
+        self._list_page_responses()
+        text = await (await self._post()).get_data(as_text=True)
+        self.assertIn("The request could not be completed", text)
 
 
 if __name__ == "__main__":

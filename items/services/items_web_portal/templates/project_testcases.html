@@ -29,6 +29,13 @@
                         <a class="btn btn-link text-primary p-1 edit-testcase-btn"
                            title="Edit"
                            href="/{{ project_id }}/testcases/{{ test_case.id }}/edit"><i class="bi bi-pencil"></i></a>
+                        <button type="button" class="btn btn-link text-danger p-1 delete-testcase-btn"
+                                title="Delete"
+                                data-bs-toggle="modal" data-bs-target="#confirmDeleteTestcaseModal"
+                                data-id="{{ test_case.id }}"
+                                data-name="{{ test_case.name }}">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
                     </td>
                 </tr>
             {% endfor %}
@@ -61,6 +68,10 @@
     </div>
 
     <div class="p-3">
+        {% if error_message %}
+        <div class="alert alert-danger" role="alert" id="testcases-error">{{ error_message }}</div>
+        {% endif %}
+
         {% if has_testcases == True %}
             <div id="folder-structure">
                 {# Test cases that are not in any folder, then the folders. #}
@@ -84,5 +95,13 @@
             </div>
         {% endif %}
     </div>
+
+    {% include "_testcase_delete_modal.html" %}
 </div>
+{% endblock %}
+
+{% block postBody %}{{ super() }}
+<script type="text/javascript"
+        src="{{ url_for('static', filename='scripts/project_testcases.js') }}">
+</script>
 {% endblock %}

@@ -158,6 +158,27 @@ class TestViewTestcasePage(_FormPageTestCase):
             text, r'href="/1/testcases/7/edit"\s+class="btn btn-header"'
                   r'\s+id="edit-testcase-btn"')
 
+    async def test_delete_button_opens_the_confirm_modal_for_this_case(self):
+        self._ready()
+        text = await self._text(await self._get())
+        self.assertRegex(
+            text, r'id="delete-testcase-btn"\s+data-bs-toggle="modal"\s+'
+                  r'data-bs-target="#confirmDeleteTestcaseModal"\s+'
+                  r'data-id="7"\s+data-name="Login works"')
+        self.assertIn('id="confirmDeleteTestcaseModal"', text)
+        self.assertIn('data-action-template="/1/testcases/__ID__/delete"',
+                      text)
+        self.assertIn("scripts/project_testcases.js", text)
+
+    async def test_delete_modal_is_not_on_the_edit_page(self):
+        self._gateway_gets({_TESTCASE_URL: _TESTCASE_OK,
+                            _PROJECT_URL: _PROJECT_OK,
+                            _CASE_TYPES_URL: _CASE_TYPES_OK})
+        async with self.client as c:
+            edit = await self._text(await c.get(
+                "/1/testcases/7/edit", headers=_AUTH_HEADERS))
+        self.assertNotIn("confirmDeleteTestcaseModal", edit)
+
     async def test_title_names_the_test_case_by_id(self):
         self._ready()
         text = await self._text(await self._get())
@@ -189,7 +210,8 @@ class TestViewTestcasePage(_FormPageTestCase):
                   r'\s*<a href="/1/testcases/7/edit"\s+class="btn btn-header"'
                   r'\s+id="edit-testcase-btn">.*?Edit</a>\s*'
                   r'<a href="/1/testcases" class="btn btn-header-outline">'
-                  r'Back to Test Cases</a>\s*</div>\s*</div>')
+                  r'Back to Test Cases</a>\s*<button.*?</button>\s*</div>'
+                  r'\s*</div>')
         self.assertNotIn("btn-outline-secondary", text)
         self.assertNotIn("btn-primary", text)
 
