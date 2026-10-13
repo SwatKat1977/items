@@ -229,17 +229,22 @@ class FolderService:
 
         return FolderResult(success=True, data=new_id)
 
-    async def update_folder(self, folder_id: int, name: str) -> FolderResult:
+    async def update_folder(self, folder_id: int, project_id: int,
+                            name: str) -> FolderResult:
         """Rename an existing folder.
 
         Args:
-            folder_id: ID of the folder to rename.
-            name:      New folder name. Must be unique among siblings.
+            folder_id:  ID of the folder to rename.
+            project_id: Project the caller states the folder belongs to. A
+                        mismatch is reported identically to the folder not
+                        existing, so a caller cannot probe other projects.
+            name:       New folder name. Must be unique among siblings.
 
         Returns:
             FolderResult indicating success, a not-found error if the
-            folder doesn't exist, a conflict error if the name is taken
-            by a sibling, or an internal error on DB failure.
+            folder doesn't exist or belongs to a different project, a
+            conflict error if the name is taken by a sibling, or an internal
+            error on DB failure.
         """
         # pylint: disable=too-many-return-statements
 
@@ -259,7 +264,7 @@ class FolderService:
                                 error_msg="Internal error in CMS",
                                 is_internal=True)
 
-        if existing is None:
+        if existing is None or existing["project_id"] != project_id:
             return FolderResult(success=False,
                                 error_msg="Folder not found",
                                 not_found=True)
@@ -294,18 +299,23 @@ class FolderService:
 
         return FolderResult(success=True)
 
-    async def delete_folder(self, folder_id: int) -> FolderResult:
+    async def delete_folder(self, folder_id: int,
+                            project_id: int) -> FolderResult:
         """Delete a folder.
 
         Child folders and their test cases are removed automatically via
         the database's ``ON DELETE CASCADE`` constraints.
 
         Args:
-            folder_id: ID of the folder to delete.
+            folder_id:  ID of the folder to delete.
+            project_id: Project the caller states the folder belongs to. A
+                        mismatch is reported identically to the folder not
+                        existing, so a caller cannot probe other projects.
 
         Returns:
             FolderResult indicating success, a not-found error if the
-            folder doesn't exist, or an internal error on DB failure.
+            folder doesn't exist or belongs to a different project, or an
+            internal error on DB failure.
         """
         if not self._state.is_available():
             return FolderResult(success=False,
@@ -322,7 +332,7 @@ class FolderService:
                                 error_msg="Internal error in CMS",
                                 is_internal=True)
 
-        if exists is None:
+        if exists is None or exists["project_id"] != project_id:
             return FolderResult(success=False,
                                 error_msg="Folder not found",
                                 not_found=True)

@@ -200,9 +200,9 @@ class TestAddTestcaseHandler(unittest.IsolatedAsyncioTestCase):
 
         self.client = app.test_client()
 
-    async def _post(self, body):
+    async def _post(self, body, query=""):
         async with self.client as c:
-            return await c.post("/testcases", json=body)
+            return await c.post(f"/testcases{query}", json=body)
 
     async def test_success_returns_200(self):
         self.mock_service.create_testcase.return_value = _ok(data=7)
@@ -235,6 +235,35 @@ class TestAddTestcaseHandler(unittest.IsolatedAsyncioTestCase):
             "Case type id is invalid")
         response = await self._post({**_VALID_ADD_BODY, "case_type_id": 999})
         self.assertEqual(response.status_code, 404)
+
+    async def test_matching_project_id_in_the_url_is_accepted(self):
+        self.mock_service.create_testcase.return_value = _ok(data=7)
+        response = await self._post(_VALID_ADD_BODY, query="?project_id=5")
+        self.assertEqual(response.status_code, 200)
+        self.mock_service.create_testcase.assert_called_once()
+
+    async def test_mismatched_project_id_in_the_url_returns_400(self):
+        """The test case would be created in the body's project while the URL
+        names another: refused, and the service is never called."""
+        response = await self._post(_VALID_ADD_BODY, query="?project_id=6")
+        self.assertEqual(response.status_code, 400)
+        data = await response.get_json()
+        self.assertEqual(
+            data["error"],
+            "project_id in the URL does not match project_id in the body")
+        self.mock_service.create_testcase.assert_not_called()
+
+    async def test_non_integer_project_id_in_the_url_returns_400(self):
+        response = await self._post(_VALID_ADD_BODY, query="?project_id=abc")
+        self.assertEqual(response.status_code, 400)
+        data = await response.get_json()
+        self.assertEqual(data["error"], "project_id must be an integer")
+        self.mock_service.create_testcase.assert_not_called()
+
+    async def test_no_project_id_in_the_url_is_still_fine(self):
+        self.mock_service.create_testcase.return_value = _ok(data=7)
+        response = await self._post(_VALID_ADD_BODY)
+        self.assertEqual(response.status_code, 200)
 
     async def test_missing_field_returns_400(self):
         response = await self._post({"project_id": 5, "name": "Login"})

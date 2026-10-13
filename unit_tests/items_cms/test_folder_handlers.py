@@ -172,9 +172,9 @@ class TestAddFolderHandler(unittest.IsolatedAsyncioTestCase):
 
         self.client = app.test_client()
 
-    async def _post(self, body):
+    async def _post(self, body, query=""):
         async with self.client as c:
-            return await c.post("/folders", json=body)
+            return await c.post(f"/folders{query}", json=body)
 
     async def test_success_returns_200(self):
         self.mock_service.create_folder.return_value = _ok(data=7)
@@ -184,6 +184,35 @@ class TestAddFolderHandler(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(data["folder_id"], 7)
         self.mock_service.create_folder.assert_called_once_with(
             project_id=5, parent_id=None, name="Root")
+
+    async def test_matching_project_id_in_the_url_is_accepted(self):
+        self.mock_service.create_folder.return_value = _ok(data=7)
+        response = await self._post(_VALID_ADD_BODY, query="?project_id=5")
+        self.assertEqual(response.status_code, 200)
+        self.mock_service.create_folder.assert_called_once()
+
+    async def test_mismatched_project_id_in_the_url_returns_400(self):
+        """The section would be created in the body's project while the URL
+        names another: refused, and the service is never called."""
+        response = await self._post(_VALID_ADD_BODY, query="?project_id=6")
+        self.assertEqual(response.status_code, 400)
+        data = await response.get_json()
+        self.assertEqual(
+            data["error"],
+            "project_id in the URL does not match project_id in the body")
+        self.mock_service.create_folder.assert_not_called()
+
+    async def test_non_integer_project_id_in_the_url_returns_400(self):
+        response = await self._post(_VALID_ADD_BODY, query="?project_id=abc")
+        self.assertEqual(response.status_code, 400)
+        data = await response.get_json()
+        self.assertEqual(data["error"], "project_id must be an integer")
+        self.mock_service.create_folder.assert_not_called()
+
+    async def test_no_project_id_in_the_url_is_still_fine(self):
+        self.mock_service.create_folder.return_value = _ok(data=7)
+        response = await self._post(_VALID_ADD_BODY)
+        self.assertEqual(response.status_code, 200)
 
     async def test_missing_field_returns_400(self):
         response = await self._post({"project_id": 5, "name": "Root"})
@@ -230,9 +259,9 @@ class TestModifyFolderHandler(unittest.IsolatedAsyncioTestCase):
 
         self.client = app.test_client()
 
-    async def _patch(self, folder_id, body):
+    async def _patch(self, folder_id, body, query="?project_id=5"):
         async with self.client as c:
-            return await c.patch(f"/folders/{folder_id}", json=body)
+            return await c.patch(f"/folders/{folder_id}{query}", json=body)
 
     async def test_success_returns_200(self):
         self.mock_service.update_folder.return_value = _ok()
@@ -241,7 +270,28 @@ class TestModifyFolderHandler(unittest.IsolatedAsyncioTestCase):
         data = await response.get_json()
         self.assertEqual(data["status"], 1)
         self.mock_service.update_folder.assert_called_once_with(
-            folder_id=1, name="New")
+            folder_id=1, project_id=5, name="New")
+
+    async def test_missing_project_id_returns_400(self):
+        response = await self._patch(1, {"name": "New"}, query="")
+        self.assertEqual(response.status_code, 400)
+        data = await response.get_json()
+        self.assertEqual(data["error"], "project_id is required")
+        self.mock_service.update_folder.assert_not_called()
+
+    async def test_non_integer_project_id_returns_400(self):
+        response = await self._patch(
+            1, {"name": "New"}, query="?project_id=abc")
+        self.assertEqual(response.status_code, 400)
+        data = await response.get_json()
+        self.assertEqual(data["error"], "project_id must be an integer")
+        self.mock_service.update_folder.assert_not_called()
+
+    async def test_project_id_is_passed_to_the_service(self):
+        self.mock_service.update_folder.return_value = _ok()
+        await self._patch(1, {"name": "New"}, query="?project_id=7")
+        self.mock_service.update_folder.assert_called_once_with(
+            folder_id=1, project_id=7, name="New")
 
     async def test_missing_field_returns_400(self):
         response = await self._patch(1, {})
@@ -290,19 +340,41 @@ class TestDeleteFolderHandler(unittest.IsolatedAsyncioTestCase):
     async def test_success_returns_200(self):
         self.mock_service.delete_folder.return_value = _ok()
         async with self.client as c:
-            response = await c.delete("/folders/1")
+            response = await c.delete("/folders/1?project_id=5")
         self.assertEqual(response.status_code, 200)
+
+    async def test_project_id_is_passed_to_the_service(self):
+        self.mock_service.delete_folder.return_value = _ok()
+        async with self.client as c:
+            await c.delete("/folders/3?project_id=7")
+        self.mock_service.delete_folder.assert_called_once_with(3, 7)
+
+    async def test_missing_project_id_returns_400(self):
+        async with self.client as c:
+            response = await c.delete("/folders/1")
+        self.assertEqual(response.status_code, 400)
+        data = await response.get_json()
+        self.assertEqual(data["error"], "project_id is required")
+        self.mock_service.delete_folder.assert_not_called()
+
+    async def test_non_integer_project_id_returns_400(self):
+        async with self.client as c:
+            response = await c.delete("/folders/1?project_id=abc")
+        self.assertEqual(response.status_code, 400)
+        data = await response.get_json()
+        self.assertEqual(data["error"], "project_id must be an integer")
+        self.mock_service.delete_folder.assert_not_called()
 
     async def test_not_found_returns_404(self):
         self.mock_service.delete_folder.return_value = _not_found()
         async with self.client as c:
-            response = await c.delete("/folders/99")
+            response = await c.delete("/folders/99?project_id=5")
         self.assertEqual(response.status_code, 404)
 
     async def test_internal_error_returns_500(self):
         self.mock_service.delete_folder.return_value = _internal()
         async with self.client as c:
-            response = await c.delete("/folders/1")
+            response = await c.delete("/folders/1?project_id=5")
         self.assertEqual(response.status_code, 500)
 
 
