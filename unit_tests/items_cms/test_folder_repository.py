@@ -36,6 +36,25 @@ CREATE TABLE tc_folders (
     FOREIGN KEY (parent_id) REFERENCES tc_folders(id) ON DELETE CASCADE,
     UNIQUE (project_id, parent_id, name)
 );
+CREATE TABLE tc_case_types (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL DEFAULT '',
+    is_default INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE tc_test_cases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    folder_id INTEGER NULL,
+    case_type_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    FOREIGN KEY (project_id) REFERENCES prj_projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (folder_id) REFERENCES tc_folders(id) ON DELETE CASCADE,
+    FOREIGN KEY (case_type_id) REFERENCES tc_case_types(id) ON DELETE RESTRICT,
+    UNIQUE (project_id, folder_id, name)
+);
+INSERT INTO tc_case_types (name, is_default) VALUES ('Other', 1);
 """
 
 
@@ -83,6 +102,25 @@ class TestFolderRepository(unittest.IsolatedAsyncioTestCase):
         conn.commit()
         conn.close()
         return row_id
+
+    def _insert_testcase(self, folder_id, name):
+        conn = sqlite3.connect(self.db_path)
+        cur = conn.execute(
+            "INSERT INTO tc_test_cases "
+            "(project_id, folder_id, case_type_id, name, description) "
+            "VALUES (?, ?, 1, ?, '')", (self.project_id, folder_id, name))
+        row_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+        return row_id
+
+    def _testcase_ids(self):
+        return [r[0] for r in self._query(
+            "SELECT id FROM tc_test_cases ORDER BY id")]
+
+    def _folder_ids(self):
+        return [r[0] for r in self._query(
+            "SELECT id FROM tc_folders ORDER BY id")]
 
     def _query(self, sql, params=()):
         conn = sqlite3.connect(self.db_path)
@@ -227,6 +265,157 @@ class TestFolderRepository(unittest.IsolatedAsyncioTestCase):
             "SELECT id FROM tc_folders WHERE id IN (?, ?)",
             (root_id, child_id))
         self.assertEqual(rows, [])
+
+    # ------------------------------------------------------------------
+    # delete_folder must not destroy test cases unless told to
+    # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # count_testcases_in_subtree
+    # ------------------------------------------------------------------
+
+    async def test_count_is_zero_for_an_empty_folder(self):
+        fid = self._insert_folder(self.project_id, None, "Root")
+        self.assertEqual(await self.repo.count_testcases_in_subtree(fid), 0)
+
+    async def test_count_includes_test_cases_directly_in_the_folder(self):
+        fid = self._insert_folder(self.project_id, None, "Root")
+        self._insert_testcase(fid, "A")
+        self._insert_testcase(fid, "B")
+        self.assertEqual(await self.repo.count_testcases_in_subtree(fid), 2)
+
+    async def test_count_includes_deeply_nested_descendants(self):
+        root_id = self._insert_folder(self.project_id, None, "Root")
+        child_id = self._insert_folder(self.project_id, root_id, "Child")
+        grand_id = self._insert_folder(self.project_id, child_id, "Grand")
+        self._insert_testcase(root_id, "R")
+        self._insert_testcase(child_id, "C")
+        self._insert_testcase(grand_id, "G1")
+        self._insert_testcase(grand_id, "G2")
+        self.assertEqual(
+            await self.repo.count_testcases_in_subtree(root_id), 4)
+        self.assertEqual(
+            await self.repo.count_testcases_in_subtree(child_id), 3)
+        self.assertEqual(
+            await self.repo.count_testcases_in_subtree(grand_id), 2)
+
+    async def test_count_ignores_siblings_and_root_level_test_cases(self):
+        a_id = self._insert_folder(self.project_id, None, "A")
+        b_id = self._insert_folder(self.project_id, None, "B")
+        self._insert_testcase(a_id, "InA")
+        self._insert_testcase(b_id, "InB")
+        self._insert_testcase(None, "NoFolder")
+        self.assertEqual(await self.repo.count_testcases_in_subtree(a_id), 1)
+
+    # ------------------------------------------------------------------
+    # delete_folder without cascade
+    # ------------------------------------------------------------------
+
+    async def test_empty_folder_is_deleted_and_returns_zero(self):
+        fid = self._insert_folder(self.project_id, None, "Root")
+        self.assertEqual(await self.repo.delete_folder(fid), 0)
+        self.assertEqual(self._folder_ids(), [])
+
+    async def test_empty_tree_is_deleted_whole(self):
+        root_id = self._insert_folder(self.project_id, None, "Root")
+        self._insert_folder(self.project_id, root_id, "Child")
+        self.assertEqual(await self.repo.delete_folder(root_id), 0)
+        self.assertEqual(self._folder_ids(), [])
+
+    async def test_folder_with_test_cases_is_refused_and_untouched(self):
+        fid = self._insert_folder(self.project_id, None, "Root")
+        tc_id = self._insert_testcase(fid, "Keep me")
+        self.assertEqual(await self.repo.delete_folder(fid), 1)
+        self.assertEqual(self._folder_ids(), [fid])
+        self.assertEqual(self._testcase_ids(), [tc_id])
+
+    async def test_test_case_in_a_descendant_blocks_the_delete(self):
+        root_id = self._insert_folder(self.project_id, None, "Root")
+        child_id = self._insert_folder(self.project_id, root_id, "Child")
+        tc_id = self._insert_testcase(child_id, "Deep")
+        self.assertEqual(await self.repo.delete_folder(root_id), 1)
+        self.assertEqual(self._folder_ids(), [root_id, child_id])
+        self.assertEqual(self._testcase_ids(), [tc_id])
+
+    async def test_refusal_reports_the_whole_subtree_count(self):
+        root_id = self._insert_folder(self.project_id, None, "Root")
+        child_id = self._insert_folder(self.project_id, root_id, "Child")
+        self._insert_testcase(root_id, "R")
+        self._insert_testcase(child_id, "C1")
+        self._insert_testcase(child_id, "C2")
+        self.assertEqual(await self.repo.delete_folder(root_id), 3)
+
+    async def test_deleting_an_empty_folder_leaves_other_folders_alone(self):
+        empty_id = self._insert_folder(self.project_id, None, "Empty")
+        full_id = self._insert_folder(self.project_id, None, "Full")
+        tc_id = self._insert_testcase(full_id, "Keep")
+        self.assertEqual(await self.repo.delete_folder(empty_id), 0)
+        self.assertEqual(self._folder_ids(), [full_id])
+        self.assertEqual(self._testcase_ids(), [tc_id])
+
+    # ------------------------------------------------------------------
+    # delete_folder with cascade
+    # ------------------------------------------------------------------
+
+    async def test_cascade_deletes_the_folder_and_its_test_cases(self):
+        fid = self._insert_folder(self.project_id, None, "Root")
+        self._insert_testcase(fid, "Gone")
+        self.assertEqual(await self.repo.delete_folder(fid, cascade=True), 0)
+        self.assertEqual(self._folder_ids(), [])
+        self.assertEqual(self._testcase_ids(), [])
+
+    async def test_cascade_deletes_descendants_and_their_test_cases(self):
+        root_id = self._insert_folder(self.project_id, None, "Root")
+        child_id = self._insert_folder(self.project_id, root_id, "Child")
+        self._insert_testcase(root_id, "R")
+        self._insert_testcase(child_id, "C")
+        await self.repo.delete_folder(root_id, cascade=True)
+        self.assertEqual(self._folder_ids(), [])
+        self.assertEqual(self._testcase_ids(), [])
+
+    async def test_cascade_leaves_unrelated_test_cases_alone(self):
+        gone_id = self._insert_folder(self.project_id, None, "Gone")
+        keep_id = self._insert_folder(self.project_id, None, "Keep")
+        self._insert_testcase(gone_id, "Gone")
+        keep_tc = self._insert_testcase(keep_id, "Keep")
+        root_tc = self._insert_testcase(None, "NoFolder")
+        await self.repo.delete_folder(gone_id, cascade=True)
+        self.assertEqual(self._testcase_ids(), [keep_tc, root_tc])
+
+    # ------------------------------------------------------------------
+    # The race: a test case arrives after the count
+    # ------------------------------------------------------------------
+
+    async def test_a_test_case_added_after_the_count_is_not_destroyed(self):
+        """The count said empty, then someone added a test case to a
+        sub-folder before the delete ran. The guarded delete must not
+        remove it, and the caller is told it was blocked."""
+        root_id = self._insert_folder(self.project_id, None, "Root")
+        child_id = self._insert_folder(self.project_id, root_id, "Child")
+        test = self
+        new_tc = {}
+
+        class _AddTestcaseAfterCount:
+            """Runs the real count, then adds a test case to the child."""
+
+            def __init__(self, real):
+                self._real = real
+
+            async def run_query(self, query, params=(), **kwargs):
+                result = await self._real.run_query(query, params, **kwargs)
+                if query.startswith("WITH RECURSIVE") and not new_tc:
+                    new_tc["id"] = test._insert_testcase(child_id, "Late")
+                return result
+
+            async def run_script(self, query):
+                return await self._real.run_script(query)
+
+        self.repo._db = _AddTestcaseAfterCount(self.repo._db)
+        blocking = await self.repo.delete_folder(root_id)
+
+        self.assertEqual(blocking, 1)
+        self.assertEqual(self._folder_ids(), [root_id, child_id])
+        self.assertEqual(self._testcase_ids(), [new_tc["id"]])
 
 
 if __name__ == "__main__":

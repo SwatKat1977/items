@@ -299,23 +299,28 @@ class FolderService:
 
         return FolderResult(success=True)
 
-    async def delete_folder(self, folder_id: int,
-                            project_id: int) -> FolderResult:
-        """Delete a folder.
+    async def delete_folder(self, folder_id: int, project_id: int,
+                            cascade: bool = False) -> FolderResult:
+        """Delete a folder, refusing if it contains test cases.
 
-        Child folders and their test cases are removed automatically via
-        the database's ``ON DELETE CASCADE`` constraints.
+        Child folders go with it. Test cases in the folder or any descendant
+        would be destroyed too, so unless ``cascade`` is true the delete is
+        refused and nothing changes; the refusal carries the number of test
+        cases so the caller can say what a cascading delete would remove.
 
         Args:
             folder_id:  ID of the folder to delete.
             project_id: Project the caller states the folder belongs to. A
                         mismatch is reported identically to the folder not
                         existing, so a caller cannot probe other projects.
+            cascade:    True to delete the test cases in the subtree as well.
 
         Returns:
             FolderResult indicating success, a not-found error if the
-            folder doesn't exist or belongs to a different project, or an
-            internal error on DB failure.
+            folder doesn't exist or belongs to a different project, a
+            conflict result (``data`` holds ``{"testcase_count": n}``) if it
+            contains test cases and ``cascade`` is false, or an internal
+            error on DB failure.
         """
         if not self._state.is_available():
             return FolderResult(success=False,
@@ -338,7 +343,8 @@ class FolderService:
                                 not_found=True)
 
         try:
-            await self._repository.delete_folder(folder_id)
+            blocking = await self._repository.delete_folder(
+                folder_id, cascade)
         except SqliteInterfaceException as ex:
             self._logger.exception(
                 "Database failure deleting folder %d: %s", folder_id, ex)
@@ -346,5 +352,13 @@ class FolderService:
             return FolderResult(success=False,
                                 error_msg="Internal error in CMS",
                                 is_internal=True)
+
+        if blocking:
+            return FolderResult(
+                success=False,
+                error_msg=(f"Folder contains {blocking} test case(s); "
+                           "delete with cascade=true to remove them too"),
+                is_conflict=True,
+                data={"testcase_count": blocking})
 
         return FolderResult(success=True)

@@ -347,7 +347,49 @@ class TestDeleteFolderHandler(unittest.IsolatedAsyncioTestCase):
         self.mock_service.delete_folder.return_value = _ok()
         async with self.client as c:
             await c.delete("/folders/3?project_id=7")
-        self.mock_service.delete_folder.assert_called_once_with(3, 7)
+        self.mock_service.delete_folder.assert_called_once_with(3, 7, False)
+
+    async def test_cascade_true_is_passed_to_the_service(self):
+        self.mock_service.delete_folder.return_value = _ok()
+        for value in ("true", "TRUE", "True"):
+            with self.subTest(value=value):
+                self.mock_service.delete_folder.reset_mock()
+                async with self.client as c:
+                    response = await c.delete(
+                        f"/folders/3?project_id=7&cascade={value}")
+                self.assertEqual(response.status_code, 200)
+                self.mock_service.delete_folder.assert_called_once_with(
+                    3, 7, True)
+
+    async def test_cascade_false_is_passed_to_the_service(self):
+        self.mock_service.delete_folder.return_value = _ok()
+        async with self.client as c:
+            await c.delete("/folders/3?project_id=7&cascade=false")
+        self.mock_service.delete_folder.assert_called_once_with(3, 7, False)
+
+    async def test_invalid_cascade_returns_400_and_deletes_nothing(self):
+        """A typo must not quietly mean 'false' - or 'true'."""
+        for value in ("yes", "1", "", "tru"):
+            with self.subTest(value=value):
+                async with self.client as c:
+                    response = await c.delete(
+                        f"/folders/3?project_id=7&cascade={value}")
+                self.assertEqual(response.status_code, 400)
+                data = await response.get_json()
+                self.assertEqual(data["error"],
+                                 "cascade must be true or false")
+        self.mock_service.delete_folder.assert_not_called()
+
+    async def test_blocked_by_test_cases_returns_409_with_the_count(self):
+        self.mock_service.delete_folder.return_value = FolderResult(
+            success=False, is_conflict=True, data={"testcase_count": 12},
+            error_msg="Folder contains 12 test case(s)")
+        async with self.client as c:
+            response = await c.delete("/folders/3?project_id=7")
+        self.assertEqual(response.status_code, 409)
+        data = await response.get_json()
+        self.assertEqual(data["testcase_count"], 12)
+        self.assertIn("12 test case(s)", data["error"])
 
     async def test_missing_project_id_returns_400(self):
         async with self.client as c:

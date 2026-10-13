@@ -188,17 +188,90 @@ class FolderRepository:
         query = f"UPDATE {cms_tables.TC_FOLDERS} SET name = ? WHERE id = ?"
         await self._db.run_query(query, (name, folder_id), commit=True)
 
-    async def delete_folder(self, folder_id: int) -> None:
-        """Permanently delete a folder from the database.
+    async def count_testcases_in_subtree(self, folder_id: int) -> int:
+        """Count the test cases in a folder and all of its descendants.
 
-        Child folders and their test cases are removed automatically via
-        ``ON DELETE CASCADE``.
+        Args:
+            folder_id: ID of the folder at the top of the subtree.
+
+        Returns:
+            The number of test cases in the folder itself and in every
+            folder beneath it, however deeply nested.
+
+        Raises:
+            SqliteInterfaceException: If the database query fails.
+        """
+        query = (
+            "WITH RECURSIVE subtree(id) AS ("
+            f"SELECT id FROM {cms_tables.TC_FOLDERS} WHERE id = ? "
+            "UNION ALL "
+            f"SELECT f.id FROM {cms_tables.TC_FOLDERS} f "
+            "JOIN subtree s ON f.parent_id = s.id) "
+            f"SELECT COUNT(*) FROM {cms_tables.TC_TEST_CASES} "
+            "WHERE folder_id IN (SELECT id FROM subtree)")
+        row = await self._db.run_query(query, (folder_id,), fetch_one=True)
+        return int(row[0]) if row else 0
+
+    async def delete_folder(self, folder_id: int,
+                            cascade: bool = False) -> int:
+        """Delete a folder, refusing if it would also destroy test cases.
+
+        Child folders are always removed with it (``ON DELETE CASCADE``). The
+        test cases in the folder and its descendants are removed the same
+        way, which is why this refuses by default: unless ``cascade`` is
+        true, nothing is deleted if any test case sits anywhere in the
+        subtree.
+
+        The refusal is part of the delete itself, not a count followed by a
+        delete: the delete runs as one transaction (``BEGIN IMMEDIATE``)
+        guarded on there being no test cases in the subtree, so a test case
+        added after the count cannot be wiped out by a delete that was
+        approved without it. If the guarded delete does nothing, the folder
+        is still there and the caller is told how many test cases blocked it.
+
+        ``folder_id`` is coerced with ``int()`` before being formatted into
+        the script (executescript takes no bound parameters).
 
         Args:
             folder_id: ID of the folder to delete.
+            cascade:   True to delete the subtree's test cases as well.
+
+        Returns:
+            0 if the folder was deleted, otherwise the number of test cases
+            in its subtree that stopped the delete (always above zero).
 
         Raises:
-            SqliteInterfaceException: If the database delete fails.
+            SqliteInterfaceException: If any database operation fails.
         """
-        query = f"DELETE FROM {cms_tables.TC_FOLDERS} WHERE id = ?"
-        await self._db.run_query(query, (folder_id,), commit=True)
+        if cascade:
+            query = f"DELETE FROM {cms_tables.TC_FOLDERS} WHERE id = ?"
+            await self._db.run_query(query, (folder_id,), commit=True)
+            return 0
+
+        blocking = await self.count_testcases_in_subtree(folder_id)
+        if blocking:
+            return blocking
+
+        folder_id = int(folder_id)
+        folders = cms_tables.TC_FOLDERS
+        await self._db.run_script(
+            "BEGIN IMMEDIATE;"
+            f"DELETE FROM {folders} WHERE id = {folder_id} "
+            f"AND NOT EXISTS (SELECT 1 FROM {cms_tables.TC_TEST_CASES} "
+            "WHERE folder_id IN (WITH RECURSIVE subtree(id) AS ("
+            f"SELECT id FROM {folders} WHERE id = {folder_id} "
+            "UNION ALL "
+            f"SELECT f.id FROM {folders} f "
+            "JOIN subtree s ON f.parent_id = s.id) "
+            "SELECT id FROM subtree));"
+            "COMMIT;")
+
+        still_there = await self._db.run_query(
+            f"SELECT 1 FROM {folders} WHERE id = ?",
+            (folder_id,), fetch_one=True)
+        if still_there:
+            # A test case arrived after the count, and the guard held. There
+            # is at least one now.
+            return max(await self.count_testcases_in_subtree(folder_id), 1)
+
+        return 0

@@ -266,7 +266,39 @@
                       "description": "Required. The project the folder belongs to; 404 if it belongs to a different one."
                     }
                   ]
-                }
+                },
+                "description": "Deletes an empty folder (and any empty sub-folders). If the folder or a sub-folder contains test cases it is REFUSED with 409 {error, testcase_count} and nothing is deleted. Use Delete Folder (cascade) to remove them too."
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Folder (cascade)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/folders/1?project_id=1&cascade=true",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "folders",
+                    "1"
+                  ],
+                  "query": [
+                    {
+                      "key": "project_id",
+                      "value": "1",
+                      "description": "Required. The project the folder belongs to; 404 if it belongs to a different one."
+                    },
+                    {
+                      "key": "cascade",
+                      "value": "true",
+                      "description": "true or false (default false). true ALSO PERMANENTLY DELETES every test case in the folder and its sub-folders. Anything else is a 400."
+                    }
+                  ]
+                },
+                "description": "DESTRUCTIVE: deletes the folder, all sub-folders and every test case beneath them. There is no undo. Use only with scratch data."
               },
               "response": []
             }
