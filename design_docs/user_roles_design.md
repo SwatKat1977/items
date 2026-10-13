@@ -521,8 +521,12 @@ authorises from that parameter directly - no extra hop - and CMS verifies
 only that the entity genuinely belongs to the stated project (an integrity
 check, not an authorisation decision), 404ing on a mismatch rather than
 trusting the caller's claim. On the CMS the parameter is **required** for
-`PATCH` and `DELETE` (a 400 if missing or not an integer) so a write can never
-silently skip the check; it stays optional on `GET` for existing callers.
+`PATCH` and `DELETE` on both test cases and folders (a 400 if missing or not an
+integer) so a write can never silently skip the check; it stays optional on
+`GET` for existing callers. The CMS create endpoints (`POST /testcases`,
+`POST /folders`) take the project from the body; if a `project_id` query
+parameter is also sent it must match the body's, otherwise 400, so two
+different projects in one request are refused rather than one silently ignored.
 
 **Nested path (`/projects/<project_id>/testcases/<case_id>`) was
 considered and rejected.** Nesting is the right call when a child's ID

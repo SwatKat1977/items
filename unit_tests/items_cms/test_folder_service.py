@@ -201,25 +201,36 @@ class TestFolderService(unittest.IsolatedAsyncioTestCase):
 
     async def test_update_folder_service_unavailable(self):
         self.mock_state.is_available.return_value = False
-        result = await self.service.update_folder(1, "New")
+        result = await self.service.update_folder(1, 5, "New")
         self.assertFalse(result.success)
         self.assertTrue(result.is_internal)
 
     async def test_update_folder_lookup_db_exception(self):
         self.mock_repo.get_folder.side_effect = SqliteInterfaceException("err")
-        result = await self.service.update_folder(1, "New")
+        result = await self.service.update_folder(1, 5, "New")
         self.assertFalse(result.success)
         self.assertTrue(result.is_internal)
 
     async def test_update_folder_not_found(self):
         self.mock_repo.get_folder.return_value = None
-        result = await self.service.update_folder(1, "New")
+        result = await self.service.update_folder(1, 5, "New")
         self.assertFalse(result.success)
         self.assertTrue(result.not_found)
 
+    async def test_update_folder_other_project_is_not_found(self):
+        """The folder exists, but not in the project the caller named:
+        reported exactly like a missing folder, and nothing is touched."""
+        self.mock_repo.get_folder.return_value = _FOLDER  # project 5
+        result = await self.service.update_folder(1, 6, "New")
+        self.assertFalse(result.success)
+        self.assertTrue(result.not_found)
+        self.assertEqual(result.error_msg, "Folder not found")
+        self.mock_repo.folder_name_exists.assert_not_called()
+        self.mock_repo.update_folder_name.assert_not_called()
+
     async def test_update_folder_same_name_skips_conflict_check(self):
         self.mock_repo.get_folder.return_value = _FOLDER
-        result = await self.service.update_folder(1, _FOLDER["name"])
+        result = await self.service.update_folder(1, 5, _FOLDER["name"])
         self.assertTrue(result.success)
         self.mock_repo.folder_name_exists.assert_not_called()
 
@@ -227,14 +238,14 @@ class TestFolderService(unittest.IsolatedAsyncioTestCase):
         self.mock_repo.get_folder.return_value = _FOLDER
         self.mock_repo.folder_name_exists.side_effect = (
             SqliteInterfaceException("err"))
-        result = await self.service.update_folder(1, "New")
+        result = await self.service.update_folder(1, 5, "New")
         self.assertFalse(result.success)
         self.assertTrue(result.is_internal)
 
     async def test_update_folder_name_conflict(self):
         self.mock_repo.get_folder.return_value = _FOLDER
         self.mock_repo.folder_name_exists.return_value = True
-        result = await self.service.update_folder(1, "New")
+        result = await self.service.update_folder(1, 5, "New")
         self.assertFalse(result.success)
         self.assertTrue(result.is_conflict)
 
@@ -243,14 +254,14 @@ class TestFolderService(unittest.IsolatedAsyncioTestCase):
         self.mock_repo.folder_name_exists.return_value = False
         self.mock_repo.update_folder_name.side_effect = (
             SqliteInterfaceException("err"))
-        result = await self.service.update_folder(1, "New")
+        result = await self.service.update_folder(1, 5, "New")
         self.assertFalse(result.success)
         self.assertTrue(result.is_internal)
 
     async def test_update_folder_success(self):
         self.mock_repo.get_folder.return_value = _FOLDER
         self.mock_repo.folder_name_exists.return_value = False
-        result = await self.service.update_folder(1, "New")
+        result = await self.service.update_folder(1, 5, "New")
         self.assertTrue(result.success)
         self.mock_repo.update_folder_name.assert_called_once_with(1, "New")
 
@@ -260,33 +271,41 @@ class TestFolderService(unittest.IsolatedAsyncioTestCase):
 
     async def test_delete_folder_service_unavailable(self):
         self.mock_state.is_available.return_value = False
-        result = await self.service.delete_folder(1)
+        result = await self.service.delete_folder(1, 5)
         self.assertFalse(result.success)
         self.assertTrue(result.is_internal)
 
     async def test_delete_folder_lookup_db_exception(self):
         self.mock_repo.get_folder.side_effect = SqliteInterfaceException("err")
-        result = await self.service.delete_folder(1)
+        result = await self.service.delete_folder(1, 5)
         self.assertFalse(result.success)
         self.assertTrue(result.is_internal)
         self.mock_state.mark_database_failed.assert_called_once()
 
     async def test_delete_folder_not_found(self):
         self.mock_repo.get_folder.return_value = None
-        result = await self.service.delete_folder(1)
+        result = await self.service.delete_folder(1, 5)
         self.assertFalse(result.success)
         self.assertTrue(result.not_found)
+
+    async def test_delete_folder_other_project_is_not_found(self):
+        self.mock_repo.get_folder.return_value = _FOLDER  # project 5
+        result = await self.service.delete_folder(1, 6)
+        self.assertFalse(result.success)
+        self.assertTrue(result.not_found)
+        self.assertEqual(result.error_msg, "Folder not found")
+        self.mock_repo.delete_folder.assert_not_called()
 
     async def test_delete_folder_db_exception(self):
         self.mock_repo.get_folder.return_value = _FOLDER
         self.mock_repo.delete_folder.side_effect = SqliteInterfaceException("err")
-        result = await self.service.delete_folder(1)
+        result = await self.service.delete_folder(1, 5)
         self.assertFalse(result.success)
         self.assertTrue(result.is_internal)
 
     async def test_delete_folder_success(self):
         self.mock_repo.get_folder.return_value = _FOLDER
-        result = await self.service.delete_folder(1)
+        result = await self.service.delete_folder(1, 5)
         self.assertTrue(result.success)
 
 

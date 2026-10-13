@@ -20,6 +20,8 @@ from quart import Response
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.microservice_decorators import validate_json
 from weaver_framework.microservice.api_response import ApiResponse
+from items.services.items_cms.routes.project_id_parameter import (
+    check_query_project_id_matches)
 from items.services.items_cms.services.folder_service import FolderService
 
 SCHEMA_ADD_FOLDER_REQUEST: dict = {
@@ -61,14 +63,25 @@ class AddFolderHandler(BaseApiRoute):
             name (str):              Folder name. Must be unique among
                                      its siblings.
 
+        Query parameters:
+            project_id (int): Optional. If given it must match the body's
+                              ``project_id``.
+
         Returns:
             200 with ``{"folder_id": <int>}`` on success.
-            400 if the request body is invalid.
+            400 if the request body is invalid, or a ``project_id`` query
+            parameter is not an integer or differs from the body's.
             404 if the project or parent folder does not exist.
             409 if the name is already taken by a sibling folder.
             500 on an internal database error.
         """
         body = request_msg.body
+
+        mismatch_response = check_query_project_id_matches(
+            body["project_id"])
+        if mismatch_response is not None:
+            return mismatch_response
+
         result = await self._service.create_folder(
             project_id=body["project_id"],
             parent_id=body["parent_id"],

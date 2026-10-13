@@ -20,6 +20,8 @@ from quart import Response
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.microservice_decorators import validate_json
 from weaver_framework.microservice.api_response import ApiResponse
+from items.services.items_cms.routes.project_id_parameter import (
+    check_query_project_id_matches)
 from items.services.items_cms.services.testcase_service import TestcaseService
 
 SCHEMA_ADD_TESTCASE_REQUEST: dict = {
@@ -67,14 +69,25 @@ class AddTestcaseHandler(BaseApiRoute):
                                      if omitted, the current default type
                                      is used.
 
+        Query parameters:
+            project_id (int): Optional. If given it must match the body's
+                              ``project_id``.
+
         Returns:
             200 with ``{"testcase_id": <int>}`` on success.
-            400 if the request body is invalid.
+            400 if the request body is invalid, or a ``project_id`` query
+            parameter is not an integer or differs from the body's.
             404 if the project, folder or case type does not exist.
             409 if the name is already taken by a sibling test case.
             500 on an internal database error.
         """
         body = request_msg.body
+
+        mismatch_response = check_query_project_id_matches(
+            body["project_id"])
+        if mismatch_response is not None:
+            return mismatch_response
+
         result = await self._service.create_testcase(
             project_id=body["project_id"],
             folder_id=body["folder_id"],

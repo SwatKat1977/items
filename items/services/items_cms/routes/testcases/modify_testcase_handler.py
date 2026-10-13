@@ -20,7 +20,7 @@ from quart import Response
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.microservice_decorators import validate_json
 from weaver_framework.microservice.api_response import ApiResponse
-from items.services.items_cms.routes.testcases.project_id_parameter import (
+from items.services.items_cms.routes.project_id_parameter import (
     read_required_project_id)
 from items.services.items_cms.services.testcase_service import TestcaseService
 

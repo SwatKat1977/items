@@ -20,6 +20,8 @@ from quart import Response
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.microservice_decorators import validate_json
 from weaver_framework.microservice.api_response import ApiResponse
+from items.services.items_cms.routes.project_id_parameter import (
+    read_required_project_id)
 from items.services.items_cms.services.folder_service import FolderService
 
 SCHEMA_MODIFY_FOLDER_REQUEST: dict = {
@@ -57,20 +59,31 @@ class ModifyFolderHandler(BaseApiRoute):
         Args:
             folder_id: ID of the folder to rename, taken from the URL path.
 
+        Query parameters:
+            project_id (int): Required. The project the folder belongs to;
+                              checked against the folder itself.
+
         Request body (JSON):
             name (str): New folder name. Must be unique among siblings.
 
         Returns:
             200 with ``{"status": 1}`` on success.
-            400 if the request body is invalid.
-            404 if no folder exists with the given ID.
+            400 if the request body is invalid, or ``project_id`` is
+            missing or not an integer.
+            404 if no folder exists with the given ID, or it belongs to a
+            different project than ``project_id``.
             409 if the name is already taken by a sibling folder.
             500 on an internal database error.
         """
         # pylint: disable=duplicate-code
 
+        project_id, error_response = read_required_project_id()
+        if error_response is not None:
+            return error_response
+
         result = await self._service.update_folder(
-            folder_id=folder_id, name=request_msg.body["name"])
+            folder_id=folder_id, project_id=project_id,
+            name=request_msg.body["name"])
 
         if not result.success:
             if result.is_internal:
