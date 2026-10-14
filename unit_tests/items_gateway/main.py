@@ -38,6 +38,11 @@ from test_testcase_write_handlers import (
     TestModifyTestcaseHandler,
     TestDeleteTestcaseHandler,
 )
+from test_folder_write_handlers import (
+    TestCreateFolderHandler,
+    TestModifyFolderHandler,
+    TestDeleteFolderHandler,
+)
 from test_testcase_custom_fields_handlers import (
     TestGetAllCustomFieldsHandler,
     TestGetCustomFieldHandler,

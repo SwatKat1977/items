@@ -21,7 +21,7 @@ from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_gateway.gateway_configuration import GatewayConfiguration
-from items.services.items_gateway.routes.web.testcases.project_id_parameter \
+from items.services.items_gateway.routes.web.project_id_parameter \
     import read_required_project_id
 
 
