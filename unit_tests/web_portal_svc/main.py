@@ -73,6 +73,7 @@ from test_projects_testcases_handlers import (
     TestDeleteTestcaseFromList,
     TestAddSection,
     TestRenameSection,
+    TestDeleteSection,
 )
 from test_testcase_form_page_handler import (
     TestViewTestcasePage,

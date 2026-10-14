@@ -63,6 +63,14 @@
                     data-name="{{ folder.name }}">
                 <i class="bi bi-pencil"></i>
             </button>
+            <button type="button" class="btn btn-link text-danger p-1 delete-section-btn"
+                    title="Delete section"
+                    data-bs-toggle="modal" data-bs-target="#confirmDeleteSectionModal"
+                    data-id="{{ folder.id }}"
+                    data-name="{{ folder.name }}"
+                    data-testcase-count="{{ folder.testcase_count }}">
+                <i class="bi bi-x-circle"></i>
+            </button>
         </div>
 
         {% if folder.test_cases %}
@@ -120,6 +128,7 @@
 
     {% include "_testcase_delete_modal.html" %}
     {% include "_section_modal.html" %}
+    {% include "_section_delete_modals.html" %}
 </div>
 {% endblock %}
 

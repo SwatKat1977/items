@@ -1,0 +1,87 @@
+{# Deleting a section is ONE confirmation that says what will be lost.
+
+   Each section's delete button carries how many test cases deleting it
+   removes (data-testcase-count: the section and every sub-section, worked
+   out from the list already on the page). project_testcases.js fills the
+   pop-up in from the button that opened it:
+     - no test cases: a plain confirmation, posting a plain delete;
+     - some: a red warning with the count, a confirmation worded to match,
+       and a button that posts cascade=true.
+
+   The count can only be stale if someone adds a test case after the page
+   loaded. For that case the CMS still refuses a plain delete, and the page
+   comes back with the backstop prompt below, which explains itself and is
+   opened automatically (data-auto-open). #}
+<div class="modal fade" id="confirmDeleteSectionModal" tabindex="-1"
+     aria-labelledby="confirmDeleteSectionModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmDeleteSectionModalLabel">Confirmation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete the section
+           "<span id="sec-delete-name"></span>" and any sub-sections it has?
+           This action cannot be undone.</p>
+        <div class="alert alert-danger" role="alert" id="sec-delete-warning"
+             style="display: none;">
+          This section and its sub-sections contain
+          <strong id="sec-delete-count"></strong>
+          <span id="sec-delete-noun">test cases</span>.
+          <strong>They will be permanently deleted too.</strong>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="secConfirmCheckbox">
+          <label class="form-check-label" for="secConfirmCheckbox"
+                 id="secConfirmLabel">I confirm I want to delete this item.</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-header-outline" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="secConfirmDeleteButton" disabled>OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form id="secDeleteForm" method="POST" style="display: none;"
+      data-action-template="/{{ project_id }}/folders/__ID__/delete">
+  <input type="hidden" name="cascade" id="sec-cascade" value="">
+</form>
+
+{% if cascade_prompt %}
+<div class="modal fade" id="confirmCascadeSectionModal" tabindex="-1"
+     aria-labelledby="confirmCascadeSectionModalLabel" aria-hidden="true"
+     data-auto-open="true" data-bs-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST"
+            action="/{{ project_id }}/folders/{{ cascade_prompt.folder_id }}/delete">
+        <input type="hidden" name="cascade" value="true">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmCascadeSectionModalLabel">This section contains test cases</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="cascade-changed-note">This section has changed since this page
+             was loaded, so nothing has been deleted.</p>
+          <p>The section "<strong>{{ cascade_prompt.name }}</strong>" and its
+             sub-sections now contain
+             <strong id="cascade-testcase-count">{{ cascade_prompt.count }}</strong>
+             test case{% if cascade_prompt.count != 1 %}s{% endif %}.</p>
+          <p class="mb-0">Deleting the section will <strong>permanently delete
+             {% if cascade_prompt.count == 1 %}that test case{% else %}all of them{% endif %}
+             too</strong>. This cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-header-outline" data-bs-dismiss="modal">Cancel, keep everything</button>
+          <button type="submit" class="btn btn-danger" id="cascade-delete-btn">
+            Delete the section and {{ cascade_prompt.count }} test case{% if cascade_prompt.count != 1 %}s{% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}

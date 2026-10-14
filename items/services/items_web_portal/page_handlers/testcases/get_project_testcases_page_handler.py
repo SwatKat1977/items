@@ -189,6 +189,64 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
         return await self._finish_section_write(
             response, project_id, "rename")
 
+    @require_session
+    async def delete_section(self, project_id: int, folder_id: int):
+        """Delete a section (folder), in two steps if it holds test cases.
+
+        The first request is a plain delete. If the section (or a
+        sub-section) contains test cases the CMS refuses it with a count and
+        nothing is deleted; the list is then shown again with a second
+        prompt naming the count. Only that prompt posts ``cascade=true``,
+        which deletes the section, its sub-sections and the test cases.
+
+        Args:
+            project_id (int):
+                Unique identifier of the project the section belongs to.
+            folder_id (int):
+                Unique identifier of the section to delete.
+
+        Returns:
+            Response:
+                A redirect to the list on success, or if the section is
+                already gone (404); a redirect to the dashboard if the user
+                may not use this project (403); the list with the second
+                prompt if test cases blocked the delete; otherwise the list
+                with an error banner.
+        """
+        form = await request.form
+        cascade = form.get("cascade") == "true"
+
+        gateway_svc: str = self._config.apis_gateway_svc
+        url = (f"{gateway_svc}web/folders/{folder_id}"
+               f"?project_id={project_id}")
+        if cascade:
+            url += "&cascade=true"
+        response: ApiResponse = await self._rest_client.delete(url)
+
+        if response.status_code in (HTTPStatus.OK, HTTPStatus.NOT_FOUND):
+            return await make_response(
+                self._generate_redirect(f"{project_id}/testcases"))
+
+        if response.status_code == HTTPStatus.FORBIDDEN:
+            return await make_response(self._generate_redirect('/'))
+
+        # The refusal that makes this two steps. Never offered again after a
+        # cascading request, so it cannot loop.
+        if (response.status_code == HTTPStatus.CONFLICT and not cascade
+                and isinstance(response.body, dict)
+                and response.body.get("testcase_count")):
+            return await self._render_list(
+                project_id,
+                cascade_prompt={
+                    "folder_id": folder_id,
+                    "count": int(response.body["testcase_count"])})
+
+        error_message = self._extract_error(response)
+        self._logger.warning("Section delete failed (status %s): %s",
+                             response.status_code, error_message)
+        return await self._render_list(project_id,
+                                       error_message=error_message)
+
     async def _finish_section_write(self, response: ApiResponse,
                                     project_id: int, action: str):
         """Complete a section add or rename: redirect, or show the list.
@@ -220,7 +278,8 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
                                        error_message=error_message)
 
     async def _render_list(self, project_id: int,
-                           error_message: Optional[str] = None):
+                           error_message: Optional[str] = None,
+                           cascade_prompt: Optional[dict] = None):
         """Fetch the project's test cases and render the list page.
 
         Args:
@@ -228,6 +287,12 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
                 Unique identifier of the project.
             error_message (Optional[str]):
                 Optional error banner text to show above the list.
+            cascade_prompt (Optional[dict]):
+                Set (``folder_id`` and ``count``) after a section delete was
+                refused because of test cases: the page then opens a second
+                prompt for that section. The section's name is looked up in
+                the fetched list; if it is no longer there, no prompt is
+                shown.
 
         Returns:
             Response:
@@ -272,6 +337,10 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
                            in response.body['test_cases']
                            if test_case['folder_id'] is None]
 
+        self._annotate_testcase_counts(details)
+        cascade_prompt = self._name_cascade_prompt(
+            cascade_prompt, response.body['folders'])
+
         return await self._render_page(
             pages.TEMPLATE_TEST_DEFINITIONS_PAGE,
             data=details,
@@ -281,7 +350,59 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
             project_id=project_id,
             project_name=project_name,
             instance_name=self._metadata_settings.instance_name,
-            error_message=error_message)
+            error_message=error_message,
+            cascade_prompt=cascade_prompt)
+
+    @classmethod
+    def _annotate_testcase_counts(cls, folders: list) -> int:
+        """Record, on every section, how many test cases deleting it removes.
+
+        The count covers the section itself and every sub-section beneath it
+        (the same subtree the CMS counts), so the delete confirmation can
+        say up front what would be lost. It is worked out from the list that
+        was just fetched, so it can only be out of date if someone adds a
+        test case after the page loads; the CMS's refusal covers that case.
+
+        Args:
+            folders: The nested folders from ``_transform_tests_details_data``.
+                Each gets a ``testcase_count`` key.
+
+        Returns:
+            The total number of test cases in ``folders`` and everything
+            beneath them.
+        """
+        total = 0
+        for folder in folders:
+            folder['testcase_count'] = (
+                len(folder['test_cases'])
+                + cls._annotate_testcase_counts(folder['subfolders']))
+            total += folder['testcase_count']
+        return total
+
+    @staticmethod
+    def _name_cascade_prompt(cascade_prompt: Optional[dict],
+                             folders: list) -> Optional[dict]:
+        """Add the section's name to the second delete prompt.
+
+        The name comes from the freshly fetched list, never from the request.
+
+        Args:
+            cascade_prompt: The prompt (``folder_id`` and ``count``), or None
+                when there is no second prompt to show.
+            folders: The project's folders as returned by the gateway.
+
+        Returns:
+            The prompt with ``name`` added, or None if there is no prompt or
+            the section is no longer in the list.
+        """
+        if cascade_prompt is None:
+            return None
+
+        for folder in folders:
+            if folder['id'] == cascade_prompt['folder_id']:
+                return {**cascade_prompt, "name": folder['name']}
+
+        return None
 
     @staticmethod
     def _extract_error(response: ApiResponse) -> str:

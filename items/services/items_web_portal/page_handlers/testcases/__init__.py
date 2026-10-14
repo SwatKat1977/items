@@ -81,6 +81,15 @@ def create_testcases_page_handlers(injections: PageHandlerInjections) \
         return await handler_get_testcase.rename_section(
             project_id, folder_id)
 
+    injections.logger.debug("=> %s POST /<project_id>/folders/<id>/delete",
+                            "Delete section".ljust(40))
+
+    @routes.route('/<int:project_id>/folders/<int:folder_id>/delete',
+                  methods=['POST'])
+    async def delete_section_request(project_id: int, folder_id: int):
+        return await handler_get_testcase.delete_section(
+            project_id, folder_id)
+
     injections.logger.debug("=> %s POST /<project_id>/testcases/<id>/delete",
                             "Delete test case".ljust(40))
 

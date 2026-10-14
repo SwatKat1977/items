@@ -370,6 +370,88 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
             text, r'data-section-mode="rename"\s+data-id="2"\s+'
                   r'data-name="BetaChild"')
 
+    async def test_every_section_has_a_delete_button(self):
+        self._page_with(
+            [{"id": 1, "parent_id": None, "name": "AlphaFolder"},
+             {"id": 2, "parent_id": 1, "name": "BetaChild"}], [])
+        text = await self._page_text()
+        self.assertEqual(text.count("delete-section-btn"), 2)
+        self.assertRegex(
+            text, r'delete-section-btn"\s+title="Delete section"\s+'
+                  r'data-bs-toggle="modal"\s+'
+                  r'data-bs-target="#confirmDeleteSectionModal"\s+'
+                  r'data-id="1"\s+data-name="AlphaFolder"')
+        self.assertIn('data-id="2"', text)
+
+    # ----- the count shown up front ------------------------------------
+
+    def _counts(self, text):
+        import re
+        return {int(i): int(c) for i, c in re.findall(
+            r'data-id="(\d+)"\s+data-name="[^"]*"\s+'
+            r'data-testcase-count="(\d+)"', text)}
+
+    async def test_each_section_carries_how_many_test_cases_it_would_remove(
+            self):
+        self._page_with(
+            [{"id": 1, "parent_id": None, "name": "Top"},
+             {"id": 2, "parent_id": 1, "name": "Child"},
+             {"id": 3, "parent_id": 2, "name": "Grandchild"},
+             {"id": 4, "parent_id": None, "name": "Other"},
+             {"id": 5, "parent_id": None, "name": "Empty"}],
+            [{"id": 10, "folder_id": 1, "case_type_id": 15, "name": "T1"},
+             {"id": 11, "folder_id": 2, "case_type_id": 15, "name": "T2"},
+             {"id": 12, "folder_id": 2, "case_type_id": 15, "name": "T3"},
+             {"id": 13, "folder_id": 3, "case_type_id": 15, "name": "T4"},
+             {"id": 14, "folder_id": 4, "case_type_id": 15, "name": "T5"},
+             {"id": 15, "folder_id": None, "case_type_id": 15,
+              "name": "AtRoot"}])
+        counts = self._counts(await self._page_text())
+        # Top: its own 1 + Child's 2 + Grandchild's 1. Child: 2 + 1.
+        self.assertEqual(counts, {1: 4, 2: 3, 3: 1, 4: 1, 5: 0})
+
+    async def test_a_section_with_no_test_cases_anywhere_has_a_zero_count(
+            self):
+        self._page_with(
+            [{"id": 1, "parent_id": None, "name": "Top"},
+             {"id": 2, "parent_id": 1, "name": "Child"}], [])
+        self.assertEqual(self._counts(await self._page_text()),
+                         {1: 0, 2: 0})
+
+    async def test_root_level_test_cases_are_not_counted_in_any_section(self):
+        self._page_with(
+            [{"id": 1, "parent_id": None, "name": "Top"}],
+            [{"id": 10, "folder_id": None, "case_type_id": 15,
+              "name": "AtRoot"}])
+        self.assertEqual(self._counts(await self._page_text()), {1: 0})
+
+    async def test_the_single_confirmation_can_show_a_warning_and_cascade(
+            self):
+        self._page_with(
+            [{"id": 1, "parent_id": None, "name": "Top"}], [])
+        text = await self._page_text()
+        # Hidden until the script sees a non-zero count on the button.
+        self.assertRegex(
+            text, r'id="sec-delete-warning"\s+style="display: none;"')
+        self.assertIn('id="sec-delete-count"', text)
+        self.assertIn('id="secConfirmLabel"', text)
+        # Posts a plain delete unless the script sets it.
+        self.assertRegex(
+            text, r'<input type="hidden" name="cascade" id="sec-cascade" '
+                  r'value="">')
+
+    async def test_list_has_the_first_step_modal_and_no_second_step(self):
+        self._page_with(
+            [{"id": 1, "parent_id": None, "name": "AlphaFolder"}], [])
+        text = await self._page_text()
+        self.assertIn('id="confirmDeleteSectionModal"', text)
+        self.assertIn('id="secDeleteForm"', text)
+        self.assertIn('data-action-template="/1/folders/__ID__/delete"',
+                      text)
+        self.assertIn('id="secConfirmDeleteButton"', text)
+        # The second prompt only exists after the server refused step one.
+        self.assertNotIn("confirmCascadeSectionModal", text)
+
     async def test_list_has_the_section_modal_and_its_form(self):
         self._page_with([], [])
         text = await self._page_text()
@@ -715,6 +797,189 @@ class TestRenameSection(_SectionWriteCase):
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR, body={})
         self._list_page_responses()
         text = await self._text(await self._post({"name": "Renamed"}))
+        self.assertIn("The request could not be completed", text)
+
+
+class TestDeleteSection(_SectionWriteCase):
+    """POST /<project_id>/folders/<id>/delete - the two-step delete."""
+
+    _URL = "http://gateway/web/folders/4?project_id=1"
+
+    async def asyncSetUp(self):
+        await super().asyncSetUp()
+        handler = GetProjectTestcasesPageHandler(
+            _LOGGER, _config(), self.mock_rest_client, _metadata())
+        app = make_app("section_delete")
+
+        @app.route("/<int:project_id>/folders/<int:folder_id>/delete",
+                   methods=["POST"])
+        async def delete_route(project_id, folder_id):
+            return await handler.delete_section(project_id, folder_id)
+
+        self.client = app.test_client()
+
+    async def _post(self, form=None):
+        async with self.client as c:
+            return await c.post("/1/folders/4/delete", form=form or {},
+                                headers=_AUTH_HEADERS)
+
+    def _folders_response(self, folders=None):
+        folders = [{"id": 4, "parent_id": None,
+                    "name": "Regression 2"}] if folders is None else folders
+        self.mock_rest_client.get.side_effect = [
+            _PROJECT_OK,
+            ApiResponse(status_code=HTTPStatus.OK, body={
+                "folders": folders, "test_cases": []}),
+            _CASE_TYPES_OK,
+        ]
+
+    @staticmethod
+    def _refusal(count):
+        return ApiResponse(
+            status_code=HTTPStatus.CONFLICT,
+            body={"error": f"Folder contains {count} test case(s)",
+                  "testcase_count": count})
+
+    # ----- step one ----------------------------------------------------
+
+    async def test_step_one_sends_a_plain_delete(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body={})
+        await self._post()
+        self.mock_rest_client.delete.assert_awaited_once_with(self._URL)
+
+    async def test_success_returns_to_the_list(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body={})
+        text = await self._text(await self._post())
+        self.assertIn("url='http://localhost/1/testcases'", text)
+
+    async def test_already_deleted_also_returns_to_the_list(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.NOT_FOUND,
+            body={"error": "Folder not found"})
+        text = await self._text(await self._post())
+        self.assertIn("url='http://localhost/1/testcases'", text)
+
+    async def test_not_a_member_goes_to_the_dashboard(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.FORBIDDEN, body={})
+        text = await self._text(await self._post())
+        self.assertIn("url='http://localhost//'", text)
+
+    # ----- the second prompt -------------------------------------------
+
+    async def test_refusal_shows_the_second_prompt_with_the_count(self):
+        self.mock_rest_client.delete.return_value = self._refusal(12)
+        self._folders_response()
+        response = await self._post()
+        self.assertEqual(response.status_code, 200)
+        text = await self._text(response)
+        self.assertIn('id="confirmCascadeSectionModal"', text)
+        self.assertIn('data-auto-open="true"', text)
+        self.assertRegex(text, r'id="cascade-testcase-count">12<')
+        self.assertIn("<strong>Regression 2</strong>", text)
+        self.assertIn("Delete the section and 12 test cases", text)
+        # It explains why it is appearing, so it does not look like a fault.
+        self.assertIn('id="cascade-changed-note"', text)
+        self.assertIn("This section has changed since this page was loaded, "
+                      "so nothing has been deleted.", " ".join(text.split()))
+
+    async def test_second_prompt_posts_cascade_to_that_section(self):
+        self.mock_rest_client.delete.return_value = self._refusal(3)
+        self._folders_response()
+        text = await self._text(await self._post())
+        self.assertIn('action="/1/folders/4/delete"', text)
+        self.assertRegex(
+            text, r'<input type="hidden" name="cascade" value="true">')
+
+    async def test_second_prompt_is_not_dismissed_by_a_stray_click(self):
+        self.mock_rest_client.delete.return_value = self._refusal(3)
+        self._folders_response()
+        text = await self._text(await self._post())
+        self.assertIn('data-bs-backdrop="static"', text)
+
+    async def test_a_single_test_case_is_not_pluralised(self):
+        self.mock_rest_client.delete.return_value = self._refusal(1)
+        self._folders_response()
+        text = " ".join((await self._text(await self._post())).split())
+        self.assertIn("Delete the section and 1 test case <", text)
+        self.assertNotIn("1 test cases", text)
+        self.assertIn("permanently delete that test case too", text)
+
+    async def test_refusal_leaves_nothing_deleted_and_shows_no_banner(self):
+        self.mock_rest_client.delete.return_value = self._refusal(2)
+        self._folders_response()
+        text = await self._text(await self._post())
+        self.assertNotIn('id="testcases-error"', text)
+        # The section is still in the list.
+        self.assertIn('data-name="Regression 2"', text)
+        self.mock_rest_client.delete.assert_awaited_once()
+
+    async def test_no_prompt_if_the_section_vanished_from_the_list(self):
+        self.mock_rest_client.delete.return_value = self._refusal(2)
+        self._folders_response(folders=[])
+        response = await self._post()
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("confirmCascadeSectionModal",
+                         await self._text(response))
+
+    async def test_a_refusal_without_a_count_is_just_an_error(self):
+        for body in ({"error": "Folder name already exists"},
+                     {"error": "x", "testcase_count": 0}, None):
+            with self.subTest(body=body):
+                self.mock_rest_client.delete.return_value = ApiResponse(
+                    status_code=HTTPStatus.CONFLICT, body=body)
+                self._folders_response()
+                text = await self._text(await self._post())
+                self.assertNotIn("confirmCascadeSectionModal", text)
+                self.assertIn('id="testcases-error"', text)
+
+    # ----- step two (cascade) ------------------------------------------
+
+    async def test_cascade_true_is_forwarded_to_the_gateway(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body={})
+        text = await self._text(await self._post({"cascade": "true"}))
+        self.mock_rest_client.delete.assert_awaited_once_with(
+            self._URL + "&cascade=true")
+        self.assertIn("url='http://localhost/1/testcases'", text)
+
+    async def test_anything_but_true_is_not_a_cascade(self):
+        """Only the prompt's exact value deletes test cases."""
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body={})
+        for value in ("yes", "1", "TRUE", "True", "false", ""):
+            with self.subTest(value=value):
+                self.mock_rest_client.delete.reset_mock()
+                await self._post({"cascade": value})
+                self.mock_rest_client.delete.assert_awaited_once_with(
+                    self._URL)
+
+    async def test_a_refusal_after_cascade_is_an_error_not_a_loop(self):
+        self.mock_rest_client.delete.return_value = self._refusal(5)
+        self._folders_response()
+        text = await self._text(await self._post({"cascade": "true"}))
+        self.assertNotIn("confirmCascadeSectionModal", text)
+        self.assertIn('id="testcases-error"', text)
+
+    # ----- other failures ----------------------------------------------
+
+    async def test_other_failure_shows_the_list_with_the_message(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            body={"error": "CMS service unavailable"})
+        self._folders_response()
+        text = await self._text(await self._post())
+        self.assertIn('id="testcases-error"', text)
+        self.assertIn("CMS service unavailable", text)
+        self.assertIn('data-name="Regression 2"', text)
+
+    async def test_failure_without_a_message_shows_the_fallback(self):
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, body={})
+        self._folders_response()
+        text = await self._text(await self._post())
         self.assertIn("The request could not be completed", text)
 
 
