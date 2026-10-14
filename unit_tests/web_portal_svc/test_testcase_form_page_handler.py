@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import re
 import unittest
 from unittest.mock import AsyncMock, MagicMock
 from http import HTTPStatus
@@ -41,6 +42,20 @@ _CASE_TYPES_OK = ApiResponse(status_code=HTTPStatus.OK, body=[
 _TESTCASE_OK = ApiResponse(status_code=HTTPStatus.OK, body={
     "id": 7, "project_id": 1, "folder_id": None, "case_type_id": 9,
     "name": "Login works", "description": "Check the login."})
+
+# The gateway has no section read route: the test case list carries the
+# whole folder tree, and the form's Section dropdown is built from it.
+_SECTIONS_URL = f"{_GW}web/1/testcases"
+_SECTIONS_OK = ApiResponse(status_code=HTTPStatus.OK, body={
+    # In the order the API returns them (by parent, then id). The dropdown
+    # must put each sub-section straight after its parent: 1, 2, 4, 3.
+    "folders": [
+        {"id": 1, "parent_id": None, "name": "Regression"},
+        {"id": 3, "parent_id": None, "name": "Performance"},
+        {"id": 2, "parent_id": 1, "name": "Smoke"},
+        {"id": 4, "parent_id": 2, "name": "Login"},
+    ],
+    "test_cases": []})
 
 _REDIRECT_TO_LIST = "url='http://localhost/1/testcases'"
 _REDIRECT_TO_DASHBOARD = "url='http://localhost//'"
@@ -337,6 +352,64 @@ class TestAddTestcaseForm(_FormPageTestCase):
         self.assertRegex(text, r'<option value="15"\s+selected>')
         self.assertNotRegex(text, r'<option value="9"\s+selected>')
 
+    def _ready_with_sections(self, sections=_SECTIONS_OK):
+        self._gateway_gets({_PROJECT_URL: _PROJECT_OK,
+                            _CASE_TYPES_URL: _CASE_TYPES_OK,
+                            _SECTIONS_URL: sections})
+
+    async def test_section_dropdown_starts_on_no_section(self):
+        self._ready_with_sections()
+        text = await self._text(await self._get())
+        self.assertIn('for="tc-section"', text)
+        self.assertRegex(text, r'<option value=""\s+selected>\(No section\)')
+        self.assertNotRegex(text, r'<option value="[0-9]+"\s+selected>\s*'
+                                  r'(Regression|Smoke|Performance|Login)')
+
+    async def test_sections_are_listed_in_tree_order_with_indentation(self):
+        self._ready_with_sections()
+        text = await self._text(await self._get())
+        order = [text.index(f'<option value="{i}"') for i in (1, 2, 4, 3)]
+        self.assertEqual(order, sorted(order))
+        self.assertRegex(text, r'value="1"[^>]*>\s*Regression\s*</option>')
+        self.assertRegex(
+            text, '<option value="2"[^>]*>\\s*\u00a0{4}Smoke\\s*</option>')
+        self.assertRegex(
+            text, '<option value="4"[^>]*>\\s*\u00a0{8}Login\\s*</option>')
+
+    async def test_sections_unavailable_says_no_section_will_be_used(self):
+        for bad in (ApiResponse(status_code=503),
+                    ApiResponse(status_code=HTTPStatus.OK,
+                                body={"unexpected": 1}),
+                    ApiResponse(status_code=HTTPStatus.OK,
+                                body={"folders": "nope"}),
+                    ApiResponse(status_code=HTTPStatus.OK, body=[1, 2]),
+                    RuntimeError("boom")):
+            with self.subTest(bad=bad):
+                self._ready_with_sections(bad)
+                response = await self._get()
+                self.assertEqual(response.status_code, 200)
+                text = await self._text(response)
+                self.assertIn("The sections could not be loaded", text)
+                self.assertNotIn('id="tc-section"', text)
+
+    async def test_no_sections_in_the_project_offers_only_no_section(self):
+        self._ready_with_sections(ApiResponse(
+            status_code=HTTPStatus.OK,
+            body={"folders": [], "test_cases": []}))
+        text = await self._text(await self._get())
+        self.assertEqual(text.count('name="folder_id"'), 1)
+        # Look only inside the Section dropdown (the Type one has options
+        # of its own).
+        match = re.search(r'name="folder_id">(.*?)</select>', text, re.S)
+        self.assertIsNotNone(match)
+        self.assertEqual(match.group(1).count("<option"), 1)
+        self.assertIn("(No section)", match.group(1))
+
+    async def test_the_sections_are_asked_for_in_this_project(self):
+        self._ready_with_sections()
+        await self._get()
+        self.mock_rest_client.get.assert_any_call(_SECTIONS_URL)
+
     async def test_cancel_goes_back_to_the_list(self):
         self._gateway_gets({_PROJECT_URL: _PROJECT_OK,
                             _CASE_TYPES_URL: _CASE_TYPES_OK})
@@ -411,10 +484,56 @@ class TestAddTestcaseSubmit(_FormPageTestCase):
             return await c.post("/1/testcases/add", form=form,
                                 headers=_AUTH_HEADERS)
 
-    def _ready(self, gateway_post):
+    def _ready(self, gateway_post, sections=_SECTIONS_OK):
         self._session_then(gateway_post)
         self._gateway_gets({_PROJECT_URL: _PROJECT_OK,
-                            _CASE_TYPES_URL: _CASE_TYPES_OK})
+                            _CASE_TYPES_URL: _CASE_TYPES_OK,
+                            _SECTIONS_URL: sections})
+
+    async def test_section_choice_is_posted_as_the_folder(self):
+        self._ready(ApiResponse(status_code=HTTPStatus.OK,
+                                body={"testcase_id": 3}))
+        await self._post({"name": "Login", "case_type_id": "9",
+                          "folder_id": "2"})
+        sent = self.mock_rest_client.post.call_args_list[1].kwargs[
+            "json_data"]
+        self.assertEqual(sent["folder_id"], 2)
+
+    async def test_no_section_chosen_posts_a_null_folder(self):
+        for form in ({"name": "A", "folder_id": ""}, {"name": "A"}):
+            with self.subTest(form=form):
+                self.mock_rest_client.post.reset_mock()
+                self._ready(ApiResponse(status_code=HTTPStatus.OK, body={}))
+                await self._post(form)
+                sent = self.mock_rest_client.post.call_args_list[1].kwargs[
+                    "json_data"]
+                self.assertIsNone(sent["folder_id"])
+
+    async def test_a_bad_section_is_refused_without_calling_the_gateway(
+            self):
+        for bad in ("abc", "-1", "1.5", "2; DROP"):
+            with self.subTest(section=bad):
+                self.mock_rest_client.post.reset_mock()
+                self._ready(ApiResponse(status_code=HTTPStatus.OK, body={}))
+                response = await self._post({
+                    "name": "Kept name", "description": "Kept text",
+                    "case_type_id": "9", "folder_id": bad})
+                text = await self._text(response)
+                self.assertIn("Invalid section.", text)
+                self.assertIn('value="Kept name"', text)
+                self.assertIn("Kept text", text)
+                # Only the session check - never a gateway create.
+                self.assertEqual(self.mock_rest_client.post.call_count, 1)
+
+    async def test_failure_keeps_the_chosen_section_selected(self):
+        self._ready(ApiResponse(
+            status_code=HTTPStatus.CONFLICT,
+            body={"error": "Test case name already exists"}))
+        text = await self._text(await self._post({
+            "name": "Login", "case_type_id": "9", "folder_id": "2"}))
+        self.assertIn("Test case name already exists", text)
+        self.assertRegex(text, r'<option value="2"\s+selected>')
+        self.assertIn('id="tc-section"', text)
 
     async def test_posts_to_the_gateway_with_no_folder(self):
         self._ready(ApiResponse(status_code=HTTPStatus.OK,
@@ -519,6 +638,14 @@ class TestEditTestcaseForm(_FormPageTestCase):
         text = await self._text(await self._get())
         self.assertRegex(text, r'<option value="9"\s+selected>')
         self.assertNotRegex(text, r'<option value="15"\s+selected>')
+
+    async def test_edit_has_no_section_choice(self):
+        """Moving a test case between sections is not supported yet, so
+        editing offers no Section dropdown and never asks for the list."""
+        self._ready()
+        text = await self._text(await self._get())
+        self.assertNotIn('name="folder_id"', text)
+        self.assertNotIn("tc-section", text)
 
     async def test_missing_description_shows_as_empty(self):
         self._ready(ApiResponse(status_code=HTTPStatus.OK, body={

@@ -106,7 +106,8 @@ class TestcaseFormPageHandler(PortalPageHandler):
     async def add_form(self, project_id: int):
         """Render the empty Add Test Case form.
 
-        The case type dropdown starts on the instance's default type.
+        The case type dropdown starts on the instance's default type, and
+        the section dropdown on "(No section)", the project root.
 
         Args:
             project_id: ID of the project the test case will be created in.
@@ -123,8 +124,9 @@ class TestcaseFormPageHandler(PortalPageHandler):
 
         return await self._render_form(
             project_id=project_id, case_id=None, case_types=case_types,
+            sections=await self._fetch_sections(project_id),
             form_data={"name": "", "description": "",
-                       "case_type_id": default_id})
+                       "case_type_id": default_id, "folder_id": ""})
 
     @require_session
     async def add_submit(self, project_id: int):
@@ -139,8 +141,18 @@ class TestcaseFormPageHandler(PortalPageHandler):
             form again with an error banner.
         """
         form = await request.form
+
+        raw_folder = (form.get("folder_id") or "").strip()
+        if raw_folder and not raw_folder.isdigit():
+            return await self._render_form(
+                project_id=project_id, case_id=None,
+                case_types=await self._fetch_case_types(),
+                sections=await self._fetch_sections(project_id),
+                form_data=self._form_values(form),
+                error_message="Invalid section.")
+
         payload: dict = self._build_payload(form)
-        payload["folder_id"] = None
+        payload["folder_id"] = int(raw_folder) if raw_folder else None
 
         base_url: str = self._config.apis_gateway_svc
         response: ApiResponse = await self._rest_client.post(
@@ -303,15 +315,86 @@ class TestcaseFormPageHandler(PortalPageHandler):
         return await self._render_form(
             project_id=project_id, case_id=case_id,
             case_types=await self._fetch_case_types(),
-            form_data={
-                "name": form.get("name") or "",
-                "description": form.get("description") or "",
-                "case_type_id": form.get("case_type_id") or ""},
+            sections=(await self._fetch_sections(project_id)
+                      if case_id is None else None),
+            form_data=self._form_values(form),
             error_message=error_message)
+
+    @staticmethod
+    def _form_values(form) -> dict:
+        """Collect the submitted values so the form can show them again.
+
+        Args:
+            form: The submitted form.
+
+        Returns:
+            A dict with the name, description, case type and section as
+            typed or chosen.
+        """
+        return {
+            "name": form.get("name") or "",
+            "description": form.get("description") or "",
+            "case_type_id": form.get("case_type_id") or "",
+            "folder_id": form.get("folder_id") or ""}
+
+    async def _fetch_sections(self,
+                              project_id: int) -> Optional[list[dict]]:
+        """Fetch the project's sections for the Section dropdown.
+
+        The gateway has no read route for sections of its own: the test case
+        list returns the whole folder tree, so its ``folders`` are used. They
+        are flattened depth-first so each sub-section follows its parent, with
+        a label indented by depth.
+
+        A failure is non-fatal: the form still works and the test case is
+        created with no section.
+
+        Args:
+            project_id: ID of the project.
+
+        Returns:
+            A list of ``{"id", "name", "depth", "label"}`` dicts in tree
+            order, or None if the sections could not be loaded.
+        """
+        base_url: str = self._config.apis_gateway_svc
+        try:
+            response: ApiResponse = await self._rest_client.get(
+                f"{base_url}web/{project_id}/testcases")
+        except Exception:  # pylint: disable=broad-except
+            self._logger.warning("Unable to fetch sections")
+            return None
+
+        if response.status_code != HTTPStatus.OK or \
+                not isinstance(response.body, dict) or \
+                not isinstance(response.body.get("folders"), list):
+            self._logger.warning(
+                "Unable to fetch sections (status %s)",
+                response.status_code)
+            return None
+
+        children: dict = {}
+        for folder in response.body["folders"]:
+            children.setdefault(folder.get("parent_id"), []).append(folder)
+
+        sections: list[dict] = []
+
+        def walk(parent_id, depth: int) -> None:
+            for folder in children.get(parent_id, []):
+                sections.append({
+                    "id": folder["id"],
+                    "name": folder["name"],
+                    "depth": depth,
+                    "label": "    " * depth
+                             + folder["name"]})
+                walk(folder["id"], depth + 1)
+
+        walk(None, 0)
+        return sections
 
     async def _render_form(self, project_id: int, case_id: Optional[int],
                            case_types: Optional[list[dict]], form_data: dict,
-                           error_message: Optional[str] = None):
+                           error_message: Optional[str] = None,
+                           sections: Optional[list[dict]] = None):
         """Render the add/edit form page.
 
         Args:
@@ -321,10 +404,13 @@ class TestcaseFormPageHandler(PortalPageHandler):
                 could not be loaded.
             form_data: The values to show in the form.
             error_message: Optional error banner text.
+            sections: The project's sections for the Section dropdown (shown
+                only when adding), or None if they could not be loaded.
 
         Returns:
             The rendered page.
         """
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         return await self._render_page(
             pages.TEMPLATE_TESTCASE_FORM_PAGE,
             active_page="test-cases",
@@ -333,6 +419,7 @@ class TestcaseFormPageHandler(PortalPageHandler):
             instance_name=self._metadata_settings.instance_name,
             case_id=case_id,
             case_types=case_types,
+            sections=sections,
             form_data=form_data,
             error_message=error_message)
 

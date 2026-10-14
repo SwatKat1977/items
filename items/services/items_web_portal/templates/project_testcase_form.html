@@ -32,6 +32,30 @@
                               rows="6">{{ form_data.description }}</textarea>
                 </div>
 
+                {# Only when adding: moving a test case between sections is
+                   not supported yet, so editing shows no Section choice. #}
+                {% if not case_id %}
+                <div class="mb-3">
+                    <label for="tc-section" class="form-label">Section</label>
+                    {% if sections is not none %}
+                    <select class="form-select" id="tc-section" name="folder_id">
+                        <option value=""
+                                {% if not form_data.folder_id %}selected{% endif %}>(No section)</option>
+                        {% for section in sections %}
+                        <option value="{{ section.id }}"
+                                {% if section.id|string == form_data.folder_id|string %}selected{% endif %}>
+                            {{ section.label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <p class="form-text mb-0" id="tc-section-unavailable">
+                        The sections could not be loaded. The test case will be created with no section.
+                    </p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
                 <div class="mb-3">
                     <label for="tc-case-type" class="form-label">Type</label>
                     {% if case_types %}
