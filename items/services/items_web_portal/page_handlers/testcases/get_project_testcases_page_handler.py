@@ -18,7 +18,7 @@ from http import HTTPStatus
 import json
 import logging
 from typing import Optional
-from quart import make_response, Response
+from quart import make_response, request, Response
 from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.rest_client import RestClient
 from items.services.items_web_portal.configuration import Configuration
@@ -127,6 +127,95 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
         error_message = self._extract_error(response)
         self._logger.warning("Test case delete failed (status %s): %s",
                              response.status_code, error_message)
+        return await self._render_list(project_id,
+                                       error_message=error_message)
+
+    @require_session
+    async def add_section(self, project_id: int):
+        """Create a section (folder) from the submitted form.
+
+        The form carries ``name`` and, for a sub-section, ``parent_id``;
+        without a parent the section is created at the top level.
+
+        Args:
+            project_id (int):
+                Unique identifier of the project to add the section to.
+
+        Returns:
+            Response:
+                A redirect to the list on success; a redirect to the
+                dashboard if the user may not use this project (403);
+                otherwise the list page again with an error banner.
+        """
+        form = await request.form
+        raw_parent = (form.get("parent_id") or "").strip()
+
+        if raw_parent and not raw_parent.isdigit():
+            return await self._render_list(
+                project_id, error_message="Invalid parent section.")
+
+        gateway_svc: str = self._config.apis_gateway_svc
+        response: ApiResponse = await self._rest_client.post(
+            f"{gateway_svc}web/{project_id}/folders",
+            json_data={
+                "parent_id": int(raw_parent) if raw_parent else None,
+                "name": form.get("name") or ""})
+
+        return await self._finish_section_write(response, project_id, "add")
+
+    @require_session
+    async def rename_section(self, project_id: int, folder_id: int):
+        """Rename a section (folder) from the submitted form.
+
+        Args:
+            project_id (int):
+                Unique identifier of the project the section belongs to.
+            folder_id (int):
+                Unique identifier of the section to rename.
+
+        Returns:
+            Response:
+                A redirect to the list on success; a redirect to the
+                dashboard if the user may not use this project (403);
+                otherwise the list page again with an error banner.
+        """
+        form = await request.form
+
+        gateway_svc: str = self._config.apis_gateway_svc
+        response: ApiResponse = await self._rest_client.patch(
+            f"{gateway_svc}web/folders/{folder_id}?project_id={project_id}",
+            json_data={"name": form.get("name") or ""})
+
+        return await self._finish_section_write(
+            response, project_id, "rename")
+
+    async def _finish_section_write(self, response: ApiResponse,
+                                    project_id: int, action: str):
+        """Complete a section add or rename: redirect, or show the list.
+
+        Args:
+            response (ApiResponse):
+                The gateway's response to the add or rename call.
+            project_id (int):
+                Unique identifier of the project.
+            action (str):
+                Short action name for log messages ("add", "rename").
+
+        Returns:
+            Response:
+                A redirect to the list on success, a redirect to the
+                dashboard on 403, otherwise the list page with a banner.
+        """
+        if response.status_code == HTTPStatus.OK:
+            return await make_response(
+                self._generate_redirect(f"{project_id}/testcases"))
+
+        if response.status_code == HTTPStatus.FORBIDDEN:
+            return await make_response(self._generate_redirect('/'))
+
+        error_message = self._extract_error(response)
+        self._logger.warning("Section %s failed (status %s): %s",
+                             action, response.status_code, error_message)
         return await self._render_list(project_id,
                                        error_message=error_message)
 

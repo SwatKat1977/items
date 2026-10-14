@@ -352,6 +352,17 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
             response = await c.get("/1/testcases")
         self.assertNotEqual(response.status_code, 405)
 
+    async def test_add_section_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/1/folders/add", form={"name": "S"})
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_rename_section_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/1/folders/1/rename",
+                                    form={"name": "S"})
+        self.assertNotEqual(response.status_code, 405)
+
     async def test_delete_testcase_route_is_reachable(self):
         async with self.client as c:
             response = await c.post("/1/testcases/1/delete")

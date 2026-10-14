@@ -1,0 +1,31 @@
+{# Add / rename section pop-up. One small form (just a name), reused for a
+   new top-level section, a new sub-section and a rename. project_testcases.js
+   sets the title, the form action, the name and the parent from the button
+   that opened it (data-section-mode, data-id, data-name, data-parent-id). #}
+<div class="modal fade" id="sectionModal" tabindex="-1"
+     aria-labelledby="sectionModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="sectionForm" method="POST" action="/{{ project_id }}/folders/add"
+            data-add-action="/{{ project_id }}/folders/add"
+            data-rename-action-template="/{{ project_id }}/folders/__ID__/rename">
+        <div class="modal-header">
+          <h5 class="modal-title" id="sectionModalLabel">Add Section</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="parent_id" id="section-parent-id" value="">
+          <div class="mb-0">
+            <label for="section-name" class="form-label">Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="section-name" name="name"
+                   required pattern=".*\S.*" title="The name cannot be blank">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-header-outline" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-header" id="section-save-btn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

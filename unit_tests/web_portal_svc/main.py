@@ -71,6 +71,8 @@ from test_projects_testcases_handlers import (
     TestGetProjectOverviewPageHandler,
     TestGetProjectTestcasesPageHandler,
     TestDeleteTestcaseFromList,
+    TestAddSection,
+    TestRenameSection,
 )
 from test_testcase_form_page_handler import (
     TestViewTestcasePage,

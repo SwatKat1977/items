@@ -45,8 +45,24 @@
 
 {% macro render_folder(folders, level=0) %}
     {% for folder in folders %}
-        <div class="folder" style="margin-left: {{ level * 20 }}px;">
-            {{ folder.name }}
+        <div class="folder-row" style="margin-left: {{ level * 20 }}px;">
+            <span class="folder">{{ folder.name }}</span>
+            <button type="button" class="btn btn-link text-primary p-1 add-subsection-btn"
+                    title="Add sub-section"
+                    data-bs-toggle="modal" data-bs-target="#sectionModal"
+                    data-section-mode="add-sub"
+                    data-parent-id="{{ folder.id }}"
+                    data-parent-name="{{ folder.name }}">
+                <i class="bi bi-folder-plus"></i>
+            </button>
+            <button type="button" class="btn btn-link text-primary p-1 rename-section-btn"
+                    title="Rename section"
+                    data-bs-toggle="modal" data-bs-target="#sectionModal"
+                    data-section-mode="rename"
+                    data-id="{{ folder.id }}"
+                    data-name="{{ folder.name }}">
+                <i class="bi bi-pencil"></i>
+            </button>
         </div>
 
         {% if folder.test_cases %}
@@ -63,8 +79,14 @@
 <div id="content">
     <div id="testcases-title-bar" class="d-flex align-items-center justify-content-between">
         <h5 class="mb-0">Test Cases</h5>
-        <a href="/{{ project_id }}/testcases/add" class="btn btn-sm btn-header"
-           id="add-testcase-btn"><strong>+</strong> Add Test Case</a>
+        <div>
+            <button type="button" class="btn btn-sm btn-header-outline me-1"
+                    id="add-section-btn"
+                    data-bs-toggle="modal" data-bs-target="#sectionModal"
+                    data-section-mode="add"><strong>+</strong> Add Section</button>
+            <a href="/{{ project_id }}/testcases/add" class="btn btn-sm btn-header"
+               id="add-testcase-btn"><strong>+</strong> Add Test Case</a>
+        </div>
     </div>
 
     <div class="p-3">
@@ -97,6 +119,7 @@
     </div>
 
     {% include "_testcase_delete_modal.html" %}
+    {% include "_section_modal.html" %}
 </div>
 {% endblock %}
 

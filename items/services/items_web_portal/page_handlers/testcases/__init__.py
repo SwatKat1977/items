@@ -65,6 +65,22 @@ def create_testcases_page_handlers(injections: PageHandlerInjections) \
     async def test_definitions_page_request(project_id: int):
         return await handler_get_testcase.test_cases(project_id)
 
+    injections.logger.debug("=> %s POST /<project_id>/folders/add",
+                            "Add section".ljust(40))
+
+    @routes.route('/<int:project_id>/folders/add', methods=['POST'])
+    async def add_section_request(project_id: int):
+        return await handler_get_testcase.add_section(project_id)
+
+    injections.logger.debug("=> %s POST /<project_id>/folders/<id>/rename",
+                            "Rename section".ljust(40))
+
+    @routes.route('/<int:project_id>/folders/<int:folder_id>/rename',
+                  methods=['POST'])
+    async def rename_section_request(project_id: int, folder_id: int):
+        return await handler_get_testcase.rename_section(
+            project_id, folder_id)
+
     injections.logger.debug("=> %s POST /<project_id>/testcases/<id>/delete",
                             "Delete test case".ljust(40))
 
