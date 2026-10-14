@@ -70,3 +70,18 @@
     border-color: #1e3550;
     color: #1e3550;
 }
+
+/* A section: its name with the add sub-section and rename icons. */
+.folder-row {
+    display: flex;
+    align-items: center;
+    margin-top: 6px;
+}
+
+.folder-row .folder {
+    margin-left: 0;
+}
+
+.folder-row .btn-link {
+    text-decoration: none;
+}

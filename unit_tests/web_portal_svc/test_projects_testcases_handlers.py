@@ -243,9 +243,13 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
     async def test_empty_message_has_no_dead_buttons(self):
         self._page_with([], [])
         text = await self._page_text()
+        # The old placeholders pointed at modals that never existed.
         self.assertNotIn("addSectionModal", text)
         self.assertNotIn("addTestCaseModal", text)
-        self.assertNotIn("Add Section", text)
+        # "Add Section" is the working button in the title bar, once - not
+        # a second copy inside the empty message.
+        self.assertEqual(text.count("Add Section"), 2)  # button + modal title
+        self.assertEqual(text.count('id="add-section-btn"'), 1)
 
     async def test_root_level_test_case_is_shown_without_any_folder(self):
         """A test case with no folder used to be dropped, and with no
@@ -343,6 +347,45 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
         self.assertRegex(
             text, r'edit-testcase-btn"\s+title="Edit"\s+'
                   r'href="/1/testcases/3/edit"')
+
+    async def test_title_bar_has_an_add_section_button(self):
+        self._page_with([], [])
+        text = await self._page_text()
+        self.assertRegex(
+            text, r'id="add-section-btn"\s+data-bs-toggle="modal"\s+'
+                  r'data-bs-target="#sectionModal"\s+'
+                  r'data-section-mode="add"')
+
+    async def test_every_section_can_add_a_subsection_and_be_renamed(self):
+        self._page_with(
+            [{"id": 1, "parent_id": None, "name": "AlphaFolder"},
+             {"id": 2, "parent_id": 1, "name": "BetaChild"}], [])
+        text = await self._page_text()
+        self.assertEqual(text.count("add-subsection-btn"), 2)
+        self.assertEqual(text.count("rename-section-btn"), 2)
+        self.assertRegex(
+            text, r'data-section-mode="add-sub"\s+data-parent-id="1"\s+'
+                  r'data-parent-name="AlphaFolder"')
+        self.assertRegex(
+            text, r'data-section-mode="rename"\s+data-id="2"\s+'
+                  r'data-name="BetaChild"')
+
+    async def test_list_has_the_section_modal_and_its_form(self):
+        self._page_with([], [])
+        text = await self._page_text()
+        self.assertIn('id="sectionModal"', text)
+        self.assertIn('id="sectionForm"', text)
+        self.assertIn('data-add-action="/1/folders/add"', text)
+        self.assertIn(
+            'data-rename-action-template="/1/folders/__ID__/rename"', text)
+        self.assertIn('name="parent_id"', text)
+        self.assertRegex(text, r'name="name"\s+required')
+
+    async def test_section_names_are_escaped_in_the_buttons(self):
+        self._page_with(
+            [{"id": 1, "parent_id": None, "name": '"><b>x</b>'}], [])
+        text = await self._page_text()
+        self.assertNotIn('"><b>x</b>', text)
 
     async def test_every_test_case_has_a_delete_button(self):
         self._page_with(
@@ -475,6 +518,203 @@ class TestDeleteTestcaseFromList(unittest.IsolatedAsyncioTestCase):
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR, body={})
         self._list_page_responses()
         text = await (await self._post()).get_data(as_text=True)
+        self.assertIn("The request could not be completed", text)
+
+
+class _SectionWriteCase(unittest.IsolatedAsyncioTestCase):
+    """Shared setup for the add and rename section handlers."""
+
+    async def asyncSetUp(self):
+        self.mock_rest_client = AsyncMock()
+        self.mock_rest_client.post.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body={"status": "VALID"})
+        handler = GetProjectTestcasesPageHandler(
+            _LOGGER, _config(), self.mock_rest_client, _metadata())
+
+        app = make_app()
+
+        @app.route("/<int:project_id>/folders/add", methods=["POST"])
+        async def add_route(project_id):
+            return await handler.add_section(project_id)
+
+        @app.route("/<int:project_id>/folders/<int:folder_id>/rename",
+                   methods=["POST"])
+        async def rename_route(project_id, folder_id):
+            return await handler.rename_section(project_id, folder_id)
+
+        self.client = app.test_client()
+
+    def _list_page_responses(self):
+        """What re-showing the list needs: project, test cases, types."""
+        self.mock_rest_client.get.side_effect = [
+            _PROJECT_OK,
+            ApiResponse(status_code=HTTPStatus.OK, body={
+                "folders": [{"id": 1, "parent_id": None, "name": "StillHere"}],
+                "test_cases": []}),
+            _CASE_TYPES_OK,
+        ]
+
+    @staticmethod
+    async def _text(response):
+        return await response.get_data(as_text=True)
+
+
+class TestAddSection(_SectionWriteCase):
+    """POST /<project_id>/folders/add."""
+
+    async def _post(self, form):
+        async with self.client as c:
+            return await c.post("/1/folders/add", form=form,
+                                headers=_AUTH_HEADERS)
+
+    def _gateway_replies(self, response):
+        """Session validation is the first POST; the gateway's follows."""
+        self.mock_rest_client.post.side_effect = [
+            ApiResponse(status_code=HTTPStatus.OK,
+                        body={"status": "VALID"}), response]
+
+    async def test_top_level_section_is_posted_with_a_null_parent(self):
+        self._gateway_replies(ApiResponse(
+            status_code=HTTPStatus.OK, body={"folder_id": 4}))
+        await self._post({"name": "Regression", "parent_id": ""})
+        call = self.mock_rest_client.post.call_args_list[1]
+        self.assertEqual(call.args[0], "http://gateway/web/1/folders")
+        self.assertEqual(call.kwargs["json_data"],
+                         {"parent_id": None, "name": "Regression"})
+
+    async def test_missing_parent_field_also_means_top_level(self):
+        self._gateway_replies(ApiResponse(
+            status_code=HTTPStatus.OK, body={"folder_id": 4}))
+        await self._post({"name": "Regression"})
+        sent = self.mock_rest_client.post.call_args_list[1].kwargs[
+            "json_data"]
+        self.assertIsNone(sent["parent_id"])
+
+    async def test_subsection_is_posted_with_its_parent_id(self):
+        self._gateway_replies(ApiResponse(
+            status_code=HTTPStatus.OK, body={"folder_id": 4}))
+        await self._post({"name": "Sub", "parent_id": "3"})
+        sent = self.mock_rest_client.post.call_args_list[1].kwargs[
+            "json_data"]
+        self.assertEqual(sent, {"parent_id": 3, "name": "Sub"})
+
+    async def test_no_project_id_is_sent_in_the_body(self):
+        """The gateway takes the project from the URL and rejects it in the
+        body."""
+        self._gateway_replies(ApiResponse(
+            status_code=HTTPStatus.OK, body={"folder_id": 4}))
+        await self._post({"name": "Regression", "project_id": "9"})
+        sent = self.mock_rest_client.post.call_args_list[1].kwargs[
+            "json_data"]
+        self.assertNotIn("project_id", sent)
+
+    async def test_a_bad_parent_is_refused_without_calling_the_gateway(self):
+        self._list_page_responses()
+        for bad in ("abc", "-1", "1.5", "3; DROP"):
+            with self.subTest(parent=bad):
+                self.mock_rest_client.post.reset_mock()
+                self.mock_rest_client.post.side_effect = None
+                self.mock_rest_client.post.return_value = ApiResponse(
+                    status_code=HTTPStatus.OK, body={"status": "VALID"})
+                self._list_page_responses()
+                response = await self._post(
+                    {"name": "Sub", "parent_id": bad})
+                text = await self._text(response)
+                self.assertIn("Invalid parent section.", text)
+                # Only the session check, never a gateway create.
+                self.assertEqual(self.mock_rest_client.post.call_count, 1)
+
+    async def test_success_returns_to_the_list(self):
+        self._gateway_replies(ApiResponse(
+            status_code=HTTPStatus.OK, body={"folder_id": 4}))
+        text = await self._text(await self._post({"name": "Regression"}))
+        self.assertIn("url='http://localhost/1/testcases'", text)
+
+    async def test_not_a_member_goes_to_the_dashboard(self):
+        self._gateway_replies(ApiResponse(
+            status_code=HTTPStatus.FORBIDDEN, body={"error": "Forbidden"}))
+        text = await self._text(await self._post({"name": "Regression"}))
+        self.assertIn("url='http://localhost//'", text)
+
+    async def test_duplicate_name_shows_the_list_with_the_message(self):
+        self._gateway_replies(ApiResponse(
+            status_code=HTTPStatus.CONFLICT,
+            body={"error": "Folder name already exists"}))
+        self._list_page_responses()
+        response = await self._post({"name": "Regression"})
+        self.assertEqual(response.status_code, 200)
+        text = await self._text(response)
+        self.assertIn('id="testcases-error"', text)
+        self.assertIn("Folder name already exists", text)
+        self.assertIn("StillHere", text)
+
+    async def test_missing_parent_section_shows_the_message(self):
+        self._gateway_replies(ApiResponse(
+            status_code=HTTPStatus.NOT_FOUND,
+            body={"error": "Parent folder id is invalid"}))
+        self._list_page_responses()
+        text = await self._text(
+            await self._post({"name": "Sub", "parent_id": "99"}))
+        self.assertIn("Parent folder id is invalid", text)
+
+    async def test_failure_without_a_message_shows_the_fallback(self):
+        self._gateway_replies(ApiResponse(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, body={}))
+        self._list_page_responses()
+        text = await self._text(await self._post({"name": "Regression"}))
+        self.assertIn("The request could not be completed", text)
+
+
+class TestRenameSection(_SectionWriteCase):
+    """POST /<project_id>/folders/<id>/rename."""
+
+    async def _post(self, form, folder_id=4):
+        async with self.client as c:
+            return await c.post(f"/1/folders/{folder_id}/rename", form=form,
+                                headers=_AUTH_HEADERS)
+
+    async def test_patches_the_gateway_with_the_project_in_the_url(self):
+        self.mock_rest_client.patch.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body={"status": 1})
+        await self._post({"name": "Renamed"})
+        self.mock_rest_client.patch.assert_awaited_once_with(
+            "http://gateway/web/folders/4?project_id=1",
+            json_data={"name": "Renamed"})
+
+    async def test_success_returns_to_the_list(self):
+        self.mock_rest_client.patch.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body={"status": 1})
+        text = await self._text(await self._post({"name": "Renamed"}))
+        self.assertIn("url='http://localhost/1/testcases'", text)
+
+    async def test_not_a_member_goes_to_the_dashboard(self):
+        self.mock_rest_client.patch.return_value = ApiResponse(
+            status_code=HTTPStatus.FORBIDDEN, body={})
+        text = await self._text(await self._post({"name": "Renamed"}))
+        self.assertIn("url='http://localhost//'", text)
+
+    async def test_duplicate_name_shows_the_list_with_the_message(self):
+        self.mock_rest_client.patch.return_value = ApiResponse(
+            status_code=HTTPStatus.CONFLICT,
+            body={"error": "Folder name already exists"})
+        self._list_page_responses()
+        text = await self._text(await self._post({"name": "Taken"}))
+        self.assertIn('id="testcases-error"', text)
+        self.assertIn("Folder name already exists", text)
+
+    async def test_vanished_section_shows_the_message(self):
+        self.mock_rest_client.patch.return_value = ApiResponse(
+            status_code=HTTPStatus.NOT_FOUND,
+            body={"error": "Folder not found"})
+        self._list_page_responses()
+        text = await self._text(await self._post({"name": "Renamed"}))
+        self.assertIn("Folder not found", text)
+
+    async def test_failure_without_a_message_shows_the_fallback(self):
+        self.mock_rest_client.patch.return_value = ApiResponse(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, body={})
+        self._list_page_responses()
+        text = await self._text(await self._post({"name": "Renamed"}))
         self.assertIn("The request could not be completed", text)
 
 
