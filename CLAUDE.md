@@ -81,6 +81,23 @@ venv/Scripts/python -m pylint --fail-under=10.0 items/services/items_<service>
   `require_project_member`. Write handlers must reject a missing
   `project_id` themselves (the member decorator skips the check when it
   cannot find one).
+- **`project_id` rules.** The Gateway authorises from the project named in
+  the request; the CMS only checks the item really belongs to it.
+  - CMS `PATCH`/`DELETE` on test cases and folders require a `project_id`
+    query parameter (400 if missing, 404 if the item is in another project).
+  - CMS creates take the project in the body; an optional `?project_id=` must
+    match it (400 if not).
+  - Gateway creates put the project in the **path**
+    (`POST /web/<project_id>/testcases`, `.../folders`) and reject a
+    `project_id` in the body (400). Gateway `PATCH`/`DELETE` use
+    `?project_id=`.
+  - The Portal never sends `project_id` in a request body.
+- **Deletes are guarded.** Test cases and folders are **hard-deleted**
+  (decision of 2026-10-15; only projects are soft-deleted). A folder delete is
+  refused with a `409` and a `testcase_count` if the folder or any sub-folder
+  holds test cases, unless `cascade=true` (only that exact value cascades).
+  Deleting a case type moves its test cases to the default; the default case
+  type is never deleted.
 - **Case types are the template** for new customisation lists (Priorities,
   Case Statuses): global to the instance, one default that can be moved but
   never unset or deleted, delete moves dependants to the default.
@@ -88,6 +105,36 @@ venv/Scripts/python -m pylint --fail-under=10.0 items/services/items_<service>
   the database with `items/tool_cms_db_builder/db_builder.py -d <new file>`
   (it refuses to overwrite an existing file) and copying it over the
   tracked `databases/` file. Existing dev databases are rebuilt, not migrated.
+
+## Portal UI conventions
+
+The Portal is server-rendered: forms `POST`, and the page re-renders (or
+redirects) with an error banner and the typed input kept.
+
+- **Pop-ups only for small, fixed forms** (a case type, a section's name,
+  delete confirmations). **Full pages for anything that will grow**: a test
+  case's view, add and edit pages.
+- The **view page and the edit page mirror each other**: same title bar,
+  card, field order and button row.
+- A delete **confirmation states what will be lost** (for example the number
+  of test cases a section delete removes) in a single box. If a prompt
+  surprises the person who designed it, it will surprise users.
+- Buttons: `btn-header` (navy) is the primary, `btn-header-outline` the
+  secondary, red for destructive actions.
+
+## Releases
+
+A release is cut from `main` once a feature is complete across every service
+it touches (see `CONTRIBUTING.md`). Before tagging, all five services pass
+their tests at 100% coverage with a clean pylint.
+
+1. The **release PR** contains only the version change (`MINOR`/`PATCH` as
+   appropriate and `PRE_RELEASE = None` in `items/shared/__init__.py`) and
+   the README's "current release" line. Nothing else rides along with it.
+2. Tag `V<major>.<minor>.<patch>` on `main` and publish the GitHub release;
+   the Docker image builds run from it.
+3. The release notes say whether any database needs rebuilding (there are no
+   migrations before 1.0) and list the known limitations.
 
 ## Keep these in step with the code
 
@@ -123,6 +170,18 @@ When a route, request or response changes, update in the **same branch**:
   warning if its version differs from the CMS's or Identity's.
 - Only the CMS and Identity databases exist; test data created in Postman
   lives in them.
+- **Browsers cache the Portal's scripts and stylesheets.** After changing
+  `static/` files, a hard refresh (Ctrl+F5) is needed. A pop-up that opens
+  but is not filled in, or a button that stays disabled, usually means a
+  stale cached script.
+- **Test mocks must not hide mistakes.** A handler's broad
+  `except Exception` (used so a failed optional fetch is non-fatal) will also
+  swallow the "unexpected request" error a test helper raises, so a test can
+  pass without exercising the new request. Give such tests URL-keyed mocks
+  and assert the URL was actually requested.
+- **Unit tests only check markup.** To verify JavaScript or a pop-up, render
+  the real page with the real handler and templates (gateway mocked) to a
+  scratch folder, serve it, and click through it in the built-in browser.
 
 ## Working with Claude Code in this repo
 

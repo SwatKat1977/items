@@ -84,8 +84,10 @@ For each **area**, a role is granted any combination of:
 | Test Reports | | | |
 | Test Results | | | |
 
-`Delete` means **soft delete** throughout (see §6). There is no hard-delete
-column — that capability was deliberately removed from this grid.
+`Delete` means **soft delete for projects** (see §6). **Test cases and
+sections (folders) are hard-deleted** - a decision of 2026-10-15, recorded in
+§10.1 - so for them `Delete` is permanent. There is no hard-delete column —
+that capability was deliberately removed from this grid.
 
 ### 4.1 Invariant: Add/Modify implies Read
 
@@ -107,7 +109,9 @@ Enforced in **two** places — the UI half alone is not sufficient:
 ### 4.2 Invariant: Delete implies Restore
 
 There is no separate "restore" or "undo delete" permission. Anyone who can
-soft-delete an item in an area can also restore it in that area.
+soft-delete an item in an area can also restore it in that area. (This only
+applies where soft delete exists, which is projects; test cases and folders
+are hard-deleted, so there is nothing to restore.)
 
 Rationale: restoring destroys nothing, so it is strictly *less* dangerous
 than deleting. Gating it more tightly than `Delete` would be backwards;
@@ -294,6 +298,10 @@ This is the pattern `prj_projects` already follows via its `awaiting_purge`
 column, with `mark_project_for_purge()` (soft) and `hard_delete_project()`
 (hard) in `project_repository`. The design generalises that existing pattern
 rather than inventing a new one.
+
+**Scope (decision of 2026-10-15):** this lifecycle applies to **projects**.
+Test cases and folders are hard-deleted: they are permanent as soon as they
+are deleted. See §10.1.
 
 **Note:** the sweeper (step 3) does not exist. `mark_project_for_purge` and
 `hard_delete_project` are called only from `project_service`, so projects
@@ -601,12 +609,23 @@ Today this produces an inversion worth fixing: a normal user deleting a test
 case is doing something *more* destructive than an admin soft-deleting an
 entire project.
 
-**Already agreed elsewhere:** `folder_deletion_and_testcases.md` records the
-decision that **test cases get soft/hard delete mirroring projects**, and
-that **folders stay hard-delete-only** (a folder is pure organisation —
-nothing is lost by deleting the folder itself, only by deleting its
-contents). So for the two areas that exist today, this dependency is a
-matter of implementation rather than an open design question.
+**Decision (2026-10-15): test cases and folders are hard-deleted.** An
+earlier note (`folder_deletion_and_testcases.md`) had planned soft/hard delete
+for test cases, mirroring projects. That was decided against: soft delete
+needs a recently-deleted view, a restore action, a sweeper, a retention
+period (§10.2, §10.3) and a rule for duplicate names against hidden items, and
+the accident it guards against is covered more simply. Instead, the delete
+paths warn before anything is lost:
+
+- deleting a test case needs a tick-box confirmation in the Portal;
+- the CMS refuses to delete a folder that contains test cases (`409` with a
+  `testcase_count`) unless `cascade=true` is given, and the Portal shows the
+  count up front in a single confirmation.
+
+Folders were always hard-delete-only (a folder is pure organisation — nothing
+is lost by deleting the folder itself, only its contents). So §4.2 (restore)
+and the §6 lifecycle apply to projects only. If recoverability for test cases
+is wanted later, it can be added then; nothing here blocks it.
 
 Folders are deliberately **not** an area in the §4 grid for that reason;
 folder operations fall under Test Cases, with the cascade rule in §8.6
@@ -633,11 +652,9 @@ decided.
 
 For **folders**, `folder_deletion_and_testcases.md` already settles the
 shape: delete refuses with `409 Conflict` if the folder contains test cases
-recursively, and `?cascade=true` overrides. Its open question — whether
-`cascade=true` soft- or hard-deletes the test cases underneath — is answered
-by this document's model: **soft, with `hard_delete=true` layered on top and
-gated by the Purge now capability (§5.2)**. That keeps one consistent rule
-rather than two subsystems disagreeing.
+recursively, and `?cascade=true` overrides. That is **implemented**, and `cascade=true`
+**hard-deletes** the test cases underneath (decision of 2026-10-15, §10.1): no
+soft-delete layer, no `hard_delete` flag.
 
 What remains open here is the **project → children** case, which no document
 yet covers.
@@ -811,7 +828,7 @@ Settled during design discussion:
 | -------- | --------- |
 | Add and Modify are a **single** grant | A role that can add but not modify was not identifiable; splitting would double the matrix with a column always set the same way |
 | Add/Modify implies Read (locked) | Prevents nonsensical write-without-read states |
-| Delete means soft delete | Recoverable by default |
+| Delete means soft delete **for projects**; test cases and folders are hard-deleted (2026-10-15) | Soft delete needs a recently-deleted view, restore, sweeper and retention period; confirmations and the folder `409`/`cascade` refusal guard against accidental loss more simply |
 | Delete implies Restore | Restore destroys nothing, so gating it separately is backwards |
 | Data Administration grid **dropped** | Purge becomes a background task, so per-area hard-delete ticks are unnecessary |
 | Purge now is a **single** admin capability | Per-area purge granularity has no use case |
