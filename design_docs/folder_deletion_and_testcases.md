@@ -1,8 +1,8 @@
 # Folder deletion vs. test case deletion
 
 **Status:** The folder-delete safety is **implemented** in the CMS (see
-"What was built" below). The soft-delete decision for test cases is still
-open: the user currently prefers to keep test cases as hard delete.
+"What was built" below). Decided 2026-10-15: test cases stay hard delete; the
+soft-delete plan was dropped.
 
 ## What was built
 
@@ -41,12 +41,15 @@ CRUD lands: a folder delete would then silently wipe out real work product
 (test cases, and whatever custom field values or future test-run history
 hang off them) with no warning and no way to undo it.
 
-## Decision (agreed, not yet built)
+## Decision (agreed; the folder-delete part is built)
 
-- **Test cases get soft/hard delete**, mirroring the pattern already used
-  by projects (`awaiting_purge` for soft delete, permanent removal for hard
-  delete). Test cases represent real work product, so accidental loss
-  matters more than it does for a folder.
+- **Superseded (2026-10-15): test cases stay hard delete.** The original plan
+  was soft/hard delete for test cases, mirroring projects (`awaiting_purge`
+  for soft delete, permanent removal for hard delete), because test cases are
+  real work product. It was decided against: soft delete needs a
+  recently-deleted view, restore, a sweeper and a retention period. The
+  accident it guards against is covered by confirmations and by the folder
+  refusal below. See `user_roles_design.md` §10.1.
 - **Folders stay hard-delete-only.** A folder is pure organisation — there's
   nothing to lose by deleting the folder itself, only by deleting what's
   inside it.
@@ -82,13 +85,12 @@ to adding it later. Building it now would mean either:
 Better to pick this up once test case CRUD is underway and there's a real
 `tc_test_cases` service to query against.
 
-## Open questions for when this is picked up
+## Open questions - now answered
 
-- Exact route/shape for the count endpoint — dedicated route vs. a query
-  param on `GET /folders/<id>` (e.g. `?include_testcase_count=true`).
-- Whether the count should distinguish soft-deleted (awaiting purge) test
-  cases from active ones, once test cases have that concept.
-- Whether `cascade=true` on folder delete should hard-delete or soft-delete
-  the test cases underneath — likely soft-delete by default, with a further
-  `hard_delete=true` needed on top, matching how project delete already
-  layers these two flags.
+- **Count endpoint:** not built. The 409 itself carries `testcase_count`, and
+  the Portal also works the count out from the list it already shows, so it
+  can state what a delete would remove in a single confirmation. No separate
+  route, and no count-then-delete race.
+- **Soft-deleted test cases in the count:** moot - test cases are hard-deleted.
+- **`cascade=true`:** hard-deletes the test cases underneath. There is no
+  soft-delete layer and no `hard_delete` flag for folders.
