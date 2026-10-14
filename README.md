@@ -4,8 +4,8 @@ ITEMS is a web-based test management tool written in Python that can be used by 
 
 ## News  
 
-### 8th September 2026
-The current Alpha release is [V0.3.0](https://github.com/SwatKat1977/items/releases/tag/V0.3.0)
+### 14th September 2026
+The current Alpha release is [V0.4.0](https://github.com/SwatKat1977/items/releases/tag/V0.4.0)
 
 IMPORTANT: The current Alpha is not production ready/safe and is currently an early preview.
 
