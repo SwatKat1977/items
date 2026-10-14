@@ -87,3 +87,80 @@
     nameInput.select();
   });
 })();
+
+/*
+ * Section delete (list page only). A section's delete button
+ * (data-bs-target="#confirmDeleteSectionModal") carries data-id, data-name and
+ * data-testcase-count (the test cases deleting it would remove, including
+ * those in sub-sections). It opens ONE confirmation that says what will be
+ * lost:
+ *   - no test cases: a plain confirmation that posts a plain delete;
+ *   - some: a red warning with the count, a confirmation worded to match, and
+ *     a button that posts cascade=true.
+ * If the count on the page was out of date, the server refuses a plain delete
+ * and the page comes back with #confirmCascadeSectionModal, which is opened
+ * here straight away (data-auto-open) as a backstop.
+ */
+(function () {
+  const modal = document.getElementById('confirmDeleteSectionModal');
+  const form = document.getElementById('secDeleteForm');
+
+  if (modal && form) {
+    const nameLabel = document.getElementById('sec-delete-name');
+    const warning = document.getElementById('sec-delete-warning');
+    const countLabel = document.getElementById('sec-delete-count');
+    const nounLabel = document.getElementById('sec-delete-noun');
+    const checkbox = document.getElementById('secConfirmCheckbox');
+    const checkboxLabel = document.getElementById('secConfirmLabel');
+    const cascadeInput = document.getElementById('sec-cascade');
+    const confirmButton = document.getElementById('secConfirmDeleteButton');
+
+    const reset = function () {
+      checkbox.checked = false;
+      confirmButton.disabled = true;
+    };
+
+    modal.addEventListener('show.bs.modal', function (event) {
+      const trigger = event.relatedTarget;
+      const count = parseInt(trigger.getAttribute('data-testcase-count'), 10)
+        || 0;
+      const noun = count === 1 ? 'test case' : 'test cases';
+
+      nameLabel.textContent = trigger.getAttribute('data-name') || '';
+      form.action = form.getAttribute('data-action-template')
+        .replace('__ID__', trigger.getAttribute('data-id'));
+
+      if (count > 0) {
+        countLabel.textContent = count;
+        nounLabel.textContent = noun;
+        warning.style.display = 'block';
+        checkboxLabel.textContent = 'I confirm I want to delete this section '
+          + 'and its ' + count + ' ' + noun + '.';
+        confirmButton.textContent = 'Delete section and ' + count + ' ' + noun;
+        cascadeInput.value = 'true';
+      } else {
+        warning.style.display = 'none';
+        checkboxLabel.textContent = 'I confirm I want to delete this item.';
+        confirmButton.textContent = 'OK';
+        cascadeInput.value = '';
+      }
+
+      reset();
+    });
+
+    modal.addEventListener('hidden.bs.modal', reset);
+
+    checkbox.addEventListener('change', function () {
+      confirmButton.disabled = !this.checked;
+    });
+
+    confirmButton.addEventListener('click', function () {
+      form.submit();
+    });
+  }
+
+  const cascadeModal = document.getElementById('confirmCascadeSectionModal');
+  if (cascadeModal && cascadeModal.getAttribute('data-auto-open') === 'true') {
+    new bootstrap.Modal(cascadeModal).show();
+  }
+})();
