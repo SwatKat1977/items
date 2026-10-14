@@ -22,6 +22,8 @@ from quart import request, Response
 def read_required_project_id() -> tuple[Optional[int], Optional[Response]]:
     """Read the required ``project_id`` query parameter of a write request.
 
+    Shared by the test case and folder write handlers.
+
     ``require_project_member`` authorises a request from this same
     parameter, but deliberately skips the check when it is missing or not an
     integer, leaving that as a malformed-request concern for the handler. For

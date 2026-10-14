@@ -177,7 +177,20 @@ enforced yet, so a member whose role is read-only can still write. The member
 decorator skips its check when `project_id` is missing or not an integer, so
 the write handlers reject that with a 400 themselves.
 
-### 2.9 Testcase custom fields
+### 2.9 Sections (folders)
+
+Sections are read through the test case list (`GET /web/<project_id>/testcases`
+returns the whole folder tree), so only the writes are routed. Authorised by
+project membership only, like the test case writes. The CMS decides what the
+`cascade` value means and rejects anything it does not understand.
+
+| Method | Path | Auth | Upstream | Shape | Notes |
+|---|---|---|---|---|---|
+| `POST` | `/web/<project_id>/folders` | Member | CMS `folders` | pass-through | Body: `parent_id` (int, or null for a top-level section) and `name`. The project comes from the path only: the body must not contain a `project_id` (400). 200 `{"folder_id": n}`; 404 unknown project or parent; 409 duplicate sibling name. |
+| `PATCH` | `/web/folders/<folder_id>?project_id=` | Member | CMS `folders/<id>?project_id=` | pass-through | Body: `name`. `project_id` is required (400 if missing); 404 if the section is in another project; 409 duplicate sibling name. |
+| `DELETE` | `/web/folders/<folder_id>?project_id=[&cascade=true]` | Member | CMS `folders/<id>?project_id=[&cascade=]` | pass-through | `project_id` is required (400 if missing). Refused with **409** `{"error": ..., "testcase_count": n}` if the section or a sub-section contains test cases, unless `cascade=true`, which also deletes them. 404 if the section is in another project. |
+
+### 2.10 Testcase custom fields
 
 All Admin; all forwarded to CMS `testcase_custom_fields`.
 

@@ -186,6 +186,27 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
                                       headers=_AUTH_HEADERS)
         self.assertNotEqual(response.status_code, 405)
 
+    async def test_create_folder_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post(
+                "/web/1/folders",
+                json={"parent_id": None, "name": "S"},
+                headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_modify_folder_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.patch(
+                "/web/folders/1?project_id=1", json={"name": "S"},
+                headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
+    async def test_delete_folder_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.delete("/web/folders/1?project_id=1",
+                                      headers=_AUTH_HEADERS)
+        self.assertNotEqual(response.status_code, 405)
+
     async def test_get_testcase_route_is_reachable(self):
         async with self.client as c:
             response = await c.get("/web/testcases/1?project_id=1",

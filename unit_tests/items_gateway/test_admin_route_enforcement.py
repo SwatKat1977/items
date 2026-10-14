@@ -128,6 +128,11 @@ _MEMBER_WRITE_ROUTES = [
     ("PATCH", "/web/testcases/1?project_id=1",
      {"name": "T", "description": ""}),
     ("DELETE", "/web/testcases/1?project_id=1", None),
+    # Sections (folders): same rule as test cases.
+    ("POST", "/web/1/folders", {"parent_id": None, "name": "S"}),
+    ("PATCH", "/web/folders/1?project_id=1", {"name": "S"}),
+    ("DELETE", "/web/folders/1?project_id=1", None),
+    ("DELETE", "/web/folders/1?project_id=1&cascade=true", None),
 ]
 
 # The same writes without the project_id query parameter. The membership
@@ -136,6 +141,8 @@ _MEMBER_WRITE_ROUTES = [
 _WRITE_ROUTES_MISSING_PROJECT_ID = [
     ("PATCH", "/web/testcases/1", {"name": "T", "description": ""}),
     ("DELETE", "/web/testcases/1", None),
+    ("PATCH", "/web/folders/1", {"name": "S"}),
+    ("DELETE", "/web/folders/1", None),
 ]
 
 # (method, path, json_body) - routes that must stay reachable with no
