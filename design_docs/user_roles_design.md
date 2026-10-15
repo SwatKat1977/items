@@ -313,9 +313,12 @@ collected. See §10.2.
 Roles data lives with identity, not CMS, because:
 
 - Authorisation is an identity concern; CMS need not know users exist.
-- The gateway **already** calls identity to validate the session on every
-  request, so effective permissions can ride along in that same response —
-  no extra hop, no cache to invalidate.
+- The gateway asks identity for the caller's effective permissions on each
+  permission-gated request (§9.5), so a change to a role, a membership or an
+  account takes effect on the very next request - there is no copy of the
+  grid in the gateway to go stale. (An earlier version of this document said
+  permissions would "ride along" on session validation. The gateway has since
+  moved to its own in-memory session store, so that no longer applies.)
 
 The cost accepted: `project_id` references `cms.db` with no FK integrity, so
 purging a project must clean up its grants in the other database (§10.4).
@@ -596,6 +599,121 @@ the flag, failing closed locks administrators out and failing open provides
 no security. The `/admin/` gap therefore closes only when the whole chain has
 landed, so the steps should not be left half-merged for long.
 
+### 9.5 Enforcing the per-area grid (design for 0.5.0)
+
+This section closes the gap that a read-only member can still write. It
+applies §8 on the request path. Identity and CMS stay permission-agnostic
+(§9.1); only the gateway decides.
+
+**Decision (2026-10-16): the gateway asks identity for the caller's effective
+permissions on every permission-gated request. The grid is not stored in the
+gateway session.**
+
+The requirement behind it is that a permission change applies **immediately**,
+so access can be revoked at once. Today's session already holds a snapshot of
+project ids and the administrator flag, patched live by a few handlers (a
+membership added or removed, the flag changed, a user deactivated). That
+pattern is not extended to permissions, for two reasons:
+
+- Several events change permissions and none of them touch a session today: a
+  role's grid is edited (affecting everyone who holds it), a role is deleted
+  (its members silently lose it), and a member's role is changed or cleared.
+  Each would need its own patch, and a role edit would first need a way to find
+  every affected user. Forgetting one leaves a stale permission with no error
+  and nothing to notice it.
+- Asking identity has no such list. It is correct by construction, and
+  revoking access is the same code path as granting it.
+
+#### Identity: effective permissions
+
+Identity resolves `effective(user, project, area)` exactly as §8 describes
+(disabled account gives nothing, administrator gives everything, no membership
+gives nothing, union of the member's role grids otherwise) and exposes the
+result for one user in one project. One call returns every area, so a single
+request serves both enforcement and the Portal's need to know what to show:
+
+```
+GET /users/<user_id>/projects/<project_id>/permissions
+200 {
+  "project_id": 1,
+  "areas": {
+    "test_cases": {"read": true, "add_modify": false, "delete": false}
+  }
+}
+404 if no user has that id
+```
+
+A non-member, a member with no role and a disabled account all return `200`
+with every flag `false`, not an error. The exact route and schema are fixed in
+the identity API document when it is built; this is the contract it must meet.
+
+#### Gateway: one decorator
+
+A new decorator, `require_project_permission(area, action)`, is applied to each
+gated route in its Blueprint, beside `require_session`. It:
+
+1. Reads `project_id` itself and returns `400` if it is missing or not an
+   integer. Unlike `require_project_member` it must **never skip** the check
+   when it cannot find the project - a decorator that silently allows is the
+   failure this design exists to prevent.
+2. Asks identity for the session user's permissions in that project.
+3. Returns `403` if the requested action is not granted.
+4. If identity cannot be reached or answers unexpectedly, returns an error
+   status (`500`, as the gateway does elsewhere) and **never** allows the
+   request. Failing closed is deliberate.
+
+It does not special-case administrators: identity already returns everything
+for them. It replaces `require_project_member` on the gated routes, because an
+empty grid already covers "not a member".
+
+#### What each route needs
+
+Only **Test Cases** is enforceable (§11). Rule 6 of §8 applies: a delete is
+authorised against what it destroys.
+
+| Operation | Needs |
+| --------- | ----- |
+| List or read test cases, list sections | Test Cases: Read |
+| Create or edit a test case, move a test case | Test Cases: Add/Modify |
+| Create, rename or move a section | Test Cases: Add/Modify |
+| Delete a test case | Test Cases: Delete |
+| Delete a section (with or without `cascade=true`) | Test Cases: Delete |
+
+Not gated by an area grant: case types and test case fields (instance-wide
+definitions, not per project, so they keep the rules they have now), and the
+project routes (membership or administrator, as now). Moving is possible only
+within one project, so it needs one permission check, on that project.
+
+#### What the Portal does
+
+Hiding a button is usability, not security (§9). The Portal shows or hides
+controls from the caller's own permissions, which the gateway returns for the
+current user and project (a thin route that forwards the identity call above).
+Because enforcement does not depend on it, a stale page can at worst show a
+button that then fails with a `403`, which the Portal reports in plain words
+and keeps the person's typed input.
+
+#### Rejected alternatives
+
+- **Push changes into sessions.** Rejected as above: many events, none
+  centralised, and a missed one is silent. It also breaks the moment the
+  gateway runs as more than one process.
+- **Cache grids in the session, invalidated by a version counter.** Immediate
+  and avoids the extra call, but is more machinery than a local call justifies.
+  Everything flows through the gateway, so it can be added later behind the same
+  decorator if the per-request call is ever measured to be too slow.
+
+#### Known cost and limits
+
+- One extra local call to identity per gated request (several per Portal page).
+  Identity reads a few small SQLite tables, and both services run on the same
+  host.
+- Gated routes need identity to be available. Routes that are not gated are
+  unaffected.
+- The existing live patches for project ids, the administrator flag and
+  deactivation stay, because listings and the admin gate use them. They are
+  not part of permission enforcement and are not extended for it.
+
 ## 10. Dependencies and open decisions
 
 ### 10.1 Soft delete exists only for projects
@@ -780,12 +898,15 @@ no tables**.
 | Test Reports | — | No |
 | Test Results | — | No |
 
-**Schema status:** `roles`, `role_permissions`, and `project_members`
-(with `role_id`) exist in the database as of `identity_roles_db_update` -
-but nothing reads or writes them yet. No repository, service, route, or
-UI has been built on top of this schema. "Enforceable now" above is about
-CMS having the backing tables for an *area*; it doesn't mean the
-permission system itself is live.
+**Implementation status:** `roles`, `role_permissions` and `project_members`
+(with `role_id`) are in use. Roles can be created, edited and deleted, and a
+role can be assigned to a project membership, through the identity service,
+the gateway and the Portal (release 0.3.0). What is **not** built yet is
+*enforcement*: nothing resolves a user's effective permissions or checks them
+on a request, so a read-only member can still write. §9.5 is the design for
+that, tracked for release 0.5.0. "Enforceable now" above is about CMS having
+the backing tables for an *area*; it doesn't mean the permission system
+itself is live.
 
 Admin areas (future grid, §5.1):
 
@@ -834,7 +955,8 @@ Settled during design discussion:
 | Purge now is a **single** admin capability | Per-area purge granularity has no use case |
 | `is_administrator` gates admin panel access | Simple bootstrap; sub-grid deferred |
 | v1 is **users-only** | Groups are a scale convenience, not a capability requirement; hooks in place so they are additive |
-| Roles live in `identity.db` | Rides along with existing session validation; no extra hop per request |
+| Roles live in `identity.db` | Authorisation is an identity concern and CMS need not know users exist; the gateway asks identity for the effective permissions it needs (§9.5) |
+| **Permissions are checked by asking identity on each gated request** and are not copied into the gateway session (§9.5, 2026-10-16) | A change to a role, a membership or an account must apply immediately, so access can be revoked at once. With no copy in the gateway there is nothing to go stale and no list of events to remember to sync; a missed sync would be a silent security bug. Costs one local call per gated request; a cache with explicit invalidation can be added later without changing the decorator |
 | No negative/deny permissions | Keeps effective access predictable |
 | `project_id` is an explicit parameter, not a nested path segment (§9.2) | Testcase `id`s are already globally unique, so nesting adds a path segment without adding anything needed to identify the resource; matches precedent already in the codebase (`POST /testcases` body, `DELETE /projects/<id>?hard_delete=` query) |
 | Permissions are granted via **named, reusable roles** (§4/§7), not raw checkboxes on each membership | Raw per-membership grants were the original design; revised before any code was built on it, after comparing against how real tools (TestRail) manage this at team scale - editing one role definition beats re-ticking the same boxes on every membership that needs it |
