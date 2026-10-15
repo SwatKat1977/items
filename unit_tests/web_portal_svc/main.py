@@ -24,6 +24,7 @@ from test_auth_handlers import (
     TestLogoutPageHandler,
 )
 from test_route_factories import TestRouteWiring
+from test_static_cache_busting import TestStaticCacheBusting
 from test_admin_stub_handlers import (
     TestAdminOverviewPageHandler,
     TestAdminIntegrationsPageHandler,
