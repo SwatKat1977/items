@@ -4,6 +4,8 @@ Handler-level tests for the project membership API endpoints:
   POST   /users/<uuid>/projects              - AddUserProjectHandler
   PATCH  /users/<uuid>/projects/<project_id> - ModifyUserProjectHandler
   DELETE /users/<uuid>/projects/<project_id> - RemoveUserProjectHandler
+  GET    /users/<uuid>/projects/<project_id>/permissions
+                                             - GetUserProjectPermissionsHandler
 """
 import unittest
 import json
@@ -13,9 +15,12 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from quart import Response
 from routes.users.list_user_projects_handler import ListUserProjectsHandler
 from routes.users.add_user_project_handler import AddUserProjectHandler
+from routes.users.get_user_project_permissions_handler import (
+    GetUserProjectPermissionsHandler)
 from routes.users.modify_user_project_handler import ModifyUserProjectHandler
 from routes.users.remove_user_project_handler import RemoveUserProjectHandler
 from services.project_membership_service import (
+    EffectivePermissionsResult,
     MembershipListResult,
     MembershipCreateResult,
     MembershipUpdateResult,
@@ -301,6 +306,63 @@ class TestRemoveUserProjectHandler(unittest.IsolatedAsyncioTestCase):
 
     async def test_response_is_json(self):
         resp = await self._call(MembershipDeleteResult(success=True))
+        self.assertEqual(resp.content_type, "application/json")
+
+
+# ---------------------------------------------------------------------------
+# GetUserProjectPermissionsHandler
+# ---------------------------------------------------------------------------
+
+_AREAS = {
+    "test_cases": {"read": True, "add_modify": False, "delete": False},
+    "milestones": {"read": False, "add_modify": False, "delete": False},
+}
+
+
+class TestGetUserProjectPermissionsHandler(unittest.IsolatedAsyncioTestCase):
+
+    asyncSetUp = _make_handler_setup(GetUserProjectPermissionsHandler)
+
+    async def _call(self, result: EffectivePermissionsResult,
+                    user_id: str = _UUID, project_id: int = 5) -> Response:
+        self.mock_svc.get_effective_permissions = AsyncMock(
+            return_value=result)
+        return await self.handler.get_user_project_permissions(
+            user_id, project_id)
+
+    async def test_success_returns_200_with_project_and_areas(self):
+        resp = await self._call(EffectivePermissionsResult(areas=_AREAS))
+        self.assertEqual(resp.status_code, HTTPStatus.OK)
+        body = json.loads(await resp.get_data())
+        self.assertEqual(body, {"project_id": 5, "areas": _AREAS})
+
+    async def test_no_access_is_still_200(self):
+        """Having no access is an answer, not an error."""
+        no_access = {"test_cases": {"read": False, "add_modify": False,
+                                    "delete": False}}
+        resp = await self._call(EffectivePermissionsResult(areas=no_access))
+        self.assertEqual(resp.status_code, HTTPStatus.OK)
+        body = json.loads(await resp.get_data())
+        self.assertFalse(body["areas"]["test_cases"]["read"])
+
+    async def test_not_found_returns_404(self):
+        resp = await self._call(EffectivePermissionsResult(found=False))
+        self.assertEqual(resp.status_code, HTTPStatus.NOT_FOUND)
+        body = json.loads(await resp.get_data())
+        self.assertIn("error", body)
+
+    async def test_unavailable_returns_503(self):
+        resp = await self._call(EffectivePermissionsResult(available=False))
+        self.assertEqual(resp.status_code, HTTPStatus.SERVICE_UNAVAILABLE)
+
+    async def test_user_and_project_passed_to_service(self):
+        await self._call(EffectivePermissionsResult(areas=_AREAS),
+                         project_id=9)
+        self.mock_svc.get_effective_permissions.assert_awaited_once_with(
+            _UUID, 9)
+
+    async def test_response_is_json(self):
+        resp = await self._call(EffectivePermissionsResult(areas=_AREAS))
         self.assertEqual(resp.content_type, "application/json")
 
 

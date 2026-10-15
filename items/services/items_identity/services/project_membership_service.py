@@ -23,7 +23,41 @@ from items.services.items_identity.data_access.role_repository import (
     RoleRepository)
 from items.services.items_identity.data_access.user_repository import (
     UserRepository)
+from items.shared.account_status import AccountStatus
+from items.shared.permission_area import PermissionArea
 from items.shared.service_state import ServiceState
+
+
+def _area_grant(can_read: bool, can_add_modify: bool,
+                can_delete: bool) -> dict:
+    """Build one area's grant in the shape the permissions endpoint returns.
+
+    Args:
+        can_read: Whether Read is granted.
+        can_add_modify: Whether Add/Modify is granted.
+        can_delete: Whether Delete is granted.
+
+    Returns:
+        ``{"read", "add_modify", "delete"}`` with the three flags as bools.
+    """
+    return {
+        "read": bool(can_read),
+        "add_modify": bool(can_add_modify),
+        "delete": bool(can_delete),
+    }
+
+
+def _all_areas(granted: bool) -> dict:
+    """Build a grid that grants (or denies) everything in every area.
+
+    Args:
+        granted: True to grant every flag, False to deny every flag.
+
+    Returns:
+        A dict keyed by every :class:`PermissionArea` value.
+    """
+    return {area.value: _area_grant(granted, granted, granted)
+            for area in PermissionArea}
 
 
 def _membership_row_to_dict(row: tuple) -> dict:
@@ -60,6 +94,23 @@ class MembershipListResult:
     available: bool = True
     found: bool = True
     memberships: list = field(default_factory=list)
+
+
+@dataclass
+class EffectivePermissionsResult:
+    """Outcome of an effective-permissions request.
+
+    Attributes:
+        available: False when the service is unavailable.
+        found:     False when no user exists with the requested UUID.
+        areas:     ``{area: {"read", "add_modify", "delete"}}`` for every
+                   :class:`PermissionArea` on success. Every flag is False
+                   for a user with no access, which is a normal outcome and
+                   not an error.
+    """
+    available: bool = True
+    found: bool = True
+    areas: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -202,6 +253,62 @@ class ProjectMembershipService:
 
         return MembershipListResult(
             memberships=[_membership_row_to_dict(r) for r in rows])
+
+    async def get_effective_permissions(
+            self, user_uuid: str,
+            project_id: int) -> EffectivePermissionsResult:
+        """Resolve what a user may do in a project, per area.
+
+        Implements §8 of user_roles_design.md: a disabled account gets
+        nothing, an administrator gets everything, otherwise the result is
+        the union of the grids of the roles the user holds on the project -
+        nothing if they are not a member, or a member with no role.
+
+        Args:
+            user_uuid:  The user's public UUID string.
+            project_id: The project's id.
+
+        Returns:
+            An :class:`EffectivePermissionsResult` whose ``areas`` covers
+            every area, so callers never need to guess at a missing key.
+        """
+        if not self._state.is_available():
+            return EffectivePermissionsResult(available=False)
+
+        try:
+            user = await self._user_repo.get_user_by_uuid(user_uuid)
+            if user is None:
+                return EffectivePermissionsResult(found=False)
+
+            user_id, account_status, is_administrator = (
+                user[0], user[5], user[7])
+
+            if account_status != AccountStatus.ACTIVE.value:
+                return EffectivePermissionsResult(areas=_all_areas(False))
+
+            if is_administrator:
+                return EffectivePermissionsResult(areas=_all_areas(True))
+
+            rows = await self._repo.get_effective_permissions(
+                user_id, project_id)
+
+        except SqliteInterfaceException as ex:
+            self._logger.exception(
+                "Database failure resolving permissions for user %s on "
+                "project %d: %s", user_uuid, project_id, ex)
+            self._state.set_service_degraded(
+                "Permission lookup database unavailable")
+            return EffectivePermissionsResult(available=False)
+
+        areas = _all_areas(False)
+        for area, can_read, can_add_modify, can_delete in rows:
+            # A row for an area this version doesn't know about is ignored,
+            # so the response always has exactly the known set of areas.
+            if area in areas:
+                areas[area] = _area_grant(can_read, can_add_modify,
+                                          can_delete)
+
+        return EffectivePermissionsResult(areas=areas)
 
     async def add_membership(self,
                              user_uuid: str,

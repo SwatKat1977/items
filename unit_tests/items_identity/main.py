@@ -4,7 +4,10 @@ from test_threadsafe_configuration import TestIdentityConfiguration
 from test_da_user_data_access_layer import TestUserRepository
 from test_da_invite_data_access_layer import TestInviteRepository
 from test_da_role_data_access_layer import TestRoleRepository
-from test_da_project_member_data_access_layer import TestProjectMemberRepository
+from test_da_project_member_data_access_layer import (
+    TestProjectMemberRepository,
+    TestEffectivePermissionsQuery,
+)
 from test_apis_authentication_api import TestAuthenticatePasswordHandler
 from test_apis_health_api import TestHealthHandler
 from test_services_authentication_service import TestAuthenticationService
@@ -34,6 +37,7 @@ from test_apis_user_project_management import (
     TestAddUserProjectHandler,
     TestModifyUserProjectHandler,
     TestRemoveUserProjectHandler,
+    TestGetUserProjectPermissionsHandler,
 )
 from test_apis_invite_management import (
     TestGetInvitesHandler,

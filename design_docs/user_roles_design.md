@@ -644,8 +644,9 @@ GET /users/<user_id>/projects/<project_id>/permissions
 ```
 
 A non-member, a member with no role and a disabled account all return `200`
-with every flag `false`, not an error. The exact route and schema are fixed in
-the identity API document when it is built; this is the contract it must meet.
+with every flag `false`, not an error. The identity service returns `503` if
+it is unavailable. **Implemented** in 0.5.0 exactly as above (ITEMS-10); every
+area in `PermissionArea` is always present in `areas`.
 
 #### Gateway: one decorator
 

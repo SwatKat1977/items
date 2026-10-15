@@ -29,6 +29,8 @@ from .list_user_projects_handler import ListUserProjectsHandler
 from .add_user_project_handler import AddUserProjectHandler
 from .modify_user_project_handler import ModifyUserProjectHandler
 from .remove_user_project_handler import RemoveUserProjectHandler
+from .get_user_project_permissions_handler import (
+    GetUserProjectPermissionsHandler)
 
 
 def create_users_routes(logger: logging.Logger,
@@ -55,6 +57,8 @@ def create_users_routes(logger: logging.Logger,
       user's role on a project (UUID).
     * ``DELETE /users/<user_id>/projects/<project_id>`` - Remove the
       user's membership of a project (UUID).
+    * ``GET  /users/<user_id>/projects/<project_id>/permissions`` - The
+      user's effective permissions in a project (UUID).
 
     Args:
         logger:
@@ -84,6 +88,8 @@ def create_users_routes(logger: logging.Logger,
     handler_add_project = AddUserProjectHandler(logger, service_state, config)
     handler_modify_project = ModifyUserProjectHandler(logger, service_state, config)
     handler_remove_project = RemoveUserProjectHandler(logger, service_state, config)
+    handler_project_permissions = GetUserProjectPermissionsHandler(
+        logger, service_state, config)
 
     logger.debug("Registering Users API routes:")
 
@@ -109,6 +115,8 @@ def create_users_routes(logger: logging.Logger,
                  'Change membership role'.ljust(40))
     logger.debug("=> %s DELETE /users/<user_id>/projects/<project_id>",
                  'Remove project membership'.ljust(40))
+    logger.debug("=> %s GET  /users/<user_id>/projects/<project_id>/permissions",
+                 'Get effective permissions'.ljust(40))
 
     # pylint: disable=no-value-for-parameter
 
@@ -160,6 +168,14 @@ def create_users_routes(logger: logging.Logger,
         methods=['DELETE'])
     async def remove_user_project_request(user_id: str, project_id: int):
         return await handler_remove_project.remove_user_project(
+            user_id=user_id, project_id=project_id)
+
+    @users_routes.route(
+        '/users/<string:user_id>/projects/<int:project_id>/permissions',
+        methods=['GET'])
+    async def get_user_project_permissions_request(user_id: str,
+                                                   project_id: int):
+        return await handler_project_permissions.get_user_project_permissions(
             user_id=user_id, project_id=project_id)
 
     return users_routes

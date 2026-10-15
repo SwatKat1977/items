@@ -50,6 +50,19 @@ class ProjectMemberRepository:
         "WHERE pm.principal_type = 'user' AND pm.principal_id = ? "
         "AND pm.project_id = ?")
 
+    # One row per area: the union (most permissive wins) of the grids of every
+    # role this user holds on the project (§8 rule 1 of user_roles_design.md).
+    # A membership with no role (role_id IS NULL) has no join partner, so it
+    # contributes nothing - the same outcome as having no grant.
+    GET_EFFECTIVE_PERMISSIONS_QUERY: str = (
+        "SELECT rp.area, MAX(rp.can_read), MAX(rp.can_add_modify), "
+        "MAX(rp.can_delete) "
+        "FROM project_members pm "
+        "JOIN role_permissions rp ON pm.role_id = rp.role_id "
+        "WHERE pm.principal_type = 'user' AND pm.principal_id = ? "
+        "AND pm.project_id = ? "
+        "GROUP BY rp.area ORDER BY rp.area")
+
     INSERT_MEMBERSHIP_QUERY: str = (
         "INSERT INTO project_members "
         "(principal_type, principal_id, project_id, role_id) "
@@ -124,6 +137,31 @@ class ProjectMemberRepository:
         return await self._db.run_query(self.GET_MEMBERSHIP_QUERY,
                                         (user_id, project_id),
                                         fetch_one=True)
+
+    async def get_effective_permissions(self, user_id: int,
+                                        project_id: int) -> list:
+        """Retrieve the permissions a user's role(s) grant on a project.
+
+        This is only the role-derived part of §8's resolution; the caller
+        applies the account-status and administrator rules, which depend on
+        the user's profile rather than on membership.
+
+        Args:
+            user_id: The user's internal primary key.
+            project_id: The project's id (CMS-side, no FK).
+
+        Returns:
+            A list of ``(area, can_read, can_add_modify, can_delete)``
+            tuples, one per area at least one of the user's roles has a row
+            for, with the flags OR'd together. Empty if the user is not a
+            member, or is a member with no role assigned.
+
+        Raises:
+            SqliteInterfaceException: If the database query fails.
+        """
+        rows = await self._db.run_query(self.GET_EFFECTIVE_PERMISSIONS_QUERY,
+                                        (user_id, project_id))
+        return rows if rows else []
 
     async def create_membership(self,
                                 user_id: int,
