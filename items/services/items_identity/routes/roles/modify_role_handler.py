@@ -60,8 +60,8 @@ class ModifyRoleHandler(BaseApiRoute):
 
         Returns:
             200 on success.
-            400 if the supplied grid violates Add/Modify-implies-Read, or
-            repeats the same area more than once.
+            400 if the supplied grid violates Add/Modify-implies-Read or
+            Delete-implies-Read, or repeats the same area more than once.
             404 if no role exists with that id.
             409 if renaming to a name already in use by another role.
             503 if the service is unavailable.
@@ -81,8 +81,8 @@ class ModifyRoleHandler(BaseApiRoute):
         if result.invalid:
             return Response(
                 json.dumps({"error": "Invalid permission grid - "
-                           "Add/Modify requires Read, and each area may "
-                           "appear at most once"}),
+                           "Add/Modify and Delete require Read, and each "
+                           "area may appear at most once"}),
                 status=HTTPStatus.BAD_REQUEST,
                 content_type="application/json")
 

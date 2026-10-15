@@ -183,6 +183,9 @@ class TestCreateRoleHandler(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(resp.status_code, HTTPStatus.BAD_REQUEST)
         body = json.loads(await resp.get_data())
         self.assertIn("error", body)
+        # Tells the caller both write-type grants need Read.
+        self.assertIn("Add/Modify", body["error"])
+        self.assertIn("Delete", body["error"])
 
     async def test_unavailable_returns_503(self):
         resp = await self._call(RoleCreateResult(available=False))
@@ -242,6 +245,9 @@ class TestModifyRoleHandler(unittest.IsolatedAsyncioTestCase):
     async def test_invalid_returns_400(self):
         resp = await self._call(RoleUpdateResult(invalid=True), permissions=[])
         self.assertEqual(resp.status_code, HTTPStatus.BAD_REQUEST)
+        body = json.loads(await resp.get_data())
+        self.assertIn("Add/Modify", body["error"])
+        self.assertIn("Delete", body["error"])
 
     async def test_unavailable_returns_503(self):
         resp = await self._call(RoleUpdateResult(available=False), name="New")

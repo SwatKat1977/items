@@ -22,6 +22,18 @@ _INVALID_PERMISSIONS_NO_READ = [
      "can_delete": False},
 ]
 
+# Delete without Read: valid for a database CHECK that only knows the
+# Add/Modify rule, but not for §4.4 of user_roles_design.md.
+_INVALID_PERMISSIONS_DELETE_NO_READ = [
+    {"area": "test_cases", "can_read": False, "can_add_modify": False,
+     "can_delete": True},
+]
+
+_VALID_PERMISSIONS_DELETE_WITH_READ = [
+    {"area": "test_cases", "can_read": True, "can_add_modify": False,
+     "can_delete": True},
+]
+
 _DUPLICATE_AREA_PERMISSIONS = [
     {"area": "test_cases", "can_read": True, "can_add_modify": False,
      "can_delete": False},
@@ -144,6 +156,32 @@ class TestRoleManagementService(unittest.IsolatedAsyncioTestCase):
         self.mock_repo.role_name_exists.assert_not_called()
         self.mock_repo.create_role.assert_not_called()
 
+    async def test_create_role_invalid_when_delete_without_read(self):
+        result = await self.svc.create_role(
+            "Tester", _INVALID_PERMISSIONS_DELETE_NO_READ)
+        self.assertTrue(result.invalid)
+        self.mock_repo.role_name_exists.assert_not_called()
+        self.mock_repo.create_role.assert_not_called()
+
+    async def test_create_role_delete_with_read_is_valid(self):
+        self.mock_repo.create_role.return_value = 6
+        result = await self.svc.create_role(
+            "Tester", _VALID_PERMISSIONS_DELETE_WITH_READ)
+        self.assertFalse(result.invalid)
+        self.assertEqual(result.role_id, 6)
+        self.mock_repo.create_role.assert_awaited_once_with(
+            "Tester", [("test_cases", True, False, True)])
+
+    async def test_create_role_invalid_when_a_later_area_breaks_the_rule(
+            self):
+        """The rule is checked for every area, not just the first."""
+        permissions = _VALID_PERMISSIONS + [
+            {"area": "milestones", "can_read": False,
+             "can_add_modify": False, "can_delete": True}]
+        result = await self.svc.create_role("Tester", permissions)
+        self.assertTrue(result.invalid)
+        self.mock_repo.create_role.assert_not_called()
+
     async def test_create_role_invalid_when_area_repeated(self):
         result = await self.svc.create_role(
             "Tester", _DUPLICATE_AREA_PERMISSIONS)
@@ -174,6 +212,12 @@ class TestRoleManagementService(unittest.IsolatedAsyncioTestCase):
     async def test_update_role_invalid_permissions_skips_lookup(self):
         result = await self.svc.update_role(
             1, permissions=_INVALID_PERMISSIONS_NO_READ)
+        self.assertTrue(result.invalid)
+        self.mock_repo.get_role_by_id.assert_not_called()
+
+    async def test_update_role_invalid_when_delete_without_read(self):
+        result = await self.svc.update_role(
+            1, permissions=_INVALID_PERMISSIONS_DELETE_NO_READ)
         self.assertTrue(result.invalid)
         self.mock_repo.get_role_by_id.assert_not_called()
 

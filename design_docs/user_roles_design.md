@@ -133,6 +133,37 @@ A member with **no role assigned at all** sees the project shell and no
 content. That is a valid (if unusual) state, not an error - see §7 for why
 `project_members.role_id` is nullable rather than required.
 
+### 4.4 Invariant: Delete implies Read
+
+If `Delete` is granted, `Read` is granted and **cannot be revoked while
+`Delete` remains set** - the same rule as §4.1, for the same reason: a grant
+that lets someone act on things they cannot see makes no sense in the UI, and
+with enforcement on the request path (§9.5) it would be a real hole, because a
+delete-only role could still delete by id with a direct API call, blind. Like
+§4.1, it applies to a role's own grid and says nothing about the *effective*
+result once roles are combined (§8).
+
+Found in manual testing of the Add Role dialog (2026-10-16), where a role with
+only Delete ticked could be saved.
+
+Enforced where §4.1 is, except the database:
+
+- **UI:** ticking `Delete` auto-ticks `Read` and disables the `Read`
+  checkbox; unticking `Delete` re-enables it unless `Add/Modify` still holds
+  it.
+- **Server:** any grant with `can_delete = true AND can_read = false` is
+  rejected with `400`, on create and update alike.
+- **Schema: not yet.** The `CHECK` constraint on `role_permissions` still only
+  knows the §4.1 rule, so a caller writing to the database directly could
+  bypass this one. It should be extended to
+  `CHECK ((can_add_modify = 0 AND can_delete = 0) OR can_read = 1)` the next
+  time the identity schema changes, to avoid forcing a database rebuild for
+  this alone (there is no migration path before Beta, §12).
+
+Existing roles are not rewritten: a role saved before this rule with Delete but
+no Read keeps its grid until that grid is next saved, when the server will
+require Read to be ticked (a rename that sends no grid is unaffected).
+
 ## 5. Administration
 
 ### 5.1 The `is_administrator` flag
@@ -353,7 +384,9 @@ CREATE TABLE role_permissions (
     PRIMARY KEY (role_id, area),
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
 
-    -- Invariant from §4.1, enforced at the database level
+    -- Invariant from §4.1, enforced at the database level.
+    -- §4.4 (Delete implies Read) is enforced by the UI and the server only
+    -- for now; extend this CHECK the next time the schema changes.
     CHECK (can_add_modify = 0 OR can_read = 1)
 );
 
@@ -952,6 +985,7 @@ Settled during design discussion:
 | Add/Modify implies Read (locked) | Prevents nonsensical write-without-read states |
 | Delete means soft delete **for projects**; test cases and folders are hard-deleted (2026-10-15) | Soft delete needs a recently-deleted view, restore, sweeper and retention period; confirmations and the folder `409`/`cascade` refusal guard against accidental loss more simply |
 | Delete implies Restore | Restore destroys nothing, so gating it separately is backwards |
+| **Delete implies Read** (§4.4, 2026-10-16) | A delete-only role is meaningless in the UI and, once permissions are enforced, would allow blind deletes by id. Enforced in the UI and server now; the database `CHECK` waits for the next schema change so no rebuild is forced for it alone |
 | Data Administration grid **dropped** | Purge becomes a background task, so per-area hard-delete ticks are unnecessary |
 | Purge now is a **single** admin capability | Per-area purge granularity has no use case |
 | `is_administrator` gates admin panel access | Simple bootstrap; sub-grid deferred |
