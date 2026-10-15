@@ -1260,6 +1260,27 @@
                 }
               },
               "response": []
+            },
+            {
+              "name": "Get User Project Permissions",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{IDENTITY_SVC_URL}}/users/{{USER_UUID}}/projects/{{PROJECT_ID}}/permissions",
+                  "host": [
+                    "{{IDENTITY_SVC_URL}}"
+                  ],
+                  "path": [
+                    "users",
+                    "{{USER_UUID}}",
+                    "projects",
+                    "{{PROJECT_ID}}",
+                    "permissions"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         },

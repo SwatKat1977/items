@@ -16,7 +16,7 @@ detail. Keep it short and correct - update it when a rule changes.
 | `items/tool_cms_db_builder` | Builds a fresh CMS database |
 | `unit_tests/<service>` | Tests, one folder per service, each with an explicit `main.py` entry point |
 | `design_docs` | API contracts and design decisions (see below) |
-| `postman` | Postman collection (CMS, Gateway) |
+| `postman` | Postman collection (CMS, Identity, Gateway) |
 | `databases/*.LATEST.db` | The checked-in database files |
 
 ## Branches and pull requests
@@ -144,7 +144,8 @@ When a route, request or response changes, update in the **same branch**:
   full route table).
 - `design_docs/case_types_api.md` (or the matching contract) for CMS API
   changes.
-- The Postman collection. Make **targeted text edits** only; never
+- The Postman collection, for a route on **any** service (CMS, Identity or
+  Gateway; each has its own folder). Make **targeted text edits** only; never
   re-serialise the whole JSON file.
 
 ## Code style

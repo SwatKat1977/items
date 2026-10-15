@@ -110,6 +110,7 @@ _USERS_HANDLER_PATCHES = (
     "routes.users.AddUserProjectHandler",
     "routes.users.ModifyUserProjectHandler",
     "routes.users.RemoveUserProjectHandler",
+    "routes.users.GetUserProjectPermissionsHandler",
 )
 
 
@@ -120,7 +121,7 @@ def _patch_all_users_handlers(func):
     in the same order as ``_USERS_HANDLER_PATCHES`` reversed - the same
     order used throughout this class already (profile, list, get, create,
     modify, reset, change, list_projects, add_project, modify_project,
-    remove_project).
+    remove_project, project_permissions).
     """
     for target in _USERS_HANDLER_PATCHES:
         func = patch(target)(func)
@@ -145,12 +146,14 @@ class TestCreateUsersRoutes(unittest.IsolatedAsyncioTestCase):
     async def test_initialises_all_handlers_with_correct_args(
             self, mock_profile, mock_list, mock_get, mock_create,
             mock_modify, mock_reset, mock_change, mock_list_projects,
-            mock_add_project, mock_modify_project, mock_remove_project):
+            mock_add_project, mock_modify_project, mock_remove_project,
+            mock_project_permissions):
         create_users_routes(self.mock_logger, self.mock_state, self.mock_config)
         for mock_cls in (mock_profile, mock_list, mock_get, mock_create,
                          mock_modify, mock_reset, mock_change,
                          mock_list_projects, mock_add_project,
-                         mock_modify_project, mock_remove_project):
+                         mock_modify_project, mock_remove_project,
+                         mock_project_permissions):
             mock_cls.assert_called_once_with(
                 self.mock_logger, self.mock_state, self.mock_config)
 
@@ -366,7 +369,7 @@ class TestCreateUsersRoutes(unittest.IsolatedAsyncioTestCase):
     async def test_route_handler_calls_remove_user_project(
             self, _profile, _list, _get, _create, _modify, _reset,
             _change, _list_projects, _add_project, _modify_project,
-            mock_remove_project_cls):
+            mock_remove_project_cls, *_rest):
         mock_handler = MagicMock()
         mock_handler.remove_user_project = AsyncMock(
             return_value=self._ok_response())
@@ -381,6 +384,41 @@ class TestCreateUsersRoutes(unittest.IsolatedAsyncioTestCase):
             await client.delete("/users/1/projects/5")
 
         mock_handler.remove_user_project.assert_called_once()
+
+    @_patch_all_users_handlers
+    async def test_route_handler_calls_get_user_project_permissions(
+            self, _profile, _list, _get, _create, _modify, _reset,
+            _change, _list_projects, _add_project, _modify_project,
+            _remove_project, mock_project_permissions_cls):
+        mock_handler = MagicMock()
+        mock_handler.get_user_project_permissions = AsyncMock(
+            return_value=self._ok_response({"project_id": 5, "areas": {}}))
+        mock_project_permissions_cls.return_value = mock_handler
+
+        app = quart.Quart(__name__)
+        bp = create_users_routes(self.mock_logger, self.mock_state,
+                                 self.mock_config)
+        app.register_blueprint(bp)
+
+        async with app.test_client() as client:
+            response = await client.get("/users/abc/projects/5/permissions")
+
+        self.assertEqual(response.status_code, 200)
+        mock_handler.get_user_project_permissions.assert_awaited_once_with(
+            user_id="abc", project_id=5)
+
+    @_patch_all_users_handlers
+    async def test_permissions_route_rejects_non_integer_project_id(
+            self, *_mocks):
+        app = quart.Quart(__name__)
+        bp = create_users_routes(self.mock_logger, self.mock_state,
+                                 self.mock_config)
+        app.register_blueprint(bp)
+
+        async with app.test_client() as client:
+            response = await client.get("/users/abc/projects/x/permissions")
+
+        self.assertEqual(response.status_code, 404)
 
 
 class TestCreateRolesRoutes(unittest.IsolatedAsyncioTestCase):
