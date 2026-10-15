@@ -65,13 +65,16 @@ def _permissions_are_valid(permissions: list[dict]) -> bool:
 
     Returns:
         False if any entry grants Add/Modify without Read (§4.1 of
-        user_roles_design.md), or if the same area appears more than once
-        (would otherwise violate the ``(role_id, area)`` primary key at
-        the database layer with a raw, unhelpful error). True otherwise.
+        user_roles_design.md), or Delete without Read (§4.4: a role that
+        could delete what it cannot see would let a caller delete by id
+        blind), or if the same area appears more than once (would otherwise
+        violate the ``(role_id, area)`` primary key at the database layer
+        with a raw, unhelpful error). True otherwise.
     """
     seen_areas = set()
     for entry in permissions:
-        if entry["can_add_modify"] and not entry["can_read"]:
+        if (entry["can_add_modify"] or entry["can_delete"]) \
+                and not entry["can_read"]:
             return False
         if entry["area"] in seen_areas:
             return False
@@ -114,7 +117,8 @@ class RoleCreateResult:
         available: False when the service is unavailable.
         conflict:  True when the role name is already in use.
         invalid:   True when the supplied grid violates the
-                   Add/Modify-implies-Read invariant, or repeats an area.
+                   Add/Modify-implies-Read or Delete-implies-Read
+                   invariant, or repeats an area.
         role_id:   The newly created role's id on success.
     """
     available: bool = True
@@ -132,7 +136,8 @@ class RoleUpdateResult:
         found:     False when no role exists with the requested id.
         conflict:  True when renaming to a name already in use.
         invalid:   True when the supplied grid violates the
-                   Add/Modify-implies-Read invariant, or repeats an area.
+                   Add/Modify-implies-Read or Delete-implies-Read
+                   invariant, or repeats an area.
         success:   True when the update was applied.
     """
     available: bool = True
@@ -245,7 +250,8 @@ class RoleManagementService:
         Returns:
             A :class:`RoleCreateResult`. ``conflict`` is True if the name
             is already in use. ``invalid`` is True if the grid violates
-            Add/Modify-implies-Read or repeats an area.
+            Add/Modify-implies-Read or Delete-implies-Read, or repeats an
+            area.
         """
         if not self._state.is_available():
             return RoleCreateResult(available=False)

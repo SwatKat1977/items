@@ -56,8 +56,8 @@ class CreateRoleHandler(BaseApiRoute):
 
         Returns:
             201 with ``{"id": <new_role_id>}`` on success.
-            400 if the supplied grid violates Add/Modify-implies-Read, or
-            repeats the same area more than once.
+            400 if the supplied grid violates Add/Modify-implies-Read or
+            Delete-implies-Read, or repeats the same area more than once.
             409 if the role name is already in use.
             503 if the service is unavailable.
         """
@@ -75,8 +75,8 @@ class CreateRoleHandler(BaseApiRoute):
         if result.invalid:
             return Response(
                 json.dumps({"error": "Invalid permission grid - "
-                           "Add/Modify requires Read, and each area may "
-                           "appear at most once"}),
+                           "Add/Modify and Delete require Read, and each "
+                           "area may appear at most once"}),
                 status=HTTPStatus.BAD_REQUEST,
                 content_type="application/json")
 
