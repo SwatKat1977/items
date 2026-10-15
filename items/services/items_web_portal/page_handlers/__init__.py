@@ -17,6 +17,7 @@ limitations under the License.
 import quart
 from items.services.items_web_portal.page_handler_injections import (
     PageHandlerInjections)
+from items.shared import __version__
 from .admin import create_admin_page_handlers
 from .auth import create_auth_page_handlers
 from .projects import create_projects_page_handlers
@@ -40,6 +41,21 @@ def create_page_handlers(injections: PageHandlerInjections) -> quart.Blueprint:
         handler routes.
     """
     routes = quart.Blueprint("page_handler_routes", __name__)
+
+    @routes.app_url_defaults
+    def add_static_version(endpoint: str, values: dict) -> None:
+        """Cache-bust static assets by adding the version to their URLs.
+
+        Browsers cache the Portal's scripts and stylesheets, so after an
+        upgrade they could keep running old code against new pages. Adding
+        ``?v=<version>`` makes every release (and every alpha) a new URL.
+
+        Args:
+            endpoint: Endpoint ``url_for`` is building a URL for.
+            values: URL values, updated in place.
+        """
+        if endpoint == "static":
+            values.setdefault("v", __version__)
 
     # Admin pages
     routes.register_blueprint(create_admin_page_handlers(injections,
