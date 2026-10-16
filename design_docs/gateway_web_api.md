@@ -36,12 +36,27 @@ Auth levels used in the route table:
 | **None** | No session needed | - |
 | **Session** | Any valid session | 401 |
 | **Member** | Administrator, or a member of the project named in the request (`project_id` path argument, else `project_id` query parameter) | 401, or 403 if not a member |
+| **Permission: *area* *action*** | The caller holds that permission on the project named in the request (`project_id` path argument, else `project_id` query parameter), as answered by the Identity service on every request. For example *Test Cases Read*, *Test Cases Add/Modify*, *Test Cases Delete*. | 401; 400 if there is no usable `project_id`; 403 if not granted; 500 if Identity cannot be reached or answers unexpectedly |
 | **Admin** | Administrator session | 401, or 403 if not an administrator |
 
 - 401 body: `{"error": "Unauthorized"}`. 403 body: `{"error": "Forbidden"}`.
-- Administrators bypass the project-membership check.
+- Administrators bypass the project-membership check on **Member** routes.
 - If a **Member** route is called with no parseable `project_id`, the check is
   skipped and the handler reports the missing parameter itself.
+- **Permission** routes behave differently on purpose (see section 9.5 of
+  `user_roles_design.md`):
+  - Nothing is cached: a change to a role, a membership or an account applies
+    on the very next request, with no re-login.
+  - The check never skips. A missing or non-integer `project_id` is a `400`
+    `{"error": "project_id query parameter is required"}` (or `... must be an
+    integer`) before anything else happens.
+  - Administrators are not special-cased; Identity grants them everything.
+  - It fails closed: only an explicit grant from Identity lets a request
+    through. If Identity cannot be reached, or answers with an error or
+    anything unexpected, the route returns `500`
+    `{"error": "Identity service unavailable"}` and never allows the request.
+  - A user who is not a member of the project, a member with no role, and a
+    disabled account all simply hold no permissions, so get `403`.
 
 ### 1.2 Response shapes
 
@@ -165,23 +180,26 @@ admin-only. Contract, schemas and invariants: `case_types_api.md`.
 
 | Method | Path | Auth | Upstream | Shape | Notes |
 |---|---|---|---|---|---|
-| `GET` | `/web/<project_id>/testcases` | Member | CMS `testcases?project_id=` | mixed | |
-| `GET` | `/web/testcases/<case_id>?project_id=` | Member | CMS `testcases/<id>?project_id=` | mixed | `project_id` query parameter is required. |
-| `POST` | `/web/<project_id>/testcases` | Member | CMS `testcases` | pass-through | Body: `folder_id` (int or null), `name`, `description`, optional `case_type_id` (omitted = the current default type). The project comes from the path only: the body must not contain a `project_id` (400). 200 `{"testcase_id": n}`; 404 unknown project, folder or case type; 409 duplicate sibling name. |
-| `PATCH` | `/web/testcases/<case_id>?project_id=` | Member | CMS `testcases/<id>?project_id=` | pass-through | Body: `name`, `description`, optional `case_type_id` (omitted = unchanged). `project_id` is required (400 if missing); 404 if the test case is in another project, or the type is unknown; 409 duplicate sibling name. |
-| `DELETE` | `/web/testcases/<case_id>?project_id=` | Member | CMS `testcases/<id>?project_id=` | pass-through | `project_id` is required (400 if missing); 404 if the test case is in another project. |
+| `GET` | `/web/<project_id>/testcases` | Test Cases Read | CMS `testcases?project_id=` | mixed | |
+| `GET` | `/web/testcases/<case_id>?project_id=` | Test Cases Read | CMS `testcases/<id>?project_id=` | mixed | `project_id` query parameter is required. |
+| `POST` | `/web/<project_id>/testcases` | Test Cases Add/Modify | CMS `testcases` | pass-through | Body: `folder_id` (int or null), `name`, `description`, optional `case_type_id` (omitted = the current default type). The project comes from the path only: the body must not contain a `project_id` (400). 200 `{"testcase_id": n}`; 404 unknown project, folder or case type; 409 duplicate sibling name. |
+| `PATCH` | `/web/testcases/<case_id>?project_id=` | Test Cases Add/Modify | CMS `testcases/<id>?project_id=` | pass-through | Body: `name`, `description`, optional `case_type_id` (omitted = unchanged). `project_id` is required (400 if missing); 404 if the test case is in another project, or the type is unknown; 409 duplicate sibling name. |
+| `DELETE` | `/web/testcases/<case_id>?project_id=` | Test Cases Delete | CMS `testcases/<id>?project_id=` | pass-through | `project_id` is required (400 if missing); 404 if the test case is in another project. |
 
-Writes are authorised by project membership only. The per-area role grid
-(Test Cases: read / add-modify / delete, see `user_roles_design.md`) is not
-enforced yet, so a member whose role is read-only can still write. The member
-decorator skips its check when `project_id` is missing or not an integer, so
-the write handlers reject that with a 400 themselves.
+These routes enforce the per-area role grid (Test Cases: Read / Add/Modify /
+Delete, see `user_roles_design.md` section 9.5): Read to browse, Add/Modify to
+create or edit, Delete to delete. A read-only member can browse but any write
+returns `403`. The check is made with the Identity service on every request,
+so changing a role or membership takes effect immediately. See the
+**Permission** level in section 1.1 for the full rules, including the `400` for
+a missing `project_id` and the `500` if Identity cannot be asked.
 
 ### 2.9 Sections (folders)
 
 Sections are read through the test case list (`GET /web/<project_id>/testcases`
 returns the whole folder tree), so only the writes are routed. Authorised by
-project membership only, like the test case writes. The CMS decides what the
+project membership only for now (the per-area role grid is not yet enforced
+on these; that follows the test case routes, ITEMS-14). The CMS decides what the
 `cascade` value means and rejects anything it does not understand.
 
 | Method | Path | Auth | Upstream | Shape | Notes |

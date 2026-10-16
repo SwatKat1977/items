@@ -41,7 +41,8 @@ _VALID_FIELD_BODY = {
     "applies_to_all_projects": True,
 }
 
-# Every route in this file is exercised as an authenticated administrator.
+# Every route in this file is exercised as an authenticated administrator
+# (granted everything by a fake Identity, for the routes that ask it).
 # The point of this test class is coverage of the route-registration
 # closures themselves - whether a given route *should* require a session or
 # administrator rights is covered separately in
@@ -67,13 +68,24 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
         sessions = Sessions()
         await sessions.add_session(
             "admin@x.com", _ADMIN_TOKEN, AccountLogonType.BASIC,
-            is_administrator=True)
+            is_administrator=True, user_id="admin-uuid")
         configuration = MagicMock()
         configuration.apis_cms_svc = "http://cms/"
         configuration.apis_identity_svc = "http://identity/"
         configuration.general_api_signing_secret = "secret"
         rest_client = AsyncMock()
-        rest_client.get.return_value = ApiResponse(status_code=200, body={})
+
+        async def get(url, *_args, **_kwargs):
+            # The test case routes ask Identity what the caller may do before
+            # they do anything else; grant everything so they are reachable.
+            if url.startswith("http://identity/") and url.endswith(
+                    "/permissions"):
+                grant = {"read": True, "add_modify": True, "delete": True}
+                return ApiResponse(status_code=200, body={
+                    "areas": {"test_cases": grant}})
+            return ApiResponse(status_code=200, body={})
+
+        rest_client.get.side_effect = get
         rest_client.post.return_value = ApiResponse(status_code=200, body={})
         rest_client.put.return_value = ApiResponse(status_code=200, body={})
         rest_client.patch.return_value = ApiResponse(status_code=200, body={})

@@ -15,7 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from quart import Blueprint
-from items.services.items_gateway.auth_decorators import require_project_member
+from items.services.items_gateway.auth_decorators import (
+    require_project_permission)
 from items.services.items_gateway.route_injections import RouteInjections
 from items.services.items_gateway.routes.web.testcases.create_testcase_handler \
     import CreateTestcaseHandler
@@ -27,6 +28,8 @@ from items.services.items_gateway.routes.web.testcases.get_testcases_handler \
     import GetTestcasesHandler
 from items.services.items_gateway.routes.web.testcases.modify_testcase_handler \
     import ModifyTestcaseHandler
+from items.shared.permission_action import PermissionAction
+from items.shared.permission_area import PermissionArea
 
 
 def create_testcases_routes(injections: RouteInjections) -> Blueprint:
@@ -37,36 +40,39 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
     handlers, registers the available endpoints, and logs the registered routes
     during application startup.
 
-    Every route requires a valid session and membership of the project the
-    testcase(s) belong to (``@require_project_member``) - any authenticated
-    member of that project can browse and edit its testcases, not just
-    admins, who bypass the membership check entirely.
+    Every route requires a valid session and the **Test Cases** permission
+    that matches what it does, checked with the Identity service on every
+    request (``@require_project_permission``, see section 9.5 of
+    ``design_docs/user_roles_design.md``): Read to browse, Add/Modify to
+    create or edit, Delete to delete. A member whose role does not grant it
+    gets a 403, and so does a user who is not a member at all (they have an
+    empty grid). Administrators are not special-cased here: Identity grants
+    them everything. Because nothing is cached, a change to a role or
+    membership applies on the very next request.
 
-    Writes are authorised by membership only for now: the per-area role
-    grid (Test Cases: read / add-modify / delete) is not enforced anywhere
-    yet, and the reads already behave the same way. A member whose role is
-    read-only can therefore still write until that enforcement exists.
+    The checks fail closed: if Identity cannot be reached or answers
+    unexpectedly the route returns a 500, never access.
 
     The ``project_id`` of a route that has no project in its path
     (``GET``, ``PATCH`` and ``DELETE /web/testcases/<id>``) is a query
-    parameter that membership is checked against before ever calling CMS.
+    parameter that the permission is checked against before ever calling CMS.
     That's safe despite being client-supplied: CMS independently verifies the
     testcase actually belongs to the stated project and 404s otherwise, so a
-    caller can't use a project they belong to as a lie to reach a testcase in
-    one they don't. The decorator skips its check when the parameter is
-    missing or malformed, so the write handlers reject that with a 400
-    themselves.
+    caller can't use a project they hold the permission on as a lie to reach a
+    testcase in one they don't. Unlike the old membership check, the
+    decorator never skips: a missing or malformed ``project_id`` is a 400
+    before anything else happens.
 
-    Registered routes:
-        - GET /<project_id>/testcases:
+    Registered routes (permission in brackets):
+        - GET /<project_id>/testcases [Read]:
             Retrieve all testcases belonging to the specified project.
-        - POST /<project_id>/testcases:
+        - POST /<project_id>/testcases [Add/Modify]:
             Create a testcase in the specified project.
-        - GET /testcases/<case_id>?project_id=:
+        - GET /testcases/<case_id>?project_id= [Read]:
             Retrieve the details of a specific testcase.
-        - PATCH /testcases/<case_id>?project_id=:
+        - PATCH /testcases/<case_id>?project_id= [Add/Modify]:
             Update a testcase's name, description and optionally its type.
-        - DELETE /testcases/<case_id>?project_id=:
+        - DELETE /testcases/<case_id>?project_id= [Delete]:
             Delete a testcase.
 
     Args:
@@ -108,7 +114,9 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
 
     @routes.route('/<int:project_id>/testcases',
                   methods=['GET'])
-    @require_project_member(injections.sessions)
+    @require_project_permission(
+        injections, PermissionArea.TEST_CASES,
+        PermissionAction.READ)
     async def testcases_details_request(project_id: int):
         return await handler_get_testcases.get_testcases(project_id)
 
@@ -118,7 +126,9 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
 
     @routes.route('/testcases/<int:case_id>',
                   methods=['GET'])
-    @require_project_member(injections.sessions)
+    @require_project_permission(
+        injections, PermissionArea.TEST_CASES,
+        PermissionAction.READ)
     async def get_case_request(case_id: int):
         # pylint: disable=unused-variable
         return await handler_get_testcase.get_testcase(case_id)
@@ -128,7 +138,9 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
 
     @routes.route('/<int:project_id>/testcases',
                   methods=['POST'])
-    @require_project_member(injections.sessions)
+    @require_project_permission(
+        injections, PermissionArea.TEST_CASES,
+        PermissionAction.ADD_MODIFY)
     async def create_testcase_request(project_id: int):
         return await handler_create_testcase.create_testcase(project_id)
 
@@ -138,7 +150,9 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
 
     @routes.route('/testcases/<int:case_id>',
                   methods=['PATCH'])
-    @require_project_member(injections.sessions)
+    @require_project_permission(
+        injections, PermissionArea.TEST_CASES,
+        PermissionAction.ADD_MODIFY)
     async def modify_testcase_request(case_id: int):
         return await handler_modify_testcase.modify_testcase(case_id)
 
@@ -148,7 +162,9 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
 
     @routes.route('/testcases/<int:case_id>',
                   methods=['DELETE'])
-    @require_project_member(injections.sessions)
+    @require_project_permission(
+        injections, PermissionArea.TEST_CASES,
+        PermissionAction.DELETE)
     async def delete_testcase_request(case_id: int):
         return await handler_delete_testcase.delete_testcase(case_id)
 
