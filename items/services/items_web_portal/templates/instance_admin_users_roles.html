@@ -237,20 +237,30 @@
 </div>
 
 <!-- Add / Edit role modal -->
+{# After a failed save the server renders it open (data-auto-open) with what
+   was submitted and the error inside it, so the person can fix the problem
+   and save again instead of retyping the whole grid. #}
+{% set editing_role = role_form and role_form.role_id is not none %}
 <div class="modal fade" id="roleModal" tabindex="-1"
-     aria-labelledby="roleModalLabel" aria-hidden="true">
+     aria-labelledby="roleModalLabel" aria-hidden="true"
+     {% if role_form %}data-auto-open="true"{% endif %}>
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
-      <form id="roleForm" method="POST" action="/admin/users_roles/roles">
+      <form id="roleForm" method="POST"
+            action="/admin/users_roles/roles{{ '/' ~ role_form.role_id ~ '/modify' if editing_role else '' }}">
         <div class="modal-header">
-          <h5 class="modal-title" id="roleModalLabel">Add Role</h5>
+          <h5 class="modal-title" id="roleModalLabel">{{ 'Edit Role' if editing_role else 'Add Role' }}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
+          {% if role_form and role_form.error %}
+          <div class="alert alert-danger" role="alert" id="role-form-error">{{ role_form.error }}</div>
+          {% endif %}
           <div class="mb-3">
             <label for="role-name" class="form-label">Name</label>
             <input type="text" class="form-control" id="role-name" name="name"
-                   required placeholder="e.g. Tester, Lead or Guest">
+                   required placeholder="e.g. Tester, Lead or Guest"
+                   value="{{ role_form.name if role_form else '' }}">
           </div>
           <table class="table table-sm role-permissions-table">
             <thead>
@@ -263,32 +273,36 @@
             </thead>
             <tbody>
             {% for area_value, area_label in permission_areas.items() %}
+              {% set submitted = role_form.permissions_by_area.get(area_value, {}) if role_form else {} %}
               <tr>
                 <td>{{ area_label }}</td>
                 <td class="text-center">
                   <input class="form-check-input role-perm-read" type="checkbox"
                          id="role-perm-{{ area_value }}-read"
                          name="perm_{{ area_value }}_read"
-                         data-area="{{ area_value }}">
+                         data-area="{{ area_value }}"
+                         {% if submitted.can_read %}checked{% endif %}>
                 </td>
                 <td class="text-center">
                   <input class="form-check-input role-perm-add-modify" type="checkbox"
                          id="role-perm-{{ area_value }}-add-modify"
                          name="perm_{{ area_value }}_add_modify"
-                         data-area="{{ area_value }}">
+                         data-area="{{ area_value }}"
+                         {% if submitted.can_add_modify %}checked{% endif %}>
                 </td>
                 <td class="text-center">
-                  <input class="form-check-input" type="checkbox"
+                  <input class="form-check-input role-perm-delete" type="checkbox"
                          id="role-perm-{{ area_value }}-delete"
                          name="perm_{{ area_value }}_delete"
-                         data-area="{{ area_value }}">
+                         data-area="{{ area_value }}"
+                         {% if submitted.can_delete %}checked{% endif %}>
                 </td>
               </tr>
             {% endfor %}
             </tbody>
           </table>
           <div class="form-text">
-            Ticking Add/Modify also grants Read - the two cannot be
+            Ticking Add/Modify or Delete also grants Read - they cannot be
             separated.
           </div>
         </div>

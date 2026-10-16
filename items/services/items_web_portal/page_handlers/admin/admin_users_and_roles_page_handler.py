@@ -139,25 +139,27 @@ class AdminUsersAndRolesPageHandler(PortalPageHandler):
         """Create a new role from the submitted form.
 
         Returns:
-            The re-rendered users and roles page, showing an error banner
-            if the gateway/identity rejects the request.
+            The re-rendered users and roles page. If the request is
+            rejected, the Add Role dialog is reopened with what was typed
+            and the error shown inside it, so it can be corrected and saved
+            again.
         """
         form = await request.form
         name = form.get("name", "").strip()
+        permissions = self._parse_permissions_from_form(form)
 
         if not name:
-            return await self._render(
-                error_msg_str="Role name is required.", active_tab="roles")
+            return await self._render_role_form_error(
+                "Role name is required.", None, name, permissions)
 
-        body = {"name": name,
-                "permissions": self._parse_permissions_from_form(form)}
+        body = {"name": name, "permissions": permissions}
 
         url = f"{self._config.apis_gateway_svc}web/roles"
         response: ApiResponse = await self._rest_client.post(
             url, json_data=body)
 
-        return await self._render_after_write(
-            response, "role_add", name=name)
+        return await self._render_after_role_write(
+            response, "role_add", None, name, permissions)
 
     @require_administrator
     async def role_modify(self, role_id: int):
@@ -167,25 +169,27 @@ class AdminUsersAndRolesPageHandler(PortalPageHandler):
             role_id: The role's primary key (from the URL).
 
         Returns:
-            The re-rendered users and roles page, showing an error banner
-            if the gateway/identity rejects the request.
+            The re-rendered users and roles page. If the request is
+            rejected, the Edit Role dialog is reopened for the same role
+            with what was typed and the error shown inside it, so it can be
+            corrected and saved again.
         """
         form = await request.form
         name = form.get("name", "").strip()
+        permissions = self._parse_permissions_from_form(form)
 
         if not name:
-            return await self._render(
-                error_msg_str="Role name is required.", active_tab="roles")
+            return await self._render_role_form_error(
+                "Role name is required.", role_id, name, permissions)
 
-        body = {"name": name,
-                "permissions": self._parse_permissions_from_form(form)}
+        body = {"name": name, "permissions": permissions}
 
         url = f"{self._config.apis_gateway_svc}web/roles/{role_id}"
         response: ApiResponse = await self._rest_client.patch(
             url, json_data=body)
 
-        return await self._render_after_write(
-            response, "role_modify", name=name)
+        return await self._render_after_role_write(
+            response, "role_modify", role_id, name, permissions)
 
     @require_administrator
     async def role_delete(self, role_id: int):
@@ -302,6 +306,64 @@ class AdminUsersAndRolesPageHandler(PortalPageHandler):
                                   success_dismiss_ms=success_dismiss_ms,
                                   active_tab=active_tab)
 
+    async def _render_after_role_write(self, response: ApiResponse,
+                                       action: str,
+                                       role_id: Optional[int],
+                                       name: str,
+                                       permissions: list[dict]):
+        """Finish a role add or edit: confirm it, or reopen the dialog.
+
+        Success is handled like any other write. A failure does not use the
+        page-level banner: the dialog is reopened with what was submitted
+        and the error shown inside it, so a long permission grid is not
+        thrown away over (say) a duplicate name.
+
+        Args:
+            response: The gateway response for the write.
+            action: ``"role_add"`` or ``"role_modify"``.
+            role_id: The role being edited, or ``None`` for an add.
+            name: The submitted role name.
+            permissions: The submitted permission grid, as sent to the
+                gateway.
+
+        Returns:
+            The re-rendered users and roles page.
+        """
+        if response.status_code in (HTTPStatus.OK, HTTPStatus.CREATED):
+            return await self._render_after_write(
+                response, action, name=name)
+
+        error_msg_str = self._extract_error(response)
+        self._logger.warning(
+            "%s failed (status %s): %s",
+            action, response.status_code, error_msg_str)
+        return await self._render_role_form_error(
+            error_msg_str, role_id, name, permissions)
+
+    async def _render_role_form_error(self, error_msg_str: str,
+                                      role_id: Optional[int],
+                                      name: str,
+                                      permissions: list[dict]):
+        """Render the Roles tab with the role dialog reopened on an error.
+
+        Args:
+            error_msg_str: The message to show inside the dialog.
+            role_id: The role being edited, or ``None`` for an add.
+            name: The role name to put back in the dialog.
+            permissions: The permission grid to put back in the dialog.
+
+        Returns:
+            The rendered users and roles page.
+        """
+        return await self._render(
+            active_tab="roles",
+            role_form={
+                "role_id": role_id,
+                "name": name,
+                "permissions_by_area": {p["area"]: p for p in permissions},
+                "error": error_msg_str,
+            })
+
     @staticmethod
     def _extract_error(response: ApiResponse) -> str:
         """Extract a human-readable error message from a gateway response."""
@@ -309,10 +371,12 @@ class AdminUsersAndRolesPageHandler(PortalPageHandler):
             return str(response.body["error"])
         return "The request could not be completed. Please try again."
 
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     async def _render(self, error_msg_str: Optional[str] = None,
                       success_msg_str: Optional[str] = None,
                       success_dismiss_ms: int = _DEFAULT_DISMISS_MS,
-                      active_tab: str = "users"):
+                      active_tab: str = "users",
+                      role_form: Optional[dict] = None):
         """Fetch users and pending invites, then render the page.
 
         Args:
@@ -324,6 +388,11 @@ class AdminUsersAndRolesPageHandler(PortalPageHandler):
             active_tab: Which tab ("users" or "roles") should be shown as
                 active on render - so a role write lands back on Roles
                 rather than always resetting to the default Users tab.
+            role_form: When set, the Add/Edit Role dialog is rendered open
+                with these values: ``{"role_id", "name",
+                "permissions_by_area", "error"}``. ``role_id`` is ``None``
+                for an add. Used to put back what was typed after a failed
+                save.
 
         Returns:
             The rendered users and roles page response.
@@ -354,6 +423,7 @@ class AdminUsersAndRolesPageHandler(PortalPageHandler):
             roles=roles,
             permission_areas=self._AREA_LABELS,
             active_tab=active_tab,
+            role_form=role_form,
             error_msg_str=error_msg_str,
             success_msg_str=success_msg_str,
             success_dismiss_ms=success_dismiss_ms)

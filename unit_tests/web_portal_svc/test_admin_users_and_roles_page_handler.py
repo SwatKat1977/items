@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import re
 import unittest
 from unittest.mock import AsyncMock, MagicMock
 from http import HTTPStatus
@@ -53,6 +54,20 @@ def _metadata():
     metadata = MagicMock()
     metadata.instance_name = "INSTANCE"
     return metadata
+
+
+def _input_tag(text: str, element_id: str) -> str:
+    """The whole ``<input ...>`` tag with this id, as rendered."""
+    match = re.search(rf'<input[^>]*id="{element_id}"[^>]*>', text)
+    assert match, f"no input with id {element_id!r} on the page"
+    return match.group(0)
+
+
+def _role_modal(text: str) -> str:
+    """The rendered Add/Edit Role modal, from its opening tag to the form's
+    end, so assertions cannot be satisfied by text elsewhere on the page."""
+    start = text.index('id="roleModal"')
+    return text[start:text.index("</form>", start)]
 
 
 class TestUsersAndRolesRead(unittest.IsolatedAsyncioTestCase):
@@ -584,6 +599,82 @@ class TestRoleAdd(unittest.IsolatedAsyncioTestCase):
         self.assertIn(
             'tab-pane fade show active" id="roles-tab-pane"', text)
 
+    # --- a failed save keeps what was typed ---------------------------
+
+    async def _post_rejected(self, form, error="Role name already in use"):
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID,
+            ApiResponse(status_code=HTTPStatus.CONFLICT,
+                        body={"error": error})]
+        response = await self._post(form)
+        return await response.get_data(as_text=True)
+
+    async def test_failed_save_reopens_the_dialog(self):
+        text = await self._post_rejected({"name": "Tester"})
+        self.assertIn('data-auto-open="true"', text)
+
+    async def test_failed_save_shows_the_error_inside_the_dialog(self):
+        text = await self._post_rejected({"name": "Tester"})
+        modal = _role_modal(text)
+        self.assertIn('id="role-form-error"', modal)
+        self.assertIn("Role name already in use", modal)
+
+    async def test_failed_save_shows_the_error_only_once(self):
+        """Not also as the page banner above the tabs."""
+        text = await self._post_rejected({"name": "Tester"})
+        self.assertEqual(text.count("Role name already in use"), 1)
+
+    async def test_failed_save_keeps_the_typed_name(self):
+        text = await self._post_rejected({"name": "Tester"})
+        self.assertIn('value="Tester"', _input_tag(text, "role-name"))
+
+    async def test_failed_save_escapes_the_typed_name(self):
+        text = await self._post_rejected({"name": '"><script>x</script>'})
+        self.assertNotIn("<script>x</script>", text)
+
+    async def test_failed_save_keeps_the_ticked_boxes(self):
+        text = await self._post_rejected({
+            "name": "Tester",
+            "perm_test_cases_read": "on",
+            "perm_test_cases_delete": "on",
+            "perm_milestones_read": "on",
+        })
+        for ticked in ("role-perm-test_cases-read",
+                       "role-perm-test_cases-delete",
+                       "role-perm-milestones-read"):
+            self.assertIn("checked", _input_tag(text, ticked), ticked)
+        for unticked in ("role-perm-test_cases-add-modify",
+                         "role-perm-milestones-add-modify",
+                         "role-perm-milestones-delete",
+                         "role-perm-test_runs-read"):
+            self.assertNotIn("checked", _input_tag(text, unticked), unticked)
+
+    async def test_failed_add_reopens_as_an_add(self):
+        text = await self._post_rejected({"name": "Tester"})
+        modal = _role_modal(text)
+        self.assertIn('action="/admin/users_roles/roles"', modal)
+        self.assertIn(">Add Role<", modal)
+
+    async def test_missing_name_reopens_the_dialog_with_the_grid(self):
+        response = await self._post({"perm_test_cases_read": "on"})
+        text = await response.get_data(as_text=True)
+        modal = _role_modal(text)
+        self.assertIn('data-auto-open="true"', text)
+        self.assertIn("Role name is required", modal)
+        self.assertIn("checked", _input_tag(text, "role-perm-test_cases-read"))
+
+    async def test_success_does_not_reopen_the_dialog(self):
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID,
+            ApiResponse(status_code=HTTPStatus.CREATED, body={"id": 1})]
+        response = await self._post({
+            "name": "Tester", "perm_test_cases_read": "on"})
+        text = await response.get_data(as_text=True)
+        self.assertNotIn("data-auto-open", text)
+        self.assertNotIn('id="role-form-error"', text)
+        self.assertNotIn("value=\"Tester\"", _input_tag(text, "role-name"))
+        self.assertNotIn("checked", _input_tag(text, "role-perm-test_cases-read"))
+
 
 class TestRoleModify(unittest.IsolatedAsyncioTestCase):
     """POST /admin/users_roles/roles/<id>/modify"""
@@ -663,6 +754,70 @@ class TestRoleModify(unittest.IsolatedAsyncioTestCase):
         text = await response.get_data(as_text=True)
         self.assertIn(
             'tab-pane fade show active" id="roles-tab-pane"', text)
+
+    # --- a failed save keeps what was typed ---------------------------
+
+    async def _post_rejected(self, form, role_id=9,
+                             status=HTTPStatus.CONFLICT,
+                             error="Role name already in use"):
+        self.mock_rest_client.patch.return_value = ApiResponse(
+            status_code=status, body={"error": error})
+        response = await self._post(form, role_id=role_id)
+        return await response.get_data(as_text=True)
+
+    async def test_failed_edit_reopens_as_an_edit_of_the_same_role(self):
+        text = await self._post_rejected({"name": "Lead"}, role_id=9)
+        modal = _role_modal(text)
+        self.assertIn('data-auto-open="true"', text)
+        self.assertIn('action="/admin/users_roles/roles/9/modify"', modal)
+        self.assertIn(">Edit Role<", modal)
+
+    async def test_failed_edit_shows_the_error_inside_the_dialog_once(self):
+        text = await self._post_rejected({"name": "Lead"})
+        self.assertIn("Role name already in use", _role_modal(text))
+        self.assertEqual(text.count("Role name already in use"), 1)
+
+    async def test_failed_edit_keeps_the_typed_name_and_ticks(self):
+        text = await self._post_rejected({
+            "name": "Lead renamed",
+            "perm_test_cases_read": "on",
+            "perm_test_cases_add_modify": "on",
+        })
+        self.assertIn('value="Lead renamed"', _input_tag(text, "role-name"))
+        self.assertIn("checked", _input_tag(text, "role-perm-test_cases-read"))
+        self.assertIn(
+            "checked", _input_tag(text, "role-perm-test_cases-add-modify"))
+        self.assertNotIn(
+            "checked", _input_tag(text, "role-perm-test_cases-delete"))
+
+    async def test_rejected_grid_keeps_the_ticks_so_it_can_be_fixed(self):
+        """The Identity rule (Delete needs Read) comes back as a 400: the
+        dialog must reopen with the offending grid still there."""
+        text = await self._post_rejected(
+            {"name": "Lead", "perm_test_cases_delete": "on"},
+            status=HTTPStatus.BAD_REQUEST,
+            error="Invalid permission grid - Add/Modify and Delete "
+                  "require Read")
+        self.assertIn("require Read", _role_modal(text))
+        self.assertIn(
+            "checked", _input_tag(text, "role-perm-test_cases-delete"))
+
+    async def test_missing_name_reopens_as_an_edit_with_the_grid(self):
+        response = await self._post(
+            {"perm_test_cases_read": "on"}, role_id=9)
+        text = await response.get_data(as_text=True)
+        modal = _role_modal(text)
+        self.assertIn("Role name is required", modal)
+        self.assertIn('action="/admin/users_roles/roles/9/modify"', modal)
+        self.assertIn("checked", _input_tag(text, "role-perm-test_cases-read"))
+
+    async def test_success_does_not_reopen_the_dialog(self):
+        self.mock_rest_client.patch.return_value = ApiResponse(
+            status_code=HTTPStatus.OK)
+        response = await self._post({"name": "Lead"})
+        text = await response.get_data(as_text=True)
+        self.assertNotIn("data-auto-open", text)
+        self.assertNotIn('id="role-form-error"', text)
 
 
 class TestRoleDelete(unittest.IsolatedAsyncioTestCase):
