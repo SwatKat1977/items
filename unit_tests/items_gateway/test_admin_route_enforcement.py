@@ -101,8 +101,6 @@ _ADMIN_ONLY_ROUTES = [
 _SESSION_ONLY_ROUTES = [
     ("GET", "/web/projects", None),
     ("GET", "/web/projects/1", None),
-    ("GET", "/web/1/testcases", None),
-    ("GET", "/web/testcases/1?project_id=1", None),
     # Case types are global, not project-scoped: any session may read them
     # (testcase forms need the list and the default); only writes are
     # admin-only, above.
@@ -110,25 +108,21 @@ _SESSION_ONLY_ROUTES = [
     ("GET", "/web/case_types/1", None),
 ]
 
-# (method, path) - the three of the four above that actually gate on
-# membership (unlike the list, which filters its response instead of
-# rejecting the request).
+# (method, path) - the one of the above that actually gates on membership
+# (unlike the list, which filters its response instead of rejecting the
+# request). The test case routes used to be here too; they are now gated by
+# the Test Cases permission instead and are covered, route by route and
+# permission by permission, in test_testcase_route_permissions.py.
 _MEMBER_ONLY_ROUTES = [
     ("GET", "/web/projects/1"),
-    ("GET", "/web/1/testcases"),
-    ("GET", "/web/testcases/1?project_id=1"),
 ]
 
-# (method, path, json_body) - the test case write routes. Authorised by
-# membership of project 1 alone for now (the per-area role grid is not
-# enforced anywhere yet); administrators bypass the check.
+# (method, path, json_body) - the section (folder) write routes. Authorised
+# by membership of project 1 alone for now; administrators bypass the check.
+# They move to the Test Cases permission with the test case routes' sibling
+# change (ITEMS-14). The test case write routes already have, and are
+# covered in test_testcase_route_permissions.py.
 _MEMBER_WRITE_ROUTES = [
-    ("POST", "/web/1/testcases",
-     {"folder_id": None, "name": "T", "description": ""}),
-    ("PATCH", "/web/testcases/1?project_id=1",
-     {"name": "T", "description": ""}),
-    ("DELETE", "/web/testcases/1?project_id=1", None),
-    # Sections (folders): same rule as test cases.
     ("POST", "/web/1/folders", {"parent_id": None, "name": "S"}),
     ("PATCH", "/web/folders/1?project_id=1", {"name": "S"}),
     ("DELETE", "/web/folders/1?project_id=1", None),
@@ -348,9 +342,11 @@ class TestAdminRouteEnforcement(unittest.IsolatedAsyncioTestCase):
                     (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN))
 
     async def test_testcase_writes_without_project_id_are_refused(self):
-        """A write that names no project must not slip past the membership
-        check: the outsider is not rejected by the decorator (it has nothing
-        to check), so the handler's own 400 is what stops it."""
+        """A write that names no project must not slip past the access
+        check. For the test case routes the permission decorator refuses it
+        itself; for the section routes (still membership-gated) the
+        decorator has nothing to check, so the handler's own 400 is what
+        stops it."""
         for headers in (_OUTSIDER_HEADERS, _USER_HEADERS, _ADMIN_HEADERS):
             for method, path, body in _WRITE_ROUTES_MISSING_PROJECT_ID:
                 with self.subTest(method=method, path=path):
