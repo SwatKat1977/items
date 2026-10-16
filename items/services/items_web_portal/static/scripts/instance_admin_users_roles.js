@@ -2,7 +2,8 @@
  * Users & Roles page behaviour:
  *   1. Responsive tab bar (collapse labels to icons when they would overflow).
  *   2. Confirmation banner auto-dismiss.
- *   3. Role add/edit modal population and the Add/Modify-implies-Read rule.
+ *   3. Role add/edit modal population, the Add/Modify- and Delete-imply-Read
+ *      rules, and reopening the modal (filled in) after a failed save.
  *   4. Role delete confirmation.
  */
 (function () {
@@ -66,25 +67,43 @@
 
   var ADD_ROLE_ACTION = '/admin/users_roles/roles';
 
-  // Add/Modify implies Read (see user_roles_design.md §4.1): ticking
-  // Add/Modify auto-ticks and locks Read, since the combination of
-  // add-modify-without-read is rejected by the backend anyway. Locking it
+  // Add/Modify and Delete each imply Read (see user_roles_design.md §4.1 and
+  // §4.4): ticking either auto-ticks and locks Read, since a grid with either
+  // of them but no Read is rejected by the backend anyway. Locking it
   // client-side turns a would-be validation error into something that is
   // simply not reachable through the checkboxes.
-  function wirePermissionRow(area) {
+  //
+  // Read stays locked while EITHER of the two is ticked, so unticking one
+  // must not free it if the other still holds it.
+  function syncReadLock(area) {
     var readBox = document.getElementById('role-perm-' + area + '-read');
     var addModifyBox = document.getElementById('role-perm-' + area + '-add-modify');
+    var deleteBox = document.getElementById('role-perm-' + area + '-delete');
 
-    if (!readBox || !addModifyBox) {
+    if (!readBox) {
       return;
     }
 
-    addModifyBox.addEventListener('change', function () {
-      if (addModifyBox.checked) {
-        readBox.checked = true;
-        readBox.disabled = true;
-      } else {
-        readBox.disabled = false;
+    var holdsRead = (addModifyBox && addModifyBox.checked) ||
+                    (deleteBox && deleteBox.checked);
+
+    if (holdsRead) {
+      readBox.checked = true;
+      readBox.disabled = true;
+    } else {
+      readBox.disabled = false;
+    }
+  }
+
+  function wirePermissionRow(area) {
+    var addModifyBox = document.getElementById('role-perm-' + area + '-add-modify');
+    var deleteBox = document.getElementById('role-perm-' + area + '-delete');
+
+    [addModifyBox, deleteBox].forEach(function (box) {
+      if (box) {
+        box.addEventListener('change', function () {
+          syncReadLock(area);
+        });
       }
     });
   }
@@ -140,16 +159,31 @@
       if (deleteBox) {
         deleteBox.checked = !!perm.can_delete;
       }
-      if (addModifyBox && addModifyBox.checked && readBox) {
-        readBox.checked = true;
-        readBox.disabled = true;
-      }
+      syncReadLock(area);
     });
   }
+
+  // After a failed save the server renders the dialog already filled in, with
+  // the error inside it, and marks it data-auto-open. That first opening must
+  // keep those values: the normal opening below would reset them.
+  var restoringAfterError = !!roleModal &&
+    roleModal.getAttribute('data-auto-open') === 'true';
 
   // Populate the shared modal for either "add" or "edit" when it opens.
   if (roleModal && roleForm) {
     roleModal.addEventListener('show.bs.modal', function (event) {
+      if (restoringAfterError) {
+        restoringAfterError = false;
+        return;
+      }
+
+      // An error left over from a failed save must not follow the person into
+      // an unrelated Add or Edit.
+      var staleError = document.getElementById('role-form-error');
+      if (staleError) {
+        staleError.remove();
+      }
+
       var trigger = event.relatedTarget;
       var isEdit = trigger && trigger.classList.contains('edit-role-btn');
 
@@ -170,9 +204,21 @@
         roleTitle.textContent = 'Add Role';
         roleForm.action = ADD_ROLE_ACTION;
         roleForm.reset();
+        // reset() puts back the HTML default, which is the name from a failed
+        // save when the page was rendered that way, so clear it explicitly.
+        roleForm.name.value = '';
         resetPermissionGrid();
       }
     });
+
+    if (restoringAfterError) {
+      Array.prototype.forEach.call(
+        roleForm.querySelectorAll('.role-perm-add-modify'),
+        function (box) {
+          syncReadLock(box.getAttribute('data-area'));
+        });
+      new bootstrap.Modal(roleModal).show();
+    }
   }
 
   /* ----------------------------------------------------------------
