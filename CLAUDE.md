@@ -78,9 +78,18 @@ venv/Scripts/python -m pylint --fail-under=10.0 items/services/items_<service>
   status and body unchanged (the "pass-through" shape) and let the owning
   service validate. Access is set by a decorator on the route in the
   Blueprint: `require_administrator`, `require_session`,
-  `require_project_member`. Write handlers must reject a missing
+  `require_project_member`, or `require_project_permission(injections, area,
+  action)` for the per-area role grid. Write handlers must reject a missing
   `project_id` themselves (the member decorator skips the check when it
   cannot find one).
+- **Permission checks ask Identity every time and fail closed.**
+  `require_project_permission` calls Identity on each request (nothing is
+  cached or copied into the session), so a change to a role, membership or
+  account applies on the next request. It never skips the check: a missing or
+  malformed `project_id` is a 400, and only a real boolean `true` from
+  Identity lets a request through. Identity unreachable or answering oddly is
+  a 500, never access. It does not special-case administrators. Details:
+  `design_docs/user_roles_design.md` section 9.5.
 - **`project_id` rules.** The Gateway authorises from the project named in
   the request; the CMS only checks the item really belongs to it.
   - CMS `PATCH`/`DELETE` on test cases and folders require a `project_id`

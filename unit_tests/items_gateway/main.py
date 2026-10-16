@@ -107,6 +107,14 @@ from test_auth_decorators import (
     TestRequireProjectMember,
     TestRequireSessionWithEntry,
 )
+from test_project_permission_decorator import (
+    TestRequireProjectPermissionAccess,
+    TestRequireProjectPermissionProjectId,
+    TestRequireProjectPermissionFailsClosed,
+    TestRequireProjectPermissionAppliesImmediately,
+    TestRequireProjectPermissionAdministrator,
+    TestRequireProjectPermissionNoUserId,
+)
 from test_admin_route_enforcement import TestAdminRouteEnforcement
 
 if __name__ == "__main__":
