@@ -111,9 +111,17 @@ class LoginPostPageHandler(PortalPageHandler):
         if response.body.get("status") == 1:
             redirect = self._generate_redirect('')
             login_response: Response = await make_response(redirect)
-            login_response.set_cookie(self.COOKIE_USER, user_email)
+            # HttpOnly/SameSite always; Secure only when users reach the
+            # Portal over HTTPS, as a browser will not send a Secure cookie
+            # back over plain HTTP.
+            cookie_flags = {"secure": self._config.use_secure_cookies,
+                            "httponly": True,
+                            "samesite": "Lax"}
+            login_response.set_cookie(self.COOKIE_USER, user_email,
+                                      **cookie_flags)
             login_response.set_cookie(self.COOKIE_TOKEN,
-                                      response.body.get("token"))
+                                      response.body.get("token"),
+                                      **cookie_flags)
             return login_response
 
         error_msg = "Invalid username/password"

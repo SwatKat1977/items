@@ -29,6 +29,7 @@ class ConfigurationConstants:
     SECTION_LOGGING: str = 'logging'
     SECTION_APIS: str = 'apis'
     SECTION_GENERAL: str = 'general'
+    SECTION_TLS: str = 'tls'
 
     LOGGING_LOG_LEVEL: str = 'log_level'
     LOG_LEVEL_DEBUG: str = 'DEBUG'
@@ -37,6 +38,10 @@ class ConfigurationConstants:
     GENERAL_API_SIGNING_SECRET: str = "api_signing_secret"
 
     APIS_GATEWAY_SVC: str = "gateway_svc"
+
+    TLS_CERT_FILE: str = "cert_file"
+    TLS_KEY_FILE: str = "key_file"
+    TLS_SECURE_COOKIES: str = "secure_cookies"
 
 
 CONFIGURATION_LAYOUT = ConfigurationSetup(
@@ -60,6 +65,20 @@ CONFIGURATION_LAYOUT = ConfigurationSetup(
                 ConfigurationConstants.APIS_GATEWAY_SVC,
                 ConfigItemDataType.STRING,
                 default_value=APIS_GATEWAY_SVC_DEFAULT)
+        ],
+        ConfigurationConstants.SECTION_TLS: [
+            ConfigurationSetupItem(
+                ConfigurationConstants.TLS_CERT_FILE,
+                ConfigItemDataType.STRING,
+                default_value=""),
+            ConfigurationSetupItem(
+                ConfigurationConstants.TLS_KEY_FILE,
+                ConfigItemDataType.STRING,
+                default_value=""),
+            ConfigurationSetupItem(
+                ConfigurationConstants.TLS_SECURE_COOKIES,
+                ConfigItemDataType.BOOLEAN,
+                default_value=False)
         ]
     }
 )

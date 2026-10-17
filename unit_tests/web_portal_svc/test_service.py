@@ -72,7 +72,30 @@ class TestServiceManageConfiguration(unittest.TestCase):
             result = self.service._manage_configuration()
         self.assertFalse(result)
 
+    def test_returns_false_when_only_one_tls_file_set(self):
+        self.service._config.tls_cert_file = "/certs/cert.pem"
+        self.service._config.tls_key_file = ""
+        with patch.object(self.service, '_check_for_configuration',
+                          return_value=(None, True, "/path/config.ini")):
+            result = self.service._manage_configuration()
+        self.assertFalse(result)
+        self.service._logger.critical.assert_called_once()
+
+    def test_returns_true_with_tls_enabled(self):
+        self.service._config.tls_cert_file = "/certs/cert.pem"
+        self.service._config.tls_key_file = "/certs/key.pem"
+        self.service._config.tls_enabled = True
+        with patch.object(self.service, '_check_for_configuration',
+                          return_value=(None, True, "/path/config.ini")):
+            self.assertTrue(self.service._manage_configuration())
+
+    def test_config_property_returns_configuration(self):
+        self.assertIs(self.service.config, self.service._config)
+
     def test_returns_true_on_success(self):
+        self.service._config.tls_cert_file = ""
+        self.service._config.tls_key_file = ""
+        self.service._config.tls_enabled = False
         with patch.object(self.service, '_check_for_configuration',
                           return_value=(None, True, "/path/config.ini")):
             result = self.service._manage_configuration()

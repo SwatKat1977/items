@@ -57,6 +57,11 @@ class Service(BaseMicroservice):
         self._metadata_settings: MetadataSettings = MetadataSettings()
         self._rest_client: RestClient | None = None
 
+    @property
+    def config(self) -> Configuration:
+        """The service configuration (read once start-up has completed)."""
+        return self._config
+
     async def _initialise(self) -> bool:
         self.logger.info('ITEMS Web Portal Microservice %s', __version__)
         self.logger.info(SERVICE_COPYRIGHT_TEXT)
@@ -151,6 +156,13 @@ class Service(BaseMicroservice):
             self.logger.critical("Configuration error : %s", str(ex))
             return False
 
+        if bool(self._config.tls_cert_file) != \
+                bool(self._config.tls_key_file):
+            self.logger.critical(
+                "Configuration error : [tls] cert_file and key_file must "
+                "be set together")
+            return False
+
         self.logger.info("Configuration")
         self.logger.info("=============")
 
@@ -164,6 +176,12 @@ class Service(BaseMicroservice):
         self._logger.info("[routes]")
         self._logger.info("=> Gateway Service API : %s",
                           self._config.apis_gateway_svc)
+        self._logger.info("[tls]")
+        self._logger.info("=> HTTPS : %s",
+                          "Enabled" if self._config.tls_enabled
+                          else "Disabled (plain HTTP)")
+        self._logger.info("=> Secure cookies : %s",
+                          self._config.use_secure_cookies)
 
         return True
 
