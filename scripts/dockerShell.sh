@@ -1,1 +1,2 @@
-docker exec -it $1 /bin/sh
+#!/bin/sh
+docker exec -it "$1" /bin/sh

@@ -35,6 +35,7 @@ _VALID_TOKEN_COOKIE = "Cookie: items_token=abc; items_user=bob"
 def _config():
     config = MagicMock()
     config.apis_gateway_svc = "http://gateway/"
+    config.use_secure_cookies = False
     return config
 
 
@@ -156,7 +157,9 @@ class TestLoginPostPageHandler(unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self):
         self.mock_rest_client = AsyncMock()
-        handler = LoginPostPageHandler(_LOGGER, _config(), self.mock_rest_client)
+        self.config = _config()
+        handler = LoginPostPageHandler(_LOGGER, self.config,
+                                       self.mock_rest_client)
 
         app = make_app()
 
@@ -234,6 +237,29 @@ class TestLoginPostPageHandler(unittest.IsolatedAsyncioTestCase):
             form={"user_email": "a@b.com", "password": "password1"})
         self.assertEqual(response.status_code, 200)
         self.assertIn("items_user", response.headers.get("Set-Cookie", ""))
+
+    async def _login_cookies(self):
+        self.mock_rest_client.post.return_value = ApiResponse(
+            status_code=HTTPStatus.OK,
+            body={"status": 1, "token": "abc123"})
+        response = await self._post(
+            form={"user_email": "a@b.com", "password": "password1"})
+        return response.headers.getlist("Set-Cookie")
+
+    async def test_cookies_are_httponly_samesite_and_not_secure_on_http(self):
+        cookies = await self._login_cookies()
+        self.assertEqual(len(cookies), 2)
+        for cookie in cookies:
+            self.assertIn("HttpOnly", cookie)
+            self.assertIn("SameSite=Lax", cookie)
+            self.assertNotIn("Secure", cookie)
+
+    async def test_cookies_are_secure_when_configured(self):
+        self.config.use_secure_cookies = True
+        cookies = await self._login_cookies()
+        self.assertEqual(len(cookies), 2)
+        for cookie in cookies:
+            self.assertIn("Secure", cookie)
 
     async def test_status_not_one_renders_invalid_credentials(self):
         self.mock_rest_client.post.return_value = ApiResponse(

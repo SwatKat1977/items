@@ -51,6 +51,54 @@ class TestConfiguration(unittest.TestCase):
             ConfigurationConstants.APIS_GATEWAY_SVC)
         self.assertEqual(result, "http://localhost:7050/")
 
+    def test_tls_cert_file(self):
+        self.config.get_entry.return_value = "/certs/cert.pem"
+        result = self.config.tls_cert_file
+        self.config.get_entry.assert_called_once_with(
+            ConfigurationConstants.SECTION_TLS,
+            ConfigurationConstants.TLS_CERT_FILE)
+        self.assertEqual(result, "/certs/cert.pem")
+
+    def test_tls_key_file(self):
+        self.config.get_entry.return_value = "/certs/key.pem"
+        result = self.config.tls_key_file
+        self.config.get_entry.assert_called_once_with(
+            ConfigurationConstants.SECTION_TLS,
+            ConfigurationConstants.TLS_KEY_FILE)
+        self.assertEqual(result, "/certs/key.pem")
+
+    def test_tls_enabled_when_both_set(self):
+        self.config.get_entry.return_value = "/certs/file.pem"
+        self.assertTrue(self.config.tls_enabled)
+
+    def test_tls_disabled_when_neither_set(self):
+        self.config.get_entry.return_value = ""
+        self.assertFalse(self.config.tls_enabled)
+
+    def test_tls_disabled_when_only_cert_set(self):
+        self.config.get_entry.side_effect = ["/certs/cert.pem", ""]
+        self.assertFalse(self.config.tls_enabled)
+
+    def test_tls_secure_cookies(self):
+        self.config.get_entry.return_value = True
+        result = self.config.tls_secure_cookies
+        self.config.get_entry.assert_called_once_with(
+            ConfigurationConstants.SECTION_TLS,
+            ConfigurationConstants.TLS_SECURE_COOKIES)
+        self.assertTrue(result)
+
+    def test_use_secure_cookies_when_tls_enabled(self):
+        self.config.get_entry.side_effect = ["c", "k"]
+        self.assertTrue(self.config.use_secure_cookies)
+
+    def test_use_secure_cookies_when_flag_set(self):
+        self.config.get_entry.side_effect = ["", True]
+        self.assertTrue(self.config.use_secure_cookies)
+
+    def test_use_secure_cookies_false_by_default(self):
+        self.config.get_entry.side_effect = ["", False]
+        self.assertFalse(self.config.use_secure_cookies)
+
 
 if __name__ == "__main__":
     unittest.main()

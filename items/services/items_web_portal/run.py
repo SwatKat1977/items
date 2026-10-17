@@ -67,6 +67,11 @@ async def main() -> int:
     config = Config()
     config.bind = [f"{host}:{port}"]
 
+    # HTTPS is optional so development can stay on plain HTTP.
+    if service.config.tls_enabled:
+        config.certfile = service.config.tls_cert_file
+        config.keyfile = service.config.tls_key_file
+
     server_task = asyncio.create_task(
         serve(app, config, shutdown_trigger=shutdown_event.wait)
     )

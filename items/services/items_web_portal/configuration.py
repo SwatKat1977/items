@@ -60,3 +60,55 @@ class Configuration(ConfigurationManager):
         """
         return self.get_entry(ConfigurationConstants.SECTION_APIS,
                               ConfigurationConstants.APIS_GATEWAY_SVC)
+
+    @property
+    def tls_cert_file(self) -> str:
+        """Gets the path of the TLS certificate file.
+
+        Returns:
+            The certificate path, or an empty string if none is configured.
+        """
+        return self.get_entry(ConfigurationConstants.SECTION_TLS,
+                              ConfigurationConstants.TLS_CERT_FILE)
+
+    @property
+    def tls_key_file(self) -> str:
+        """Gets the path of the TLS private key file.
+
+        Returns:
+            The private key path, or an empty string if none is configured.
+        """
+        return self.get_entry(ConfigurationConstants.SECTION_TLS,
+                              ConfigurationConstants.TLS_KEY_FILE)
+
+    @property
+    def tls_enabled(self) -> bool:
+        """Whether the Portal should serve HTTPS.
+
+        Returns:
+            ``True`` if both a certificate and a key file are configured.
+        """
+        return bool(self.tls_cert_file and self.tls_key_file)
+
+    @property
+    def tls_secure_cookies(self) -> bool:
+        """Whether the login cookies should be marked ``Secure``.
+
+        Set when users reach the Portal over HTTPS through a reverse proxy
+        that terminates TLS, where the Portal itself only sees plain HTTP.
+
+        Returns:
+            ``True`` if the login cookies must be marked ``Secure``.
+        """
+        return self.get_entry(ConfigurationConstants.SECTION_TLS,
+                              ConfigurationConstants.TLS_SECURE_COOKIES)
+
+    @property
+    def use_secure_cookies(self) -> bool:
+        """Whether the login cookies are marked ``Secure``.
+
+        Returns:
+            ``True`` if the Portal serves HTTPS itself or is configured as
+            sitting behind something that does.
+        """
+        return self.tls_enabled or self.tls_secure_cookies

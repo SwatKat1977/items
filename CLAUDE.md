@@ -115,6 +115,15 @@ venv/Scripts/python -m pylint --fail-under=10.0 items/services/items_<service>
   (it refuses to overwrite an existing file) and copying it over the
   tracked `databases/` file. Existing dev databases are rebuilt, not migrated.
 
+- **Users reach ITEMS over HTTPS; only the Portal is user-facing.** In Docker
+  a Caddy container terminates HTTPS in front of the Portal, and the Portal
+  sets `[tls] secure_cookies=true` so its login cookies are `Secure`. Without
+  Docker the Portal can serve HTTPS itself: set both `cert_file` and
+  `key_file` in `[tls]` (only one of the two is a start-up error). Leaving
+  `[tls]` out gives plain HTTP for development. The login cookies are always
+  `HttpOnly` and `SameSite=Lax`. Service-to-service traffic stays HTTP on the
+  internal Docker network.
+
 ## Portal UI conventions
 
 The Portal is server-rendered: forms `POST`, and the page re-renders (or
