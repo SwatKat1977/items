@@ -29,6 +29,22 @@ features. For anything other than development, use a
 - [Running via Docker](https://github.com/SwatKat1977/items/wiki/Running-via-Docker)
 - [Roadmap](https://github.com/SwatKat1977/items/wiki/Roadmap)
 
+## Running with Docker over HTTPS
+
+With Docker Compose, ITEMS is served over HTTPS by a Caddy container
+(`https_proxy`). Browse to `https://localhost`. Plain `http://` on port 80 is
+redirected, and the Web Portal itself is not exposed.
+
+- **First visit on your own machine:** Caddy makes its own certificate, so
+  the browser shows a warning. To trust it once, copy the root certificate out
+  and add it to your system trust store:
+  `docker cp https_proxy:/data/caddy/pki/authorities/local/root.crt .`
+- **A real site:** set `ITEMS_DOMAIN=your.domain.name` in `.env`. The name
+  must point at the machine and ports 80 and 443 must be reachable; Caddy then
+  gets and renews a trusted certificate automatically.
+- **Without Docker:** the Web Portal runs plain HTTP unless you add a `[tls]`
+  section to its config. See `configs/web_portal.cfg`.
+
 ## Contributing
 
 See [CONTRIBUTING](CONTRIBUTING.md) for the branching and release process,
