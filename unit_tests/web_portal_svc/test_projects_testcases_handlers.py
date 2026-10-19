@@ -26,6 +26,18 @@ from items.services.items_web_portal.page_handlers.testcases.\
 _LOGGER = MagicMock()
 _AUTH_HEADERS = {"Cookie": "items_token=abc; items_user=bob"}
 _PROJECT_OK = ApiResponse(status_code=HTTPStatus.OK, body={"name": "Proj"})
+
+
+def _permissions(read=True, add_modify=True, delete=True) -> ApiResponse:
+    """The gateway's "my permissions" answer for Test Cases."""
+    return ApiResponse(status_code=HTTPStatus.OK, body={
+        "project_id": 1,
+        "areas": {"test_cases": {
+            "read": read, "add_modify": add_modify, "delete": delete}}})
+
+
+# The Portal asks last, once the page's own data has loaded.
+_PERMISSIONS_ALL = _permissions()
 _CASE_TYPES_OK = ApiResponse(status_code=HTTPStatus.OK, body=[
     {"id": 9, "name": "Smoke", "description": "", "is_default": False},
     {"id": 15, "name": "Other", "description": "", "is_default": True},
@@ -178,6 +190,7 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
             ApiResponse(status_code=HTTPStatus.OK,
                        body={"folders": [], "test_cases": []}),
             _CASE_TYPES_OK,
+            _PERMISSIONS_ALL,
         ]
         response = await self._get()
         self.assertEqual(response.status_code, 200)
@@ -201,6 +214,7 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
                 ]
             }),
             _CASE_TYPES_OK,
+            _PERMISSIONS_ALL,
         ]
         response = await self._get()
         self.assertEqual(response.status_code, 200)
@@ -213,6 +227,7 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
             ApiResponse(status_code=HTTPStatus.OK,
                        body={"folders": [], "test_cases": []}),
             _CASE_TYPES_OK,
+            _PERMISSIONS_ALL,
         ]
         response = await self._get()
         self.assertEqual(response.status_code, 200)
@@ -227,6 +242,7 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
             ApiResponse(status_code=HTTPStatus.OK, body={
                 "folders": folders, "test_cases": test_cases}),
             case_types,
+            _PERMISSIONS_ALL,
         ]
 
     async def _page_text(self):
@@ -553,6 +569,7 @@ class TestDeleteTestcaseFromList(unittest.IsolatedAsyncioTestCase):
                     {"id": 7, "folder_id": None, "case_type_id": 15,
                      "name": "StillHere"}]}),
             _CASE_TYPES_OK,
+            _PERMISSIONS_ALL,
         ]
 
     async def test_deletes_via_the_gateway_with_the_project(self):
@@ -634,6 +651,7 @@ class _SectionWriteCase(unittest.IsolatedAsyncioTestCase):
                 "folders": [{"id": 1, "parent_id": None, "name": "StillHere"}],
                 "test_cases": []}),
             _CASE_TYPES_OK,
+            _PERMISSIONS_ALL,
         ]
 
     @staticmethod
@@ -831,6 +849,7 @@ class TestDeleteSection(_SectionWriteCase):
             ApiResponse(status_code=HTTPStatus.OK, body={
                 "folders": folders, "test_cases": []}),
             _CASE_TYPES_OK,
+            _PERMISSIONS_ALL,
         ]
 
     @staticmethod
@@ -981,6 +1000,176 @@ class TestDeleteSection(_SectionWriteCase):
         self._folders_response()
         text = await self._text(await self._post())
         self.assertIn("The request could not be completed", text)
+
+
+# ------------------------------------------------------------------
+# Controls follow the person's permissions (design doc section 9.5)
+# ------------------------------------------------------------------
+
+_PERMISSIONS_URL = "http://gateway/web/projects/1/permissions"
+
+# Markers that appear in the page only when the control does. The controls
+# are left out of the HTML entirely (not styled away), so absent really
+# means absent: there is nothing to unhide in the browser.
+_ADD_CONTROLS = ('id="add-section-btn"', 'id="add-testcase-btn"',
+                 "edit-testcase-btn", "add-subsection-btn",
+                 "rename-section-btn", 'id="sectionModal"')
+_DELETE_CONTROLS = ("delete-testcase-btn", "delete-section-btn",
+                    'id="confirmDeleteTestcaseModal"',
+                    'id="confirmDeleteSectionModal"')
+
+_FOLDERS = [{"id": 1, "parent_id": None, "name": "Regression"}]
+_TEST_CASES = [
+    {"id": 3, "folder_id": 1, "case_type_id": 9, "name": "In a section"},
+    {"id": 4, "folder_id": None, "case_type_id": 9, "name": "At the root"},
+]
+
+
+class TestListControlsFollowPermissions(unittest.IsolatedAsyncioTestCase):
+    """What the test case list offers each kind of person.
+
+    Hiding is for tidiness only: the gateway refuses the action whatever the
+    page shows. These tests are about the page.
+    """
+
+    async def asyncSetUp(self):
+        self.mock_rest_client = AsyncMock()
+        self.mock_rest_client.post.return_value = ApiResponse(
+            status_code=HTTPStatus.OK, body={"status": "VALID"})
+        handler = GetProjectTestcasesPageHandler(
+            _LOGGER, _config(), self.mock_rest_client, _metadata())
+
+        app = make_app()
+
+        @app.route("/<project_id>/testcases", methods=["GET"])
+        async def route(project_id):
+            return await handler.test_cases(project_id)
+
+        self.client = app.test_client()
+
+    async def _page(self, permissions):
+        """Render the list; ``permissions`` is the gateway's answer, or an
+        exception to raise."""
+        async def fake_get(url, *_args, **_kwargs):
+            if url == "http://gateway/web/projects/1":
+                return _PROJECT_OK
+            if url == "http://gateway/web/1/testcases":
+                return ApiResponse(status_code=HTTPStatus.OK, body={
+                    "folders": _FOLDERS, "test_cases": _TEST_CASES})
+            if url == "http://gateway/web/case_types":
+                return _CASE_TYPES_OK
+            if url == _PERMISSIONS_URL:
+                if isinstance(permissions, Exception):
+                    raise permissions
+                return permissions
+            raise AssertionError(f"unexpected gateway GET {url}")
+
+        self.mock_rest_client.get.side_effect = fake_get
+        async with self.client as c:
+            response = await c.get("/1/testcases", headers=_AUTH_HEADERS)
+        self.assertEqual(response.status_code, 200)
+        return await response.get_data(as_text=True)
+
+    def _assert_present(self, text, markers):
+        for marker in markers:
+            self.assertIn(marker, text, marker)
+
+    def _assert_absent(self, text, markers):
+        for marker in markers:
+            self.assertNotIn(marker, text, marker)
+
+    async def test_a_reader_is_offered_no_controls_at_all(self):
+        text = await self._page(_permissions(add_modify=False, delete=False))
+        self._assert_absent(text, _ADD_CONTROLS + _DELETE_CONTROLS)
+        # No empty "Actions" column left behind either.
+        self.assertNotIn(">Actions<", text)
+
+    async def test_a_reader_still_sees_everything_they_may_read(self):
+        text = await self._page(_permissions(add_modify=False, delete=False))
+        self.assertIn("Regression", text)
+        self.assertIn("In a section", text)
+        self.assertIn("At the root", text)
+        self.assertIn('href="/1/testcases/3"', text)  # the name still links
+
+    async def test_a_tester_can_add_and_edit_but_not_delete(self):
+        text = await self._page(_permissions(delete=False))
+        self._assert_present(text, _ADD_CONTROLS)
+        self._assert_absent(text, _DELETE_CONTROLS)
+        self.assertIn(">Actions<", text)
+
+    async def test_a_lead_is_offered_everything(self):
+        text = await self._page(_permissions())
+        self._assert_present(text, _ADD_CONTROLS + _DELETE_CONTROLS)
+
+    async def test_each_control_follows_its_own_permission(self):
+        """Delete without Add/Modify cannot be saved as a role, but the page
+        must not depend on that: each control checks its own permission."""
+        text = await self._page(_permissions(add_modify=False))
+        self._assert_present(text, _DELETE_CONTROLS)
+        self._assert_absent(text, _ADD_CONTROLS)
+
+    async def test_controls_appear_for_every_test_case_and_section(self):
+        text = await self._page(_permissions())
+        self.assertEqual(text.count("edit-testcase-btn"), 2)
+        self.assertEqual(text.count("delete-testcase-btn"), 2)
+        self.assertEqual(text.count("rename-section-btn"), 1)
+
+    async def test_nothing_granted_means_nothing_offered(self):
+        text = await self._page(_permissions(False, False, False))
+        self._assert_absent(text, _ADD_CONTROLS + _DELETE_CONTROLS)
+
+    async def test_it_asks_the_gateway_about_this_project_last(self):
+        await self._page(_permissions())
+        urls = [call.args[0]
+                for call in self.mock_rest_client.get.await_args_list]
+        self.assertEqual(urls[-1], _PERMISSIONS_URL)
+        self.assertEqual(urls.count(_PERMISSIONS_URL), 1)
+
+    # --- fail closed ---------------------------------------------------
+
+    async def test_if_it_cannot_find_out_it_offers_nothing(self):
+        """The page still loads; it just shows no controls, rather than
+        guessing that they would be allowed."""
+        cannot_find_out = {
+            "gateway error": ApiResponse(status_code=503),
+            "forbidden": ApiResponse(status_code=403),
+            "not found": ApiResponse(status_code=404),
+            "unreachable": ApiResponse(exception_msg="connection refused"),
+            "raises": RuntimeError("boom"),
+            "no body": ApiResponse(status_code=HTTPStatus.OK, body=None),
+            "list body": ApiResponse(status_code=HTTPStatus.OK, body=[]),
+            "no areas": ApiResponse(status_code=HTTPStatus.OK, body={}),
+            "areas not a dict": ApiResponse(
+                status_code=HTTPStatus.OK, body={"areas": []}),
+            "no test cases area": ApiResponse(
+                status_code=HTTPStatus.OK, body={"areas": {}}),
+            "area not a dict": ApiResponse(
+                status_code=HTTPStatus.OK,
+                body={"areas": {"test_cases": True}}),
+        }
+        for label, permissions in cannot_find_out.items():
+            with self.subTest(label):
+                text = await self._page(permissions)
+                self._assert_absent(text, _ADD_CONTROLS + _DELETE_CONTROLS)
+                self.assertIn("In a section", text)
+
+    async def test_only_a_real_true_counts(self):
+        """"true", 1 and null are not grants."""
+        for value in ("true", 1, None, "yes", [True]):
+            with self.subTest(value=value):
+                text = await self._page(ApiResponse(
+                    status_code=HTTPStatus.OK,
+                    body={"areas": {"test_cases": {
+                        "read": value, "add_modify": value,
+                        "delete": value}}}))
+                self._assert_absent(text, _ADD_CONTROLS + _DELETE_CONTROLS)
+
+    async def test_a_missing_action_is_not_granted(self):
+        text = await self._page(ApiResponse(
+            status_code=HTTPStatus.OK,
+            body={"areas": {"test_cases": {"add_modify": True}}}))
+        self._assert_present(text, _ADD_CONTROLS)
+        self._assert_absent(text, _DELETE_CONTROLS)
 
 
 if __name__ == "__main__":

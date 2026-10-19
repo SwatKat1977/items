@@ -4,16 +4,23 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/project_testcases.css') }}">
 {% endblock %}
 
+{# Controls are left out of the page entirely when the person's role does not
+   allow them (not hidden with styling or disabled, which anyone can undo in
+   the browser). That is for tidiness only: the gateway refuses the action
+   whatever this page shows. `permissions` holds Test Cases read / add_modify
+   / delete as true or false. #}
+
 {# One table of test cases: used for a folder's cases and for the project's
    root-level cases (those with no folder). #}
 {% macro render_test_cases(test_cases, level=0) %}
+    {% set has_actions = permissions.add_modify or permissions.delete %}
     <table class="file-table table" style="margin-left: {{ level * 20 }}px;">
         <thead>
             <tr>
                 <th>ID</th>
                 <th>Name</th>
                 <th>Type</th>
-                <th class="text-end">Actions</th>
+                {% if has_actions %}<th class="text-end">Actions</th>{% endif %}
             </tr>
         </thead>
         <tbody>
@@ -25,10 +32,14 @@
                            href="/{{ project_id }}/testcases/{{ test_case.id }}">{{ test_case.name }}</a>
                     </td>
                     <td>{{ test_case.case_type_name }}</td>
+                    {% if has_actions %}
                     <td class="text-end text-nowrap">
+                        {% if permissions.add_modify %}
                         <a class="btn btn-link text-primary p-1 edit-testcase-btn"
                            title="Edit"
                            href="/{{ project_id }}/testcases/{{ test_case.id }}/edit"><i class="bi bi-pencil"></i></a>
+                        {% endif %}
+                        {% if permissions.delete %}
                         <button type="button" class="btn btn-link text-danger p-1 delete-testcase-btn"
                                 title="Delete"
                                 data-bs-toggle="modal" data-bs-target="#confirmDeleteTestcaseModal"
@@ -36,7 +47,9 @@
                                 data-name="{{ test_case.name }}">
                             <i class="bi bi-x-circle"></i>
                         </button>
+                        {% endif %}
                     </td>
+                    {% endif %}
                 </tr>
             {% endfor %}
         </tbody>
@@ -47,6 +60,7 @@
     {% for folder in folders %}
         <div class="folder-row" style="margin-left: {{ level * 20 }}px;">
             <span class="folder">{{ folder.name }}</span>
+            {% if permissions.add_modify %}
             <button type="button" class="btn btn-link text-primary p-1 add-subsection-btn"
                     title="Add sub-section"
                     data-bs-toggle="modal" data-bs-target="#sectionModal"
@@ -63,6 +77,8 @@
                     data-name="{{ folder.name }}">
                 <i class="bi bi-pencil"></i>
             </button>
+            {% endif %}
+            {% if permissions.delete %}
             <button type="button" class="btn btn-link text-danger p-1 delete-section-btn"
                     title="Delete section"
                     data-bs-toggle="modal" data-bs-target="#confirmDeleteSectionModal"
@@ -71,6 +87,7 @@
                     data-testcase-count="{{ folder.testcase_count }}">
                 <i class="bi bi-x-circle"></i>
             </button>
+            {% endif %}
         </div>
 
         {% if folder.test_cases %}
@@ -88,12 +105,14 @@
     <div id="testcases-title-bar" class="d-flex align-items-center justify-content-between">
         <h5 class="mb-0">Test Cases</h5>
         <div>
+            {% if permissions.add_modify %}
             <button type="button" class="btn btn-sm btn-header-outline me-1"
                     id="add-section-btn"
                     data-bs-toggle="modal" data-bs-target="#sectionModal"
                     data-section-mode="add"><strong>+</strong> Add Section</button>
             <a href="/{{ project_id }}/testcases/add" class="btn btn-sm btn-header"
                id="add-testcase-btn"><strong>+</strong> Add Test Case</a>
+            {% endif %}
         </div>
     </div>
 
@@ -126,9 +145,14 @@
         {% endif %}
     </div>
 
-    {% include "_testcase_delete_modal.html" %}
-    {% include "_section_modal.html" %}
-    {% include "_section_delete_modals.html" %}
+    {# The dialogs only exist for a person who can use them. #}
+    {% if permissions.delete %}
+        {% include "_testcase_delete_modal.html" %}
+        {% include "_section_delete_modals.html" %}
+    {% endif %}
+    {% if permissions.add_modify %}
+        {% include "_section_modal.html" %}
+    {% endif %}
 </div>
 {% endblock %}
 

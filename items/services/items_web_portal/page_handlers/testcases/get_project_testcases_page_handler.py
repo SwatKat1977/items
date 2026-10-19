@@ -341,8 +341,12 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
         cascade_prompt = self._name_cascade_prompt(
             cascade_prompt, response.body['folders'])
 
+        # ``permissions`` decides which controls are shown. It is asked last,
+        # once the page's own data has loaded, so a refused or missing
+        # project never gets this far.
         return await self._render_page(
             pages.TEMPLATE_TEST_DEFINITIONS_PAGE,
+            permissions=await self._fetch_testcase_permissions(project_id),
             data=details,
             root_test_cases=root_test_cases,
             active_page="test-cases",
