@@ -43,6 +43,18 @@ _ROUTES = [
      {"name": "T", "description": ""}, PermissionAction.ADD_MODIFY),
     ("delete a test case", "DELETE", "/web/testcases/7?project_id=1", None,
      PermissionAction.DELETE),
+    # Sections (folders) belong to the same Test Cases area.
+    ("create a section", "POST", "/web/1/folders",
+     {"parent_id": None, "name": "S"}, PermissionAction.ADD_MODIFY),
+    ("rename a section", "PATCH", "/web/folders/7?project_id=1",
+     {"name": "S"}, PermissionAction.ADD_MODIFY),
+    ("delete a section", "DELETE", "/web/folders/7?project_id=1", None,
+     PermissionAction.DELETE),
+    # A cascading delete destroys the test cases inside, so it needs Delete
+    # too - not merely whatever covers sections.
+    ("delete a section and its test cases", "DELETE",
+     "/web/folders/7?project_id=1&cascade=true", None,
+     PermissionAction.DELETE),
 ]
 
 # The routes that take the project from the query string, and so can be sent
@@ -62,13 +74,14 @@ def _identity_url(user_id: str, project_id: int = 1) -> str:
     return f"{_IDENTITY}users/{user_id}/projects/{project_id}/permissions"
 
 
-class TestTestcaseRoutePermissions(unittest.IsolatedAsyncioTestCase):
-    """The Test Cases permission each test case route needs, end to end
-    through the real blueprint, with a fake Identity.
+class TestRoutePermissions(unittest.IsolatedAsyncioTestCase):
+    """The Test Cases permission each test case and section route needs, end
+    to end through the real blueprint, with a fake Identity.
 
     test_project_permission_decorator.py proves the decorator is right in
     isolation; this proves the *right* permission was attached to *each*
-    route - Read to browse, Add/Modify to create or edit, Delete to delete.
+    route - Read to browse, Add/Modify to create, edit or rename, Delete to
+    delete.
     """
 
     async def asyncSetUp(self):
@@ -203,6 +216,34 @@ class TestTestcaseRoutePermissions(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(outcomes["create a test case"], HTTPStatus.FORBIDDEN)
         self.assertEqual(outcomes["modify a test case"], HTTPStatus.FORBIDDEN)
         self.assertEqual(outcomes["delete a test case"], HTTPStatus.FORBIDDEN)
+        self.assertEqual(outcomes["create a section"], HTTPStatus.FORBIDDEN)
+        self.assertEqual(outcomes["rename a section"], HTTPStatus.FORBIDDEN)
+        self.assertEqual(outcomes["delete a section"], HTTPStatus.FORBIDDEN)
+        self.assertEqual(outcomes["delete a section and its test cases"],
+                         HTTPStatus.FORBIDDEN)
+
+    async def test_deleting_a_section_needs_delete_not_just_add_modify(self):
+        """The cascading delete can destroy every test case in the section,
+        so Add/Modify (which lets you create and rename sections) is not
+        enough - with or without cascade."""
+        self._grants(_grant(PermissionAction.READ,
+                            PermissionAction.ADD_MODIFY))
+        for path in ("/web/folders/7?project_id=1",
+                     "/web/folders/7?project_id=1&cascade=true"):
+            with self.subTest(path=path):
+                self.rest_client.reset_mock()
+                response = await self._call("DELETE", path, None)
+                self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+                self.assertEqual(self._cms_requests(), [])
+
+    async def test_add_modify_lets_you_create_and_rename_sections(self):
+        self._grants(_grant(PermissionAction.ADD_MODIFY))
+        create = await self._call("POST", "/web/1/folders",
+                                  {"parent_id": None, "name": "S"})
+        rename = await self._call("PATCH", "/web/folders/7?project_id=1",
+                                  {"name": "S"})
+        self.assertNotEqual(create.status_code, HTTPStatus.FORBIDDEN)
+        self.assertNotEqual(rename.status_code, HTTPStatus.FORBIDDEN)
 
     async def test_identity_decides_not_the_sessions_membership_snapshot(self):
         """alice's session says she is a member of project 1, but Identity

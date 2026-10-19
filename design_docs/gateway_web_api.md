@@ -197,16 +197,20 @@ a missing `project_id` and the `500` if Identity cannot be asked.
 ### 2.9 Sections (folders)
 
 Sections are read through the test case list (`GET /web/<project_id>/testcases`
-returns the whole folder tree), so only the writes are routed. Authorised by
-project membership only for now (the per-area role grid is not yet enforced
-on these; that follows the test case routes, ITEMS-14). The CMS decides what the
+returns the whole folder tree), so only the writes are routed. Sections belong
+to the Test Cases area of the role grid, so these routes enforce it exactly as
+the test case routes do (see the **Permission** level in section 1.1): Add/Modify
+to create or rename a section, Delete to delete one. Deleting a section needs
+**Delete** with or without `cascade=true`, because it can destroy the test
+cases inside it (rule 6 of section 8 of `user_roles_design.md`), so a role that
+can only create and rename sections cannot delete them. The CMS decides what the
 `cascade` value means and rejects anything it does not understand.
 
 | Method | Path | Auth | Upstream | Shape | Notes |
 |---|---|---|---|---|---|
-| `POST` | `/web/<project_id>/folders` | Member | CMS `folders` | pass-through | Body: `parent_id` (int, or null for a top-level section) and `name`. The project comes from the path only: the body must not contain a `project_id` (400). 200 `{"folder_id": n}`; 404 unknown project or parent; 409 duplicate sibling name. |
-| `PATCH` | `/web/folders/<folder_id>?project_id=` | Member | CMS `folders/<id>?project_id=` | pass-through | Body: `name`. `project_id` is required (400 if missing); 404 if the section is in another project; 409 duplicate sibling name. |
-| `DELETE` | `/web/folders/<folder_id>?project_id=[&cascade=true]` | Member | CMS `folders/<id>?project_id=[&cascade=]` | pass-through | `project_id` is required (400 if missing). Refused with **409** `{"error": ..., "testcase_count": n}` if the section or a sub-section contains test cases, unless `cascade=true`, which also deletes them. 404 if the section is in another project. |
+| `POST` | `/web/<project_id>/folders` | Test Cases Add/Modify | CMS `folders` | pass-through | Body: `parent_id` (int, or null for a top-level section) and `name`. The project comes from the path only: the body must not contain a `project_id` (400). 200 `{"folder_id": n}`; 404 unknown project or parent; 409 duplicate sibling name. |
+| `PATCH` | `/web/folders/<folder_id>?project_id=` | Test Cases Add/Modify | CMS `folders/<id>?project_id=` | pass-through | Body: `name`. `project_id` is required (400 if missing); 404 if the section is in another project; 409 duplicate sibling name. |
+| `DELETE` | `/web/folders/<folder_id>?project_id=[&cascade=true]` | Test Cases Delete | CMS `folders/<id>?project_id=[&cascade=]` | pass-through | `project_id` is required (400 if missing). Refused with **409** `{"error": ..., "testcase_count": n}` if the section or a sub-section contains test cases, unless `cascade=true`, which also deletes them. 404 if the section is in another project. |
 
 ### 2.10 Testcase custom fields
 

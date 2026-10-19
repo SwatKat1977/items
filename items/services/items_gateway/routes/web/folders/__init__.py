@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from quart import Blueprint
-from items.services.items_gateway.auth_decorators import require_project_member
+from items.services.items_gateway.auth_decorators import (
+    require_project_permission)
 from items.services.items_gateway.route_injections import RouteInjections
 from items.services.items_gateway.routes.web.folders.create_folder_handler \
     import CreateFolderHandler
@@ -22,6 +23,8 @@ from items.services.items_gateway.routes.web.folders.delete_folder_handler \
     import DeleteFolderHandler
 from items.services.items_gateway.routes.web.folders.modify_folder_handler \
     import ModifyFolderHandler
+from items.shared.permission_action import PermissionAction
+from items.shared.permission_area import PermissionArea
 
 
 def create_folders_routes(injections: RouteInjections) -> Blueprint:
@@ -31,25 +34,40 @@ def create_folders_routes(injections: RouteInjections) -> Blueprint:
     testcases`` already returns the whole folder tree), so only the writes
     are routed here.
 
-    Every route requires a valid session and membership of the project the
-    section belongs to (``@require_project_member``); administrators bypass
-    the check. As with test cases, writes are authorised by membership only
-    for now: the per-area role grid is not enforced anywhere yet.
+    Sections belong to the Test Cases area of the role grid, so every route
+    requires a valid session and the **Test Cases** permission that matches
+    what it does, checked with the Identity service on every request
+    (``@require_project_permission``, see section 9.5 of
+    ``design_docs/user_roles_design.md``): Add/Modify to create or rename a
+    section, Delete to delete one. A member whose role does not grant it gets
+    a 403, and so does a user who is not a member at all (they have an empty
+    grid). Administrators are not special-cased: Identity grants them
+    everything. Nothing is cached, so a change to a role or membership
+    applies on the very next request.
+
+    Deleting a section needs **Delete** whether or not ``cascade=true`` is
+    sent, and not merely Add/Modify. A section's delete can destroy the test
+    cases inside it, so it is authorised against what it destroys (rule 6 of
+    section 8 of the design doc), and a narrow grant cannot become a wide one
+    by going through the parent.
+
+    The checks fail closed: if Identity cannot be reached or answers
+    unexpectedly the route returns a 500, never access.
 
     The ``project_id`` of a route with no project in its path (``PATCH`` and
-    ``DELETE /web/folders/<id>``) is a query parameter that membership is
+    ``DELETE /web/folders/<id>``) is a query parameter that the permission is
     checked against before ever calling CMS. That's safe despite being
     client-supplied: CMS independently verifies the section actually belongs
-    to the stated project and 404s otherwise. The decorator skips its check
-    when the parameter is missing or malformed, so those handlers reject that
-    with a 400 themselves.
+    to the stated project and 404s otherwise. Unlike the old membership
+    check, the decorator never skips: a missing or malformed ``project_id``
+    is a 400 before anything else happens.
 
-    Registered routes:
-        - POST /<project_id>/folders:
+    Registered routes (permission in brackets):
+        - POST /<project_id>/folders [Add/Modify]:
             Create a section, at the top level or inside another section.
-        - PATCH /folders/<folder_id>?project_id=:
+        - PATCH /folders/<folder_id>?project_id= [Add/Modify]:
             Rename a section.
-        - DELETE /folders/<folder_id>?project_id=[&cascade=true]:
+        - DELETE /folders/<folder_id>?project_id=[&cascade=true] [Delete]:
             Delete a section. Refused with a 409 and a test case count if
             the section contains test cases, unless ``cascade=true``.
 
@@ -82,7 +100,9 @@ def create_folders_routes(injections: RouteInjections) -> Blueprint:
                             "Create a section".ljust(40))
 
     @routes.route('/<int:project_id>/folders', methods=['POST'])
-    @require_project_member(injections.sessions)
+    @require_project_permission(
+        injections, PermissionArea.TEST_CASES,
+        PermissionAction.ADD_MODIFY)
     async def create_folder_request(project_id: int):
         return await handler_create.create_folder(project_id)
 
@@ -90,7 +110,9 @@ def create_folders_routes(injections: RouteInjections) -> Blueprint:
                             "Rename a section".ljust(40))
 
     @routes.route('/folders/<int:folder_id>', methods=['PATCH'])
-    @require_project_member(injections.sessions)
+    @require_project_permission(
+        injections, PermissionArea.TEST_CASES,
+        PermissionAction.ADD_MODIFY)
     async def modify_folder_request(folder_id: int):
         return await handler_modify.modify_folder(folder_id)
 
@@ -98,7 +120,9 @@ def create_folders_routes(injections: RouteInjections) -> Blueprint:
                             "Delete a section".ljust(40))
 
     @routes.route('/folders/<int:folder_id>', methods=['DELETE'])
-    @require_project_member(injections.sessions)
+    @require_project_permission(
+        injections, PermissionArea.TEST_CASES,
+        PermissionAction.DELETE)
     async def delete_folder_request(folder_id: int):
         return await handler_delete.delete_folder(folder_id)
 
