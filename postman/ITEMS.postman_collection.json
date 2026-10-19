@@ -1430,6 +1430,37 @@
               "name": "Project API",
               "item": [
                 {
+                  "name": "Get my permissions in a project",
+                  "request": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Items-User",
+                        "value": "{{ITEMS_USER}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "X-Items-Token",
+                        "value": "{{ITEMS_TOKEN}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/projects/{{PROJECT_ID}}/permissions",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "projects",
+                        "{{PROJECT_ID}}",
+                        "permissions"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
                   "name": "Retrieve a Project",
                   "protocolProfileBehavior": {
                     "disableBodyPruning": true

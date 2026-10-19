@@ -127,6 +127,7 @@ Upstream paths are relative to the Identity or CMS base URL.
 |---|---|---|---|---|---|
 | `GET` | `/web/projects` | Session | CMS `projects` | mixed | Result is filtered to the caller's projects unless administrator. |
 | `GET` | `/web/projects/<project_id>` | Member | CMS `projects/<id>` | mixed | |
+| `GET` | `/web/projects/<project_id>/permissions` | Session | Identity `users/<caller's id>/projects/<id>/permissions` | pass-through | What the **caller** may do in the project, per area: `200 {"project_id": n, "areas": {"test_cases": {"read": bool, "add_modify": bool, "delete": bool}, ...}}`, every area present. For the Portal to decide which controls to show; it is a convenience, not a security measure, because every write route enforces the same permissions itself. Always about the caller: the user comes from the session and nothing in the request can name anyone else. A non-member, a member with no role and a disabled account get `200` with every flag false (an answer, not an error). `403` if the session has no user id or Identity does not know the user; `500` if Identity cannot be reached or answers unexpectedly. Not cached, so a change shows on the next call. |
 | `POST` | `/web/projects` | Admin | CMS `projects` | envelope | |
 | `PATCH` | `/web/projects/<project_id>` | Admin | CMS `projects/<id>` | envelope | |
 | `DELETE` | `/web/projects/<project_id>` | Admin | CMS `projects/<id>?hard_delete=` | envelope | Optional `hard_delete` query parameter. |

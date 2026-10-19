@@ -16,8 +16,12 @@ limitations under the License.
 from functools import wraps
 from http import HTTPStatus
 import json
+import logging
 from typing import Optional
 from quart import request, Response
+from weaver_framework.microservice.rest_client import RestClient
+from items.services.items_gateway.gateway_configuration import (
+    GatewayConfiguration)
 from items.services.items_gateway.route_injections import RouteInjections
 from items.services.items_gateway.sessions import Sessions, SessionEntry
 from items.shared.permission_action import PermissionAction
@@ -246,14 +250,23 @@ def _read_grant(body: object, area: PermissionArea,
     return value if isinstance(value, bool) else None
 
 
-async def _fetch_permissions(injections: RouteInjections,
-                             user_id: str,
-                             project_id: int
-                             ) -> tuple[object, Optional[Response]]:
+async def fetch_user_permissions(logger: logging.Logger,
+                                 configuration: GatewayConfiguration,
+                                 rest_client: RestClient,
+                                 user_id: str,
+                                 project_id: int
+                                 ) -> tuple[object, Optional[Response]]:
     """Fetch a user's effective permissions on a project from Identity.
 
+    The one place that decides what counts as a usable answer from Identity,
+    shared by the permission decorator (which enforces) and the "my
+    permissions" route (which tells the Portal what to show), so the two can
+    never disagree about it.
+
     Args:
-        injections: Route dependencies (REST client, configuration, logger).
+        logger: Logger for failures.
+        configuration: Gateway configuration (the Identity service address).
+        rest_client: REST client used to ask Identity.
         user_id: The user's Identity UUID.
         project_id: The project the request is about.
 
@@ -263,20 +276,20 @@ async def _fetch_permissions(injections: RouteInjections,
         if Identity does not know the user, or a 500 for anything that
         leaves the answer uncertain.
     """
-    url = (f"{injections.configuration.apis_identity_svc}"
+    url = (f"{configuration.apis_identity_svc}"
            f"users/{user_id}/projects/{project_id}/permissions")
 
     try:
-        response = await injections.rest_client.get(url)
+        response = await rest_client.get(url)
     except Exception:  # pylint: disable=broad-except
         # Whatever went wrong, the answer is "not allowed" - and a JSON 500
         # is kinder to the caller than Quart's default HTML error page.
-        injections.logger.exception(
+        logger.exception(
             "Permission lookup failed for project %s", project_id)
         return None, _identity_unavailable()
 
     if response.exception_msg is not None:
-        injections.logger.error(
+        logger.error(
             "Connection to identity service failed: %s",
             response.exception_msg)
         return None, _identity_unavailable()
@@ -286,7 +299,7 @@ async def _fetch_permissions(injections: RouteInjections,
         return None, _forbidden()
 
     if response.status_code != HTTPStatus.OK:
-        injections.logger.error(
+        logger.error(
             "Identity permission lookup returned status %s",
             response.status_code)
         return None, _identity_unavailable()
@@ -320,8 +333,9 @@ async def _permission_failure(injections: RouteInjections,
         # to ask Identity about.
         return _forbidden()
 
-    body, failure = await _fetch_permissions(
-        injections, entry.user_id, project_id)
+    body, failure = await fetch_user_permissions(
+        injections.logger, injections.configuration, injections.rest_client,
+        entry.user_id, project_id)
     if failure is not None:
         return failure
 

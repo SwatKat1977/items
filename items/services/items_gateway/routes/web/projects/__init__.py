@@ -30,6 +30,8 @@ from items.services.items_gateway.routes.web.projects.get_all_projects_handler \
     import GetAllProjectsHandler
 from items.services.items_gateway.routes.web.projects.get_project_handler \
     import GetProjectHandler
+from items.services.items_gateway.routes.web.projects.\
+    get_project_permissions_handler import GetProjectPermissionsHandler
 from items.services.items_gateway.routes.web.projects.update_project_handler \
     import UpdateProjectHandler
 
@@ -55,6 +57,8 @@ def create_projects_routes(logger: logging.Logger,
 
     - ``GET /projects`` - List all accessible projects. (any session)
     - ``GET /projects/<project_id>`` - Retrieve a specific project. (any session)
+    - ``GET /projects/<project_id>/permissions`` - What the caller may do in
+      a project, per area. (any session; always about the caller)
     - ``POST /projects`` - Create a new project. (admin)
     - ``PATCH /projects/<project_id>`` - Update an existing project. (admin)
     - ``DELETE /projects/<project_id>`` - Delete a project. (admin)
@@ -73,6 +77,9 @@ def create_projects_routes(logger: logging.Logger,
         A configured Quart ``Blueprint`` containing all project-related API
         routes.
     """
+    # One local per handler and per route is what makes a blueprint factory
+    # read clearly, so the count simply tracks the number of routes.
+    # pylint: disable=too-many-locals
     handler_add_project: AddProjectHandler = AddProjectHandler(logger,
                                                                config,
                                                                rest_client)
@@ -89,6 +96,8 @@ def create_projects_routes(logger: logging.Logger,
                                                                rest_client)
     handler_update_project: UpdateProjectHandler = UpdateProjectHandler(
         logger, config, rest_client)
+    handler_project_permissions: GetProjectPermissionsHandler = (
+        GetProjectPermissionsHandler(logger, config, rest_client))
 
     projects_routes = Blueprint("projects_routes", __name__)
 
@@ -102,6 +111,17 @@ def create_projects_routes(logger: logging.Logger,
     @require_project_member(sessions)
     async def get_project(project_id: int):
         return await handler_get_project.get_project(project_id)
+
+    # What the caller may do in a project (for the Portal's controls).
+    logger.debug("=> %s GET /projects/<int:project_id>/permissions",
+                 "Get my permissions in a project".ljust(40))
+
+    @projects_routes.route('/projects/<int:project_id>/permissions',
+                           methods=['GET'])
+    @require_session_with_entry(sessions)
+    async def get_project_permissions(project_id: int, session_entry):
+        return await handler_project_permissions.get_project_permissions(
+            project_id, session_entry)
 
     # List all of the available projects.
     logger.debug("=> %s GET /projects",
