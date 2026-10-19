@@ -75,6 +75,7 @@ from test_projects_testcases_handlers import (
     TestAddSection,
     TestRenameSection,
     TestDeleteSection,
+    TestListControlsFollowPermissions,
 )
 from test_testcase_form_page_handler import (
     TestViewTestcasePage,
@@ -82,6 +83,7 @@ from test_testcase_form_page_handler import (
     TestAddTestcaseSubmit,
     TestEditTestcaseForm,
     TestEditTestcaseSubmit,
+    TestViewControlsFollowPermissions,
 )
 
 if __name__ == "__main__":

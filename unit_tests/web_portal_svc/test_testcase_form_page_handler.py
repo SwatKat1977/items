@@ -32,6 +32,7 @@ _GW = "http://gateway/"
 _PROJECT_URL = f"{_GW}web/projects/1"
 _CASE_TYPES_URL = f"{_GW}web/case_types"
 _TESTCASE_URL = f"{_GW}web/testcases/7?project_id=1"
+_PERMISSIONS_URL = f"{_GW}web/projects/1/permissions"
 
 _PROJECT_OK = ApiResponse(status_code=HTTPStatus.OK,
                           body={"name": "Zephyr Project"})
@@ -39,6 +40,17 @@ _CASE_TYPES_OK = ApiResponse(status_code=HTTPStatus.OK, body=[
     {"id": 9, "name": "Smoke", "description": "", "is_default": False},
     {"id": 15, "name": "Other", "description": "", "is_default": True},
 ])
+
+
+def _permissions(read=True, add_modify=True, delete=True) -> ApiResponse:
+    """The gateway's "my permissions" answer for Test Cases."""
+    return ApiResponse(status_code=HTTPStatus.OK, body={
+        "project_id": 1,
+        "areas": {"test_cases": {
+            "read": read, "add_modify": add_modify, "delete": delete}}})
+
+
+_PERMISSIONS_ALL = _permissions()
 _TESTCASE_OK = ApiResponse(status_code=HTTPStatus.OK, body={
     "id": 7, "project_id": 1, "folder_id": None, "case_type_id": 9,
     "name": "Login works", "description": "Check the login."})
@@ -144,10 +156,12 @@ class TestViewTestcasePage(_FormPageTestCase):
         async with self.client as c:
             return await c.get("/1/testcases/7", headers=_AUTH_HEADERS)
 
-    def _ready(self, testcase=_TESTCASE_OK, case_types=_CASE_TYPES_OK):
+    def _ready(self, testcase=_TESTCASE_OK, case_types=_CASE_TYPES_OK,
+               permissions=_PERMISSIONS_ALL):
         self._gateway_gets({_TESTCASE_URL: testcase,
                             _PROJECT_URL: _PROJECT_OK,
-                            _CASE_TYPES_URL: case_types})
+                            _CASE_TYPES_URL: case_types,
+                            _PERMISSIONS_URL: permissions})
 
     async def test_shows_the_test_case_read_only(self):
         self._ready()
@@ -755,6 +769,70 @@ class TestEditTestcaseSubmit(_FormPageTestCase):
         self.assertIn("Kept text", text)
         self.assertRegex(text, r'<option value="15"\s+selected>')
         self.assertIn('action="/1/testcases/7/edit"', text)
+
+
+# ---------------------------------------------------------------------------
+# View page: controls follow the person's permissions
+# ---------------------------------------------------------------------------
+
+class TestViewControlsFollowPermissions(_FormPageTestCase):
+    """The view page's Edit and Delete. Left out of the HTML entirely when
+    the person's role does not allow them; the gateway refuses either way."""
+
+    async def _text_for(self, permissions):
+        self._gateway_gets({_TESTCASE_URL: _TESTCASE_OK,
+                            _PROJECT_URL: _PROJECT_OK,
+                            _CASE_TYPES_URL: _CASE_TYPES_OK,
+                            _PERMISSIONS_URL: permissions})
+        async with self.client as c:
+            response = await c.get("/1/testcases/7", headers=_AUTH_HEADERS)
+        self.assertEqual(response.status_code, 200)
+        return await self._text(response)
+
+    async def test_a_reader_sees_the_test_case_but_no_edit_or_delete(self):
+        text = await self._text_for(_permissions(add_modify=False,
+                                                 delete=False))
+        self.assertIn("Login works", text)
+        self.assertIn("Back to Test Cases", text)
+        self.assertNotIn('id="edit-testcase-btn"', text)
+        self.assertNotIn('id="delete-testcase-btn"', text)
+        self.assertNotIn('id="confirmDeleteTestcaseModal"', text)
+
+    async def test_a_tester_can_edit_but_not_delete(self):
+        text = await self._text_for(_permissions(delete=False))
+        self.assertIn('id="edit-testcase-btn"', text)
+        self.assertNotIn('id="delete-testcase-btn"', text)
+        self.assertNotIn('id="confirmDeleteTestcaseModal"', text)
+
+    async def test_a_lead_can_edit_and_delete(self):
+        text = await self._text_for(_permissions())
+        self.assertIn('id="edit-testcase-btn"', text)
+        self.assertIn('id="delete-testcase-btn"', text)
+        self.assertIn('id="confirmDeleteTestcaseModal"', text)
+
+    async def test_each_control_follows_its_own_permission(self):
+        text = await self._text_for(_permissions(add_modify=False))
+        self.assertNotIn('id="edit-testcase-btn"', text)
+        self.assertIn('id="delete-testcase-btn"', text)
+
+    async def test_if_it_cannot_find_out_it_offers_nothing(self):
+        cannot_find_out = {
+            "gateway error": ApiResponse(status_code=503),
+            "unreachable": ApiResponse(exception_msg="connection refused"),
+            "raises": RuntimeError("boom"),
+            "malformed": ApiResponse(status_code=HTTPStatus.OK, body={}),
+            "string true": ApiResponse(
+                status_code=HTTPStatus.OK,
+                body={"areas": {"test_cases": {
+                    "read": "true", "add_modify": "true",
+                    "delete": "true"}}}),
+        }
+        for label, permissions in cannot_find_out.items():
+            with self.subTest(label):
+                text = await self._text_for(permissions)
+                self.assertIn("Login works", text)
+                self.assertNotIn('id="edit-testcase-btn"', text)
+                self.assertNotIn('id="delete-testcase-btn"', text)
 
 
 if __name__ == "__main__":

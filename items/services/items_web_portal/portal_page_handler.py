@@ -193,3 +193,53 @@ class PortalPageHandler(SessionAuthMixin, BaseApiRoute):
         except jinja2.TemplateError:
             self._logger.error("Failed to render web page '%s'", page_file)
             return await render_template(pages.TEMPLATE_INTERNAL_ERROR_PAGE)
+
+    async def _fetch_testcase_permissions(self,
+                                          project_id: int) -> dict[str, bool]:
+        """Ask the gateway what the signed-in user may do with test cases.
+
+        Used to decide which controls a page shows (design doc section 9.5),
+        so a Reader is not offered an Add or Delete button. It is for the
+        look of the page only: the gateway enforces the same permissions on
+        every write whatever the page shows, so nothing here is a security
+        measure.
+
+        Fails closed. If the answer cannot be had or is not what was
+        expected, nothing is granted and the page shows no controls, rather
+        than guessing that they would be allowed. Only a real ``true``
+        counts as granted.
+
+        Args:
+            project_id: The project the page is about.
+
+        Returns:
+            ``{"read": bool, "add_modify": bool, "delete": bool}`` for Test
+            Cases, all ``False`` if the answer could not be established.
+        """
+        nothing: dict[str, bool] = {
+            "read": False, "add_modify": False, "delete": False}
+        url: str = (f"{self._config.apis_gateway_svc}"
+                    f"web/projects/{project_id}/permissions")
+
+        try:
+            response: ApiResponse = await self._rest_client.get(url)
+        except Exception:  # pylint: disable=broad-except
+            self._logger.warning(
+                "Could not fetch permissions for project %s", project_id)
+            return nothing
+
+        if response.status_code != HTTPStatus.OK:
+            self._logger.warning(
+                "Could not fetch permissions for project %s (status %s)",
+                project_id, response.status_code)
+            return nothing
+
+        areas = response.body.get("areas") if isinstance(
+            response.body, dict) else None
+        grant = areas.get("test_cases") if isinstance(areas, dict) else None
+        if not isinstance(grant, dict):
+            self._logger.warning(
+                "Unexpected permissions answer for project %s", project_id)
+            return nothing
+
+        return {action: grant.get(action) is True for action in nothing}

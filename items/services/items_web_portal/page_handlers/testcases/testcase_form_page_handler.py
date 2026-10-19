@@ -96,7 +96,8 @@ class TestcaseFormPageHandler(PortalPageHandler):
             project_name=await self._fetch_project_name(project_id),
             instance_name=self._metadata_settings.instance_name,
             testcase=testcase,
-            case_type_name=type_name)
+            case_type_name=type_name,
+            permissions=await self._fetch_testcase_permissions(project_id))
 
     # ------------------------------------------------------------------
     # Add
