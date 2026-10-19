@@ -115,7 +115,7 @@ from test_project_permission_decorator import (
     TestRequireProjectPermissionAdministrator,
     TestRequireProjectPermissionNoUserId,
 )
-from test_testcase_route_permissions import TestTestcaseRoutePermissions
+from test_route_permissions import TestRoutePermissions
 from test_admin_route_enforcement import TestAdminRouteEnforcement
 
 if __name__ == "__main__":

@@ -112,26 +112,15 @@ _SESSION_ONLY_ROUTES = [
 # (unlike the list, which filters its response instead of rejecting the
 # request). The test case routes used to be here too; they are now gated by
 # the Test Cases permission instead and are covered, route by route and
-# permission by permission, in test_testcase_route_permissions.py.
+# permission by permission, in test_route_permissions.py.
 _MEMBER_ONLY_ROUTES = [
     ("GET", "/web/projects/1"),
 ]
 
-# (method, path, json_body) - the section (folder) write routes. Authorised
-# by membership of project 1 alone for now; administrators bypass the check.
-# They move to the Test Cases permission with the test case routes' sibling
-# change (ITEMS-14). The test case write routes already have, and are
-# covered in test_testcase_route_permissions.py.
-_MEMBER_WRITE_ROUTES = [
-    ("POST", "/web/1/folders", {"parent_id": None, "name": "S"}),
-    ("PATCH", "/web/folders/1?project_id=1", {"name": "S"}),
-    ("DELETE", "/web/folders/1?project_id=1", None),
-    ("DELETE", "/web/folders/1?project_id=1&cascade=true", None),
-]
-
-# The same writes without the project_id query parameter. The membership
-# decorator skips its check when it cannot find a project, so the handlers
-# must refuse these themselves (see read_required_project_id).
+# The same writes without the project_id query parameter. They are now gated
+# by the Test Cases permission (see test_route_permissions.py), and that
+# decorator refuses a request with no project itself; the handlers still do
+# too (see read_required_project_id), as a second line.
 _WRITE_ROUTES_MISSING_PROJECT_ID = [
     ("PATCH", "/web/testcases/1", {"name": "T", "description": ""}),
     ("DELETE", "/web/testcases/1", None),
@@ -307,46 +296,11 @@ class TestAdminRouteEnforcement(unittest.IsolatedAsyncioTestCase):
             "GET", "/web/projects", None, headers=_OUTSIDER_HEADERS)
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
-    async def test_testcase_writes_reject_no_session(self):
-        for method, path, body in _MEMBER_WRITE_ROUTES:
-            with self.subTest(method=method, path=path):
-                response = await self._call(method, path, body)
-                self.assertEqual(response.status_code,
-                                 HTTPStatus.UNAUTHORIZED)
-
-    async def test_testcase_writes_reject_a_non_member(self):
-        """A valid session with no membership of project 1 may not write
-        to it - proves membership is checked, not just "any session"."""
-        for method, path, body in _MEMBER_WRITE_ROUTES:
-            with self.subTest(method=method, path=path):
-                response = await self._call(
-                    method, path, body, headers=_OUTSIDER_HEADERS)
-                self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
-
-    async def test_testcase_writes_accept_a_member(self):
-        for method, path, body in _MEMBER_WRITE_ROUTES:
-            with self.subTest(method=method, path=path):
-                response = await self._call(
-                    method, path, body, headers=_USER_HEADERS)
-                self.assertNotIn(
-                    response.status_code,
-                    (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN))
-
-    async def test_testcase_writes_accept_an_administrator(self):
-        for method, path, body in _MEMBER_WRITE_ROUTES:
-            with self.subTest(method=method, path=path):
-                response = await self._call(
-                    method, path, body, headers=_ADMIN_HEADERS)
-                self.assertNotIn(
-                    response.status_code,
-                    (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN))
-
     async def test_testcase_writes_without_project_id_are_refused(self):
         """A write that names no project must not slip past the access
-        check. For the test case routes the permission decorator refuses it
-        itself; for the section routes (still membership-gated) the
-        decorator has nothing to check, so the handler's own 400 is what
-        stops it."""
+        check. These routes are gated by the Test Cases permission, whose
+        decorator refuses such a request itself (before asking Identity); the
+        handlers' own 400 is a second line behind it."""
         for headers in (_OUTSIDER_HEADERS, _USER_HEADERS, _ADMIN_HEADERS):
             for method, path, body in _WRITE_ROUTES_MISSING_PROJECT_ID:
                 with self.subTest(method=method, path=path):
