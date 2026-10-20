@@ -2,9 +2,31 @@
  * Modify User page behaviour:
  *   1. Save User / Cancel are hidden on the Projects tab.
  *   2. A role's Save button is enabled only once the role has changed.
- *   3. Projects tab remove-access confirmation.
+ *   3. The confirmation banner fades after a few seconds.
+ *   4. Projects tab remove-access confirmation.
  */
 (function () {
+  /* ----------------------------------------------------------------
+   * The confirmation fades after the delay the server sets on it
+   * (data-auto-dismiss-ms). An error banner carries no such attribute and
+   * stays: a missed confirmation costs nothing, whereas a missed error
+   * leaves someone believing a change worked when it did not. No delay, an
+   * unparsable one, or zero means "leave it alone", so a malformed value
+   * fails towards keeping the message rather than hiding it too soon.
+   * ---------------------------------------------------------------- */
+  var confirmation = document.getElementById('success_msg');
+
+  if (confirmation) {
+    var delay = parseInt(
+      confirmation.getAttribute('data-auto-dismiss-ms'), 10);
+
+    if (delay && delay > 0) {
+      window.setTimeout(function () {
+        confirmation.style.display = 'none';
+      }, delay);
+    }
+  }
+
   /* ----------------------------------------------------------------
    * Save User only covers the User and Access tabs: project access and
    * roles save on their own. So it is not offered on the Projects tab,

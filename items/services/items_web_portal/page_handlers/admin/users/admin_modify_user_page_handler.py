@@ -14,6 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from dataclasses import dataclass
 import http
 from http import HTTPStatus
 import logging
@@ -27,6 +28,21 @@ from items.services.items_web_portal.metadata_settings import MetadataSettings
 import items.services.items_web_portal.page_locations as pages
 from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
+
+
+@dataclass(frozen=True)
+class ProjectChange:
+    """A change just made to a user's project access, for the confirmation.
+
+    Attributes:
+        action: ``"add"``, ``"modify"`` (a role change) or ``"remove"``.
+        project_id: The project the change was to.
+        role_id: The role set (``None`` for none / cleared). Unused for a
+            removal.
+    """
+    action: str
+    project_id: int
+    role_id: Optional[int] = None
 
 
 class AdminModifyUserPageHandler(PortalPageHandler):
@@ -169,11 +185,20 @@ class AdminModifyUserPageHandler(PortalPageHandler):
     # Write: project membership (Projects tab)
     # ------------------------------------------------------------------
 
+    # The plain confirmations. They are the fallback: normally the page says
+    # exactly what changed (see ``_describe_change``), so that a second change
+    # cannot be mistaken for the first banner still showing.
     _PROJECT_SUCCESS_MESSAGES: dict = {
         "add": "Project access added.",
         "modify": "Role updated.",
         "remove": "Project access removed.",
     }
+
+    # How long a confirmation stays on screen before it fades. The same as the
+    # Users & Roles page. Errors are never faded: a missed confirmation costs
+    # nothing, whereas a missed error leaves someone believing a change worked
+    # when it did not.
+    _SUCCESS_DISMISS_MS: int = 10_000
 
     @require_administrator
     async def add_user_project(self, user_id: str):
@@ -212,7 +237,8 @@ class AdminModifyUserPageHandler(PortalPageHandler):
             url, json_data=body)
 
         return await self._render_projects_after_write(
-            user_id, response=response, action="add")
+            user_id, response=response,
+            change=ProjectChange("add", project_id, body.get("role_id")))
 
     @require_administrator
     async def modify_user_project(self, user_id: str, project_id: int):
@@ -242,7 +268,8 @@ class AdminModifyUserPageHandler(PortalPageHandler):
             url, json_data={"role_id": role_id})
 
         return await self._render_projects_after_write(
-            user_id, response=response, action="modify")
+            user_id, response=response,
+            change=ProjectChange("modify", project_id, role_id))
 
     @require_administrator
     async def remove_user_project(self, user_id: str, project_id: int):
@@ -260,7 +287,8 @@ class AdminModifyUserPageHandler(PortalPageHandler):
         response: ApiResponse = await self._rest_client.delete(url)
 
         return await self._render_projects_after_write(
-            user_id, response=response, action="remove")
+            user_id, response=response,
+            change=ProjectChange("remove", project_id))
 
     # ------------------------------------------------------------------
     # Helpers
@@ -277,10 +305,51 @@ class AdminModifyUserPageHandler(PortalPageHandler):
             "is_administrator": bool(user.get("is_administrator", False)),
         }
 
+    @staticmethod
+    def _describe_change(change: ProjectChange,
+                         project_names_by_id: dict,
+                         roles: list[dict]) -> Optional[str]:
+        """Say exactly what a project change did, in plain words.
+
+        Names the project and the role, so a second change cannot be mistaken
+        for the first confirmation still being on screen.
+
+        Args:
+            change: The change that was just confirmed.
+            project_names_by_id: Every project's name, by id.
+            roles: Every role, each with ``id`` and ``name``.
+
+        Returns:
+            The sentence, or ``None`` if a name needed for it could not be
+            found (the caller then keeps the generic confirmation, rather
+            than saying something wrong or failing).
+        """
+        project = project_names_by_id.get(change.project_id)
+
+        role: Optional[str] = None
+        if change.role_id is not None:
+            role = next((r.get("name") for r in roles
+                         if r.get("id") == change.role_id), None)
+
+        # A name this sentence needs could not be found: keep the generic
+        # confirmation rather than say something wrong or fail.
+        if project is None or (change.role_id is not None and role is None):
+            return None
+
+        if change.action == "remove":
+            return f"Access to {project} removed."
+
+        if change.action == "modify":
+            return (f"Role on {project} changed to {role}." if role
+                    else f"Role on {project} cleared (now Unassigned).")
+
+        return (f"{project} added as {role}." if role
+                else f"{project} added with no role.")
+
     async def _render_projects_after_write(
             self, user_id: str,
             response: Optional[ApiResponse] = None,
-            action: Optional[str] = None,
+            change: Optional[ProjectChange] = None,
             error_msg_str: Optional[str] = None):
         """Re-render the edit user page after a project-membership write.
 
@@ -293,9 +362,8 @@ class AdminModifyUserPageHandler(PortalPageHandler):
             response: The gateway response for the write, or None if the
                 request never reached the gateway (form validation failed
                 first).
-            action: Short action name used to select the confirmation
-                message ("add", "modify", "remove"). Ignored if response
-                is None.
+            change: What was changed, used to say so in the confirmation
+                and to name the action in logs. Ignored if response is None.
             error_msg_str: Error to show directly, for validation failures
                 that happened before any gateway call.
 
@@ -309,9 +377,11 @@ class AdminModifyUserPageHandler(PortalPageHandler):
                 error_msg_str = self._extract_error(response)
                 self._logger.warning(
                     "Project %s failed for user %s (status %s): %s",
-                    action, user_id, response.status_code, error_msg_str)
+                    change.action, user_id, response.status_code,
+                    error_msg_str)
             else:
-                success_msg_str = self._PROJECT_SUCCESS_MESSAGES.get(action)
+                success_msg_str = self._PROJECT_SUCCESS_MESSAGES.get(
+                    change.action)
 
         form_data = await self._current_form_data(user_id)
 
@@ -321,7 +391,8 @@ class AdminModifyUserPageHandler(PortalPageHandler):
             error_msg_str=error_msg_str,
             success_msg_str=success_msg_str,
             active_tab="tab-projects",
-            details_unavailable=form_data is None)
+            details_unavailable=form_data is None,
+            change=change if success_msg_str else None)
 
     async def _current_form_data(self, user_id: str) -> Optional[dict]:
         """Re-fetch the user's core fields to re-populate the User/Access
@@ -380,6 +451,34 @@ class AdminModifyUserPageHandler(PortalPageHandler):
         return [{"id": p.get("id"), "name": p.get("name", "")}
                 for p in projects if p.get("id") is not None]
 
+    async def _projects_tab_data(
+            self, user_id: str) -> tuple[list[dict], list[dict], dict]:
+        """Load what the Projects tab shows.
+
+        Args:
+            user_id: The user whose memberships are listed.
+
+        Returns:
+            ``(memberships, available_projects, project_names_by_id)``: the
+            user's memberships (each with its project's name added), the
+            projects they are not yet a member of, and every project's name
+            by id (also used to say which project a confirmation is about).
+        """
+        all_projects = await self._fetch_projects()
+        project_names_by_id = {p["id"]: p["name"] for p in all_projects}
+
+        memberships = await self._fetch_memberships(user_id)
+        for membership in memberships:
+            project_id = membership.get("project_id")
+            membership["project_name"] = project_names_by_id.get(
+                project_id, f"Project {project_id}")
+
+        assigned_ids = {m.get("project_id") for m in memberships}
+        available_projects = [
+            p for p in all_projects if p["id"] not in assigned_ids]
+
+        return memberships, available_projects, project_names_by_id
+
     async def _fetch_roles(self) -> list[dict]:
         """Fetch every role's id and name, for the role picker dropdowns.
 
@@ -437,7 +536,8 @@ class AdminModifyUserPageHandler(PortalPageHandler):
                       error_msg_str: Optional[str] = None,
                       success_msg_str: Optional[str] = None,
                       active_tab: str = _DEFAULT_ACTIVE_TAB,
-                      details_unavailable: bool = False):
+                      details_unavailable: bool = False,
+                      change: Optional[ProjectChange] = None):
         """Render the edit user page, including the Projects tab's data.
 
         Args:
@@ -453,24 +553,22 @@ class AdminModifyUserPageHandler(PortalPageHandler):
                 loaded. The User and Access tabs then show a notice in place
                 of the form (see the template), because there is nothing
                 true to put in it.
+            change: The project change just confirmed, if any. When the
+                project and role names can be looked up the confirmation says
+                exactly what changed; otherwise ``success_msg_str`` (the
+                generic text) is shown unchanged.
 
         Returns:
             The rendered edit user page response.
         """
-        all_projects = await self._fetch_projects()
-        project_names_by_id = {p["id"]: p["name"] for p in all_projects}
-
-        memberships = await self._fetch_memberships(user_id)
-        for membership in memberships:
-            project_id = membership.get("project_id")
-            membership["project_name"] = project_names_by_id.get(
-                project_id, f"Project {project_id}")
-
-        assigned_ids = {m.get("project_id") for m in memberships}
-        available_projects = [
-            p for p in all_projects if p["id"] not in assigned_ids]
+        memberships, available_projects, project_names_by_id = (
+            await self._projects_tab_data(user_id))
 
         roles = await self._fetch_roles()
+
+        if change is not None:
+            success_msg_str = self._describe_change(
+                change, project_names_by_id, roles) or success_msg_str
 
         return await self._render_page(
             pages.PAGE_INSTANCE_ADMIN_MODIFY_USER,
@@ -485,4 +583,5 @@ class AdminModifyUserPageHandler(PortalPageHandler):
             active_tab=active_tab,
             details_unavailable=details_unavailable,
             error_msg_str=error_msg_str,
-            success_msg_str=success_msg_str)
+            success_msg_str=success_msg_str,
+            success_dismiss_ms=self._SUCCESS_DISMISS_MS)

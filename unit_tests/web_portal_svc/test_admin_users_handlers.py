@@ -539,7 +539,7 @@ class TestAddUserProject(unittest.IsolatedAsyncioTestCase):
         self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
         response = await self._post({"project_id": "5"})
         text = await response.get_data(as_text=True)
-        self.assertIn("Project access added", text)
+        self.assertIn("Alpha added with no role.", text)
         self.assertIn('nav-link active" data-bs-toggle="tab" href="#tab-projects"', text)
 
     async def test_error_without_body_uses_fallback_message(self):
@@ -566,7 +566,7 @@ class TestAddUserProject(unittest.IsolatedAsyncioTestCase):
         response = await self._post({"project_id": "5"})
         self.assertEqual(response.status_code, 200)
         text = await response.get_data(as_text=True)
-        self.assertIn("Project access added", text)
+        self.assertIn("Alpha added with no role.", text)
         self.assertIn("details could not be loaded", text)
         self.assertNotIn('id="modifyUserForm"', text)
         self.assertNotIn('id="account_status"', text)
@@ -637,7 +637,7 @@ class TestModifyUserProject(unittest.IsolatedAsyncioTestCase):
         self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
         response = await self._post({"role_id": "3"})
         text = await response.get_data(as_text=True)
-        self.assertIn("Role updated", text)
+        self.assertIn("Role on Alpha changed to Lead.", text)
         self.assertIn('nav-link active" data-bs-toggle="tab" href="#tab-projects"', text)
 
 
@@ -687,7 +687,7 @@ class TestRemoveUserProject(unittest.IsolatedAsyncioTestCase):
         self.mock_rest_client.get.side_effect = _get_side_effect(user=_USER_OK)
         response = await self._post()
         text = await response.get_data(as_text=True)
-        self.assertIn("Project access removed", text)
+        self.assertIn("Access to Alpha removed.", text)
         self.assertIn('nav-link active" data-bs-toggle="tab" href="#tab-projects"', text)
 
 
@@ -930,6 +930,137 @@ class TestEditUserPage(unittest.IsolatedAsyncioTestCase):
         self.assertIn('href="/admin/users_roles"',
                       _tag(text, "back-to-users-btn"))
 
+    # --- confirmations say what changed, and fade (ITEMS-31) ---------------
+
+    async def _confirmation(self, path, form, post_response=None,
+                            projects=_PROJECTS_OK, roles=_ROLES_OK):
+        """The page after a project action, with its confirmation (or error)
+        returned as text."""
+        post_response = post_response or ApiResponse(status_code=HTTPStatus.OK)
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID, post_response]
+        self.mock_rest_client.patch.return_value = post_response
+        self.mock_rest_client.delete.return_value = post_response
+        self.mock_rest_client.get.side_effect = [
+            _USER_OK, projects, _MEMBERSHIPS_OK, roles]
+        async with self.client as c:
+            response = await c.post(path, form=form, headers=_AUTH_HEADERS)
+        self.assertEqual(response.status_code, 200)
+        return await response.get_data(as_text=True)
+
+    def _banner(self, text):
+        match = re.search(r'<div id="success_msg"[^>]*>([^<]*)</div>', text)
+        return match.group(1) if match else None
+
+    async def test_a_role_change_names_the_project_and_the_role(self):
+        text = await self._confirmation(
+            f"/admin/users_roles/{_UUID}/projects/5/modify", {"role_id": "3"})
+        self.assertEqual(self._banner(text),
+                         "Role on Alpha changed to Lead.")
+
+    async def test_clearing_a_role_says_it_is_now_unassigned(self):
+        text = await self._confirmation(
+            f"/admin/users_roles/{_UUID}/projects/5/modify", {"role_id": ""})
+        self.assertEqual(self._banner(text),
+                         "Role on Alpha cleared (now Unassigned).")
+
+    async def test_adding_a_project_with_a_role_names_both(self):
+        text = await self._confirmation(
+            f"/admin/users_roles/{_UUID}/projects",
+            {"project_id": "7", "role_id": "2"},
+            ApiResponse(status_code=HTTPStatus.CREATED))
+        self.assertEqual(self._banner(text), "Beta added as Tester.")
+
+    async def test_adding_a_project_with_no_role_says_so(self):
+        text = await self._confirmation(
+            f"/admin/users_roles/{_UUID}/projects", {"project_id": "7"},
+            ApiResponse(status_code=HTTPStatus.CREATED))
+        self.assertEqual(self._banner(text), "Beta added with no role.")
+
+    async def test_removing_a_project_names_it(self):
+        text = await self._confirmation(
+            f"/admin/users_roles/{_UUID}/projects/5/delete", {})
+        self.assertEqual(self._banner(text), "Access to Alpha removed.")
+
+    async def test_two_changes_in_a_row_read_differently(self):
+        """The original problem: the second confirmation looked identical to
+        the first, so a second change could not be told from the banner still
+        being on screen."""
+        first = await self._confirmation(
+            f"/admin/users_roles/{_UUID}/projects/5/modify", {"role_id": "3"})
+        second = await self._confirmation(
+            f"/admin/users_roles/{_UUID}/projects/5/modify", {"role_id": "2"})
+        self.assertNotEqual(self._banner(first), self._banner(second))
+        self.assertEqual(self._banner(second),
+                         "Role on Alpha changed to Tester.")
+
+    # --- a name that cannot be found falls back to the plain text ----------
+
+    async def test_an_unknown_project_falls_back_to_the_plain_text(self):
+        cases = {
+            "role": (f"/admin/users_roles/{_UUID}/projects/99/modify",
+                     {"role_id": "3"}, "Role updated."),
+            "remove": (f"/admin/users_roles/{_UUID}/projects/99/delete",
+                       {}, "Project access removed."),
+            "add": (f"/admin/users_roles/{_UUID}/projects",
+                    {"project_id": "99"}, "Project access added."),
+        }
+        for label, (path, form, expected) in cases.items():
+            with self.subTest(label):
+                text = await self._confirmation(
+                    path, form, ApiResponse(status_code=HTTPStatus.CREATED))
+                self.assertEqual(self._banner(text), expected)
+
+    async def test_an_unknown_role_falls_back_to_the_plain_text(self):
+        for label, (path, form, expected) in {
+                "role": (f"/admin/users_roles/{_UUID}/projects/5/modify",
+                         {"role_id": "99"}, "Role updated."),
+                "add": (f"/admin/users_roles/{_UUID}/projects",
+                        {"project_id": "7", "role_id": "99"},
+                        "Project access added.")}.items():
+            with self.subTest(label):
+                text = await self._confirmation(
+                    path, form, ApiResponse(status_code=HTTPStatus.CREATED))
+                self.assertEqual(self._banner(text), expected)
+
+    async def test_roles_that_cannot_be_loaded_fall_back_too(self):
+        text = await self._confirmation(
+            f"/admin/users_roles/{_UUID}/projects/5/modify", {"role_id": "3"},
+            roles=ApiResponse(status_code=HTTPStatus.SERVICE_UNAVAILABLE,
+                              body={}))
+        self.assertEqual(self._banner(text), "Role updated.")
+
+    async def test_the_names_are_escaped(self):
+        projects = ApiResponse(status_code=HTTPStatus.OK, body={"projects": [
+            {"id": 5, "name": "<script>alert(1)</script>"}]})
+        text = await self._confirmation(
+            f"/admin/users_roles/{_UUID}/projects/5/modify", {"role_id": "3"},
+            projects=projects)
+        self.assertNotIn("<script>alert(1)</script>", text)
+        self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", text)
+
+    # --- confirmations fade; errors never do ---------------------------------
+
+    async def test_a_confirmation_is_marked_to_fade_after_ten_seconds(self):
+        text = await self._confirmation(
+            f"/admin/users_roles/{_UUID}/projects/5/modify", {"role_id": "3"})
+        self.assertIn('data-auto-dismiss-ms="10000"',
+                      _tag(text, "success_msg"))
+
+    async def test_an_error_is_never_marked_to_fade(self):
+        text = await self._confirmation(
+            f"/admin/users_roles/{_UUID}/projects", {"project_id": "7"},
+            ApiResponse(status_code=HTTPStatus.CONFLICT,
+                        body={"error": "User is already a member"}))
+        self.assertIn("already a member", text)
+        self.assertNotIn('id="success_msg"', text)
+        self.assertNotIn("data-auto-dismiss-ms", text)
+
+    async def test_a_plain_page_has_no_confirmation_to_fade(self):
+        text = await self._page()
+        self.assertNotIn('id="success_msg"', text)
+        self.assertNotIn("data-auto-dismiss-ms", text)
+
     async def test_the_error_is_shown_once_not_twice(self):
         self.mock_rest_client.get.return_value = ApiResponse(
             status_code=HTTPStatus.NOT_FOUND, body={})
@@ -1032,14 +1163,14 @@ class TestEditUserPage(unittest.IsolatedAsyncioTestCase):
             "add": (f"/admin/users_roles/{_UUID}/projects",
                     {"project_id": "7"},
                     ApiResponse(status_code=HTTPStatus.CREATED),
-                    "Project access added"),
+                    "Beta added with no role."),
             "role": (f"/admin/users_roles/{_UUID}/projects/5/modify",
                      {"role_id": "3"},
                      ApiResponse(status_code=HTTPStatus.OK),
-                     "Role updated"),
+                     "Role on Alpha changed to Lead."),
             "remove": (f"/admin/users_roles/{_UUID}/projects/5/delete",
                        {}, ApiResponse(status_code=HTTPStatus.OK),
-                       "Project access removed"),
+                       "Access to Alpha removed."),
         }
         for label, (path, form, response, confirmation) in actions.items():
             with self.subTest(label):
