@@ -15,8 +15,12 @@
   <div id="error_msg">{{ error_msg_str }}</div>
   {% endif %}
 
+  {# A confirmation fades after a few seconds (data-auto-dismiss-ms, set by the
+     handler); an error carries no such attribute and stays until the page
+     changes. A missed confirmation costs nothing; a missed error leaves
+     someone believing a change worked when it did not. #}
   {% if success_msg_str %}
-  <div id="success_msg">{{ success_msg_str }}</div>
+  <div id="success_msg" data-auto-dismiss-ms="{{ success_dismiss_ms }}">{{ success_msg_str }}</div>
   {% endif %}
 
   <!-- Tab Navigation -->
