@@ -78,7 +78,8 @@ class AdminModifyUserPageHandler(PortalPageHandler):
             return await self._render(
                 user_id=user_id,
                 form_data={},
-                error_msg_str="User not found.")
+                error_msg_str="User not found.",
+                details_unavailable=True)
 
         if response.status_code != http.HTTPStatus.OK:
             self._logger.error(
@@ -87,7 +88,8 @@ class AdminModifyUserPageHandler(PortalPageHandler):
             return await self._render(
                 user_id=user_id,
                 form_data={},
-                error_msg_str="Could not load user — please try again.")
+                error_msg_str="Could not load user — please try again.",
+                details_unavailable=True)
 
         form_data = self._user_to_form_data(response.body)
         return await self._render(user_id=user_id, form_data=form_data)
@@ -315,23 +317,35 @@ class AdminModifyUserPageHandler(PortalPageHandler):
 
         return await self._render(
             user_id=user_id,
-            form_data=form_data,
+            form_data=form_data or {},
             error_msg_str=error_msg_str,
             success_msg_str=success_msg_str,
-            active_tab="tab-projects")
+            active_tab="tab-projects",
+            details_unavailable=form_data is None)
 
-    async def _current_form_data(self, user_id: str) -> dict:
+    async def _current_form_data(self, user_id: str) -> Optional[dict]:
         """Re-fetch the user's core fields to re-populate the User/Access
         tabs after a project-membership write (which doesn't touch them,
         but the shared form still needs correct values to show).
 
-        A failure here is non-fatal: the User/Access tabs would simply show
-        blank fields rather than the Projects tab write itself failing.
+        A failure here is non-fatal to the project write itself, but it is
+        not silent either: the caller is told the details are unavailable
+        and shows a notice in place of the form. Returning an empty dict
+        would instead have drawn a blank form with both the active and the
+        administrator switches off, which saving would turn into a
+        deactivated, de-administrated user.
+
+        Returns:
+            The form values, or ``None`` if the user could not be loaded.
         """
         url = f"{self._config.apis_gateway_svc}web/users/{user_id}"
         response: ApiResponse = await self._rest_client.get(url)
-        if response.status_code != HTTPStatus.OK:
-            return {}
+        if response.status_code != HTTPStatus.OK or not isinstance(
+                response.body, dict):
+            self._logger.warning(
+                "Could not reload user %s after a project change "
+                "(status %s)", user_id, response.status_code)
+            return None
         return self._user_to_form_data(response.body)
 
     @staticmethod
@@ -416,12 +430,14 @@ class AdminModifyUserPageHandler(PortalPageHandler):
 
         return (response.body or {}).get("memberships", [])
 
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     async def _render(self,
                       user_id: str,
                       form_data: dict,
                       error_msg_str: Optional[str] = None,
                       success_msg_str: Optional[str] = None,
-                      active_tab: str = _DEFAULT_ACTIVE_TAB):
+                      active_tab: str = _DEFAULT_ACTIVE_TAB,
+                      details_unavailable: bool = False):
         """Render the edit user page, including the Projects tab's data.
 
         Args:
@@ -433,6 +449,10 @@ class AdminModifyUserPageHandler(PortalPageHandler):
                 "tab-projects") should be shown as active on render - so a
                 project-membership write lands back on Projects rather
                 than always resetting to the first tab.
+            details_unavailable: True when the user's details could not be
+                loaded. The User and Access tabs then show a notice in place
+                of the form (see the template), because there is nothing
+                true to put in it.
 
         Returns:
             The rendered edit user page response.
@@ -463,5 +483,6 @@ class AdminModifyUserPageHandler(PortalPageHandler):
             roles=roles,
             available_projects=available_projects,
             active_tab=active_tab,
+            details_unavailable=details_unavailable,
             error_msg_str=error_msg_str,
             success_msg_str=success_msg_str)
