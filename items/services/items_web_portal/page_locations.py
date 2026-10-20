@@ -33,6 +33,10 @@ TEMPLATE_TESTCASE_FORM_PAGE: str = "project_testcase_form.html"
 # Read-only test case page template
 TEMPLATE_TESTCASE_VIEW_PAGE: str = "project_testcase_view.html"
 
+# "You don't have permission" page inside a project (a member whose role does
+# not allow the page they asked for)
+TEMPLATE_PROJECT_NO_PERMISSION_PAGE: str = "project_no_permission.html"
+
 # Internal error page template
 TEMPLATE_INTERNAL_ERROR_PAGE: str = "internal_server_error.html"
 

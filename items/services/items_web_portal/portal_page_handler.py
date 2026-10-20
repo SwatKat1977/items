@@ -16,9 +16,10 @@ limitations under the License.
 """
 from http import HTTPStatus
 import logging
+from typing import Optional
 import jinja2
 import jsonschema
-from quart import request, render_template
+from quart import make_response, request, render_template
 from weaver_framework.microservice.api_response import ApiResponse
 from weaver_framework.microservice.base_api_route import BaseApiRoute
 from weaver_framework.microservice.rest_client import RestClient
@@ -243,3 +244,86 @@ class PortalPageHandler(SessionAuthMixin, BaseApiRoute):
             return nothing
 
         return {action: grant.get(action) is True for action in nothing}
+
+    async def _fetch_member_project_name(self,
+                                         project_id: int) -> Optional[str]:
+        """The project's name, if the person is allowed to see the project.
+
+        The project's own page is open to any member whatever their role, so
+        being able to read it is the test for "a member" - as opposed to
+        someone who has no business seeing the project at all.
+
+        Args:
+            project_id: The project the page is about.
+
+        Returns:
+            The project's name, or ``None`` if it could not be read (not a
+            member, no such project, or the gateway failed).
+        """
+        response: ApiResponse = await self._rest_client.get(
+            f"{self._config.apis_gateway_svc}web/projects/{project_id}")
+
+        if response.status_code == HTTPStatus.OK and isinstance(
+                response.body, dict):
+            return response.body.get("name", "Unknown Project")
+
+        return None
+
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
+    async def _render_no_permission(self, project_id: int, project_name: str,
+                                    instance_name: str, message: str,
+                                    back_url: str, back_label: str):
+        """Tell a member plainly that their role does not allow this page.
+
+        Used in place of quietly redirecting to the dashboard, which was the
+        right answer when a refusal could only mean "not on this project".
+        Now it can also mean "on the project, but the role does not allow
+        it", and that person deserves to be told.
+
+        Args:
+            project_id: The project the page is about.
+            project_name: The project's name, for the sidebar.
+            instance_name: The instance's name, for the page header.
+            message: What they may not do, in plain words.
+            back_url: Where the way-out button goes.
+            back_label: The way-out button's text.
+
+        Returns:
+            The rendered "no permission" page.
+        """
+        return await self._render_page(
+            pages.TEMPLATE_PROJECT_NO_PERMISSION_PAGE,
+            active_page="test-cases",
+            project_id=project_id,
+            project_name=project_name,
+            instance_name=instance_name,
+            message=message,
+            back_url=back_url,
+            back_label=back_label)
+
+    async def _no_permission_or_dashboard(self, project_id: int,
+                                          instance_name: str, message: str,
+                                          back_url: str, back_label: str):
+        """The "no permission" page for a member, else the dashboard.
+
+        A member is shown the message; someone who is not on the project at
+        all is sent to the dashboard, because the project is not theirs to
+        see and a page naming it would tell them it exists.
+
+        Args:
+            project_id: The project the page is about.
+            instance_name: The instance's name, for the page header.
+            message: What they may not do, in plain words.
+            back_url: Where the way-out button goes.
+            back_label: The way-out button's text.
+
+        Returns:
+            The "no permission" page, or a redirect to the dashboard.
+        """
+        project_name = await self._fetch_member_project_name(project_id)
+        if project_name is None:
+            return await make_response(self._generate_redirect('/'))
+
+        return await self._render_no_permission(
+            project_id, project_name, instance_name, message, back_url,
+            back_label)

@@ -1,0 +1,39 @@
+{% extends "project_page_template.html" %}
+{% block title %}Integrated Test Management Suite | No permission{% endblock %}
+{% block head %}{{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/project_testcases.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/project_testcase_form.css') }}">
+{% endblock %}
+
+{# Shown to someone who is on the project but whose role does not allow the
+   page they asked for (for example a role with no Read permission, or a
+   Reader opening an Add or Edit address by hand). It says so plainly and
+   gives a way back, instead of quietly sending them to the dashboard.
+
+   Someone who is not on the project at all never sees this page: they are
+   sent to the dashboard, because the project is not theirs to see.
+
+   `message` is plain text from the handler, `back_url` and `back_label` the
+   way out. #}
+{% block project_content %}
+<div id="content">
+    <div id="testcases-title-bar">
+        <h5 class="mb-0">Test Cases</h5>
+    </div>
+
+    <div class="p-3">
+        <div class="testcase-form-card" id="no-permission">
+            <div class="alert alert-warning" role="alert"
+                 id="no-permission-message">{{ message }}</div>
+            <p class="text-muted">
+                If you think you should be able to do this, ask an
+                administrator to check your role on this project.
+            </p>
+            <div class="testcase-form-actions">
+                <a href="{{ back_url }}" class="btn btn-header-outline"
+                   id="no-permission-back">{{ back_label }}</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

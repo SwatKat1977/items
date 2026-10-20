@@ -125,8 +125,12 @@ class _FormPageTestCase(unittest.IsolatedAsyncioTestCase):
         """Answer gateway GETs by URL, so tests don't depend on call order.
 
         An entry that is an exception is raised; a URL not listed fails the
-        test loudly.
+        test loudly. The "my permissions" answer defaults to "allowed
+        everything" (a test about a refusal lists its own), because the Add
+        and Edit forms now ask it before showing themselves.
         """
+        responses = {_PERMISSIONS_URL: _PERMISSIONS_ALL, **responses}
+
         async def fake_get(url, *_args, **_kwargs):
             if url not in responses:
                 raise AssertionError(f"unexpected gateway GET {url}")
@@ -306,10 +310,27 @@ class TestViewTestcasePage(_FormPageTestCase):
         text = await self._text(await self._get())
         self.assertIn(_REDIRECT_TO_LIST, text)
 
-    async def test_not_a_member_goes_to_the_dashboard(self):
+    async def test_a_member_whose_role_cannot_read_is_told_so(self):
+        """On the project (its own page loads) but refused the test case:
+        a plain message and a way back, not a silent trip to the dashboard."""
         self._ready(ApiResponse(status_code=HTTPStatus.FORBIDDEN, body={}))
         text = await self._text(await self._get())
+        self.assertIn('id="no-permission-message"', text)
+        self.assertIn("have permission to view the test cases", text)
+        self.assertIn('href="/1/overview"', text)
+        self.assertIn("Zephyr Project", text)
+        self.assertNotIn(_REDIRECT_TO_DASHBOARD, text)
+        self.assertNotIn("testcase-view-title", text)
+
+    async def test_not_a_member_goes_to_the_dashboard(self):
+        """Not on the project at all: nothing naming it is shown."""
+        self._gateway_gets({
+            _TESTCASE_URL: ApiResponse(status_code=HTTPStatus.FORBIDDEN),
+            _PROJECT_URL: ApiResponse(status_code=HTTPStatus.FORBIDDEN),
+            _CASE_TYPES_URL: _CASE_TYPES_OK})
+        text = await self._text(await self._get())
         self.assertIn(_REDIRECT_TO_DASHBOARD, text)
+        self.assertNotIn('id="no-permission-message"', text)
 
     async def test_gateway_failure_shows_the_error_page(self):
         self._ready(ApiResponse(status_code=HTTPStatus.INTERNAL_SERVER_ERROR))
@@ -351,6 +372,44 @@ class TestAddTestcaseForm(_FormPageTestCase):
         self.assertIn("Zephyr Project", text)
         self.assertIn('name="name"', text)
         self.assertIn('name="description"', text)
+
+    async def test_a_reader_is_told_they_cannot_add_instead_of_the_form(self):
+        self._gateway_gets({
+            _PROJECT_URL: _PROJECT_OK, _CASE_TYPES_URL: _CASE_TYPES_OK,
+            _PERMISSIONS_URL: _permissions(add_modify=False, delete=False)})
+        text = await self._text(await self._get())
+        self.assertIn('id="no-permission-message"', text)
+        self.assertIn("have permission to add test cases", text)
+        self.assertIn('href="/1/testcases"', text)
+        self.assertIn("Zephyr Project", text)
+        self.assertNotIn('id="testcaseForm"', text)
+
+    async def test_a_role_that_can_add_gets_the_form(self):
+        self._gateway_gets({_PROJECT_URL: _PROJECT_OK,
+                            _CASE_TYPES_URL: _CASE_TYPES_OK,
+                            _PERMISSIONS_URL: _permissions(delete=False)})
+        text = await self._text(await self._get())
+        self.assertIn('id="testcaseForm"', text)
+        self.assertNotIn('id="no-permission-message"', text)
+
+    async def test_not_a_member_goes_to_the_dashboard(self):
+        """Not on the project at all: the dashboard, with nothing naming it."""
+        self._gateway_gets({
+            _PROJECT_URL: ApiResponse(status_code=HTTPStatus.FORBIDDEN),
+            _CASE_TYPES_URL: _CASE_TYPES_OK,
+            _PERMISSIONS_URL: _permissions(False, False, False)})
+        text = await self._text(await self._get())
+        self.assertIn(_REDIRECT_TO_DASHBOARD, text)
+        self.assertNotIn('id="no-permission-message"', text)
+
+    async def test_if_the_permissions_cannot_be_had_the_form_is_withheld(self):
+        """Fails closed: not knowing is not a reason to show the form."""
+        self._gateway_gets({_PROJECT_URL: _PROJECT_OK,
+                            _CASE_TYPES_URL: _CASE_TYPES_OK,
+                            _PERMISSIONS_URL: RuntimeError("boom")})
+        text = await self._text(await self._get())
+        self.assertIn('id="no-permission-message"', text)
+        self.assertNotIn('id="testcaseForm"', text)
 
     async def test_type_dropdown_lists_every_type_and_marks_the_default(self):
         self._gateway_gets({_PROJECT_URL: _PROJECT_OK,
@@ -589,11 +648,21 @@ class TestAddTestcaseSubmit(_FormPageTestCase):
         self.assertIn(_REDIRECT_TO_LIST, text)
         self.assertNotIn('id="testcaseForm"', text)
 
-    async def test_not_a_member_goes_to_the_dashboard(self):
+    async def test_refused_by_the_role_says_so_and_keeps_the_input(self):
+        """A 403 means the role does not allow adding. What was typed is not
+        thrown away, and the person is not silently sent to the dashboard."""
         self._ready(ApiResponse(status_code=HTTPStatus.FORBIDDEN,
                                 body={"error": "Forbidden"}))
-        text = await self._text(await self._post({"name": "Login"}))
-        self.assertIn(_REDIRECT_TO_DASHBOARD, text)
+        response = await self._post({
+            "name": "Login", "description": "My description",
+            "case_type_id": "9"})
+        self.assertEqual(response.status_code, 200)
+        text = await self._text(response)
+        self.assertIn("have permission to add test cases", text)
+        self.assertIn('id="testcaseForm"', text)
+        self.assertIn('value="Login"', text)
+        self.assertIn("My description", text)
+        self.assertNotIn(_REDIRECT_TO_DASHBOARD, text)
 
     async def test_duplicate_name_shows_the_banner_and_keeps_the_input(self):
         self._ready(ApiResponse(
@@ -632,10 +701,11 @@ class TestEditTestcaseForm(_FormPageTestCase):
         async with self.client as c:
             return await c.get("/1/testcases/7/edit", headers=_AUTH_HEADERS)
 
-    def _ready(self, testcase=_TESTCASE_OK):
+    def _ready(self, testcase=_TESTCASE_OK, permissions=_PERMISSIONS_ALL):
         self._gateway_gets({_TESTCASE_URL: testcase,
                             _PROJECT_URL: _PROJECT_OK,
-                            _CASE_TYPES_URL: _CASE_TYPES_OK})
+                            _CASE_TYPES_URL: _CASE_TYPES_OK,
+                            _PERMISSIONS_URL: permissions})
 
     async def test_form_is_filled_with_the_current_values(self):
         self._ready()
@@ -680,10 +750,57 @@ class TestEditTestcaseForm(_FormPageTestCase):
         text = await self._text(await self._get())
         self.assertIn(_REDIRECT_TO_LIST, text)
 
-    async def test_not_a_member_goes_to_the_dashboard(self):
+    async def test_a_member_whose_role_cannot_read_is_told_so(self):
         self._ready(ApiResponse(status_code=HTTPStatus.FORBIDDEN, body={}))
         text = await self._text(await self._get())
+        self.assertIn('id="no-permission-message"', text)
+        self.assertIn("have permission to view the test cases", text)
+        self.assertNotIn(_REDIRECT_TO_DASHBOARD, text)
+        self.assertNotIn('id="testcaseForm"', text)
+
+    async def test_not_a_member_goes_to_the_dashboard(self):
+        self._gateway_gets({
+            _TESTCASE_URL: ApiResponse(status_code=HTTPStatus.FORBIDDEN),
+            _PROJECT_URL: ApiResponse(status_code=HTTPStatus.FORBIDDEN),
+            _CASE_TYPES_URL: _CASE_TYPES_OK})
+        text = await self._text(await self._get())
         self.assertIn(_REDIRECT_TO_DASHBOARD, text)
+
+    async def test_a_reader_is_told_they_cannot_edit_instead_of_the_form(self):
+        """Typing the Edit address by hand: a form that could be filled in
+        but never saved is not shown."""
+        self._ready(permissions=_permissions(add_modify=False, delete=False))
+        text = await self._text(await self._get())
+        self.assertIn('id="no-permission-message"', text)
+        self.assertIn("have permission to edit test cases", text)
+        self.assertIn('href="/1/testcases/7"', text)
+        self.assertIn("Back to the test case", text)
+        self.assertNotIn('id="testcaseForm"', text)
+        self.assertNotIn("<textarea", text)
+
+    async def test_a_role_that_can_edit_gets_the_form(self):
+        self._ready(permissions=_permissions(delete=False))
+        text = await self._text(await self._get())
+        self.assertIn('id="testcaseForm"', text)
+        self.assertNotIn('id="no-permission-message"', text)
+
+    async def test_not_a_member_cannot_see_even_the_edit_message(self):
+        """Can read the test case somehow but is not a member: nothing
+        naming the project."""
+        self._gateway_gets({
+            _TESTCASE_URL: _TESTCASE_OK,
+            _PROJECT_URL: ApiResponse(status_code=HTTPStatus.FORBIDDEN),
+            _CASE_TYPES_URL: _CASE_TYPES_OK,
+            _PERMISSIONS_URL: _permissions(False, False, False)})
+        text = await self._text(await self._get())
+        self.assertIn(_REDIRECT_TO_DASHBOARD, text)
+
+    async def test_if_the_permissions_cannot_be_had_the_form_is_withheld(self):
+        """Fails closed: not knowing is not a reason to show the form."""
+        self._ready(permissions=ApiResponse(status_code=503))
+        text = await self._text(await self._get())
+        self.assertIn('id="no-permission-message"', text)
+        self.assertNotIn('id="testcaseForm"', text)
 
     async def test_gateway_failure_shows_the_error_page(self):
         self._ready(ApiResponse(status_code=HTTPStatus.INTERNAL_SERVER_ERROR))
@@ -745,10 +862,19 @@ class TestEditTestcaseSubmit(_FormPageTestCase):
         text = await self._text(await self._post({"name": "New"}))
         self.assertIn(_REDIRECT_TO_LIST, text)
 
-    async def test_not_a_member_goes_to_the_dashboard(self):
+    async def test_refused_by_the_role_says_so_and_keeps_the_input(self):
         self._ready(ApiResponse(status_code=HTTPStatus.FORBIDDEN, body={}))
-        text = await self._text(await self._post({"name": "New"}))
-        self.assertIn(_REDIRECT_TO_DASHBOARD, text)
+        response = await self._post({
+            "name": "Renamed", "description": "Kept text",
+            "case_type_id": "9"})
+        self.assertEqual(response.status_code, 200)
+        text = await self._text(response)
+        self.assertIn("have permission to edit test cases", text)
+        self.assertIn('id="testcaseForm"', text)
+        self.assertIn('value="Renamed"', text)
+        self.assertIn("Kept text", text)
+        self.assertIn('action="/1/testcases/7/edit"', text)
+        self.assertNotIn(_REDIRECT_TO_DASHBOARD, text)
 
     async def test_missing_test_case_shows_the_banner(self):
         self._ready(ApiResponse(status_code=HTTPStatus.NOT_FOUND,

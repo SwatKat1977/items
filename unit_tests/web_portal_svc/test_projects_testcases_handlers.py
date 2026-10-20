@@ -172,9 +172,9 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
         text = await response.get_data(as_text=True)
         self.assertIn("Refresh", text)
 
-    async def test_forbidden_redirects_to_dashboard(self):
-        """Not a member of this project any more - same treatment as 404,
-        not an error worth showing."""
+    async def test_forbidden_for_a_member_says_so_plainly(self):
+        """On the project (its own page loads) but the role cannot read test
+        cases: told so, not quietly sent to the dashboard."""
         self.mock_rest_client.get.side_effect = [
             ApiResponse(status_code=HTTPStatus.OK, body={"name": "Proj"}),
             ApiResponse(status_code=403),
@@ -182,7 +182,25 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
         response = await self._get()
         self.assertEqual(response.status_code, 200)
         text = await response.get_data(as_text=True)
+        self.assertIn('id="no-permission-message"', text)
+        self.assertIn("have permission to view the test cases", text)
+        self.assertIn('href="/1/overview"', text)
+        self.assertIn("Back to Project Overview", text)
+        self.assertIn("Proj", text)  # still inside the project's page
+        self.assertNotIn("Refresh", text)  # not the dashboard redirect
+
+    async def test_forbidden_for_a_non_member_redirects_to_the_dashboard(self):
+        """Not on the project at all (its own page is refused too): the
+        project is not theirs to see, so no page naming it."""
+        self.mock_rest_client.get.side_effect = [
+            ApiResponse(status_code=403),
+            ApiResponse(status_code=403),
+        ]
+        response = await self._get()
+        self.assertEqual(response.status_code, 200)
+        text = await response.get_data(as_text=True)
         self.assertIn("Refresh", text)
+        self.assertNotIn('id="no-permission-message"', text)
 
     async def test_project_name_lookup_failure_falls_back_to_unknown(self):
         self.mock_rest_client.get.side_effect = [
@@ -593,11 +611,29 @@ class TestDeleteTestcaseFromList(unittest.IsolatedAsyncioTestCase):
         text = await (await self._post()).get_data(as_text=True)
         self.assertIn("url='http://localhost/1/testcases'", text)
 
-    async def test_not_a_member_goes_to_the_dashboard(self):
+    async def test_refused_by_the_role_says_so_and_stays_on_the_list(self):
+        """A 403 means the role does not allow deleting. The list comes
+        back with a plain message, not a silent trip to the dashboard."""
         self.mock_rest_client.delete.return_value = ApiResponse(
             status_code=HTTPStatus.FORBIDDEN, body={"error": "Forbidden"})
+        self._list_page_responses()
+        response = await self._post()
+        self.assertEqual(response.status_code, 200)
+        text = await response.get_data(as_text=True)
+        self.assertIn('id="testcases-error"', text)
+        self.assertIn("have permission to delete test cases", text)
+        self.assertIn("StillHere", text)  # the list, with nothing deleted
+        self.assertNotIn("url='http://localhost//'", text)
+
+    async def test_refused_and_no_longer_able_to_read_says_so(self):
+        """Refused the delete, and the list itself cannot be read either:
+        the person is told they have no access, not shown the list."""
+        self.mock_rest_client.delete.return_value = ApiResponse(
+            status_code=HTTPStatus.FORBIDDEN, body={"error": "Forbidden"})
+        self.mock_rest_client.get.side_effect = [
+            _PROJECT_OK, ApiResponse(status_code=403)]
         text = await (await self._post()).get_data(as_text=True)
-        self.assertIn("url='http://localhost//'", text)
+        self.assertIn('id="no-permission-message"', text)
 
     async def test_failure_shows_the_list_with_the_gateway_message(self):
         self.mock_rest_client.delete.return_value = ApiResponse(
@@ -730,11 +766,16 @@ class TestAddSection(_SectionWriteCase):
         text = await self._text(await self._post({"name": "Regression"}))
         self.assertIn("url='http://localhost/1/testcases'", text)
 
-    async def test_not_a_member_goes_to_the_dashboard(self):
+    async def test_refused_by_the_role_says_so_and_stays_on_the_list(self):
         self._gateway_replies(ApiResponse(
             status_code=HTTPStatus.FORBIDDEN, body={"error": "Forbidden"}))
-        text = await self._text(await self._post({"name": "Regression"}))
-        self.assertIn("url='http://localhost//'", text)
+        self._list_page_responses()
+        response = await self._post({"name": "Regression"})
+        self.assertEqual(response.status_code, 200)
+        text = await self._text(response)
+        self.assertIn('id="testcases-error"', text)
+        self.assertIn("have permission to add sections", text)
+        self.assertNotIn("url='http://localhost//'", text)
 
     async def test_duplicate_name_shows_the_list_with_the_message(self):
         self._gateway_replies(ApiResponse(
@@ -787,11 +828,14 @@ class TestRenameSection(_SectionWriteCase):
         text = await self._text(await self._post({"name": "Renamed"}))
         self.assertIn("url='http://localhost/1/testcases'", text)
 
-    async def test_not_a_member_goes_to_the_dashboard(self):
+    async def test_refused_by_the_role_says_so_and_stays_on_the_list(self):
         self.mock_rest_client.patch.return_value = ApiResponse(
             status_code=HTTPStatus.FORBIDDEN, body={})
+        self._list_page_responses()
         text = await self._text(await self._post({"name": "Renamed"}))
-        self.assertIn("url='http://localhost//'", text)
+        self.assertIn('id="testcases-error"', text)
+        self.assertIn("have permission to rename sections", text)
+        self.assertNotIn("url='http://localhost//'", text)
 
     async def test_duplicate_name_shows_the_list_with_the_message(self):
         self.mock_rest_client.patch.return_value = ApiResponse(
@@ -880,11 +924,19 @@ class TestDeleteSection(_SectionWriteCase):
         text = await self._text(await self._post())
         self.assertIn("url='http://localhost/1/testcases'", text)
 
-    async def test_not_a_member_goes_to_the_dashboard(self):
-        self.mock_rest_client.delete.return_value = ApiResponse(
-            status_code=HTTPStatus.FORBIDDEN, body={})
-        text = await self._text(await self._post())
-        self.assertIn("url='http://localhost//'", text)
+    async def test_refused_by_the_role_says_so_and_stays_on_the_list(self):
+        """Including the cascading delete, which needs Delete too."""
+        for form in ({}, {"cascade": "true"}):
+            with self.subTest(form=form):
+                self.mock_rest_client.delete.return_value = ApiResponse(
+                    status_code=HTTPStatus.FORBIDDEN, body={})
+                self._folders_response()
+                text = await self._text(await self._post(form))
+                self.assertIn('id="testcases-error"', text)
+                self.assertIn("have permission to delete sections", text)
+                self.assertNotIn("url='http://localhost//'", text)
+                # Never offered the second prompt: nothing was attempted.
+                self.assertNotIn('id="confirmCascadeSectionModal"', text)
 
     # ----- the second prompt -------------------------------------------
 
