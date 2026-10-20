@@ -67,6 +67,7 @@ from test_admin_users_handlers import (
     TestAddUserProject,
     TestModifyUserProject,
     TestRemoveUserProject,
+    TestEditUserPage,
 )
 from test_projects_testcases_handlers import (
     TestGetProjectOverviewPageHandler,

@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import re
 import unittest
 from unittest.mock import AsyncMock, MagicMock
 from http import HTTPStatus
@@ -550,10 +551,13 @@ class TestAddUserProject(unittest.IsolatedAsyncioTestCase):
         text = await response.get_data(as_text=True)
         self.assertIn("could not be completed", text)
 
-    async def test_stale_user_fetch_failure_falls_back_to_blank_form(self):
+    async def test_stale_user_fetch_failure_shows_a_notice_not_a_form(self):
         """A failed re-fetch of the user's core fields after a successful
-        project write shouldn't fail the whole page - just re-render the
-        User/Access tabs blank."""
+        project write shouldn't fail the whole page, but it must not draw a
+        blank form either: that form has both the active and the
+        administrator switches off, and saving it would deactivate the user
+        and remove their administrator rights. The project write is still
+        confirmed, and the Projects tab still works."""
         self.mock_rest_client.post.side_effect = [
             _SESSION_VALID, ApiResponse(status_code=HTTPStatus.CREATED)]
         self.mock_rest_client.get.side_effect = [
@@ -563,6 +567,12 @@ class TestAddUserProject(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, 200)
         text = await response.get_data(as_text=True)
         self.assertIn("Project access added", text)
+        self.assertIn("details could not be loaded", text)
+        self.assertNotIn('id="modifyUserForm"', text)
+        self.assertNotIn('id="account_status"', text)
+        self.assertNotIn('id="is_administrator"', text)
+        self.assertNotIn("Save User", text)
+        self.assertIn("Add Project", text)  # the Projects tab still works
 
 
 class TestModifyUserProject(unittest.IsolatedAsyncioTestCase):
@@ -804,6 +814,257 @@ class TestAdminResetPasswordPageHandler(unittest.IsolatedAsyncioTestCase):
             response = await c.get(f"/admin/users_roles/{_UUID}/reset_password")
         text = await response.get_data(as_text=True)
         self.assertIn("Refresh", text)
+
+
+# ---------------------------------------------------------------------------
+# The Edit User page itself: tabs, Save, role rows, missing details
+# ---------------------------------------------------------------------------
+
+def _tag(text: str, element_id: str) -> str:
+    """The whole opening tag with this id, as rendered."""
+    match = re.search(rf'<[a-z]+[^>]*id="{element_id}"[^>]*>', text)
+    assert match, f"nothing with id {element_id!r} on the page"
+    return match.group(0)
+
+
+class TestEditUserPage(unittest.IsolatedAsyncioTestCase):
+    """What the Edit User page offers, and what it refuses to draw."""
+
+    async def asyncSetUp(self):
+        self.mock_rest_client = AsyncMock()
+        self.mock_rest_client.post.return_value = _SESSION_VALID
+        handler = AdminModifyUserPageHandler(
+            _LOGGER, _config(), self.mock_rest_client, _metadata())
+
+        app = make_app()
+
+        @app.route("/admin/users_roles/<string:user_id>/modify",
+                   methods=["GET"])
+        async def get_route(user_id: str):
+            return await handler.modify_user_get(user_id)
+
+        @app.route("/admin/users_roles/<string:user_id>/projects",
+                   methods=["POST"])
+        async def add_route(user_id: str):
+            return await handler.add_user_project(user_id)
+
+        @app.route("/admin/users_roles/<string:user_id>/projects/"
+                   "<int:project_id>/modify", methods=["POST"])
+        async def role_route(user_id: str, project_id: int):
+            return await handler.modify_user_project(user_id, project_id)
+
+        @app.route("/admin/users_roles/<string:user_id>/projects/"
+                   "<int:project_id>/delete", methods=["POST"])
+        async def remove_route(user_id: str, project_id: int):
+            return await handler.remove_user_project(user_id, project_id)
+
+        self.client = app.test_client()
+
+    async def _page(self, user=_USER_OK, memberships=_MEMBERSHIPS_OK):
+        self.mock_rest_client.get.side_effect = _get_side_effect(
+            user=user, memberships=memberships)
+        async with self.client as c:
+            response = await c.get(f"/admin/users_roles/{_UUID}/modify",
+                                   headers=_AUTH_HEADERS)
+        self.assertEqual(response.status_code, 200)
+        return await response.get_data(as_text=True)
+
+    async def _after(self, method_path, form, post_response, user):
+        """The page as it comes back after a project action."""
+        self.mock_rest_client.post.side_effect = [
+            _SESSION_VALID, post_response]
+        self.mock_rest_client.patch.return_value = post_response
+        self.mock_rest_client.delete.return_value = post_response
+        self.mock_rest_client.get.side_effect = _get_side_effect(
+            user=user, memberships=_MEMBERSHIPS_OK)
+        async with self.client as c:
+            response = await c.post(method_path, form=form,
+                                    headers=_AUTH_HEADERS)
+        self.assertEqual(response.status_code, 200)
+        return await response.get_data(as_text=True)
+
+    # --- Save User and Back to users ------------------------------------
+
+    async def test_the_user_tab_offers_save_and_cancel(self):
+        text = await self._page()
+        self.assertIn("Save User", text)
+        self.assertNotIn("d-none", _tag(text, "user-save-row"))
+
+    async def test_save_is_not_shown_when_the_page_opens_on_projects(self):
+        """After a project action the page lands on the Projects tab, where
+        Save User would only suggest there is something left to save."""
+        text = await self._after(
+            f"/admin/users_roles/{_UUID}/projects", {"project_id": "7"},
+            ApiResponse(status_code=HTTPStatus.CREATED), _USER_OK)
+        self.assertIn("d-none", _tag(text, "user-save-row"))
+
+    async def test_the_projects_tab_has_a_back_to_users_button(self):
+        text = await self._page()
+        self.assertIn('href="/admin/users_roles"',
+                      _tag(text, "back-to-users-btn"))
+        self.assertIn("Back to users", text)
+
+    async def test_back_to_users_shares_a_row_with_add_project(self):
+        """Not a lone button on a line of its own: nothing closes between
+        the two, so they sit in the same row."""
+        text = await self._page()
+        between = text[text.index('id="add-project-btn"'):
+                       text.index('id="back-to-users-btn"')]
+        self.assertNotIn("</div>", between)
+
+    async def test_the_every_project_note_stays_when_there_is_nothing_to_add(
+            self):
+        """With no projects left to add, Add Project is disabled and says
+        why; Back to users is still there."""
+        self.mock_rest_client.get.side_effect = _get_side_effect(
+            user=_USER_OK, memberships=ApiResponse(
+                status_code=HTTPStatus.OK, body={"memberships": [
+                    {"project_id": 5, "role_id": 2, "role_name": "Tester"},
+                    {"project_id": 7, "role_id": 3, "role_name": "Lead"}]}))
+        async with self.client as c:
+            response = await c.get(f"/admin/users_roles/{_UUID}/modify",
+                                   headers=_AUTH_HEADERS)
+        text = await response.get_data(as_text=True)
+        self.assertIn("Already a member of every project.", text)
+        self.assertIn("disabled", _tag(text, "add-project-btn"))
+        self.assertIn('href="/admin/users_roles"',
+                      _tag(text, "back-to-users-btn"))
+
+    async def test_the_error_is_shown_once_not_twice(self):
+        self.mock_rest_client.get.return_value = ApiResponse(
+            status_code=HTTPStatus.NOT_FOUND, body={})
+        async with self.client as c:
+            response = await c.get(f"/admin/users_roles/{_UUID}/modify",
+                                   headers=_AUTH_HEADERS)
+        text = await response.get_data(as_text=True)
+        self.assertEqual(text.count('id="error_msg"'), 1)
+        self.assertEqual(text.count("User not found."), 1)
+
+    # --- role rows ---------------------------------------------------------
+
+    async def test_a_role_row_has_a_labelled_save_button(self):
+        text = await self._page()
+        match = re.search(
+            r'<button[^>]*class="[^"]*role-save-btn[^"]*"[^>]*>\s*Save\s*'
+            r'</button>', text)
+        self.assertTrue(match, "no labelled Save button on the role row")
+        self.assertNotIn("bi-check-lg", text)  # no icon-only tick
+
+    async def test_a_role_row_knows_the_saved_role(self):
+        """The script enables Save only when the dropdown differs from this."""
+        text = await self._page(memberships=_MEMBERSHIPS_OK)
+        self.assertIn('data-saved-role="2"', text)
+
+    async def test_a_member_with_no_role_has_an_empty_saved_role(self):
+        memberships = ApiResponse(status_code=HTTPStatus.OK, body={
+            "memberships": [
+                {"project_id": 5, "role_id": None, "role_name": None}]})
+        text = await self._page(memberships=memberships)
+        self.assertIn('data-saved-role=""', text)
+
+    async def test_the_saved_role_is_the_selected_one(self):
+        text = await self._page()
+        self.assertRegex(text, r'<option value="2" selected>Tester</option>')
+
+    async def test_the_role_dropdown_is_labelled_for_its_project(self):
+        text = await self._page()
+        self.assertIn('aria-label="Role on Alpha"', text)
+
+    # --- the User and Access tabs: drawn only from real data ---------------
+
+    async def test_with_the_users_details_the_form_reflects_them(self):
+        text = await self._page()
+        self.assertIn('id="modifyUserForm"', text)
+        self.assertIn('value="Alice Smith"', text)
+        self.assertIn("checked", _tag(text, "account_status"))
+        self.assertNotIn("checked", _tag(text, "is_administrator"))
+
+    async def test_an_administrator_is_drawn_as_one(self):
+        admin = ApiResponse(status_code=HTTPStatus.OK,
+                            body={**_USER, "is_administrator": True})
+        text = await self._page(user=admin)
+        self.assertIn("checked", _tag(text, "is_administrator"))
+
+    async def test_an_unloadable_user_gets_a_notice_not_a_blank_form(self):
+        """The dangerous case: a blank form has both switches off, and
+        saving it would deactivate the user and remove their administrator
+        rights."""
+        for status in (HTTPStatus.SERVICE_UNAVAILABLE,
+                       HTTPStatus.INTERNAL_SERVER_ERROR,
+                       HTTPStatus.NOT_FOUND):
+            with self.subTest(status=status):
+                self.mock_rest_client.get.side_effect = [
+                    ApiResponse(status_code=status, body={}),
+                    _PROJECTS_OK, _MEMBERSHIPS_OK, _ROLES_OK]
+                async with self.client as c:
+                    response = await c.get(
+                        f"/admin/users_roles/{_UUID}/modify",
+                        headers=_AUTH_HEADERS)
+                text = await response.get_data(as_text=True)
+                self.assertIn("details could not be loaded", text)
+                self.assertNotIn('id="modifyUserForm"', text)
+                self.assertNotIn('id="account_status"', text)
+                self.assertNotIn('id="is_administrator"', text)
+                self.assertNotIn("Save User", text)
+                self.assertNotIn('name="full_name"', text)
+                self.assertIn(f'href="/admin/users_roles/{_UUID}/modify"',
+                              _tag(text, "reload-user-btn"))
+                self.assertIn("Back to users", text)
+
+    async def test_the_projects_tab_still_works_without_the_details(self):
+        self.mock_rest_client.get.side_effect = [
+            ApiResponse(status_code=HTTPStatus.SERVICE_UNAVAILABLE, body={}),
+            _PROJECTS_OK, _MEMBERSHIPS_OK, _ROLES_OK]
+        async with self.client as c:
+            response = await c.get(f"/admin/users_roles/{_UUID}/modify",
+                                   headers=_AUTH_HEADERS)
+        text = await response.get_data(as_text=True)
+        self.assertIn("Alpha", text)           # the membership row
+        self.assertIn("role-save-btn", text)
+        self.assertIn("Add Project", text)
+
+    async def test_every_project_action_refuses_to_draw_a_blank_form(self):
+        """Add, change a role, remove: each re-fetches the user, and if that
+        fails each shows the notice (and still confirms what it did)."""
+        broken_user = ApiResponse(
+            status_code=HTTPStatus.SERVICE_UNAVAILABLE, body={})
+        actions = {
+            "add": (f"/admin/users_roles/{_UUID}/projects",
+                    {"project_id": "7"},
+                    ApiResponse(status_code=HTTPStatus.CREATED),
+                    "Project access added"),
+            "role": (f"/admin/users_roles/{_UUID}/projects/5/modify",
+                     {"role_id": "3"},
+                     ApiResponse(status_code=HTTPStatus.OK),
+                     "Role updated"),
+            "remove": (f"/admin/users_roles/{_UUID}/projects/5/delete",
+                       {}, ApiResponse(status_code=HTTPStatus.OK),
+                       "Project access removed"),
+        }
+        for label, (path, form, response, confirmation) in actions.items():
+            with self.subTest(label):
+                text = await self._after(path, form, response, broken_user)
+                self.assertIn(confirmation, text)
+                self.assertIn("details could not be loaded", text)
+                self.assertNotIn('id="modifyUserForm"', text)
+                self.assertNotIn('id="account_status"', text)
+
+    async def test_an_odd_reply_when_reloading_the_user_is_also_unavailable(
+            self):
+        odd = ApiResponse(status_code=HTTPStatus.OK, body=["not", "a", "user"])
+        text = await self._after(
+            f"/admin/users_roles/{_UUID}/projects", {"project_id": "7"},
+            ApiResponse(status_code=HTTPStatus.CREATED), odd)
+        self.assertIn("details could not be loaded", text)
+        self.assertNotIn('id="modifyUserForm"', text)
+
+    async def test_a_working_reload_still_draws_the_real_form(self):
+        text = await self._after(
+            f"/admin/users_roles/{_UUID}/projects", {"project_id": "7"},
+            ApiResponse(status_code=HTTPStatus.CREATED), _USER_OK)
+        self.assertIn('id="modifyUserForm"', text)
+        self.assertIn('value="Alice Smith"', text)
+        self.assertNotIn("details could not be loaded", text)
 
 
 if __name__ == "__main__":
