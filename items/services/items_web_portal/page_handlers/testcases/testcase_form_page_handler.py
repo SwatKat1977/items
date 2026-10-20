@@ -25,6 +25,8 @@ from items.services.items_web_portal.metadata_settings import MetadataSettings
 import items.services.items_web_portal.page_locations as pages
 from items.services.items_web_portal.page_handlers.testcases.\
     get_project_testcases_page_handler import UNKNOWN_CASE_TYPE_NAME
+from items.services.items_web_portal.page_handlers.testcases.\
+    permission_messages import NO_ACCESS_TO_TEST_CASES, REFUSED
 from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
 
@@ -75,9 +77,10 @@ class TestcaseFormPageHandler(PortalPageHandler):
 
         Returns:
             The rendered page; a redirect to the test case list if the test
-            case no longer exists, or to the dashboard if the user may not
-            use this project; or the internal error page for any other
-            gateway failure.
+            case no longer exists; a "no permission" page if the person is on
+            the project but their role cannot read test cases, or a redirect
+            to the dashboard if they are not on it at all; or the internal
+            error page for any other gateway failure.
         """
         testcase, early_response = await self._fetch_testcase(
             project_id, case_id)
@@ -114,8 +117,18 @@ class TestcaseFormPageHandler(PortalPageHandler):
             project_id: ID of the project the test case will be created in.
 
         Returns:
-            The rendered form page.
+            The rendered form page; or, for a person whose role does not
+            allow adding test cases, a page saying so (or the dashboard if
+            they are not on the project at all), instead of a form they could
+            fill in but not save.
         """
+        if not (await self._fetch_testcase_permissions(
+                project_id))["add_modify"]:
+            return await self._no_permission_or_dashboard(
+                project_id, self._metadata_settings.instance_name,
+                REFUSED["add_test_case"],
+                f"/{project_id}/testcases", "Back to Test Cases")
+
         case_types = await self._fetch_case_types()
 
         default_id = ""
@@ -137,9 +150,9 @@ class TestcaseFormPageHandler(PortalPageHandler):
             project_id: ID of the project to create the test case in.
 
         Returns:
-            A redirect to the project's test case list on success (or to the
-            dashboard if the user may not use this project), otherwise the
-            form again with an error banner.
+            A redirect to the project's test case list on success, otherwise
+            the form again with an error banner (which says plainly when the
+            person's role does not allow adding test cases).
         """
         form = await request.form
 
@@ -177,14 +190,22 @@ class TestcaseFormPageHandler(PortalPageHandler):
 
         Returns:
             The rendered form page; a redirect to the test case list if the
-            test case no longer exists, or to the dashboard if the user may
-            not use this project; or the internal error page for any other
-            gateway failure.
+            test case no longer exists; a "no permission" page if the person
+            is on the project but their role cannot read, or cannot edit,
+            test cases (or the dashboard if they are not on it at all); or the
+            internal error page for any other gateway failure.
         """
         testcase, early_response = await self._fetch_testcase(
             project_id, case_id)
         if early_response is not None:
             return early_response
+
+        if not (await self._fetch_testcase_permissions(
+                project_id))["add_modify"]:
+            return await self._no_permission_or_dashboard(
+                project_id, self._metadata_settings.instance_name,
+                REFUSED["edit_test_case"],
+                f"/{project_id}/testcases/{case_id}", "Back to the test case")
 
         case_types = await self._fetch_case_types()
 
@@ -204,9 +225,9 @@ class TestcaseFormPageHandler(PortalPageHandler):
             case_id: ID of the test case being edited.
 
         Returns:
-            A redirect to the project's test case list on success (or to the
-            dashboard if the user may not use this project), otherwise the
-            form again with an error banner.
+            A redirect to the project's test case list on success, otherwise
+            the form again with an error banner (which says plainly when the
+            person's role does not allow editing test cases).
         """
         form = await request.form
         payload: dict = self._build_payload(form)
@@ -234,17 +255,21 @@ class TestcaseFormPageHandler(PortalPageHandler):
         Returns:
             ``(test_case_dict, None)`` on success. Otherwise ``(None,
             response)`` where ``response`` is what the page should return
-            instead: a redirect to the dashboard if the user may not use the
-            project (403), a redirect to the test case list if the test case
-            does not exist (404), or the internal error page for anything
-            else.
+            instead: for a 403, a "no permission" page if the person is on
+            the project (their role cannot read test cases) or a redirect to
+            the dashboard if they are not; a redirect to the test case list
+            if the test case does not exist (404); or the internal error page
+            for anything else.
         """
         base_url: str = self._config.apis_gateway_svc
         response: ApiResponse = await self._rest_client.get(
             f"{base_url}web/testcases/{case_id}?project_id={project_id}")
 
         if response.status_code == HTTPStatus.FORBIDDEN:
-            return None, await make_response(self._generate_redirect('/'))
+            return None, await self._no_permission_or_dashboard(
+                project_id, self._metadata_settings.instance_name,
+                NO_ACCESS_TO_TEST_CASES,
+                f"/{project_id}/overview", "Back to Project Overview")
 
         if response.status_code == HTTPStatus.NOT_FOUND:
             return None, await make_response(
@@ -300,16 +325,19 @@ class TestcaseFormPageHandler(PortalPageHandler):
             action: Short action name for log messages ("add", "edit").
 
         Returns:
-            A redirect, or the form page with an error banner.
+            A redirect on success, otherwise the form page with an error
+            banner and what was typed. A 403 (the person's role does not
+            allow it) says so plainly, rather than quietly sending them to the
+            dashboard and losing their input.
         """
         if response.status_code == HTTPStatus.OK:
             return await make_response(
                 self._generate_redirect(f"{project_id}/testcases"))
 
         if response.status_code == HTTPStatus.FORBIDDEN:
-            return await make_response(self._generate_redirect('/'))
-
-        error_message = self._extract_error(response)
+            error_message = REFUSED[f"{action}_test_case"]
+        else:
+            error_message = self._extract_error(response)
         self._logger.warning("Test case %s failed (status %s): %s",
                              action, response.status_code, error_message)
 

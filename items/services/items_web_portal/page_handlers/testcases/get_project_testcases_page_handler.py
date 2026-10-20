@@ -25,6 +25,8 @@ from items.services.items_web_portal.configuration import Configuration
 from items.services.items_web_portal.decorators import require_session
 from items.services.items_web_portal.metadata_settings import MetadataSettings
 import items.services.items_web_portal.page_locations as pages
+from items.services.items_web_portal.page_handlers.testcases.\
+    permission_messages import NO_ACCESS_TO_TEST_CASES, REFUSED
 from items.services.items_web_portal.portal_page_handler import (
     PortalPageHandler)
 
@@ -77,12 +79,14 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
         gateway service, transforms the flat API response into a hierarchical
         structure suitable for display, and renders the test cases page.
 
-        A 403 (not a member of this project) or 404 (project doesn't exist)
-        redirects to the dashboard rather than showing an error - both are
-        normal, expected states (e.g. an admin removed the user's access
-        while they still had the page bookmarked), not failures worth
-        surfacing as one. Any other non-200 is treated as a genuine
-        unexpected failure and returns a JSON error response with HTTP 500.
+        A 403 means the person's role does not allow reading test cases. If
+        they are on the project they are told so on a page of its own; if
+        they are not on it at all (an admin removed their access while they
+        still had the page bookmarked) they are sent to the dashboard, as
+        they are for a 404 (the project doesn't exist). Both are normal,
+        expected states, not failures worth surfacing as one. Any other
+        non-200 is treated as a genuine unexpected failure and returns a
+        JSON error response with HTTP 500.
 
         Args:
             project_id (int):
@@ -90,9 +94,11 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
 
         Returns:
             Response:
-                A rendered HTML page on success, a redirect to the
-                dashboard on 403/404, or a JSON error response with HTTP
-                500 for any other gateway failure.
+                A rendered HTML page on success; the "no permission" page
+                if the person is on the project but their role cannot read
+                test cases (403); a redirect to the dashboard if they are not
+                on the project, or it does not exist (403/404); or a JSON
+                error response with HTTP 500 for any other gateway failure.
         """
         return await self._render_list(project_id)
 
@@ -109,9 +115,9 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
         Returns:
             Response:
                 A redirect to the list on success, or if the test case is
-                already gone (404); a redirect to the dashboard if the user
-                may not use this project (403); otherwise the list page again
-                with an error banner.
+                already gone (404); otherwise the list page again with an
+                error banner, which says plainly when the person's role does
+                not allow deleting (403).
         """
         gateway_svc: str = self._config.apis_gateway_svc
         response: ApiResponse = await self._rest_client.delete(
@@ -122,7 +128,9 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
                 self._generate_redirect(f"{project_id}/testcases"))
 
         if response.status_code == HTTPStatus.FORBIDDEN:
-            return await make_response(self._generate_redirect('/'))
+            return await self._render_list(
+                project_id,
+                error_message=REFUSED["delete_test_case"])
 
         error_message = self._extract_error(response)
         self._logger.warning("Test case delete failed (status %s): %s",
@@ -143,9 +151,9 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
 
         Returns:
             Response:
-                A redirect to the list on success; a redirect to the
-                dashboard if the user may not use this project (403);
-                otherwise the list page again with an error banner.
+                A redirect to the list on success; otherwise the list page
+                again with an error banner, which says plainly when the
+                person's role does not allow adding sections (403).
         """
         form = await request.form
         raw_parent = (form.get("parent_id") or "").strip()
@@ -161,7 +169,8 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
                 "parent_id": int(raw_parent) if raw_parent else None,
                 "name": form.get("name") or ""})
 
-        return await self._finish_section_write(response, project_id, "add")
+        return await self._finish_section_write(
+            response, project_id, "add_section")
 
     @require_session
     async def rename_section(self, project_id: int, folder_id: int):
@@ -175,9 +184,9 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
 
         Returns:
             Response:
-                A redirect to the list on success; a redirect to the
-                dashboard if the user may not use this project (403);
-                otherwise the list page again with an error banner.
+                A redirect to the list on success; otherwise the list page
+                again with an error banner, which says plainly when the
+                person's role does not allow renaming sections (403).
         """
         form = await request.form
 
@@ -187,7 +196,7 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
             json_data={"name": form.get("name") or ""})
 
         return await self._finish_section_write(
-            response, project_id, "rename")
+            response, project_id, "rename_section")
 
     @require_session
     async def delete_section(self, project_id: int, folder_id: int):
@@ -208,10 +217,10 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
         Returns:
             Response:
                 A redirect to the list on success, or if the section is
-                already gone (404); a redirect to the dashboard if the user
-                may not use this project (403); the list with the second
-                prompt if test cases blocked the delete; otherwise the list
-                with an error banner.
+                already gone (404); the list with the second prompt if test
+                cases blocked the delete; otherwise the list with an error
+                banner, which says plainly when the person's role does not
+                allow deleting sections (403).
         """
         form = await request.form
         cascade = form.get("cascade") == "true"
@@ -228,7 +237,8 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
                 self._generate_redirect(f"{project_id}/testcases"))
 
         if response.status_code == HTTPStatus.FORBIDDEN:
-            return await make_response(self._generate_redirect('/'))
+            return await self._render_list(
+                project_id, error_message=REFUSED["delete_section"])
 
         # The refusal that makes this two steps. Never offered again after a
         # cascading request, so it cannot loop.
@@ -257,19 +267,21 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
             project_id (int):
                 Unique identifier of the project.
             action (str):
-                Short action name for log messages ("add", "rename").
+                ``"add_section"`` or ``"rename_section"``: names the action
+                in log messages and picks the refusal message.
 
         Returns:
             Response:
-                A redirect to the list on success, a redirect to the
-                dashboard on 403, otherwise the list page with a banner.
+                A redirect to the list on success, otherwise the list page
+                with a banner (a plain "no permission" message on 403).
         """
         if response.status_code == HTTPStatus.OK:
             return await make_response(
                 self._generate_redirect(f"{project_id}/testcases"))
 
         if response.status_code == HTTPStatus.FORBIDDEN:
-            return await make_response(self._generate_redirect('/'))
+            return await self._render_list(
+                project_id, error_message=REFUSED[action])
 
         error_message = self._extract_error(response)
         self._logger.warning("Section %s failed (status %s): %s",
@@ -313,7 +325,19 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
         url: str = f"{gateway_svc}web/{project_id}/testcases"
         response = await self._rest_client.get(url)
 
-        if response.status_code in (HTTPStatus.FORBIDDEN, HTTPStatus.NOT_FOUND):
+        if response.status_code == HTTPStatus.FORBIDDEN:
+            # A member whose role does not let them read test cases is told
+            # so. Someone who is not on the project at all (the project's own
+            # page was refused too) is sent to the dashboard instead.
+            if project_response.status_code == HTTPStatus.OK:
+                return await self._render_no_permission(
+                    project_id, project_name,
+                    self._metadata_settings.instance_name,
+                    NO_ACCESS_TO_TEST_CASES,
+                    f"/{project_id}/overview", "Back to Project Overview")
+            return await make_response(self._generate_redirect('/'))
+
+        if response.status_code == HTTPStatus.NOT_FOUND:
             return await make_response(self._generate_redirect('/'))
 
         if response.status_code != HTTPStatus.OK:
