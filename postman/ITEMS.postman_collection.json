@@ -1894,6 +1894,54 @@
                   "response": []
                 },
                 {
+                  "name": "Move a test case",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "X-Items-User",
+                        "value": "{{ITEMS_USER}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "X-Items-Token",
+                        "value": "{{ITEMS_TOKEN}}",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"folder_id\": 2\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/testcases/1/move?project_id=1",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "testcases",
+                        "1",
+                        "move"
+                      ],
+                      "query": [
+                        {
+                          "key": "project_id",
+                          "value": "1",
+                          "description": "Required. Add/Modify on Test Cases is checked against it, and the CMS confirms the test case belongs to it (404 otherwise)."
+                        }
+                      ]
+                    },
+                    "description": "Needs Add/Modify on Test Cases (403 for a read-only role). Moves the test case into the section in folder_id, or to the top level when folder_id is null. folder_id is always required: leaving it out is a 400, never read as the top level. 400 if project_id is missing or the section is in another project. 404 if the test case is in another project or the section does not exist. 409 if the destination already has a test case with that name. Moving to where it already is succeeds and changes nothing."
+                  },
+                  "response": []
+                },
+                {
                   "name": "Delete a test case",
                   "request": {
                     "method": "DELETE",

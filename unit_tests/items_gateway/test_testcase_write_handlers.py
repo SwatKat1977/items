@@ -2,6 +2,7 @@
 Unit tests for the gateway test case write route handlers:
   POST   /<project_id>/testcases           - CreateTestcaseHandler
   PATCH  /testcases/<id>?project_id=       - ModifyTestcaseHandler
+  POST   /testcases/<id>/move?project_id=  - MoveTestcaseHandler
   DELETE /testcases/<id>?project_id=       - DeleteTestcaseHandler
 """
 import json
@@ -15,10 +16,13 @@ from items.services.items_gateway.routes.web.testcases.\
     delete_testcase_handler import DeleteTestcaseHandler
 from items.services.items_gateway.routes.web.testcases.\
     modify_testcase_handler import ModifyTestcaseHandler
+from items.services.items_gateway.routes.web.testcases.\
+    move_testcase_handler import MoveTestcaseHandler
 
 _LOGGER = MagicMock()
 _CREATE_BODY = {"folder_id": None, "name": "Login", "description": "d"}
 _MODIFY_BODY = {"name": "Renamed", "description": "d"}
+_MOVE_BODY = {"folder_id": 4}
 
 
 def _config():
@@ -201,6 +205,92 @@ class TestModifyTestcaseHandler(unittest.IsolatedAsyncioTestCase):
     async def test_response_is_json(self):
         self.mock_rc.patch.return_value = _ok({"status": 1})
         resp = await self._patch(_MODIFY_BODY)
+        self.assertEqual(resp.content_type, "application/json")
+
+
+# ---------------------------------------------------------------------------
+# MoveTestcaseHandler
+# ---------------------------------------------------------------------------
+
+class TestMoveTestcaseHandler(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.mock_rc = AsyncMock()
+        handler = MoveTestcaseHandler(_LOGGER, _config(), self.mock_rc)
+        app = Quart(__name__)
+
+        @app.route("/testcases/<int:case_id>/move", methods=["POST"])
+        async def route(case_id: int):
+            return await handler.move_testcase(case_id)
+
+        self.client = app.test_client()
+
+    async def _post(self, body, case_id=3, query="?project_id=5"):
+        async with self.client as c:
+            return await c.post(f"/testcases/{case_id}/move{query}",
+                                json=body)
+
+    async def test_success_returns_200(self):
+        self.mock_rc.post.return_value = _ok({"status": 1})
+        resp = await self._post(_MOVE_BODY)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(await resp.get_data()), {"status": 1})
+
+    async def test_url_carries_the_project_and_body_is_forwarded(self):
+        self.mock_rc.post.return_value = _ok({"status": 1})
+        await self._post({"folder_id": 4}, case_id=9, query="?project_id=7")
+        self.mock_rc.post.assert_called_once_with(
+            "http://cms/testcases/9/move?project_id=7",
+            json_data={"folder_id": 4})
+
+    async def test_null_folder_id_is_forwarded_as_null(self):
+        """Top level is a deliberate null, passed through untouched."""
+        self.mock_rc.post.return_value = _ok({"status": 1})
+        await self._post({"folder_id": None})
+        self.mock_rc.post.assert_called_once_with(
+            "http://cms/testcases/3/move?project_id=5",
+            json_data={"folder_id": None})
+
+    async def test_missing_project_id_returns_400_without_calling_cms(self):
+        resp = await self._post(_MOVE_BODY, query="")
+        self.assertEqual(resp.status_code, 400)
+        body = json.loads(await resp.get_data())
+        self.assertIn("project_id", body["error"])
+        self.mock_rc.post.assert_not_called()
+
+    async def test_non_integer_project_id_returns_400(self):
+        resp = await self._post(_MOVE_BODY, query="?project_id=abc")
+        self.assertEqual(resp.status_code, 400)
+        self.mock_rc.post.assert_not_called()
+
+    async def test_invalid_json_returns_400_without_calling_cms(self):
+        async with self.client as c:
+            resp = await c.post("/testcases/3/move?project_id=5",
+                                data="not json",
+                                headers={"Content-Type": "application/json"})
+        self.assertEqual(resp.status_code, 400)
+        self.mock_rc.post.assert_not_called()
+
+    async def test_non_object_json_returns_400_without_calling_cms(self):
+        resp = await self._post([1, 2])
+        self.assertEqual(resp.status_code, 400)
+        self.mock_rc.post.assert_not_called()
+
+    async def test_cms_errors_are_propagated(self):
+        for status in (400, 404, 409, 500):
+            with self.subTest(status=status):
+                self.mock_rc.post.return_value = _err({"error": "x"}, status)
+                resp = await self._post(_MOVE_BODY)
+                self.assertEqual(resp.status_code, status)
+
+    async def test_connection_error_returns_500(self):
+        self.mock_rc.post.return_value = _conn_err()
+        resp = await self._post(_MOVE_BODY)
+        self.assertEqual(resp.status_code, 500)
+
+    async def test_response_is_json(self):
+        self.mock_rc.post.return_value = _ok({"status": 1})
+        resp = await self._post(_MOVE_BODY)
         self.assertEqual(resp.content_type, "application/json")
 
 
