@@ -391,6 +391,146 @@ class TestTestcaseService(unittest.IsolatedAsyncioTestCase):
         self.mock_repo.case_type_exists.assert_not_called()
 
     # ------------------------------------------------------------------
+    # move_testcase
+    # ------------------------------------------------------------------
+
+    async def test_move_testcase_service_unavailable(self):
+        self.mock_state.is_available.return_value = False
+        result = await self.service.move_testcase(1, 5, 9)
+        self.assertFalse(result.success)
+        self.assertTrue(result.is_internal)
+        self.mock_repo.move_testcase.assert_not_called()
+
+    async def test_move_testcase_lookup_db_exception(self):
+        self.mock_repo.get_testcase.side_effect = (
+            SqliteInterfaceException("err"))
+        result = await self.service.move_testcase(1, 5, 9)
+        self.assertFalse(result.success)
+        self.assertTrue(result.is_internal)
+        self.mock_state.mark_database_failed.assert_called_once()
+
+    async def test_move_testcase_not_found(self):
+        self.mock_repo.get_testcase.return_value = None
+        result = await self.service.move_testcase(1, 5, 9)
+        self.assertFalse(result.success)
+        self.assertTrue(result.not_found)
+        self.mock_repo.move_testcase.assert_not_called()
+
+    async def test_move_testcase_other_project_is_not_found(self):
+        self.mock_repo.get_testcase.return_value = _TESTCASE  # project 5
+        result = await self.service.move_testcase(1, 6, 9)
+        self.assertFalse(result.success)
+        self.assertTrue(result.not_found)
+        self.assertEqual(result.error_msg, "Test case not found")
+        self.mock_repo.get_folder_project_id.assert_not_called()
+        self.mock_repo.move_testcase.assert_not_called()
+
+    async def test_move_testcase_to_where_it_already_is_changes_nothing(self):
+        self.mock_repo.get_testcase.return_value = {
+            **_TESTCASE, "folder_id": 9}
+        result = await self.service.move_testcase(1, 5, 9)
+        self.assertTrue(result.success)
+        self.mock_repo.get_folder_project_id.assert_not_called()
+        self.mock_repo.testcase_name_exists.assert_not_called()
+        self.mock_repo.move_testcase.assert_not_called()
+
+    async def test_move_testcase_top_level_to_where_it_is_changes_nothing(
+            self):
+        self.mock_repo.get_testcase.return_value = _TESTCASE  # folder None
+        result = await self.service.move_testcase(1, 5, None)
+        self.assertTrue(result.success)
+        self.mock_repo.move_testcase.assert_not_called()
+
+    async def test_move_testcase_folder_not_found(self):
+        self.mock_repo.get_testcase.return_value = _TESTCASE
+        self.mock_repo.get_folder_project_id.return_value = None
+        result = await self.service.move_testcase(1, 5, 9)
+        self.assertFalse(result.success)
+        self.assertTrue(result.not_found)
+        self.assertEqual(result.error_msg, "Folder id is invalid")
+        self.mock_repo.move_testcase.assert_not_called()
+
+    async def test_move_testcase_folder_in_another_project_is_refused(self):
+        self.mock_repo.get_testcase.return_value = _TESTCASE
+        self.mock_repo.get_folder_project_id.return_value = 6
+        result = await self.service.move_testcase(1, 5, 9)
+        self.assertFalse(result.success)
+        self.assertFalse(result.not_found)
+        self.assertFalse(result.is_conflict)
+        self.assertEqual(result.error_msg,
+                         "Folder does not belong to the specified project")
+        self.mock_repo.testcase_name_exists.assert_not_called()
+        self.mock_repo.move_testcase.assert_not_called()
+
+    async def test_move_testcase_name_taken_in_destination_is_a_conflict(
+            self):
+        self.mock_repo.get_testcase.return_value = _TESTCASE
+        self.mock_repo.get_folder_project_id.return_value = 5
+        self.mock_repo.testcase_name_exists.return_value = True
+        result = await self.service.move_testcase(1, 5, 9)
+        self.assertFalse(result.success)
+        self.assertTrue(result.is_conflict)
+        self.mock_repo.testcase_name_exists.assert_called_once_with(
+            5, 9, "Login test")
+        self.mock_repo.move_testcase.assert_not_called()
+
+    async def test_move_testcase_to_top_level_checks_the_name_there(self):
+        self.mock_repo.get_testcase.return_value = {
+            **_TESTCASE, "folder_id": 9}
+        self.mock_repo.testcase_name_exists.return_value = True
+        result = await self.service.move_testcase(1, 5, None)
+        self.assertTrue(result.is_conflict)
+        self.mock_repo.get_folder_project_id.assert_not_called()
+        self.mock_repo.testcase_name_exists.assert_called_once_with(
+            5, None, "Login test")
+
+    async def test_move_testcase_folder_check_db_exception(self):
+        self.mock_repo.get_testcase.return_value = _TESTCASE
+        self.mock_repo.get_folder_project_id.side_effect = (
+            SqliteInterfaceException("err"))
+        result = await self.service.move_testcase(1, 5, 9)
+        self.assertFalse(result.success)
+        self.assertTrue(result.is_internal)
+        self.mock_state.mark_database_failed.assert_called_once()
+
+    async def test_move_testcase_name_check_db_exception(self):
+        self.mock_repo.get_testcase.return_value = _TESTCASE
+        self.mock_repo.get_folder_project_id.return_value = 5
+        self.mock_repo.testcase_name_exists.side_effect = (
+            SqliteInterfaceException("err"))
+        result = await self.service.move_testcase(1, 5, 9)
+        self.assertFalse(result.success)
+        self.assertTrue(result.is_internal)
+        self.mock_repo.move_testcase.assert_not_called()
+
+    async def test_move_testcase_update_db_exception(self):
+        self.mock_repo.get_testcase.return_value = _TESTCASE
+        self.mock_repo.get_folder_project_id.return_value = 5
+        self.mock_repo.testcase_name_exists.return_value = False
+        self.mock_repo.move_testcase.side_effect = (
+            SqliteInterfaceException("err"))
+        result = await self.service.move_testcase(1, 5, 9)
+        self.assertFalse(result.success)
+        self.assertTrue(result.is_internal)
+        self.mock_state.mark_database_failed.assert_called_once()
+
+    async def test_move_testcase_success(self):
+        self.mock_repo.get_testcase.return_value = _TESTCASE
+        self.mock_repo.get_folder_project_id.return_value = 5
+        self.mock_repo.testcase_name_exists.return_value = False
+        result = await self.service.move_testcase(1, 5, 9)
+        self.assertTrue(result.success)
+        self.mock_repo.move_testcase.assert_called_once_with(1, 9)
+
+    async def test_move_testcase_to_the_top_level_success(self):
+        self.mock_repo.get_testcase.return_value = {
+            **_TESTCASE, "folder_id": 9}
+        self.mock_repo.testcase_name_exists.return_value = False
+        result = await self.service.move_testcase(1, 5, None)
+        self.assertTrue(result.success)
+        self.mock_repo.move_testcase.assert_called_once_with(1, None)
+
+    # ------------------------------------------------------------------
     # delete_testcase
     # ------------------------------------------------------------------
 

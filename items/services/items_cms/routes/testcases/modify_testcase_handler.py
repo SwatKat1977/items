@@ -58,7 +58,8 @@ class ModifyTestcaseHandler(BaseApiRoute):
                               case_id: int) -> Response:
         """Rename and/or update the description of an existing test case.
 
-        Note: this does not support moving a test case between folders.
+        Note: this does not move a test case between folders; use
+        ``POST /testcases/<case_id>/move`` for that.
 
         Args:
             case_id: ID of the test case to update, taken from the URL

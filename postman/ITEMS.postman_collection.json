@@ -409,6 +409,42 @@
               "response": []
             },
             {
+              "name": "Move Test Case",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"folder_id\": 2\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/testcases/1/move?project_id=1",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "testcases",
+                    "1",
+                    "move"
+                  ],
+                  "query": [
+                    {
+                      "key": "project_id",
+                      "value": "1",
+                      "description": "Required. The project the test case belongs to; 404 if it belongs to a different one."
+                    }
+                  ]
+                },
+                "description": "Moves a test case into another section, or to the top level when folder_id is null. folder_id is always required: leaving it out is a 400, never read as the top level. The destination must be in the same project (400 otherwise) and must exist (404). 409 if the destination already has a test case with the same name. Moving a test case to where it already is succeeds and changes nothing."
+              },
+              "response": []
+            },
+            {
               "name": "Delete Test Case",
               "request": {
                 "method": "DELETE",
