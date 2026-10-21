@@ -23,6 +23,7 @@ from .list_testcases_handler import ListTestcasesHandler
 from .get_testcase_handler import GetTestcaseHandler
 from .add_testcase_handler import AddTestcaseHandler
 from .modify_testcase_handler import ModifyTestcaseHandler
+from .move_testcase_handler import MoveTestcaseHandler
 from .delete_testcase_handler import DeleteTestcaseHandler
 
 
@@ -55,6 +56,7 @@ def create_testcases_routes(logger: logging.Logger,
     get_handler = GetTestcaseHandler(logger, service)
     add_handler = AddTestcaseHandler(logger, service)
     modify_handler = ModifyTestcaseHandler(logger, service)
+    move_handler = MoveTestcaseHandler(logger, service)
     delete_handler = DeleteTestcaseHandler(logger, service)
 
     logger.debug("--- Registering Testcases API routes ---")
@@ -92,6 +94,16 @@ def create_testcases_routes(logger: logging.Logger,
     async def modify_testcase(case_id: int):
         # pylint: disable=no-value-for-parameter
         return await modify_handler.modify_testcase(case_id)
+
+    # Move a test case into another folder (or to the top level).
+    logger.debug("=> %s POST /testcases/<int:case_id>/move",
+                 "Move a testcase".ljust(40))
+
+    @testcases_routes.route('/testcases/<int:case_id>/move',
+                            methods=['POST'])
+    async def move_testcase(case_id: int):
+        # pylint: disable=no-value-for-parameter
+        return await move_handler.move_testcase(case_id)
 
     # Delete a test case.
     logger.debug("=> %s DELETE /testcases/<int:case_id>",

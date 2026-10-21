@@ -348,6 +348,25 @@ class TestcaseRepository:
         await self._db.run_query(
             query, (name, description, case_type_id, case_id), commit=True)
 
+    async def move_testcase(self,
+                            case_id: int,
+                            folder_id: Optional[int]) -> None:
+        """Move a test case into a folder, or to the top level.
+
+        Args:
+            case_id:   ID of the test case to move.
+            folder_id: ID of the destination folder, or None to move the
+                       test case to the top level (no folder).
+
+        Raises:
+            SqliteInterfaceException: If the database update fails.
+        """
+        query = (
+            f"UPDATE {cms_tables.TC_TEST_CASES} "
+            "SET folder_id = ? WHERE id = ?"
+        )
+        await self._db.run_query(query, (folder_id, case_id), commit=True)
+
     async def delete_testcase(self, case_id: int) -> None:
         """Permanently delete a test case from the database.
 

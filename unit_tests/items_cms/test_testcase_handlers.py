@@ -28,6 +28,9 @@ from items.services.items_cms.routes.testcases.add_testcase_handler import (
 from items.services.items_cms.routes.testcases.modify_testcase_handler import (
     ModifyTestcaseHandler,
 )
+from items.services.items_cms.routes.testcases.move_testcase_handler import (
+    MoveTestcaseHandler,
+)
 from items.services.items_cms.routes.testcases.delete_testcase_handler import (
     DeleteTestcaseHandler,
 )
@@ -400,6 +403,105 @@ class TestModifyTestcaseHandler(unittest.IsolatedAsyncioTestCase):
         self.mock_service.update_testcase.return_value = _internal()
         response = await self._patch(
             1, {"name": "New", "description": ""})
+        self.assertEqual(response.status_code, 500)
+
+
+# ------------------------------------------------------------------
+# MoveTestcaseHandler
+# ------------------------------------------------------------------
+
+class TestMoveTestcaseHandler(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.mock_service = AsyncMock(spec=TestcaseService)
+        handler = MoveTestcaseHandler(_LOGGER, self.mock_service)
+
+        app = Quart(__name__)
+
+        @app.route("/testcases/<int:case_id>/move", methods=["POST"])
+        async def move_testcase(case_id):
+            return await handler.move_testcase(case_id)
+
+        self.client = app.test_client()
+
+    async def _post(self, case_id, body, query="?project_id=5"):
+        async with self.client as c:
+            return await c.post(
+                f"/testcases/{case_id}/move{query}", json=body)
+
+    async def test_success_returns_200(self):
+        self.mock_service.move_testcase.return_value = _ok()
+        response = await self._post(1, {"folder_id": 9})
+        self.assertEqual(response.status_code, 200)
+        data = await response.get_json()
+        self.assertEqual(data["status"], 1)
+        self.mock_service.move_testcase.assert_called_once_with(
+            case_id=1, project_id=5, folder_id=9)
+
+    async def test_null_folder_id_moves_to_the_top_level(self):
+        self.mock_service.move_testcase.return_value = _ok()
+        response = await self._post(1, {"folder_id": None})
+        self.assertEqual(response.status_code, 200)
+        self.mock_service.move_testcase.assert_called_once_with(
+            case_id=1, project_id=5, folder_id=None)
+
+    async def test_project_id_is_passed_to_the_service(self):
+        self.mock_service.move_testcase.return_value = _ok()
+        await self._post(1, {"folder_id": 9}, query="?project_id=7")
+        self.mock_service.move_testcase.assert_called_once_with(
+            case_id=1, project_id=7, folder_id=9)
+
+    async def test_missing_project_id_returns_400(self):
+        response = await self._post(1, {"folder_id": 9}, query="")
+        self.assertEqual(response.status_code, 400)
+        data = await response.get_json()
+        self.assertEqual(data["error"], "project_id is required")
+        self.mock_service.move_testcase.assert_not_called()
+
+    async def test_non_integer_project_id_returns_400(self):
+        response = await self._post(
+            1, {"folder_id": 9}, query="?project_id=abc")
+        self.assertEqual(response.status_code, 400)
+        data = await response.get_json()
+        self.assertEqual(data["error"], "project_id must be an integer")
+        self.mock_service.move_testcase.assert_not_called()
+
+    async def test_missing_folder_id_returns_400(self):
+        """Leaving folder_id out must never be read as 'top level'."""
+        response = await self._post(1, {})
+        self.assertEqual(response.status_code, 400)
+        self.mock_service.move_testcase.assert_not_called()
+
+    async def test_invalid_folder_id_returns_400(self):
+        for bad in ("9", 1.5, True, [], {}):
+            with self.subTest(folder_id=bad):
+                response = await self._post(1, {"folder_id": bad})
+                self.assertEqual(response.status_code, 400)
+        self.mock_service.move_testcase.assert_not_called()
+
+    async def test_extra_field_returns_400(self):
+        response = await self._post(1, {"folder_id": 9, "name": "x"})
+        self.assertEqual(response.status_code, 400)
+        self.mock_service.move_testcase.assert_not_called()
+
+    async def test_not_found_returns_404(self):
+        self.mock_service.move_testcase.return_value = _not_found()
+        response = await self._post(99, {"folder_id": 9})
+        self.assertEqual(response.status_code, 404)
+
+    async def test_conflict_returns_409(self):
+        self.mock_service.move_testcase.return_value = _conflict()
+        response = await self._post(1, {"folder_id": 9})
+        self.assertEqual(response.status_code, 409)
+
+    async def test_bad_request_returns_400(self):
+        self.mock_service.move_testcase.return_value = _bad_request()
+        response = await self._post(1, {"folder_id": 9})
+        self.assertEqual(response.status_code, 400)
+
+    async def test_internal_error_returns_500(self):
+        self.mock_service.move_testcase.return_value = _internal()
+        response = await self._post(1, {"folder_id": 9})
         self.assertEqual(response.status_code, 500)
 
 

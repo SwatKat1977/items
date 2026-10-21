@@ -513,6 +513,54 @@ class TestTestcaseRepository(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self._case_type_of(tc_id), _OTHER_TYPE_ID)
 
     # ------------------------------------------------------------------
+    # move_testcase
+    # ------------------------------------------------------------------
+
+    def _folder_of(self, tc_id):
+        conn = sqlite3.connect(self.db_path)
+        row = conn.execute(
+            "SELECT folder_id FROM tc_test_cases WHERE id = ?",
+            (tc_id,)).fetchone()
+        conn.close()
+        return row[0]
+
+    async def test_move_testcase_into_a_folder(self):
+        pid = self._insert_project("Alpha")
+        fid = self._insert_folder(pid, "Suite A")
+        tc_id = self._insert_testcase(pid, "Login Test")
+        await self.repo.move_testcase(tc_id, fid)
+        self.assertEqual(self._folder_of(tc_id), fid)
+
+    async def test_move_testcase_to_the_top_level(self):
+        pid = self._insert_project("Alpha")
+        fid = self._insert_folder(pid, "Suite A")
+        tc_id = self._insert_testcase(pid, "Login Test", folder_id=fid)
+        await self.repo.move_testcase(tc_id, None)
+        self.assertIsNone(self._folder_of(tc_id))
+
+    async def test_move_testcase_changes_nothing_else(self):
+        pid = self._insert_project("Alpha")
+        fid = self._insert_folder(pid, "Suite A")
+        tc_id = self._insert_testcase(pid, "Login Test", description="d",
+                                      case_type_id=_SMOKE_TYPE_ID)
+        other = self._insert_testcase(pid, "Other")
+        await self.repo.move_testcase(tc_id, fid)
+        conn = sqlite3.connect(self.db_path)
+        row = conn.execute(
+            "SELECT project_id, name, description, case_type_id "
+            "FROM tc_test_cases WHERE id = ?", (tc_id,)).fetchone()
+        conn.close()
+        self.assertEqual(row, (pid, "Login Test", "d", _SMOKE_TYPE_ID))
+        self.assertIsNone(self._folder_of(other))
+
+    async def test_move_testcase_to_a_missing_folder_is_rejected(self):
+        pid = self._insert_project("Alpha")
+        tc_id = self._insert_testcase(pid, "Login Test")
+        with self.assertRaises(SqliteInterfaceException):
+            await self.repo.move_testcase(tc_id, 999)
+        self.assertIsNone(self._folder_of(tc_id))
+
+    # ------------------------------------------------------------------
     # delete_testcase
     # ------------------------------------------------------------------
 

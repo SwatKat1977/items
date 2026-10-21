@@ -23,6 +23,7 @@ from test_testcase_handlers import (
     TestListTestcasesHandler,
     TestAddTestcaseHandler,
     TestModifyTestcaseHandler,
+    TestMoveTestcaseHandler,
     TestDeleteTestcaseHandler,
 )
 from test_testcase_field_values_handlers import (

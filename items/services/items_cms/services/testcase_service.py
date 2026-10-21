@@ -338,6 +338,94 @@ class TestcaseService:
 
         return TestcaseResult(success=True)
 
+    async def move_testcase(self,
+                            case_id: int,
+                            project_id: int,
+                            folder_id: Optional[int]) -> TestcaseResult:
+        """Move a test case into another folder, or to the top level.
+
+        The destination must be in the same project as the test case, and
+        must not already hold a test case with the same name. Moving a test
+        case to the folder it is already in succeeds without changing
+        anything.
+
+        Args:
+            case_id:    ID of the test case to move.
+            project_id: Project the caller states the test case belongs to.
+                        A mismatch is reported identically to the test case
+                        not existing (see ``get_testcase``).
+            folder_id:  ID of the destination folder, or None to move the
+                        test case to the top level.
+
+        Returns:
+            TestcaseResult indicating success, a not-found error if the test
+            case (or the destination folder) doesn't exist or the test case
+            belongs to a different project, a bad-request error if the
+            destination folder belongs to a different project, a conflict
+            error if the destination already holds a test case with the
+            same name, or an internal error on DB failure.
+        """
+        # pylint: disable=too-many-return-statements
+
+        if not self._state.is_available():
+            return TestcaseResult(success=False,
+                                  error_msg="Service unavailable",
+                                  is_internal=True)
+
+        try:
+            existing = await self._repository.get_testcase(case_id)
+        except SqliteInterfaceException as ex:
+            self._logger.exception(
+                "Database failure retrieving testcase %d for move: %s",
+                case_id, ex)
+            self._state.mark_database_failed()
+            return TestcaseResult(success=False,
+                                  error_msg="Internal error in CMS",
+                                  is_internal=True)
+
+        if existing is None or existing["project_id"] != project_id:
+            return TestcaseResult(success=False,
+                                  error_msg="Test case not found",
+                                  not_found=True)
+
+        if folder_id == existing["folder_id"]:
+            return TestcaseResult(success=True)
+
+        try:
+            if folder_id is not None:
+                folder_project_id = \
+                    await self._repository.get_folder_project_id(folder_id)
+
+                if folder_project_id is None:
+                    return TestcaseResult(success=False,
+                                          error_msg="Folder id is invalid",
+                                          not_found=True)
+
+                if folder_project_id != project_id:
+                    return TestcaseResult(
+                        success=False,
+                        error_msg="Folder does not belong to the specified "
+                                  "project")
+
+            if await self._repository.testcase_name_exists(
+                    project_id, folder_id, existing["name"]):
+                return TestcaseResult(
+                    success=False,
+                    error_msg="Test case name already exists in the "
+                              "destination",
+                    is_conflict=True)
+
+            await self._repository.move_testcase(case_id, folder_id)
+        except SqliteInterfaceException as ex:
+            self._logger.exception(
+                "Database failure moving testcase %d: %s", case_id, ex)
+            self._state.mark_database_failed()
+            return TestcaseResult(success=False,
+                                  error_msg="Internal error moving testcase",
+                                  is_internal=True)
+
+        return TestcaseResult(success=True)
+
     async def delete_testcase(self, case_id: int,
                               project_id: int) -> TestcaseResult:
         """Delete a test case.
