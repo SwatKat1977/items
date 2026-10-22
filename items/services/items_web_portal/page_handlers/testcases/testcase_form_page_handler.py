@@ -33,6 +33,13 @@ from items.services.items_web_portal.portal_page_handler import (
 # Shown instead of a gateway message when it did not supply one.
 _FALLBACK_ERROR: str = "The request could not be completed. Please try again."
 
+# What a test case with no section (the project's top level) is called.
+NO_SECTION_LABEL: str = "(No section)"
+
+# Shown when a move is refused because the chosen section has gone. (A test
+# case that has gone is a redirect to the list instead.)
+_SECTION_GONE: str = "That section no longer exists. Please choose another."
+
 
 class TestcaseFormPageHandler(PortalPageHandler):
     """Handles the View, Add and Edit Test Case pages.
@@ -92,6 +99,9 @@ class TestcaseFormPageHandler(PortalPageHandler):
             if case_type.get("id") == testcase.get("case_type_id"):
                 type_name = case_type.get("name", UNKNOWN_CASE_TYPE_NAME)
 
+        section_name = self._describe_section(
+            await self._fetch_sections(project_id), testcase.get("folder_id"))
+
         return await self._render_page(
             pages.TEMPLATE_TESTCASE_VIEW_PAGE,
             active_page="test-cases",
@@ -100,6 +110,7 @@ class TestcaseFormPageHandler(PortalPageHandler):
             instance_name=self._metadata_settings.instance_name,
             testcase=testcase,
             case_type_name=type_name,
+            section_name=section_name,
             permissions=await self._fetch_testcase_permissions(project_id))
 
     # ------------------------------------------------------------------
@@ -207,14 +218,10 @@ class TestcaseFormPageHandler(PortalPageHandler):
                 REFUSED["edit_test_case"],
                 f"/{project_id}/testcases/{case_id}", "Back to the test case")
 
-        case_types = await self._fetch_case_types()
-
         return await self._render_form(
-            project_id=project_id, case_id=case_id, case_types=case_types,
-            form_data={
-                "name": testcase.get("name", ""),
-                "description": testcase.get("description") or "",
-                "case_type_id": str(testcase.get("case_type_id", ""))})
+            project_id=project_id, case_id=case_id,
+            case_types=await self._fetch_case_types(),
+            form_data=self._saved_values(testcase), testcase=testcase)
 
     @require_session
     async def edit_submit(self, project_id: int, case_id: int):
@@ -240,6 +247,88 @@ class TestcaseFormPageHandler(PortalPageHandler):
         return await self._finish_submit(
             response, project_id=project_id, case_id=case_id, form=form,
             action="edit")
+
+    # ------------------------------------------------------------------
+    # Move
+    # ------------------------------------------------------------------
+
+    @require_session
+    async def move_submit(self, project_id: int, case_id: int):
+        """Move a test case to the section chosen on the Edit page.
+
+        Moving is its own action, with its own box and button on the Edit
+        page, so it posts on its own: the rest of the edit form is neither
+        sent nor saved.
+
+        Args:
+            project_id: ID of the project the test case belongs to.
+            case_id: ID of the test case to move.
+
+        Returns:
+            A redirect to the project's test case list on success. Otherwise
+            the Edit page again with an error banner and the chosen section
+            still selected; or a redirect to the list if the test case has
+            gone. A 403 (the person's role does not allow it) says so
+            plainly, rather than quietly sending them to the dashboard.
+        """
+        form = await request.form
+        raw_folder = (form.get("folder_id") or "").strip()
+
+        if raw_folder and not raw_folder.isdigit():
+            return await self._move_failed(
+                project_id, case_id, raw_folder, "Invalid section.")
+
+        base_url: str = self._config.apis_gateway_svc
+        response: ApiResponse = await self._rest_client.post(
+            f"{base_url}web/testcases/{case_id}/move?project_id={project_id}",
+            json_data={"folder_id": int(raw_folder) if raw_folder else None})
+
+        if response.status_code == HTTPStatus.OK:
+            return await make_response(
+                self._generate_redirect(f"{project_id}/testcases"))
+
+        if response.status_code == HTTPStatus.FORBIDDEN:
+            error_message = REFUSED["move_test_case"]
+        elif response.status_code == HTTPStatus.NOT_FOUND:
+            error_message = _SECTION_GONE
+        else:
+            error_message = self._extract_error(response)
+        self._logger.warning("Test case move failed (status %s): %s",
+                             response.status_code, error_message)
+
+        return await self._move_failed(
+            project_id, case_id, raw_folder, error_message)
+
+    async def _move_failed(self, project_id: int, case_id: int,
+                           chosen: str, error_message: str):
+        """Show the Edit page again after a move that did not happen.
+
+        The test case is read afresh so the page shows what is really saved
+        (the move form carries nothing else), and so a test case that has
+        gone is noticed and sent back to the list.
+
+        Args:
+            project_id: ID of the project.
+            case_id: ID of the test case.
+            chosen: The section the person picked, as submitted ("" for none),
+                kept selected so they need not find it again.
+            error_message: The banner text.
+
+        Returns:
+            The Edit page with the banner, or whatever ``_fetch_testcase``
+            says the page should return instead (the list if the test case
+            has gone, a "no permission" page if they can no longer read it).
+        """
+        testcase, early_response = await self._fetch_testcase(
+            project_id, case_id)
+        if early_response is not None:
+            return early_response
+
+        return await self._render_form(
+            project_id=project_id, case_id=case_id,
+            case_types=await self._fetch_case_types(),
+            form_data=self._saved_values(testcase), testcase=testcase,
+            move_choice=chosen, error_message=error_message)
 
     # ------------------------------------------------------------------
     # Helpers
@@ -347,7 +436,48 @@ class TestcaseFormPageHandler(PortalPageHandler):
             sections=(await self._fetch_sections(project_id)
                       if case_id is None else None),
             form_data=self._form_values(form),
-            error_message=error_message)
+            error_message=error_message,
+            testcase=(await self._fetch_testcase_quietly(project_id, case_id)
+                      if case_id is not None else None))
+
+    @staticmethod
+    def _saved_values(testcase: dict) -> dict:
+        """The form values for a test case as it is saved.
+
+        Args:
+            testcase: The test case as the gateway returned it.
+
+        Returns:
+            A dict with the name, description and case type to show.
+        """
+        return {
+            "name": testcase.get("name", ""),
+            "description": testcase.get("description") or "",
+            "case_type_id": str(testcase.get("case_type_id", ""))}
+
+    @staticmethod
+    def _describe_section(sections: Optional[list[dict]],
+                          folder_id: Optional[int]) -> Optional[str]:
+        """Say which section a test case is in, as a path.
+
+        Args:
+            sections: The project's sections as ``_fetch_sections`` returns
+                them, or None if they could not be loaded.
+            folder_id: The test case's section, or None for the top level.
+
+        Returns:
+            ``(No section)`` for the top level, the section's path (for
+            example ``Regression / Smoke``), or None if it cannot be worked
+            out (the sections could not be loaded, or it is not among them).
+        """
+        if folder_id is None:
+            return NO_SECTION_LABEL
+
+        for section in sections or []:
+            if section["id"] == folder_id:
+                return section["path"]
+
+        return None
 
     @staticmethod
     def _form_values(form) -> dict:
@@ -382,8 +512,9 @@ class TestcaseFormPageHandler(PortalPageHandler):
             project_id: ID of the project.
 
         Returns:
-            A list of ``{"id", "name", "depth", "label"}`` dicts in tree
-            order, or None if the sections could not be loaded.
+            A list of ``{"id", "name", "depth", "label", "path"}`` dicts in
+            tree order (``path`` is the names from the top, joined with
+            `` / ``), or None if the sections could not be loaded.
         """
         base_url: str = self._config.apis_gateway_svc
         try:
@@ -407,23 +538,28 @@ class TestcaseFormPageHandler(PortalPageHandler):
 
         sections: list[dict] = []
 
-        def walk(parent_id, depth: int) -> None:
+        def walk(parent_id, depth: int, trail: str) -> None:
             for folder in children.get(parent_id, []):
+                path = f"{trail} / {folder['name']}" if trail \
+                    else folder["name"]
                 sections.append({
                     "id": folder["id"],
                     "name": folder["name"],
+                    "path": path,
                     "depth": depth,
                     "label": "    " * depth
                              + folder["name"]})
-                walk(folder["id"], depth + 1)
+                walk(folder["id"], depth + 1, path)
 
-        walk(None, 0)
+        walk(None, 0, "")
         return sections
 
     async def _render_form(self, project_id: int, case_id: Optional[int],
                            case_types: Optional[list[dict]], form_data: dict,
                            error_message: Optional[str] = None,
-                           sections: Optional[list[dict]] = None):
+                           sections: Optional[list[dict]] = None,
+                           testcase: Optional[dict] = None,
+                           move_choice: Optional[str] = None):
         """Render the add/edit form page.
 
         Args:
@@ -433,13 +569,29 @@ class TestcaseFormPageHandler(PortalPageHandler):
                 could not be loaded.
             form_data: The values to show in the form.
             error_message: Optional error banner text.
-            sections: The project's sections for the Section dropdown (shown
-                only when adding), or None if they could not be loaded.
+            sections: When adding, the project's sections for the Section
+                dropdown, or None if they could not be loaded. (When editing
+                the sections are loaded here, for the Move box.)
+            testcase: When editing, the test case as saved, which says what
+                section it is in now; None if it could not be read again.
+            move_choice: When editing, the section the Move box should have
+                selected (``""`` for none); defaults to where the test case
+                is now.
 
         Returns:
             The rendered page.
         """
         # pylint: disable=too-many-arguments, too-many-positional-arguments
+        current_section = None
+        move_selected = ""
+        if case_id is not None:
+            sections = await self._fetch_sections(project_id)
+            folder_id = testcase.get("folder_id") if testcase else None
+            if testcase is not None:
+                current_section = self._describe_section(sections, folder_id)
+            move_selected = move_choice if move_choice is not None \
+                else ("" if folder_id is None else str(folder_id))
+
         return await self._render_page(
             pages.TEMPLATE_TESTCASE_FORM_PAGE,
             active_page="test-cases",
@@ -449,8 +601,39 @@ class TestcaseFormPageHandler(PortalPageHandler):
             case_id=case_id,
             case_types=case_types,
             sections=sections,
+            current_section=current_section,
+            move_selected=move_selected,
             form_data=form_data,
             error_message=error_message)
+
+    async def _fetch_testcase_quietly(self, project_id: int,
+                                      case_id: int) -> Optional[dict]:
+        """Read a test case only to show where it is, without failing.
+
+        Used when the Edit page is shown again after a failed save, where the
+        typed input must not be lost to a second failure.
+
+        Args:
+            project_id: ID of the project.
+            case_id: ID of the test case.
+
+        Returns:
+            The test case as the gateway returned it, or None if it could
+            not be read.
+        """
+        base_url: str = self._config.apis_gateway_svc
+        try:
+            response: ApiResponse = await self._rest_client.get(
+                f"{base_url}web/testcases/{case_id}?project_id={project_id}")
+        except Exception:  # pylint: disable=broad-except
+            self._logger.warning("Unable to re-read test case %s", case_id)
+            return None
+
+        if response.status_code != HTTPStatus.OK or \
+                not isinstance(response.body, dict):
+            return None
+
+        return response.body
 
     async def _fetch_project_name(self, project_id: int) -> str:
         """Fetch the project's name for the page's sidebar.

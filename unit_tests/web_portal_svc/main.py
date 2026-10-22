@@ -84,6 +84,7 @@ from test_testcase_form_page_handler import (
     TestAddTestcaseSubmit,
     TestEditTestcaseForm,
     TestEditTestcaseSubmit,
+    TestMoveTestcaseSubmit,
     TestViewControlsFollowPermissions,
 )
 

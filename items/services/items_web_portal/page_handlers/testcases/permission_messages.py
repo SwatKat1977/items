@@ -29,6 +29,8 @@ REFUSED: dict[str, str] = {
         "You don't have permission to add test cases in this project.",
     "edit_test_case":
         "You don't have permission to edit test cases in this project.",
+    "move_test_case":
+        "You don't have permission to move test cases in this project.",
     "delete_test_case":
         "You don't have permission to delete test cases in this project.",
     "add_section":

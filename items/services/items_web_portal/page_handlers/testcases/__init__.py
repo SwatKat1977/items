@@ -139,4 +139,13 @@ def create_testcases_page_handlers(injections: PageHandlerInjections) \
     async def edit_testcase_submit_request(project_id: int, case_id: int):
         return await handler_form.edit_submit(project_id, case_id)
 
+    injections.logger.debug(
+        "=> %s POST /<project_id>/testcases/<id>/move",
+        "Move test case (submit)".ljust(40))
+
+    @routes.route('/<int:project_id>/testcases/<int:case_id>/move',
+                  methods=['POST'])
+    async def move_testcase_submit_request(project_id: int, case_id: int):
+        return await handler_form.move_submit(project_id, case_id)
+
     return routes

@@ -69,6 +69,14 @@ _SECTIONS_OK = ApiResponse(status_code=HTTPStatus.OK, body={
     ],
     "test_cases": []})
 
+def _testcase_in(folder_id) -> ApiResponse:
+    """The test case (as _TESTCASE_OK) sitting in the given section."""
+    return ApiResponse(status_code=HTTPStatus.OK, body={
+        **_TESTCASE_OK.body, "folder_id": folder_id})
+
+
+_MOVE_URL = f"{_GW}web/testcases/7/move?project_id=1"
+
 _REDIRECT_TO_LIST = "url='http://localhost/1/testcases'"
 _REDIRECT_TO_DASHBOARD = "url='http://localhost//'"
 
@@ -119,6 +127,11 @@ class _FormPageTestCase(unittest.IsolatedAsyncioTestCase):
         async def edit_post(project_id, case_id):
             return await handler.edit_submit(project_id, case_id)
 
+        @app.route("/<int:project_id>/testcases/<int:case_id>/move",
+                   methods=["POST"])
+        async def move_post(project_id, case_id):
+            return await handler.move_submit(project_id, case_id)
+
         self.client = app.test_client()
 
     def _gateway_gets(self, responses: dict):
@@ -127,9 +140,13 @@ class _FormPageTestCase(unittest.IsolatedAsyncioTestCase):
         An entry that is an exception is raised; a URL not listed fails the
         test loudly. The "my permissions" answer defaults to "allowed
         everything" (a test about a refusal lists its own), because the Add
-        and Edit forms now ask it before showing themselves.
+        and Edit forms now ask it before showing themselves. The sections
+        default to a small tree: every page that shows a section asks for
+        them, and the page swallows a failed lookup, so a missing answer
+        would quietly test the "unavailable" path instead of failing.
         """
-        responses = {_PERMISSIONS_URL: _PERMISSIONS_ALL, **responses}
+        responses = {_PERMISSIONS_URL: _PERMISSIONS_ALL,
+                     _SECTIONS_URL: _SECTIONS_OK, **responses}
 
         async def fake_get(url, *_args, **_kwargs):
             if url not in responses:
@@ -183,6 +200,52 @@ class TestViewTestcasePage(_FormPageTestCase):
         self._ready()
         text = await self._text(await self._get())
         self.assertRegex(text, r'id="testcase-view-type">Smoke<')
+
+    async def test_shows_which_section_the_test_case_is_in_as_a_path(self):
+        self._ready(testcase=_testcase_in(4))
+        text = await self._text(await self._get())
+        self.assertRegex(
+            text, r'id="testcase-view-section">Regression / Smoke / Login<')
+
+    async def test_a_test_case_with_no_section_says_so(self):
+        self._ready()
+        text = await self._text(await self._get())
+        self.assertRegex(text, r'id="testcase-view-section">\(No section\)<')
+
+    async def test_section_is_unavailable_when_the_sections_cannot_be_read(
+            self):
+        """The page still works: only the Section row loses its answer."""
+        for bad in (ApiResponse(status_code=503),
+                    ApiResponse(status_code=200, body={"folders": "x"}),
+                    RuntimeError("gateway down")):
+            with self.subTest(sections=bad):
+                self._gateway_gets({_TESTCASE_URL: _testcase_in(4),
+                                    _PROJECT_URL: _PROJECT_OK,
+                                    _CASE_TYPES_URL: _CASE_TYPES_OK,
+                                    _SECTIONS_URL: bad})
+                response = await self._get()
+                self.assertEqual(response.status_code, 200)
+                text = await self._text(response)
+                self.assertRegex(
+                    text, r'id="testcase-view-section"><span class="text-muted">'
+                          r'Unavailable</span>')
+                self.assertIn("Login works", text)
+
+    async def test_a_section_that_is_not_in_the_list_is_unavailable(self):
+        self._ready(testcase=_testcase_in(99))
+        text = await self._text(await self._get())
+        self.assertRegex(
+            text, r'id="testcase-view-section"><span class="text-muted">'
+                  r'Unavailable</span>')
+
+    async def test_section_row_sits_between_description_and_type(self):
+        """The same order as the Add and Edit pages."""
+        self._ready()
+        text = await self._text(await self._get())
+        self.assertLess(text.index("testcase-view-description"),
+                        text.index("testcase-view-section"))
+        self.assertLess(text.index("testcase-view-section"),
+                        text.index("testcase-view-type"))
 
     async def test_edit_button_goes_to_the_edit_page(self):
         self._ready()
@@ -513,7 +576,7 @@ class TestAddTestcaseForm(_FormPageTestCase):
         text = await self._text(await self._get())
         self.assertIn("The case types could not be loaded", text)
         self.assertIn("The default type will be used", text)
-        self.assertNotIn('<select', text)
+        self.assertNotIn('id="tc-case-type"', text)
 
     async def test_case_types_non_list_body_is_treated_as_unavailable(self):
         self._gateway_gets({
@@ -723,13 +786,125 @@ class TestEditTestcaseForm(_FormPageTestCase):
         self.assertRegex(text, r'<option value="9"\s+selected>')
         self.assertNotRegex(text, r'<option value="15"\s+selected>')
 
-    async def test_edit_has_no_section_choice(self):
-        """Moving a test case between sections is not supported yet, so
-        editing offers no Section dropdown and never asks for the list."""
+    @staticmethod
+    def _main_form(text):
+        """The edit form's own HTML: everything before the Move box."""
+        return text.split('id="testcase-move-card"')[0]
+
+    @staticmethod
+    def _move_box(text):
+        return text.split('id="testcase-move-card"')[1]
+
+    async def test_the_edit_form_shows_the_section_but_does_not_change_it(
+            self):
+        """Moving is its own action: the section is text in the edit form,
+        never a field it would send."""
+        self._ready(testcase=_testcase_in(2))
+        text = await self._text(await self._get())
+        main = self._main_form(text)
+        self.assertRegex(main, r'id="tc-section-current">Regression / Smoke<')
+        self.assertNotIn('name="folder_id"', main)
+        self.assertNotIn('<select class="form-select" id="tc-section"', main)
+
+    async def test_a_test_case_with_no_section_says_so_on_the_edit_page(
+            self):
         self._ready()
         text = await self._text(await self._get())
-        self.assertNotIn('name="folder_id"', text)
-        self.assertNotIn("tc-section", text)
+        self.assertRegex(text, r'id="tc-section-current">\(No section\)<')
+
+    async def test_section_row_sits_between_description_and_type(self):
+        """Mirrors the view page and the Add page."""
+        self._ready()
+        text = await self._text(await self._get())
+        self.assertLess(text.index('id="tc-description"'),
+                        text.index('id="tc-section-current"'))
+        self.assertLess(text.index('id="tc-section-current"'),
+                        text.index('id="tc-case-type"'))
+
+    async def test_the_move_box_posts_to_the_move_address(self):
+        self._ready()
+        text = await self._text(await self._get())
+        box = self._move_box(text)
+        self.assertIn('id="moveTestcaseForm"', box)
+        self.assertIn('action="/1/testcases/7/move"', box)
+        self.assertIn('id="move-testcase-btn"', box)
+        self.assertIn('name="folder_id"', box)
+
+    async def test_the_move_box_is_a_separate_form_from_the_edit_form(self):
+        self._ready()
+        text = await self._text(await self._get())
+        self.assertEqual(text.count("<form"), 2)
+        self.assertLess(text.index('id="testcaseForm"'),
+                        text.index('id="moveTestcaseForm"'))
+        # The first form is closed before the second opens.
+        self.assertLess(text.index("</form>"),
+                        text.index('id="moveTestcaseForm"'))
+
+    async def test_the_move_dropdown_lists_every_section_in_tree_order(self):
+        self._ready()
+        box = self._move_box(await self._text(await self._get()))
+        values = re.findall(r'<option value="(\d*)"', box)
+        self.assertEqual(values, ["", "1", "2", "4", "3"])
+        self.assertIn("(No section)", box)
+        self.assertIn("Regression", box)
+
+    async def test_the_move_dropdown_starts_on_where_the_test_case_is(self):
+        self._ready(testcase=_testcase_in(2))
+        box = self._move_box(await self._text(await self._get()))
+        self.assertRegex(box, r'<option value="2"\s+selected>')
+        self.assertNotRegex(box, r'<option value=""\s+selected>')
+
+    async def test_the_move_dropdown_starts_on_no_section_for_the_top_level(
+            self):
+        self._ready()
+        box = self._move_box(await self._text(await self._get()))
+        self.assertRegex(box, r'<option value=""\s+selected>')
+
+    async def test_with_no_sections_the_move_box_offers_only_no_section(self):
+        self._gateway_gets({
+            _TESTCASE_URL: _TESTCASE_OK, _PROJECT_URL: _PROJECT_OK,
+            _CASE_TYPES_URL: _CASE_TYPES_OK,
+            _SECTIONS_URL: ApiResponse(status_code=200, body={
+                "folders": [], "test_cases": []})})
+        box = self._move_box(await self._text(await self._get()))
+        self.assertEqual(re.findall(r'<option value="(\d*)"', box), [""])
+
+    async def test_if_the_sections_cannot_be_read_the_move_box_says_so(self):
+        """The rest of the page still works; only the move is withheld."""
+        for bad in (ApiResponse(status_code=503),
+                    RuntimeError("gateway down")):
+            with self.subTest(sections=bad):
+                self._gateway_gets({
+                    _TESTCASE_URL: _testcase_in(2),
+                    _PROJECT_URL: _PROJECT_OK,
+                    _CASE_TYPES_URL: _CASE_TYPES_OK,
+                    _SECTIONS_URL: bad})
+                response = await self._get()
+                self.assertEqual(response.status_code, 200)
+                text = await self._text(response)
+                self.assertIn('id="tc-move-unavailable"', text)
+                self.assertNotIn('id="moveTestcaseForm"', text)
+                self.assertIn('id="testcaseForm"', text)
+                self.assertRegex(
+                    text, r'id="tc-section-current"><span class="text-muted">'
+                          r'Unavailable</span>')
+
+    async def test_a_reader_gets_neither_the_form_nor_the_move_box(self):
+        self._ready(permissions=_permissions(add_modify=False, delete=False))
+        text = await self._text(await self._get())
+        self.assertNotIn('id="testcase-move-card"', text)
+        self.assertNotIn('id="moveTestcaseForm"', text)
+
+    async def test_adding_has_no_move_box(self):
+        self._gateway_gets({_PROJECT_URL: _PROJECT_OK,
+                            _CASE_TYPES_URL: _CASE_TYPES_OK})
+        async with self.client as c:
+            response = await c.get("/1/testcases/add", headers=_AUTH_HEADERS)
+        text = await self._text(response)
+        self.assertNotIn('id="testcase-move-card"', text)
+        self.assertNotIn("tc-section-current", text)
+        # Adding still chooses the section in its own form.
+        self.assertIn('id="tc-section"', text)
 
     async def test_missing_description_shows_as_empty(self):
         self._ready(ApiResponse(status_code=HTTPStatus.OK, body={
@@ -831,10 +1006,41 @@ class TestEditTestcaseSubmit(_FormPageTestCase):
             return await c.post("/1/testcases/7/edit", form=form,
                                 headers=_AUTH_HEADERS)
 
-    def _ready(self, patch_response):
+    def _ready(self, patch_response, testcase=_testcase_in(2)):
         self.mock_rest_client.patch.return_value = patch_response
         self._gateway_gets({_PROJECT_URL: _PROJECT_OK,
-                            _CASE_TYPES_URL: _CASE_TYPES_OK})
+                            _CASE_TYPES_URL: _CASE_TYPES_OK,
+                            _TESTCASE_URL: testcase})
+
+    async def test_a_failed_save_still_shows_the_section_and_the_move_box(
+            self):
+        self._ready(ApiResponse(
+            status_code=HTTPStatus.CONFLICT,
+            body={"error": "Test case name already exists"}))
+        text = await self._text(await self._post({
+            "name": "Taken", "description": "Kept text",
+            "case_type_id": "15"}))
+        self.assertRegex(text, r'id="tc-section-current">Regression / Smoke<')
+        self.assertIn('id="moveTestcaseForm"', text)
+        self.assertRegex(text, r'<option value="2"\s+selected>')
+
+    async def test_a_failed_save_survives_not_being_able_to_re_read_it(self):
+        """The typed input must not be lost to a second failure."""
+        for bad in (ApiResponse(status_code=503), RuntimeError("down")):
+            with self.subTest(re_read=bad):
+                self._ready(ApiResponse(
+                    status_code=HTTPStatus.CONFLICT,
+                    body={"error": "Test case name already exists"}),
+                    testcase=bad)
+                text = await self._text(await self._post({
+                    "name": "Taken", "description": "Kept text",
+                    "case_type_id": "15"}))
+                self.assertIn("Test case name already exists", text)
+                self.assertIn('value="Taken"', text)
+                self.assertIn("Kept text", text)
+                self.assertRegex(
+                    text, r'id="tc-section-current"><span class="text-muted">'
+                          r'Unavailable</span>')
 
     async def test_patches_the_gateway_with_the_project_in_the_url(self):
         self._ready(ApiResponse(status_code=HTTPStatus.OK, body={"status": 1}))
@@ -895,6 +1101,164 @@ class TestEditTestcaseSubmit(_FormPageTestCase):
         self.assertIn("Kept text", text)
         self.assertRegex(text, r'<option value="15"\s+selected>')
         self.assertIn('action="/1/testcases/7/edit"', text)
+
+
+# ---------------------------------------------------------------------------
+# Move: submitting
+# ---------------------------------------------------------------------------
+
+class TestMoveTestcaseSubmit(_FormPageTestCase):
+
+    async def _post(self, form):
+        async with self.client as c:
+            return await c.post("/1/testcases/7/move", form=form,
+                                headers=_AUTH_HEADERS)
+
+    def _ready(self, move_response, testcase=_testcase_in(2),
+               permissions=_PERMISSIONS_ALL):
+        self._session_then(move_response)
+        self._gateway_gets({_PROJECT_URL: _PROJECT_OK,
+                            _CASE_TYPES_URL: _CASE_TYPES_OK,
+                            _TESTCASE_URL: testcase,
+                            _PERMISSIONS_URL: permissions})
+
+    def _moves_sent(self):
+        """The gateway move calls (the first POST is the session check)."""
+        return self.mock_rest_client.post.call_args_list[1:]
+
+    async def test_posts_the_chosen_section_to_the_gateway_move_route(self):
+        self._ready(ApiResponse(status_code=HTTPStatus.OK, body={"status": 1}))
+        await self._post({"folder_id": "3"})
+        (call,) = self._moves_sent()
+        self.assertEqual(call.args[0], _MOVE_URL)
+        self.assertEqual(call.kwargs["json_data"], {"folder_id": 3})
+
+    async def test_choosing_no_section_posts_null_for_the_top_level(self):
+        for form in ({"folder_id": ""}, {}):
+            with self.subTest(form=form):
+                self.mock_rest_client.post.reset_mock()
+                self._ready(ApiResponse(status_code=HTTPStatus.OK, body={}))
+                await self._post(form)
+                (call,) = self._moves_sent()
+                self.assertEqual(call.kwargs["json_data"],
+                                 {"folder_id": None})
+
+    async def test_nothing_but_the_section_is_sent(self):
+        """The edit form is a different form: a move never carries its
+        name, description or type."""
+        self._ready(ApiResponse(status_code=HTTPStatus.OK, body={}))
+        await self._post({"folder_id": "3", "name": "x", "description": "y",
+                          "case_type_id": "9"})
+        (call,) = self._moves_sent()
+        self.assertEqual(call.kwargs["json_data"], {"folder_id": 3})
+        self.mock_rest_client.patch.assert_not_called()
+
+    async def test_success_returns_to_the_list(self):
+        self._ready(ApiResponse(status_code=HTTPStatus.OK, body={"status": 1}))
+        text = await self._text(await self._post({"folder_id": "3"}))
+        self.assertIn(_REDIRECT_TO_LIST, text)
+
+    async def test_a_bad_section_is_refused_without_calling_the_gateway(self):
+        for bad in ("abc", "-1", "1.5", "2; DROP"):
+            with self.subTest(section=bad):
+                self.mock_rest_client.post.reset_mock()
+                self._ready(ApiResponse(status_code=HTTPStatus.OK, body={}))
+                text = await self._text(await self._post({"folder_id": bad}))
+                self.assertIn("Invalid section.", text)
+                self.assertIn('id="moveTestcaseForm"', text)
+                self.assertEqual(self._moves_sent(), [])
+
+    async def test_a_name_clash_says_so_and_keeps_the_chosen_section(self):
+        self._ready(ApiResponse(
+            status_code=HTTPStatus.CONFLICT,
+            body={"error": "Test case name already exists in the "
+                           "destination"}))
+        response = await self._post({"folder_id": "3"})
+        self.assertEqual(response.status_code, 200)
+        text = await self._text(response)
+        self.assertIn("Test case name already exists in the destination",
+                      text)
+        self.assertIn('id="testcase-form-error"', text)
+        # Back on the Edit page, the chosen section still selected...
+        box = text.split('id="testcase-move-card"')[1]
+        self.assertRegex(box, r'<option value="3"\s+selected>')
+        self.assertNotRegex(box, r'<option value="2"\s+selected>')
+        # ... and the test case as it is really saved, not as typed.
+        self.assertIn('value="Login works"', text)
+        self.assertRegex(text, r'id="tc-section-current">Regression / Smoke<')
+        self.assertNotIn(_REDIRECT_TO_LIST, text)
+
+    async def test_choosing_no_section_is_kept_after_a_failure(self):
+        self._ready(ApiResponse(
+            status_code=HTTPStatus.CONFLICT, body={"error": "clash"}))
+        text = await self._text(await self._post({"folder_id": ""}))
+        box = text.split('id="testcase-move-card"')[1]
+        self.assertRegex(box, r'<option value=""\s+selected>')
+
+    async def test_a_refusal_by_the_role_says_so(self):
+        self._ready(ApiResponse(status_code=HTTPStatus.FORBIDDEN, body={}))
+        response = await self._post({"folder_id": "3"})
+        self.assertEqual(response.status_code, 200)
+        text = await self._text(response)
+        self.assertIn("have permission to move test cases", text)
+        self.assertIn('id="testcaseForm"', text)
+        self.assertNotIn(_REDIRECT_TO_DASHBOARD, text)
+
+    async def test_a_section_that_has_gone_says_so(self):
+        self._ready(ApiResponse(
+            status_code=HTTPStatus.NOT_FOUND,
+            body={"error": "Folder id is invalid"}))
+        text = await self._text(await self._post({"folder_id": "3"}))
+        self.assertIn("That section no longer exists", text)
+        self.assertNotIn("Folder id is invalid", text)
+        self.assertIn('id="moveTestcaseForm"', text)
+
+    async def test_a_test_case_that_has_gone_returns_to_the_list(self):
+        self._ready(
+            ApiResponse(status_code=HTTPStatus.NOT_FOUND,
+                        body={"error": "Test case not found"}),
+            testcase=ApiResponse(status_code=HTTPStatus.NOT_FOUND,
+                                 body={"error": "Test case not found"}))
+        text = await self._text(await self._post({"folder_id": "3"}))
+        self.assertIn(_REDIRECT_TO_LIST, text)
+        self.assertNotIn("That section no longer exists", text)
+
+    async def test_other_gateway_errors_are_shown(self):
+        for status, body, shown in (
+                (500, {"error": "CMS service unavailable"},
+                 "CMS service unavailable"),
+                (400, {"error": "Folder does not belong to the specified "
+                                "project"},
+                 "Folder does not belong to the specified project"),
+                (500, None, "The request could not be completed")):
+            with self.subTest(status=status, body=body):
+                self._ready(ApiResponse(status_code=status, body=body))
+                text = await self._text(await self._post({"folder_id": "3"}))
+                self.assertIn(shown, text)
+                self.assertIn('id="moveTestcaseForm"', text)
+
+    async def test_if_it_can_no_longer_be_read_a_no_permission_page_is_shown(
+            self):
+        """Moving was refused and the test case can no longer be read at all
+        (the role was changed meanwhile): the usual no-permission page, not
+        a half-empty Edit page."""
+        self._ready(
+            ApiResponse(status_code=HTTPStatus.FORBIDDEN, body={}),
+            testcase=ApiResponse(status_code=HTTPStatus.FORBIDDEN, body={}))
+        text = await self._text(await self._post({"folder_id": "3"}))
+        self.assertIn('id="no-permission-message"', text)
+        self.assertNotIn('id="moveTestcaseForm"', text)
+
+    async def test_the_failed_page_still_works_when_the_sections_fail(self):
+        self._session_then(ApiResponse(
+            status_code=HTTPStatus.CONFLICT, body={"error": "clash"}))
+        self._gateway_gets({_PROJECT_URL: _PROJECT_OK,
+                            _CASE_TYPES_URL: _CASE_TYPES_OK,
+                            _TESTCASE_URL: _testcase_in(2),
+                            _SECTIONS_URL: ApiResponse(status_code=503)})
+        text = await self._text(await self._post({"folder_id": "3"}))
+        self.assertIn("clash", text)
+        self.assertIn('id="tc-move-unavailable"', text)
 
 
 # ---------------------------------------------------------------------------
