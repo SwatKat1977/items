@@ -26,6 +26,11 @@
             </div>
 
             <div class="mb-3">
+                <label class="form-label">Section</label>
+                <div class="form-control-plaintext" id="testcase-view-section">{% if section_name %}{{ section_name }}{% else %}<span class="text-muted">Unavailable</span>{% endif %}</div>
+            </div>
+
+            <div class="mb-3">
                 <label class="form-label">Type</label>
                 <div class="form-control-plaintext" id="testcase-view-type">{{ case_type_name }}</div>
             </div>

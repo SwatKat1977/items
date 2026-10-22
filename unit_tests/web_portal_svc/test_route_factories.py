@@ -400,6 +400,12 @@ class TestRouteWiring(unittest.IsolatedAsyncioTestCase):
                                     form={"name": "T"})
         self.assertNotEqual(response.status_code, 405)
 
+    async def test_move_testcase_submit_route_is_reachable(self):
+        async with self.client as c:
+            response = await c.post("/1/testcases/1/move",
+                                    form={"folder_id": "2"})
+        self.assertNotEqual(response.status_code, 405)
+
 
 if __name__ == "__main__":
     unittest.main()

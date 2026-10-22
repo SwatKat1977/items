@@ -32,9 +32,15 @@
                               rows="6">{{ form_data.description }}</textarea>
                 </div>
 
-                {# Only when adding: moving a test case between sections is
-                   not supported yet, so editing shows no Section choice. #}
-                {% if not case_id %}
+                {# Adding chooses the section here. Editing only shows where the
+                   test case is now: moving is its own action, in the box
+                   below the form. #}
+                {% if case_id %}
+                <div class="mb-3">
+                    <label class="form-label">Section</label>
+                    <div class="form-control-plaintext" id="tc-section-current">{% if current_section %}{{ current_section }}{% else %}<span class="text-muted">Unavailable</span>{% endif %}</div>
+                </div>
+                {% else %}
                 <div class="mb-3">
                     <label for="tc-section" class="form-label">Section</label>
                     {% if sections is not none %}
@@ -81,6 +87,39 @@
                 </div>
             </div>
         </form>
+
+        {# Its own action, so its own box and button: the form above is not
+           sent. Not shown when adding. #}
+        {% if case_id %}
+        <div class="testcase-form-card mt-3" id="testcase-move-card">
+            <h6 class="mb-3">Move Test Case</h6>
+            {% if sections is not none %}
+            <form id="moveTestcaseForm" method="post"
+                  action="/{{ project_id }}/testcases/{{ case_id }}/move">
+                <div class="mb-3">
+                    <label for="tc-move-section" class="form-label">Move to section</label>
+                    <select class="form-select" id="tc-move-section" name="folder_id">
+                        <option value=""
+                                {% if not move_selected %}selected{% endif %}>(No section)</option>
+                        {% for section in sections %}
+                        <option value="{{ section.id }}"
+                                {% if section.id|string == move_selected|string %}selected{% endif %}>
+                            {{ section.label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="testcase-form-actions">
+                    <button type="submit" class="btn btn-header-outline" id="move-testcase-btn">Move Test Case</button>
+                </div>
+            </form>
+            {% else %}
+            <p class="form-text mb-0" id="tc-move-unavailable">
+                The sections could not be loaded, so the test case cannot be moved right now.
+            </p>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
