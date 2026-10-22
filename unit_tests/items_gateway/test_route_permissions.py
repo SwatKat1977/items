@@ -41,6 +41,9 @@ _ROUTES = [
      PermissionAction.ADD_MODIFY),
     ("modify a test case", "PATCH", "/web/testcases/7?project_id=1",
      {"name": "T", "description": ""}, PermissionAction.ADD_MODIFY),
+    # Moving needs Add/Modify, not Delete: nothing is destroyed.
+    ("move a test case", "POST", "/web/testcases/7/move?project_id=1",
+     {"folder_id": None}, PermissionAction.ADD_MODIFY),
     ("delete a test case", "DELETE", "/web/testcases/7?project_id=1", None,
      PermissionAction.DELETE),
     # Sections (folders) belong to the same Test Cases area.
@@ -215,6 +218,7 @@ class TestRoutePermissions(unittest.IsolatedAsyncioTestCase):
         self.assertNotEqual(outcomes["get a test case"], HTTPStatus.FORBIDDEN)
         self.assertEqual(outcomes["create a test case"], HTTPStatus.FORBIDDEN)
         self.assertEqual(outcomes["modify a test case"], HTTPStatus.FORBIDDEN)
+        self.assertEqual(outcomes["move a test case"], HTTPStatus.FORBIDDEN)
         self.assertEqual(outcomes["delete a test case"], HTTPStatus.FORBIDDEN)
         self.assertEqual(outcomes["create a section"], HTTPStatus.FORBIDDEN)
         self.assertEqual(outcomes["rename a section"], HTTPStatus.FORBIDDEN)

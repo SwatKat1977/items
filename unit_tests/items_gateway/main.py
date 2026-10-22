@@ -36,6 +36,7 @@ from test_testcases_handlers import (
 from test_testcase_write_handlers import (
     TestCreateTestcaseHandler,
     TestModifyTestcaseHandler,
+    TestMoveTestcaseHandler,
     TestDeleteTestcaseHandler,
 )
 from test_folder_write_handlers import (

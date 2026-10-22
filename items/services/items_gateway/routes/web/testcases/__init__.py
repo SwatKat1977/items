@@ -28,6 +28,8 @@ from items.services.items_gateway.routes.web.testcases.get_testcases_handler \
     import GetTestcasesHandler
 from items.services.items_gateway.routes.web.testcases.modify_testcase_handler \
     import ModifyTestcaseHandler
+from items.services.items_gateway.routes.web.testcases.move_testcase_handler \
+    import MoveTestcaseHandler
 from items.shared.permission_action import PermissionAction
 from items.shared.permission_area import PermissionArea
 
@@ -44,7 +46,7 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
     that matches what it does, checked with the Identity service on every
     request (``@require_project_permission``, see section 9.5 of
     ``design_docs/user_roles_design.md``): Read to browse, Add/Modify to
-    create or edit, Delete to delete. A member whose role does not grant it
+    create, edit or move, Delete to delete. A member whose role does not grant it
     gets a 403, and so does a user who is not a member at all (they have an
     empty grid). Administrators are not special-cased here: Identity grants
     them everything. Because nothing is cached, a change to a role or
@@ -54,7 +56,8 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
     unexpectedly the route returns a 500, never access.
 
     The ``project_id`` of a route that has no project in its path
-    (``GET``, ``PATCH`` and ``DELETE /web/testcases/<id>``) is a query
+    (``GET``, ``PATCH`` and ``DELETE /web/testcases/<id>``, and
+    ``POST /web/testcases/<id>/move``) is a query
     parameter that the permission is checked against before ever calling CMS.
     That's safe despite being client-supplied: CMS independently verifies the
     testcase actually belongs to the stated project and 404s otherwise, so a
@@ -72,6 +75,8 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
             Retrieve the details of a specific testcase.
         - PATCH /testcases/<case_id>?project_id= [Add/Modify]:
             Update a testcase's name, description and optionally its type.
+        - POST /testcases/<case_id>/move?project_id= [Add/Modify]:
+            Move a testcase into another section, or to the top level.
         - DELETE /testcases/<case_id>?project_id= [Delete]:
             Delete a testcase.
 
@@ -97,6 +102,10 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
         injections.configuration,
         injections.rest_client)
     handler_modify_testcase: ModifyTestcaseHandler = ModifyTestcaseHandler(
+        injections.logger,
+        injections.configuration,
+        injections.rest_client)
+    handler_move_testcase: MoveTestcaseHandler = MoveTestcaseHandler(
         injections.logger,
         injections.configuration,
         injections.rest_client)
@@ -155,6 +164,18 @@ def create_testcases_routes(injections: RouteInjections) -> Blueprint:
         PermissionAction.ADD_MODIFY)
     async def modify_testcase_request(case_id: int):
         return await handler_modify_testcase.modify_testcase(case_id)
+
+    injections.logger.debug(
+        "=> %s POST /web/testcases/<int:case_id>/move",
+        "Move a testcase".ljust(40))
+
+    @routes.route('/testcases/<int:case_id>/move',
+                  methods=['POST'])
+    @require_project_permission(
+        injections, PermissionArea.TEST_CASES,
+        PermissionAction.ADD_MODIFY)
+    async def move_testcase_request(case_id: int):
+        return await handler_move_testcase.move_testcase(case_id)
 
     injections.logger.debug(
         "=> %s DELETE /web/testcases/<int:case_id>",
