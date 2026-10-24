@@ -299,6 +299,100 @@ class FolderService:
 
         return FolderResult(success=True)
 
+    async def move_folder(self, folder_id: int, project_id: int,
+                          parent_id: Optional[int]) -> FolderResult:
+        """Move a folder under another folder, or to the top level.
+
+        The new parent must be in the same project, must not be the folder
+        itself or one of its own descendants (that would cut the whole
+        subtree off from the rest of the tree), and must not already hold a
+        folder with the same name. Moving a folder to the parent it already
+        has succeeds without changing anything.
+
+        Args:
+            folder_id:  ID of the folder to move.
+            project_id: Project the caller states the folder belongs to. A
+                        mismatch is reported identically to the folder not
+                        existing, so a caller cannot probe other projects.
+            parent_id:  ID of the new parent folder, or None to move the
+                        folder to the top level.
+
+        Returns:
+            FolderResult indicating success, a not-found error if the folder
+            (or the new parent) doesn't exist or the folder belongs to a
+            different project, a bad-request error if the new parent
+            belongs to a different project or is the folder itself or one of
+            its descendants, a conflict error if the new parent already holds
+            a folder with the same name, or an internal error on DB failure.
+        """
+        # pylint: disable=too-many-return-statements
+
+        if not self._state.is_available():
+            return FolderResult(success=False,
+                                error_msg="Service unavailable",
+                                is_internal=True)
+
+        try:
+            existing = await self._repository.get_folder(folder_id)
+        except SqliteInterfaceException as ex:
+            self._logger.exception(
+                "Database failure retrieving folder %d for move: %s",
+                folder_id, ex)
+            self._state.mark_database_failed()
+            return FolderResult(success=False,
+                                error_msg="Internal error in CMS",
+                                is_internal=True)
+
+        if existing is None or existing["project_id"] != project_id:
+            return FolderResult(success=False,
+                                error_msg="Folder not found",
+                                not_found=True)
+
+        if parent_id == existing["parent_id"]:
+            return FolderResult(success=True)
+
+        try:
+            if parent_id is not None:
+                parent = await self._repository.get_folder(parent_id)
+
+                if parent is None:
+                    return FolderResult(
+                        success=False,
+                        error_msg="Parent folder id is invalid",
+                        not_found=True)
+
+                if parent["project_id"] != project_id:
+                    return FolderResult(
+                        success=False,
+                        error_msg="Parent folder does not belong to the "
+                                  "specified project")
+
+                if await self._repository.is_in_subtree(
+                        folder_id, parent_id):
+                    return FolderResult(
+                        success=False,
+                        error_msg="A folder cannot be moved into itself or "
+                                  "into one of its own sub-folders")
+
+            if await self._repository.folder_name_exists(
+                    project_id, parent_id, existing["name"]):
+                return FolderResult(
+                    success=False,
+                    error_msg="Folder name already exists in the "
+                              "destination",
+                    is_conflict=True)
+
+            await self._repository.update_folder_parent(folder_id, parent_id)
+        except SqliteInterfaceException as ex:
+            self._logger.exception(
+                "Database failure moving folder %d: %s", folder_id, ex)
+            self._state.mark_database_failed()
+            return FolderResult(success=False,
+                                error_msg="Internal error moving folder",
+                                is_internal=True)
+
+        return FolderResult(success=True)
+
     async def delete_folder(self, folder_id: int, project_id: int,
                             cascade: bool = False) -> FolderResult:
         """Delete a folder, refusing if it contains test cases.

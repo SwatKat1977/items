@@ -246,6 +246,42 @@
               "response": []
             },
             {
+              "name": "Move Folder",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"parent_id\": 2\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{CMS_SVC_URL}}/folders/1/move?project_id=1",
+                  "host": [
+                    "{{CMS_SVC_URL}}"
+                  ],
+                  "path": [
+                    "folders",
+                    "1",
+                    "move"
+                  ],
+                  "query": [
+                    {
+                      "key": "project_id",
+                      "value": "1",
+                      "description": "Required. The project the folder belongs to; 404 if it belongs to a different one."
+                    }
+                  ]
+                },
+                "description": "Moves a folder under another folder, or to the top level when parent_id is null. parent_id is always required: leaving it out is a 400, never read as the top level. The new parent must be in the same project (400 otherwise) and must exist (404). 400 if the new parent is the folder itself or one of its own sub-folders (that would cut the subtree off from the rest of the tree). 409 if the new parent already has a folder with the same name. Moving to the parent it already has succeeds and changes nothing. The folder's sub-folders and test cases move with it."
+              },
+              "response": []
+            },
+            {
               "name": "Delete Folder",
               "request": {
                 "method": "DELETE",

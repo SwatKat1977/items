@@ -14,6 +14,7 @@ from test_folder_handlers import (
     TestListFoldersHandler,
     TestAddFolderHandler,
     TestModifyFolderHandler,
+    TestMoveFolderHandler,
     TestDeleteFolderHandler,
 )
 from test_folder_service import TestFolderService

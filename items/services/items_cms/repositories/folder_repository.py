@@ -188,6 +188,53 @@ class FolderRepository:
         query = f"UPDATE {cms_tables.TC_FOLDERS} SET name = ? WHERE id = ?"
         await self._db.run_query(query, (name, folder_id), commit=True)
 
+    async def update_folder_parent(self,
+                                   folder_id: int,
+                                   parent_id: Optional[int]) -> None:
+        """Move a folder under another folder, or to the top level.
+
+        Args:
+            folder_id: ID of the folder to move.
+            parent_id: ID of the new parent folder, or None to make the
+                       folder a root-level folder.
+
+        Raises:
+            SqliteInterfaceException: If the database update fails.
+        """
+        query = (
+            f"UPDATE {cms_tables.TC_FOLDERS} SET parent_id = ? WHERE id = ?"
+        )
+        await self._db.run_query(query, (parent_id, folder_id), commit=True)
+
+    async def is_in_subtree(self, root_id: int, folder_id: int) -> bool:
+        """Return True if a folder is the root of a subtree, or inside it.
+
+        Used to refuse moving a folder into itself or into one of its own
+        descendants, which would cut the subtree off from the rest of the
+        tree.
+
+        Args:
+            root_id:   ID of the folder at the top of the subtree.
+            folder_id: ID of the folder to look for.
+
+        Returns:
+            True if ``folder_id`` is ``root_id`` itself or any folder
+            beneath it, however deeply nested.
+
+        Raises:
+            SqliteInterfaceException: If the database query fails.
+        """
+        query = (
+            "WITH RECURSIVE subtree(id) AS ("
+            f"SELECT id FROM {cms_tables.TC_FOLDERS} WHERE id = ? "
+            "UNION ALL "
+            f"SELECT f.id FROM {cms_tables.TC_FOLDERS} f "
+            "JOIN subtree s ON f.parent_id = s.id) "
+            "SELECT 1 FROM subtree WHERE id = ? LIMIT 1")
+        row = await self._db.run_query(
+            query, (root_id, folder_id), fetch_one=True)
+        return bool(row)
+
     async def count_testcases_in_subtree(self, folder_id: int) -> int:
         """Count the test cases in a folder and all of its descendants.
 

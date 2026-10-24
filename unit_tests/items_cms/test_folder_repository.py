@@ -18,6 +18,7 @@ import sqlite3
 import tempfile
 import unittest
 from unittest.mock import MagicMock
+from weaver_framework.database.sqlite_interface import SqliteInterfaceException
 from items.services.items_cms.repositories.folder_repository import (
     FolderRepository)
 from items.services.items_cms.cms_configuration import CMSConfiguration
@@ -269,6 +270,96 @@ class TestFolderRepository(unittest.IsolatedAsyncioTestCase):
     # ------------------------------------------------------------------
     # delete_folder must not destroy test cases unless told to
     # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # update_folder_parent
+    # ------------------------------------------------------------------
+
+    def _parent_of(self, folder_id):
+        return self._query(
+            "SELECT parent_id FROM tc_folders WHERE id = ?",
+            (folder_id,))[0][0]
+
+    async def test_update_folder_parent_moves_a_folder_under_another(self):
+        a = self._insert_folder(self.project_id, None, "A")
+        b = self._insert_folder(self.project_id, None, "B")
+        await self.repo.update_folder_parent(b, a)
+        self.assertEqual(self._parent_of(b), a)
+
+    async def test_update_folder_parent_moves_a_folder_to_the_top_level(self):
+        a = self._insert_folder(self.project_id, None, "A")
+        b = self._insert_folder(self.project_id, a, "B")
+        await self.repo.update_folder_parent(b, None)
+        self.assertIsNone(self._parent_of(b))
+
+    async def test_update_folder_parent_changes_nothing_else(self):
+        a = self._insert_folder(self.project_id, None, "A")
+        b = self._insert_folder(self.project_id, None, "B")
+        other = self._insert_folder(self.project_id, None, "Other")
+        await self.repo.update_folder_parent(b, a)
+        row = self._query(
+            "SELECT project_id, name FROM tc_folders WHERE id = ?", (b,))[0]
+        self.assertEqual(row, (self.project_id, "B"))
+        self.assertIsNone(self._parent_of(other))
+        self.assertIsNone(self._parent_of(a))
+
+    async def test_a_moved_folder_takes_its_subtree_and_test_cases_with_it(
+            self):
+        a = self._insert_folder(self.project_id, None, "A")
+        b = self._insert_folder(self.project_id, None, "B")
+        child = self._insert_folder(self.project_id, b, "Child")
+        grandchild = self._insert_folder(self.project_id, child, "Grand")
+        test_case = self._insert_testcase(grandchild, "Deep")
+        await self.repo.update_folder_parent(b, a)
+        self.assertEqual(self._parent_of(child), b)
+        self.assertEqual(self._parent_of(grandchild), child)
+        self.assertEqual(await self.repo.count_testcases_in_subtree(a), 1)
+        self.assertEqual(self._testcase_ids(), [test_case])
+
+    async def test_update_folder_parent_to_a_missing_folder_is_rejected(
+            self):
+        a = self._insert_folder(self.project_id, None, "A")
+        with self.assertRaises(SqliteInterfaceException):
+            await self.repo.update_folder_parent(a, 999)
+        self.assertIsNone(self._parent_of(a))
+
+    # ------------------------------------------------------------------
+    # is_in_subtree
+    # ------------------------------------------------------------------
+
+    async def test_a_folder_is_in_its_own_subtree(self):
+        a = self._insert_folder(self.project_id, None, "A")
+        self.assertTrue(await self.repo.is_in_subtree(a, a))
+
+    async def test_children_and_deep_descendants_are_in_the_subtree(self):
+        a = self._insert_folder(self.project_id, None, "A")
+        child = self._insert_folder(self.project_id, a, "Child")
+        grand = self._insert_folder(self.project_id, child, "Grand")
+        great = self._insert_folder(self.project_id, grand, "Great")
+        for descendant in (child, grand, great):
+            with self.subTest(descendant=descendant):
+                self.assertTrue(await self.repo.is_in_subtree(a, descendant))
+
+    async def test_an_ancestor_is_not_in_a_descendants_subtree(self):
+        a = self._insert_folder(self.project_id, None, "A")
+        child = self._insert_folder(self.project_id, a, "Child")
+        self.assertFalse(await self.repo.is_in_subtree(child, a))
+
+    async def test_siblings_and_unrelated_folders_are_not_in_the_subtree(
+            self):
+        a = self._insert_folder(self.project_id, None, "A")
+        sibling = self._insert_folder(self.project_id, None, "Sibling")
+        under_sibling = self._insert_folder(self.project_id, sibling, "Under")
+        other_project = self._insert_project("Beta")
+        elsewhere = self._insert_folder(other_project, None, "Elsewhere")
+        for other in (sibling, under_sibling, elsewhere):
+            with self.subTest(other=other):
+                self.assertFalse(await self.repo.is_in_subtree(a, other))
+
+    async def test_a_missing_folder_is_in_no_subtree(self):
+        a = self._insert_folder(self.project_id, None, "A")
+        self.assertFalse(await self.repo.is_in_subtree(a, 999))
+        self.assertFalse(await self.repo.is_in_subtree(999, a))
 
     # ------------------------------------------------------------------
     # count_testcases_in_subtree
