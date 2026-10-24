@@ -24,6 +24,7 @@ from .get_folder_handler import GetFolderHandler
 from .list_folders_handler import ListFoldersHandler
 from .add_folder_handler import AddFolderHandler
 from .modify_folder_handler import ModifyFolderHandler
+from .move_folder_handler import MoveFolderHandler
 from .delete_folder_handler import DeleteFolderHandler
 
 
@@ -56,6 +57,7 @@ def create_folders_routes(logger: logging.Logger,
     list_handler = ListFoldersHandler(logger, service)
     add_handler = AddFolderHandler(logger, service)
     modify_handler = ModifyFolderHandler(logger, service)
+    move_handler = MoveFolderHandler(logger, service)
     delete_handler = DeleteFolderHandler(logger, service)
 
     logger.debug("--- Registering Folders API routes ---")
@@ -93,6 +95,15 @@ def create_folders_routes(logger: logging.Logger,
     async def modify_folder(folder_id: int):
         # pylint: disable=no-value-for-parameter
         return await modify_handler.modify_folder(folder_id)
+
+    # Move a folder under another folder (or to the top level).
+    logger.debug("=> %s POST /folders/<int:folder_id>/move",
+                 "Move a folder".ljust(40))
+
+    @folders_routes.route('/folders/<int:folder_id>/move', methods=['POST'])
+    async def move_folder(folder_id: int):
+        # pylint: disable=no-value-for-parameter
+        return await move_handler.move_folder(folder_id)
 
     # Delete a folder.
     logger.debug("=> %s DELETE /folders/<int:folder_id>",

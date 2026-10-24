@@ -23,6 +23,7 @@ from items.services.items_cms.repositories.folder_repository import (
 from items.shared.service_state import ServiceState
 
 _FOLDER = {"id": 1, "project_id": 5, "parent_id": None, "name": "Root"}
+_DEST = {"id": 9, "project_id": 5, "parent_id": None, "name": "Dest"}
 
 
 class TestFolderService(unittest.IsolatedAsyncioTestCase):
@@ -266,6 +267,156 @@ class TestFolderService(unittest.IsolatedAsyncioTestCase):
         result = await self.service.update_folder(1, 5, "New")
         self.assertTrue(result.success)
         self.mock_repo.update_folder_name.assert_called_once_with(1, "New")
+
+    # ------------------------------------------------------------------
+    # move_folder
+    # ------------------------------------------------------------------
+
+    def _ready_to_move(self, existing=_FOLDER, parent=_DEST,
+                       in_subtree=False, name_taken=False):
+        """The usual happy path, with one thing changed per test. Nothing
+        defaults to a truthy mock: every answer the move asks for is set."""
+        self.mock_repo.get_folder.side_effect = (
+            lambda folder_id: existing if folder_id == existing["id"]
+            else parent)
+        self.mock_repo.is_in_subtree.return_value = in_subtree
+        self.mock_repo.folder_name_exists.return_value = name_taken
+
+    async def test_move_folder_service_unavailable(self):
+        self.mock_state.is_available.return_value = False
+        result = await self.service.move_folder(1, 5, 9)
+        self.assertFalse(result.success)
+        self.assertTrue(result.is_internal)
+        self.mock_repo.update_folder_parent.assert_not_called()
+
+    async def test_move_folder_lookup_db_exception(self):
+        self.mock_repo.get_folder.side_effect = (
+            SqliteInterfaceException("err"))
+        result = await self.service.move_folder(1, 5, 9)
+        self.assertFalse(result.success)
+        self.assertTrue(result.is_internal)
+        self.mock_state.mark_database_failed.assert_called_once()
+
+    async def test_move_folder_not_found(self):
+        self.mock_repo.get_folder.return_value = None
+        result = await self.service.move_folder(1, 5, 9)
+        self.assertFalse(result.success)
+        self.assertTrue(result.not_found)
+        self.assertEqual(result.error_msg, "Folder not found")
+        self.mock_repo.update_folder_parent.assert_not_called()
+
+    async def test_move_folder_in_another_project_is_not_found(self):
+        self._ready_to_move()
+        result = await self.service.move_folder(1, 6, 9)  # folder is in 5
+        self.assertFalse(result.success)
+        self.assertTrue(result.not_found)
+        self.assertEqual(result.error_msg, "Folder not found")
+        self.mock_repo.is_in_subtree.assert_not_called()
+        self.mock_repo.update_folder_parent.assert_not_called()
+
+    async def test_move_folder_to_the_parent_it_already_has_does_nothing(
+            self):
+        self._ready_to_move(existing={**_FOLDER, "parent_id": 9})
+        result = await self.service.move_folder(1, 5, 9)
+        self.assertTrue(result.success)
+        self.mock_repo.is_in_subtree.assert_not_called()
+        self.mock_repo.folder_name_exists.assert_not_called()
+        self.mock_repo.update_folder_parent.assert_not_called()
+
+    async def test_move_top_level_folder_to_top_level_does_nothing(self):
+        self._ready_to_move()  # _FOLDER has no parent
+        result = await self.service.move_folder(1, 5, None)
+        self.assertTrue(result.success)
+        self.mock_repo.update_folder_parent.assert_not_called()
+
+    async def test_move_folder_new_parent_not_found(self):
+        self._ready_to_move(parent=None)
+        result = await self.service.move_folder(1, 5, 9)
+        self.assertFalse(result.success)
+        self.assertTrue(result.not_found)
+        self.assertEqual(result.error_msg, "Parent folder id is invalid")
+        self.mock_repo.update_folder_parent.assert_not_called()
+
+    async def test_move_folder_new_parent_in_another_project_is_refused(self):
+        self._ready_to_move(parent={**_DEST, "project_id": 6})
+        result = await self.service.move_folder(1, 5, 9)
+        self.assertFalse(result.success)
+        self.assertFalse(result.not_found)
+        self.assertFalse(result.is_conflict)
+        self.assertEqual(
+            result.error_msg,
+            "Parent folder does not belong to the specified project")
+        self.mock_repo.is_in_subtree.assert_not_called()
+        self.mock_repo.update_folder_parent.assert_not_called()
+
+    async def test_move_folder_into_itself_or_a_descendant_is_refused(self):
+        """Moving a folder under its own subtree would cut the whole subtree
+        off from the rest of the tree."""
+        self._ready_to_move(in_subtree=True)
+        result = await self.service.move_folder(1, 5, 9)
+        self.assertFalse(result.success)
+        self.assertFalse(result.not_found)
+        self.assertFalse(result.is_conflict)
+        self.assertEqual(result.error_msg,
+                         "A folder cannot be moved into itself or into one "
+                         "of its own sub-folders")
+        self.mock_repo.is_in_subtree.assert_called_once_with(1, 9)
+        self.mock_repo.folder_name_exists.assert_not_called()
+        self.mock_repo.update_folder_parent.assert_not_called()
+
+    async def test_move_folder_into_itself_asks_about_its_own_subtree(self):
+        self._ready_to_move(parent={**_FOLDER}, in_subtree=True)
+        result = await self.service.move_folder(1, 5, 1)
+        self.assertFalse(result.success)
+        self.mock_repo.is_in_subtree.assert_called_once_with(1, 1)
+        self.mock_repo.update_folder_parent.assert_not_called()
+
+    async def test_move_folder_name_taken_in_destination_is_a_conflict(self):
+        self._ready_to_move(name_taken=True)
+        result = await self.service.move_folder(1, 5, 9)
+        self.assertFalse(result.success)
+        self.assertTrue(result.is_conflict)
+        self.mock_repo.folder_name_exists.assert_called_once_with(
+            5, 9, "Root")
+        self.mock_repo.update_folder_parent.assert_not_called()
+
+    async def test_move_folder_to_top_level_checks_the_name_there(self):
+        self._ready_to_move(existing={**_FOLDER, "parent_id": 9},
+                            name_taken=True)
+        result = await self.service.move_folder(1, 5, None)
+        self.assertTrue(result.is_conflict)
+        self.mock_repo.is_in_subtree.assert_not_called()
+        self.mock_repo.folder_name_exists.assert_called_once_with(
+            5, None, "Root")
+
+    async def test_move_folder_database_failure_at_any_step(self):
+        for failing in ("get_folder_for_parent", "is_in_subtree",
+                        "folder_name_exists", "update_folder_parent"):
+            with self.subTest(failing=failing):
+                self.mock_state.reset_mock()
+                self._ready_to_move()
+                if failing == "get_folder_for_parent":
+                    self.mock_repo.get_folder.side_effect = [
+                        _FOLDER, SqliteInterfaceException("err")]
+                else:
+                    getattr(self.mock_repo, failing).side_effect = (
+                        SqliteInterfaceException("err"))
+                result = await self.service.move_folder(1, 5, 9)
+                self.assertFalse(result.success)
+                self.assertTrue(result.is_internal)
+                self.mock_state.mark_database_failed.assert_called_once()
+
+    async def test_move_folder_success(self):
+        self._ready_to_move()
+        result = await self.service.move_folder(1, 5, 9)
+        self.assertTrue(result.success)
+        self.mock_repo.update_folder_parent.assert_called_once_with(1, 9)
+
+    async def test_move_folder_to_the_top_level_success(self):
+        self._ready_to_move(existing={**_FOLDER, "parent_id": 9})
+        result = await self.service.move_folder(1, 5, None)
+        self.assertTrue(result.success)
+        self.mock_repo.update_folder_parent.assert_called_once_with(1, None)
 
     # ------------------------------------------------------------------
     # delete_folder
