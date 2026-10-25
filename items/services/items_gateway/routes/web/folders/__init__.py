@@ -23,6 +23,8 @@ from items.services.items_gateway.routes.web.folders.delete_folder_handler \
     import DeleteFolderHandler
 from items.services.items_gateway.routes.web.folders.modify_folder_handler \
     import ModifyFolderHandler
+from items.services.items_gateway.routes.web.folders.move_folder_handler \
+    import MoveFolderHandler
 from items.shared.permission_action import PermissionAction
 from items.shared.permission_area import PermissionArea
 
@@ -38,8 +40,8 @@ def create_folders_routes(injections: RouteInjections) -> Blueprint:
     requires a valid session and the **Test Cases** permission that matches
     what it does, checked with the Identity service on every request
     (``@require_project_permission``, see section 9.5 of
-    ``design_docs/user_roles_design.md``): Add/Modify to create or rename a
-    section, Delete to delete one. A member whose role does not grant it gets
+    ``design_docs/user_roles_design.md``): Add/Modify to create, rename or
+    move a section, Delete to delete one. A member whose role does not grant it gets
     a 403, and so does a user who is not a member at all (they have an empty
     grid). Administrators are not special-cased: Identity grants them
     everything. Nothing is cached, so a change to a role or membership
@@ -55,7 +57,8 @@ def create_folders_routes(injections: RouteInjections) -> Blueprint:
     unexpectedly the route returns a 500, never access.
 
     The ``project_id`` of a route with no project in its path (``PATCH`` and
-    ``DELETE /web/folders/<id>``) is a query parameter that the permission is
+    ``DELETE /web/folders/<id>``, and ``POST /web/folders/<id>/move``) is a
+    query parameter that the permission is
     checked against before ever calling CMS. That's safe despite being
     client-supplied: CMS independently verifies the section actually belongs
     to the stated project and 404s otherwise. Unlike the old membership
@@ -67,6 +70,10 @@ def create_folders_routes(injections: RouteInjections) -> Blueprint:
             Create a section, at the top level or inside another section.
         - PATCH /folders/<folder_id>?project_id= [Add/Modify]:
             Rename a section.
+        - POST /folders/<folder_id>/move?project_id= [Add/Modify]:
+            Move a section under another section, or to the top level.
+            Refused if the new parent is the section itself or one of its
+            own sub-sections.
         - DELETE /folders/<folder_id>?project_id=[&cascade=true] [Delete]:
             Delete a section. Refused with a 409 and a test case count if
             the section contains test cases, unless ``cascade=true``.
@@ -84,6 +91,10 @@ def create_folders_routes(injections: RouteInjections) -> Blueprint:
         injections.configuration,
         injections.rest_client)
     handler_modify: ModifyFolderHandler = ModifyFolderHandler(
+        injections.logger,
+        injections.configuration,
+        injections.rest_client)
+    handler_move: MoveFolderHandler = MoveFolderHandler(
         injections.logger,
         injections.configuration,
         injections.rest_client)
@@ -115,6 +126,16 @@ def create_folders_routes(injections: RouteInjections) -> Blueprint:
         PermissionAction.ADD_MODIFY)
     async def modify_folder_request(folder_id: int):
         return await handler_modify.modify_folder(folder_id)
+
+    injections.logger.debug("=> %s POST /web/folders/<int:folder_id>/move",
+                            "Move a section".ljust(40))
+
+    @routes.route('/folders/<int:folder_id>/move', methods=['POST'])
+    @require_project_permission(
+        injections, PermissionArea.TEST_CASES,
+        PermissionAction.ADD_MODIFY)
+    async def move_folder_request(folder_id: int):
+        return await handler_move.move_folder(folder_id)
 
     injections.logger.debug("=> %s DELETE /web/folders/<int:folder_id>",
                             "Delete a section".ljust(40))
