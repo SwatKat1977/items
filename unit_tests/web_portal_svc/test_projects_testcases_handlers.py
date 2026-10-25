@@ -417,6 +417,82 @@ class TestGetProjectTestcasesPageHandler(unittest.IsolatedAsyncioTestCase):
                   r'data-id="1"\s+data-name="AlphaFolder"')
         self.assertIn('data-id="2"', text)
 
+    # ----- moving a section --------------------------------------------
+
+    _TREE = [{"id": 1, "parent_id": None, "name": "Top"},
+             {"id": 3, "parent_id": 2, "name": "Grandchild"},
+             {"id": 2, "parent_id": 1, "name": "Child"},
+             {"id": 4, "parent_id": None, "name": "Other"}]
+
+    def _move_buttons(self, text):
+        """{section id: (parent id, subtree ids)} read from the buttons."""
+        import re
+        return {int(i): (p, s) for i, p, s in re.findall(
+            r'move-section-btn"\s+title="Move section"\s+'
+            r'data-bs-toggle="modal"\s+data-bs-target="#moveSectionModal"\s+'
+            r'data-id="(\d+)"\s+data-name="[^"]*"\s+'
+            r'data-parent-id="([^"]*)"\s+data-subtree-ids="([^"]*)"', text)}
+
+    async def test_every_section_has_a_move_button_that_opens_the_pop_up(
+            self):
+        self._page_with(self._TREE, [])
+        text = await self._page_text()
+        self.assertEqual(text.count("move-section-btn"), 4 + 1)  # + modal's
+        self.assertEqual(sorted(self._move_buttons(text)), [1, 2, 3, 4])
+
+    async def test_each_button_says_where_the_section_is_now(self):
+        self._page_with(self._TREE, [])
+        buttons = self._move_buttons(await self._page_text())
+        self.assertEqual({i: p for i, (p, _) in buttons.items()},
+                         {1: "", 2: "1", 3: "2", 4: ""})
+
+    async def test_each_button_lists_the_section_and_everything_beneath_it(
+            self):
+        """What the pop-up must not offer as a destination: a section cannot
+        be moved into itself or into one of its own sub-sections."""
+        self._page_with(self._TREE, [])
+        buttons = self._move_buttons(await self._page_text())
+        subtrees = {i: sorted(int(x) for x in s.split(","))
+                    for i, (_, s) in buttons.items()}
+        self.assertEqual(subtrees, {1: [1, 2, 3], 2: [2, 3], 3: [3], 4: [4]})
+
+    async def test_the_pop_up_lists_the_top_level_then_every_section(self):
+        import re
+        self._page_with(self._TREE, [])
+        text = await self._page_text()
+        pop_up = text.split('id="moveSectionModal"')[1]
+        self.assertEqual(
+            re.findall(r'<option value="(\d*)">', pop_up),
+            ["", "1", "2", "3", "4"])      # each sub-section after its parent
+        self.assertIn("(Top level)", pop_up)
+
+    async def test_the_pop_up_indents_sub_sections_by_depth(self):
+        import re
+        self._page_with(self._TREE, [])
+        pop_up = (await self._page_text()).split('id="moveSectionModal"')[1]
+        labels = dict(re.findall(r'<option value="(\d+)">([^<]*)</option>',
+                                 pop_up))
+        nbsp = " " * 4
+        self.assertEqual(labels["1"], "Top")
+        self.assertEqual(labels["2"], nbsp + "Child")
+        self.assertEqual(labels["3"], nbsp * 2 + "Grandchild")
+        self.assertEqual(labels["4"], "Other")
+
+    async def test_the_pop_up_posts_to_the_move_address_for_the_project(self):
+        self._page_with(self._TREE, [])
+        pop_up = (await self._page_text()).split('id="moveSectionModal"')[1]
+        self.assertIn('data-action-template="/1/folders/__ID__/move"', pop_up)
+        self.assertIn('name="parent_id"', pop_up)
+        self.assertIn('id="move-section-btn"', pop_up)
+
+    async def test_with_no_sections_there_is_no_move_pop_up_content(self):
+        """No sections means no section rows, so no button; the pop-up still
+        exists for a person who can add, with only the top level in it."""
+        import re
+        self._page_with([], [])
+        text = await self._page_text()
+        self.assertEqual(self._move_buttons(text), {})
+
     # ----- the count shown up front ------------------------------------
 
     def _counts(self, text):
@@ -676,6 +752,11 @@ class _SectionWriteCase(unittest.IsolatedAsyncioTestCase):
                    methods=["POST"])
         async def rename_route(project_id, folder_id):
             return await handler.rename_section(project_id, folder_id)
+
+        @app.route("/<int:project_id>/folders/<int:folder_id>/move",
+                   methods=["POST"])
+        async def move_route(project_id, folder_id):
+            return await handler.move_section(project_id, folder_id)
 
         self.client = app.test_client()
 
@@ -1058,6 +1139,112 @@ class TestDeleteSection(_SectionWriteCase):
 # Controls follow the person's permissions (design doc section 9.5)
 # ------------------------------------------------------------------
 
+class TestMoveSection(_SectionWriteCase):
+    """POST /<project_id>/folders/<id>/move."""
+
+    async def _post(self, form, folder_id=4):
+        async with self.client as c:
+            return await c.post(f"/1/folders/{folder_id}/move", form=form,
+                                headers=_AUTH_HEADERS)
+
+    def _gateway_replies(self, response):
+        """The session check is the first POST; the move is the second."""
+        self.mock_rest_client.post.side_effect = [
+            ApiResponse(status_code=HTTPStatus.OK, body={"status": "VALID"}),
+            response]
+
+    def _moves_sent(self):
+        return self.mock_rest_client.post.call_args_list[1:]
+
+    async def test_posts_the_destination_to_the_gateway_move_route(self):
+        self._gateway_replies(ApiResponse(status_code=HTTPStatus.OK,
+                                          body={"status": 1}))
+        await self._post({"parent_id": "9"})
+        (call,) = self._moves_sent()
+        self.assertEqual(
+            call.args[0], "http://gateway/web/folders/4/move?project_id=1")
+        self.assertEqual(call.kwargs["json_data"], {"parent_id": 9})
+
+    async def test_choosing_the_top_level_posts_null(self):
+        for form in ({"parent_id": ""}, {}):
+            with self.subTest(form=form):
+                self.mock_rest_client.post.reset_mock()
+                self._gateway_replies(ApiResponse(
+                    status_code=HTTPStatus.OK, body={}))
+                await self._post(form)
+                (call,) = self._moves_sent()
+                self.assertEqual(call.kwargs["json_data"],
+                                 {"parent_id": None})
+
+    async def test_success_returns_to_the_list(self):
+        self._gateway_replies(ApiResponse(status_code=HTTPStatus.OK,
+                                          body={"status": 1}))
+        text = await self._text(await self._post({"parent_id": "9"}))
+        self.assertIn("url='http://localhost/1/testcases'", text)
+
+    async def test_a_bad_destination_is_refused_without_calling_the_gateway(
+            self):
+        for bad in ("abc", "-1", "1.5", "2; DROP"):
+            with self.subTest(destination=bad):
+                self.mock_rest_client.post.reset_mock()
+                self._gateway_replies(ApiResponse(
+                    status_code=HTTPStatus.OK, body={}))
+                self._list_page_responses()
+                text = await self._text(await self._post({"parent_id": bad}))
+                self.assertIn('id="testcases-error"', text)
+                self.assertIn("Invalid destination section.", text)
+                self.assertEqual(self._moves_sent(), [])
+
+    async def test_refused_by_the_role_says_so_and_stays_on_the_list(self):
+        self._gateway_replies(ApiResponse(status_code=HTTPStatus.FORBIDDEN,
+                                          body={}))
+        self._list_page_responses()
+        text = await self._text(await self._post({"parent_id": "9"}))
+        self.assertIn('id="testcases-error"', text)
+        self.assertIn("have permission to move sections", text)
+        self.assertNotIn("url='http://localhost//'", text)
+
+    async def test_a_name_clash_is_explained_in_the_portals_words(self):
+        self._gateway_replies(ApiResponse(
+            status_code=HTTPStatus.CONFLICT,
+            body={"error": "Folder name already exists in the destination"}))
+        self._list_page_responses()
+        text = await self._text(await self._post({"parent_id": "9"}))
+        self.assertIn("A section with that name already exists in the "
+                      "destination", text)
+        self.assertNotIn("Folder name already exists", text)
+
+    async def test_a_vanished_section_or_destination_is_explained(self):
+        self._gateway_replies(ApiResponse(
+            status_code=HTTPStatus.NOT_FOUND,
+            body={"error": "Parent folder id is invalid"}))
+        self._list_page_responses()
+        text = await self._text(await self._post({"parent_id": "9"}))
+        self.assertIn("That section or its destination no longer exists",
+                      text)
+        self.assertNotIn("Parent folder id is invalid", text)
+        # The list shown is a fresh one.
+        self.assertIn("StillHere", text)
+
+    async def test_a_loop_refusal_from_the_cms_is_shown(self):
+        """The pop-up never offers one, so this takes a stale page or a
+        crafted request; the CMS's refusal is shown as it is."""
+        message = ("A folder cannot be moved into itself or into one of its "
+                   "own sub-folders")
+        self._gateway_replies(ApiResponse(
+            status_code=HTTPStatus.BAD_REQUEST, body={"error": message}))
+        self._list_page_responses()
+        text = await self._text(await self._post({"parent_id": "4"}))
+        self.assertIn(message, text)
+
+    async def test_failure_without_a_message_shows_the_fallback(self):
+        self._gateway_replies(ApiResponse(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, body={}))
+        self._list_page_responses()
+        text = await self._text(await self._post({"parent_id": "9"}))
+        self.assertIn("The request could not be completed", text)
+
+
 _PERMISSIONS_URL = "http://gateway/web/projects/1/permissions"
 
 # Markers that appear in the page only when the control does. The controls
@@ -1065,7 +1252,8 @@ _PERMISSIONS_URL = "http://gateway/web/projects/1/permissions"
 # means absent: there is nothing to unhide in the browser.
 _ADD_CONTROLS = ('id="add-section-btn"', 'id="add-testcase-btn"',
                  "edit-testcase-btn", "add-subsection-btn",
-                 "rename-section-btn", 'id="sectionModal"')
+                 "rename-section-btn", 'id="sectionModal"',
+                 "move-section-btn", 'id="moveSectionModal"')
 _DELETE_CONTROLS = ("delete-testcase-btn", "delete-section-btn",
                     'id="confirmDeleteTestcaseModal"',
                     'id="confirmDeleteSectionModal"')

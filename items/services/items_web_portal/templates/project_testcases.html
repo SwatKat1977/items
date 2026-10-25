@@ -77,6 +77,15 @@
                     data-name="{{ folder.name }}">
                 <i class="bi bi-pencil"></i>
             </button>
+            <button type="button" class="btn btn-link text-primary p-1 move-section-btn"
+                    title="Move section"
+                    data-bs-toggle="modal" data-bs-target="#moveSectionModal"
+                    data-id="{{ folder.id }}"
+                    data-name="{{ folder.name }}"
+                    data-parent-id="{{ folder.parent_id if folder.parent_id is not none else '' }}"
+                    data-subtree-ids="{{ folder.subtree_ids|join(',') }}">
+                <i class="bi bi-folder-symlink"></i>
+            </button>
             {% endif %}
             {% if permissions.delete %}
             <button type="button" class="btn btn-link text-danger p-1 delete-section-btn"
@@ -152,6 +161,7 @@
     {% endif %}
     {% if permissions.add_modify %}
         {% include "_section_modal.html" %}
+        {% include "_section_move_modal.html" %}
     {% endif %}
 </div>
 {% endblock %}

@@ -38,6 +38,19 @@ UNKNOWN_CASE_TYPE_NAME: str = "Unknown"
 # Shown instead of a gateway message when it did not supply one.
 _FALLBACK_ERROR: str = "The request could not be completed. Please try again."
 
+# What a refused section move says, in the Portal's own words. A 409 can only
+# mean the destination already has a section with that name; a 404 that the
+# section or its destination has gone (the list shown again is up to date).
+_MOVE_CLASH: str = ("A section with that name already exists in the "
+                    "destination. Rename one of them, or choose another "
+                    "destination.")
+_MOVE_GONE: str = ("That section or its destination no longer exists. The "
+                   "list has been refreshed.")
+
+# Indents a section in the destination list: ordinary spaces would collapse
+# in an option's text.
+_INDENT: str = " " * 4
+
 
 class GetProjectTestcasesPageHandler(PortalPageHandler):
     """Handles requests for the project test cases page.
@@ -197,6 +210,57 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
 
         return await self._finish_section_write(
             response, project_id, "rename_section")
+
+    @require_session
+    async def move_section(self, project_id: int, folder_id: int):
+        """Move a section (folder) to the destination chosen in the pop-up.
+
+        The form carries ``parent_id``: the new parent section, or empty for
+        the top level. The pop-up does not offer the section itself or its
+        own sub-sections (that would be a loop); the CMS refuses it anyway.
+
+        Args:
+            project_id (int):
+                Unique identifier of the project the section belongs to.
+            folder_id (int):
+                Unique identifier of the section to move.
+
+        Returns:
+            Response:
+                A redirect to the list on success; otherwise the list page
+                again with an error banner: a plain "no permission" message
+                on 403, and the Portal's own wording for a name clash (409)
+                or a section that has gone (404).
+        """
+        form = await request.form
+        raw_parent = (form.get("parent_id") or "").strip()
+
+        if raw_parent and not raw_parent.isdigit():
+            return await self._render_list(
+                project_id, error_message="Invalid destination section.")
+
+        gateway_svc: str = self._config.apis_gateway_svc
+        response: ApiResponse = await self._rest_client.post(
+            f"{gateway_svc}web/folders/{folder_id}/move"
+            f"?project_id={project_id}",
+            json_data={"parent_id": int(raw_parent) if raw_parent else None})
+
+        if response.status_code == HTTPStatus.OK:
+            return await make_response(
+                self._generate_redirect(f"{project_id}/testcases"))
+
+        if response.status_code == HTTPStatus.FORBIDDEN:
+            error_message = REFUSED["move_section"]
+        elif response.status_code == HTTPStatus.CONFLICT:
+            error_message = _MOVE_CLASH
+        elif response.status_code == HTTPStatus.NOT_FOUND:
+            error_message = _MOVE_GONE
+        else:
+            error_message = self._extract_error(response)
+        self._logger.warning("Section move failed (status %s): %s",
+                             response.status_code, error_message)
+        return await self._render_list(project_id,
+                                       error_message=error_message)
 
     @require_session
     async def delete_section(self, project_id: int, folder_id: int):
@@ -362,6 +426,7 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
                            if test_case['folder_id'] is None]
 
         self._annotate_testcase_counts(details)
+        self._annotate_subtree_ids(details)
         cascade_prompt = self._name_cascade_prompt(
             cascade_prompt, response.body['folders'])
 
@@ -372,6 +437,7 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
             pages.TEMPLATE_TEST_DEFINITIONS_PAGE,
             permissions=await self._fetch_testcase_permissions(project_id),
             data=details,
+            section_choices=self._section_choices(details),
             root_test_cases=root_test_cases,
             active_page="test-cases",
             has_testcases=len(details) > 0 or len(root_test_cases) > 0,
@@ -406,6 +472,48 @@ class GetProjectTestcasesPageHandler(PortalPageHandler):
                 + cls._annotate_testcase_counts(folder['subfolders']))
             total += folder['testcase_count']
         return total
+
+    @classmethod
+    def _annotate_subtree_ids(cls, folders: list) -> list[int]:
+        """Record, on every section, the ids of itself and everything in it.
+
+        The Move pop-up uses it to leave those sections out of the
+        destinations it offers: a section cannot be moved into itself or into
+        one of its own sub-sections.
+
+        Args:
+            folders: The nested folders from ``_transform_tests_details_data``.
+                Each gets a ``subtree_ids`` key, its own id first.
+
+        Returns:
+            The ids of every section in ``folders`` and beneath them.
+        """
+        ids: list[int] = []
+        for folder in folders:
+            folder['subtree_ids'] = [folder['id']] + cls._annotate_subtree_ids(
+                folder['subfolders'])
+            ids.extend(folder['subtree_ids'])
+        return ids
+
+    @classmethod
+    def _section_choices(cls, folders: list, depth: int = 0) -> list[dict]:
+        """Flatten the nested sections into the Move pop-up's destinations.
+
+        Args:
+            folders: The nested folders from ``_transform_tests_details_data``.
+            depth: How deep ``folders`` are, for the indent.
+
+        Returns:
+            ``{"id", "label"}`` dicts in tree order (each sub-section straight
+            after its parent), the label indented by depth.
+        """
+        choices: list[dict] = []
+        for folder in folders:
+            choices.append({"id": folder['id'],
+                            "label": _INDENT * depth + folder['name']})
+            choices.extend(cls._section_choices(folder['subfolders'],
+                                                depth + 1))
+        return choices
 
     @staticmethod
     def _name_cascade_prompt(cascade_prompt: Optional[dict],

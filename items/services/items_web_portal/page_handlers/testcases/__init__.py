@@ -42,6 +42,9 @@ def create_testcases_page_handlers(injections: PageHandlerInjections) \
             The configured Quart blueprint containing the test case page
             routes.
     """
+    # One local per registered route handler: the count follows the routes.
+    # pylint: disable=too-many-locals
+
     routes = Blueprint('testcases_routes', __name__)
 
     injections.logger.debug(" Testcases Page Handlers:")
@@ -80,6 +83,14 @@ def create_testcases_page_handlers(injections: PageHandlerInjections) \
     async def rename_section_request(project_id: int, folder_id: int):
         return await handler_get_testcase.rename_section(
             project_id, folder_id)
+
+    injections.logger.debug("=> %s POST /<project_id>/folders/<id>/move",
+                            "Move section".ljust(40))
+
+    @routes.route('/<int:project_id>/folders/<int:folder_id>/move',
+                  methods=['POST'])
+    async def move_section_request(project_id: int, folder_id: int):
+        return await handler_get_testcase.move_section(project_id, folder_id)
 
     injections.logger.debug("=> %s POST /<project_id>/folders/<id>/delete",
                             "Delete section".ljust(40))
