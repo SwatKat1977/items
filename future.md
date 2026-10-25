@@ -373,29 +373,6 @@ itself, since `Sessions`/`SessionEntry` already carry the data needed -
 this is about *reacting* to writes that already happen, not adding new
 state.
 
-## Web Portal: Projects tab's per-row Save button is easy to miss
-
-**Where:** `instance_admin_modify_user.html`'s Projects tab - the
-per-membership role `<select>` has its own small `<form>` with a
-`type="submit"` button showing only a checkmark icon
-(`<i class="bi bi-check-lg">`), with a `title="Save role"` hover tooltip
-as the only affordance.
-
-**Problem:** found during manual verification of
-`gateway_membership_enforcement` - a role change appeared not to be
-saving at all, and the actual cause was the icon-only Save button not
-being clicked (attention going to the page's main "Save User" button
-instead, which doesn't touch project/role data). The code was correct
-throughout; the affordance wasn't clear enough. Same page's "Save
-User"/"Cancel" buttons both already pair an icon with visible text -
-this one button doesn't follow that existing convention.
-
-**Fix:** give the row's Save button visible "Save" text too, matching
-the convention already used elsewhere on the same page. Small,
-low-risk, Portal-template-only change - deliberately not bundled into
-the Gateway-only `gateway_membership_enforcement` branch it was found
-on; wants its own tiny branch.
-
 ## Identity: password hashing blocks the event loop
 
 **Where:** `user_management_service.py` - `PasswordHasher()` uses
@@ -423,3 +400,48 @@ runs. Bigger and more careful than the timeout bump: touches core
 authentication code in three places, wants proper test coverage of the
 threaded path, not something to do under the time pressure that prompted
 the timeout fix instead.
+
+## Identity/CMS: "Delete implies Read" is enforced in code, not by the database
+
+**Where:** `role_permissions` (Identity database), written by
+`RoleManagementService._permissions_are_valid` and the Portal's role dialog.
+
+**Problem:** a role whose grid says Delete without Read is meaningless (you
+cannot delete what you cannot see). The service refuses to save one and the
+Portal's dialog ticks Read for you, but nothing in the database stops a row
+being written some other way (a script, a future code path).
+
+**Fix:** add a `CHECK` on `role_permissions` so that Delete or Add/Modify
+requires Read. Deferred deliberately: there are no migrations before 1.0, so
+it should ride along with the next schema change that already means
+rebuilding the Identity database, not be a rebuild of its own.
+
+## Gateway: no route that returns a single section
+
+**Where:** the Gateway has `POST`/`PATCH`/`DELETE` for sections but no `GET`.
+The Portal's test case View and Edit pages name a test case's section (and
+the Edit page builds its Move box) by reading `GET /web/<project_id>/testcases`,
+which returns the project's **whole** section tree and every test case.
+
+**Problem:** one extra, heavier call per page view than the page needs, to
+learn a section's name and the list of destinations. Fine for now; it will
+cost more as projects grow.
+
+**Fix:** a Gateway `GET /web/<project_id>/folders` (sections only) that the
+Portal uses for the section name and the Move destinations. Small, but it is
+a new route on two services (CMS and Gateway) plus a Portal change.
+
+## Dev: two services can bind the same port on Windows
+
+**Where:** any service started twice on the same machine, most visibly the Web
+Portal on port 8000.
+
+**Problem:** Hypercorn sets `SO_REUSEADDR`, which on Windows lets a second
+copy bind a port that is already in use. The older copy keeps answering, so a
+change appears not to have taken effect (this cost real time during 0.5.0
+testing; `Get-NetTCPConnection -LocalPort 8000 -State Listen` shows both
+listeners).
+
+**Fix:** a start-up check that refuses to run (with a clear message) if the
+port is already listening, or exclusive binding on Windows. The service's
+start-up version line already helps; this would make the mistake impossible.
