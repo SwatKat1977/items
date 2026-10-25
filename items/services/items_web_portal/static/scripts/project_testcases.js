@@ -89,6 +89,43 @@
 })();
 
 /*
+ * The move section pop-up (list page only). A section's move button
+ * (data-bs-target="#moveSectionModal") carries data-id, data-name,
+ * data-parent-id (its current parent, empty for the top level) and
+ * data-subtree-ids (itself and everything beneath it, comma separated). The
+ * destination list starts on the current parent and leaves out that subtree:
+ * a section cannot be moved into itself or into one of its own sub-sections.
+ */
+(function () {
+  const modal = document.getElementById('moveSectionModal');
+  const form = document.getElementById('moveSectionForm');
+
+  if (!modal || !form) {
+    return;
+  }
+
+  const nameLabel = document.getElementById('move-section-name');
+  const select = document.getElementById('move-section-parent');
+
+  modal.addEventListener('show.bs.modal', function (event) {
+    const trigger = event.relatedTarget;
+    const subtree = (trigger.getAttribute('data-subtree-ids') || '')
+      .split(',').filter(Boolean);
+
+    nameLabel.textContent = trigger.getAttribute('data-name') || '';
+    form.action = form.getAttribute('data-action-template')
+      .replace('__ID__', trigger.getAttribute('data-id'));
+
+    Array.from(select.options).forEach(function (option) {
+      const inside = subtree.indexOf(option.value) !== -1;
+      option.hidden = inside;
+      option.disabled = inside;
+    });
+    select.value = trigger.getAttribute('data-parent-id') || '';
+  });
+})();
+
+/*
  * Section delete (list page only). A section's delete button
  * (data-bs-target="#confirmDeleteSectionModal") carries data-id, data-name and
  * data-testcase-count (the test cases deleting it would remove, including

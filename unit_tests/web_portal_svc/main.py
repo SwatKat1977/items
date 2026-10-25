@@ -75,6 +75,7 @@ from test_projects_testcases_handlers import (
     TestDeleteTestcaseFromList,
     TestAddSection,
     TestRenameSection,
+    TestMoveSection,
     TestDeleteSection,
     TestListControlsFollowPermissions,
 )

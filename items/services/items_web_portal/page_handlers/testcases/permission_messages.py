@@ -37,6 +37,8 @@ REFUSED: dict[str, str] = {
         "You don't have permission to add sections in this project.",
     "rename_section":
         "You don't have permission to rename sections in this project.",
+    "move_section":
+        "You don't have permission to move sections in this project.",
     "delete_section":
         "You don't have permission to delete sections in this project.",
 }
