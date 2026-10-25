@@ -2108,6 +2108,54 @@
                   "response": []
                 },
                 {
+                  "name": "Move a section",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "X-Items-User",
+                        "value": "{{ITEMS_USER}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "X-Items-Token",
+                        "value": "{{ITEMS_TOKEN}}",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"parent_id\": 2\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{GATEWAY_SVC_URL}}/web/folders/1/move?project_id=1",
+                      "host": [
+                        "{{GATEWAY_SVC_URL}}"
+                      ],
+                      "path": [
+                        "web",
+                        "folders",
+                        "1",
+                        "move"
+                      ],
+                      "query": [
+                        {
+                          "key": "project_id",
+                          "value": "1",
+                          "description": "Required. Add/Modify on Test Cases is checked against it, and the CMS confirms the section belongs to it (404 otherwise)."
+                        }
+                      ]
+                    },
+                    "description": "Needs Add/Modify on Test Cases (403 for a read-only role). Moves the section under the section in parent_id, or to the top level when parent_id is null. parent_id is always required: leaving it out is a 400, never read as the top level. 400 if project_id is missing, the new parent is in another project, or the new parent is the section itself or one of its own sub-sections. 404 if the section is in another project or the new parent does not exist. 409 if the new parent already has a section with that name. Moving to the parent it already has succeeds and changes nothing. The section's sub-sections and test cases move with it."
+                  },
+                  "response": []
+                },
+                {
                   "name": "Delete a section",
                   "request": {
                     "method": "DELETE",

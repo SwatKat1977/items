@@ -2,6 +2,7 @@
 Unit tests for the gateway section (folder) write route handlers:
   POST   /<project_id>/folders            - CreateFolderHandler
   PATCH  /folders/<id>?project_id=        - ModifyFolderHandler
+  POST   /folders/<id>/move?project_id=   - MoveFolderHandler
   DELETE /folders/<id>?project_id=        - DeleteFolderHandler
 """
 import json
@@ -15,10 +16,13 @@ from items.services.items_gateway.routes.web.folders.\
     delete_folder_handler import DeleteFolderHandler
 from items.services.items_gateway.routes.web.folders.\
     modify_folder_handler import ModifyFolderHandler
+from items.services.items_gateway.routes.web.folders.\
+    move_folder_handler import MoveFolderHandler
 
 _LOGGER = MagicMock()
 _CREATE_BODY = {"parent_id": None, "name": "Regression"}
 _MODIFY_BODY = {"name": "Renamed"}
+_MOVE_BODY = {"parent_id": 4}
 
 
 def _config():
@@ -198,6 +202,102 @@ class TestModifyFolderHandler(unittest.IsolatedAsyncioTestCase):
     async def test_response_is_json(self):
         self.mock_rc.patch.return_value = _ok({"status": 1})
         resp = await self._patch(_MODIFY_BODY)
+        self.assertEqual(resp.content_type, "application/json")
+
+
+# ---------------------------------------------------------------------------
+# MoveFolderHandler
+# ---------------------------------------------------------------------------
+
+class TestMoveFolderHandler(unittest.IsolatedAsyncioTestCase):
+
+    async def asyncSetUp(self):
+        self.mock_rc = AsyncMock()
+        handler = MoveFolderHandler(_LOGGER, _config(), self.mock_rc)
+        app = Quart(__name__)
+
+        @app.route("/folders/<int:folder_id>/move", methods=["POST"])
+        async def route(folder_id: int):
+            return await handler.move_folder(folder_id)
+
+        self.client = app.test_client()
+
+    async def _post(self, body, folder_id=3, query="?project_id=5"):
+        async with self.client as c:
+            return await c.post(f"/folders/{folder_id}/move{query}",
+                                json=body)
+
+    async def test_success_returns_200(self):
+        self.mock_rc.post.return_value = _ok({"status": 1})
+        resp = await self._post(_MOVE_BODY)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(json.loads(await resp.get_data()), {"status": 1})
+
+    async def test_url_carries_the_project_and_body_is_forwarded(self):
+        self.mock_rc.post.return_value = _ok({"status": 1})
+        await self._post({"parent_id": 4}, folder_id=9, query="?project_id=7")
+        self.mock_rc.post.assert_called_once_with(
+            "http://cms/folders/9/move?project_id=7",
+            json_data={"parent_id": 4})
+
+    async def test_null_parent_id_is_forwarded_as_null(self):
+        """Top level is a deliberate null, passed through untouched."""
+        self.mock_rc.post.return_value = _ok({"status": 1})
+        await self._post({"parent_id": None})
+        self.mock_rc.post.assert_called_once_with(
+            "http://cms/folders/3/move?project_id=5",
+            json_data={"parent_id": None})
+
+    async def test_missing_project_id_returns_400_without_calling_cms(self):
+        resp = await self._post(_MOVE_BODY, query="")
+        self.assertEqual(resp.status_code, 400)
+        body = json.loads(await resp.get_data())
+        self.assertIn("project_id", body["error"])
+        self.mock_rc.post.assert_not_called()
+
+    async def test_non_integer_project_id_returns_400(self):
+        resp = await self._post(_MOVE_BODY, query="?project_id=abc")
+        self.assertEqual(resp.status_code, 400)
+        self.mock_rc.post.assert_not_called()
+
+    async def test_invalid_json_returns_400_without_calling_cms(self):
+        async with self.client as c:
+            resp = await c.post("/folders/3/move?project_id=5",
+                                data="not json",
+                                headers={"Content-Type": "application/json"})
+        self.assertEqual(resp.status_code, 400)
+        self.mock_rc.post.assert_not_called()
+
+    async def test_non_object_json_returns_400_without_calling_cms(self):
+        resp = await self._post([1, 2])
+        self.assertEqual(resp.status_code, 400)
+        self.mock_rc.post.assert_not_called()
+
+    async def test_cms_errors_are_propagated(self):
+        """Including the CMS's refusal to move a section into itself or one
+        of its own sub-sections, which is a 400 with its own wording."""
+        for status in (400, 404, 409, 500):
+            with self.subTest(status=status):
+                self.mock_rc.post.return_value = _err({"error": "x"}, status)
+                resp = await self._post(_MOVE_BODY)
+                self.assertEqual(resp.status_code, status)
+
+    async def test_the_cms_loop_refusal_text_reaches_the_caller(self):
+        message = ("A folder cannot be moved into itself or into one of its "
+                   "own sub-folders")
+        self.mock_rc.post.return_value = _err({"error": message}, 400)
+        resp = await self._post(_MOVE_BODY)
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(json.loads(await resp.get_data())["error"], message)
+
+    async def test_connection_error_returns_500(self):
+        self.mock_rc.post.return_value = _conn_err()
+        resp = await self._post(_MOVE_BODY)
+        self.assertEqual(resp.status_code, 500)
+
+    async def test_response_is_json(self):
+        self.mock_rc.post.return_value = _ok({"status": 1})
+        resp = await self._post(_MOVE_BODY)
         self.assertEqual(resp.content_type, "application/json")
 
 

@@ -42,6 +42,7 @@ from test_testcase_write_handlers import (
 from test_folder_write_handlers import (
     TestCreateFolderHandler,
     TestModifyFolderHandler,
+    TestMoveFolderHandler,
     TestDeleteFolderHandler,
 )
 from test_testcase_custom_fields_handlers import (
