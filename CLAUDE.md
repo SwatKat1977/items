@@ -107,6 +107,13 @@ venv/Scripts/python -m pylint --fail-under=10.0 items/services/items_<service>
   holds test cases, unless `cascade=true` (only that exact value cascades).
   Deleting a case type moves its test cases to the default; the default case
   type is never deleted.
+- **Moves are guarded too.** `POST /testcases/<id>/move` and
+  `POST /folders/<id>/move` (CMS, and the same under `/web` on the Gateway)
+  take `folder_id` / `parent_id`, which must always be present (`null` = top
+  level, so an omitted value is a 400, never "top level"). Same project only;
+  a clash in the destination is a 409; a section cannot go into itself or its
+  own subtree (400). A move needs Add/Modify, not Delete. See
+  `design_docs/moving_testcases_and_sections.md`.
 - **Case types are the template** for new customisation lists (Priorities,
   Case Statuses): global to the instance, one default that can be moved but
   never unset or deleted, delete moves dependants to the default.
@@ -134,6 +141,11 @@ redirects) with an error banner and the typed input kept.
   case's view, add and edit pages.
 - The **view page and the edit page mirror each other**: same title bar,
   card, field order and button row.
+- **Moving is its own action.** A test case moves from a separate "Move Test
+  Case" box on its edit page (never a field in the edit form, so Save and Move
+  cannot be confused); a section moves from a small pop-up on its row. Both
+  View and Edit pages show the current section, so they keep mirroring. The
+  section pop-up leaves out the section's own subtree as destinations.
 - A delete **confirmation states what will be lost** (for example the number
   of test cases a section delete removes) in a single box. If a prompt
   surprises the person who designed it, it will surprise users.
@@ -198,6 +210,10 @@ When a route, request or response changes, update in the **same branch**:
   swallow the "unexpected request" error a test helper raises, so a test can
   pass without exercising the new request. Give such tests URL-keyed mocks
   and assert the URL was actually requested.
+- **Pylint's score hides messages.** A clean 10.00 can still carry messages
+  (mixed line endings, too-many-locals): read the output, not just the score.
+  Working copies are CRLF (the index is LF, `autocrlf=true`), so a new file
+  must be CRLF too, or pylint reports mixed line endings.
 - **Unit tests only check markup.** To verify JavaScript or a pop-up, render
   the real page with the real handler and templates (gateway mocked) to a
   scratch folder, serve it, and click through it in the built-in browser.
@@ -208,3 +224,12 @@ When a route, request or response changes, update in the **same branch**:
   non-trivial, write the edit script to a file and run that.
 - Prefer the editor tools for source edits, and run the real test commands
   above rather than guessing.
+- Two Quart apps driven in one process (for example a scratch script that
+  calls the Portal, which calls the Gateway, which calls the CMS) share
+  `contextvars`, so a nested request replaces the caller's request and its
+  headers or form data vanish. Run each forwarded call in its own empty
+  context (`create_task(coro, context=contextvars.Context())`). Separate
+  services never do this.
+- Never branch for the next ticket before the previous one is merged: the
+  version number (`PRE_RELEASE`) and the base are both wrong. Wait for the
+  merge, `git fetch`, check `main`'s version, then branch.

@@ -935,12 +935,13 @@ no tables**.
 **Implementation status:** `roles`, `role_permissions` and `project_members`
 (with `role_id`) are in use. Roles can be created, edited and deleted, and a
 role can be assigned to a project membership, through the identity service,
-the gateway and the Portal (release 0.3.0). What is **not** built yet is
-*enforcement*: nothing resolves a user's effective permissions or checks them
-on a request, so a read-only member can still write. §9.5 is the design for
-that, tracked for release 0.5.0. "Enforceable now" above is about CMS having
-the backing tables for an *area*; it doesn't mean the permission system
-itself is live.
+the gateway and the Portal (release 0.3.0). *Enforcement* of the Test Cases
+grid was built in release 0.5.0 (§9.5): Identity resolves a user's effective
+permissions, the Gateway checks them with Identity on every Test Cases
+request, and the Portal leaves out the controls a role does not allow, so a
+read-only member can no longer write. The other areas in the grid still have
+nothing behind them to enforce. "Enforceable now" above is about CMS having
+the backing tables for an *area*.
 
 Admin areas (future grid, §5.1):
 
