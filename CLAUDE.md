@@ -15,6 +15,7 @@ detail. Keep it short and correct - update it when a rule changes.
 | `items/shared` | Code and the version shared by every service |
 | `items/tool_cms_db_builder` | Builds a fresh CMS database |
 | `unit_tests/<service>` | Tests, one folder per service, each with an explicit `main.py` entry point |
+| `automation` | API tests (pytest) that run against a running stack; see `automation/README.md` |
 | `design_docs` | API contracts and design decisions (see below) |
 | `postman` | Postman collection (CMS, Identity, Gateway) |
 | `databases/*.LATEST.db` | The checked-in database files |
@@ -28,10 +29,16 @@ detail. Keep it short and correct - update it when a rule changes.
 - **Keep changes small and deliberate.** Prefer a short series of verifiable
   branches over one large diff. If something is blocked on an undecided
   design question, raise it and defer; do not guess.
-- **Bump the version on every branch that becomes a PR:** increment the
-  `PRE_RELEASE` counter in `items/shared/__init__.py` by one (for example
-  `"alpha4"` to `"alpha5"`). One shared version covers every service. Not
-  needed for docs-only branches.
+- **Bump the version when a PR changes something that ships:** service code,
+  templates or static files, the shared package, or the database builder.
+  Increment the `PRE_RELEASE` counter in `items/shared/__init__.py` by one
+  (for example `"alpha4"` to `"alpha5"`); one shared version covers every
+  service. **Don't bump** for docs, the Postman collection, automation, CI
+  workflows or test-only changes. If in doubt, bump. A fix to a service that
+  the automation uncovers is a service change, so it bumps as usual.
+- **Choose the series when it starts:** a fix-only release is a patch
+  (`0.5.1-alpha1`), a feature release a minor (`0.6.0-alpha1`). The alpha
+  counter is mechanical; which series you are in is the judgement call.
 - The maintainer commits and pushes. Prepare the change and a PR title and
   description; do not commit or push unless asked.
 
@@ -63,6 +70,22 @@ PYTHONPATH="<paths>" venv/Scripts/python -m coverage run --rcfile=<coveragerc> -
 venv/Scripts/python -m coverage report --rcfile=<coveragerc> --fail-under=100
 venv/Scripts/python -m pylint --fail-under=10.0 items/services/items_<service>
 ```
+
+## Automation tests
+
+`automation/` holds API-level tests that send real requests to a **running**
+stack and check the responses. They complement the unit tests: unit tests
+prove each service alone, these prove the services work together.
+
+- `automation/api_core` is a small **generic** library (send a request, check
+  the reply). It **never imports from `items`**; neither do the tests, which
+  are black-box and use literal URLs and bodies.
+- Tests and fixtures are `async def` under `pytest-asyncio`. Tests that need a
+  stack are marked `stack` and left out of a plain run; run them with
+  `pytest -m stack` and `ITEMS_ADMIN_PASSWORD` set. Full instructions are in
+  `automation/README.md`.
+- A feature is not done until the cross-service behaviour it adds has an
+  automated check.
 
 ## Architecture rules
 

@@ -21,6 +21,9 @@
  */.idea/tasks.xml
 
 # -----------------
+# Pytest cache (the automation tests)
+.pytest_cache/
+
 # Coverage ignore
 # -----------------
 .coverage
